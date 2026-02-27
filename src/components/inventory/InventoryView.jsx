@@ -1,0 +1,316 @@
+import clsx from "clsx";
+import { useState, useEffect } from "react";
+import {
+  FiAlertTriangle,
+  FiBarChart2,
+  FiBell,
+  FiBox,
+  FiFilter,
+  FiPackage,
+  FiSearch,
+  FiTrendingUp,
+  FiX,
+  FiPlus,
+} from "react-icons/fi";
+import { LuPill, LuSparkles } from "react-icons/lu";
+import AddInventoryModal from "./AddInventoryModal";
+
+const summaryCards = [
+  { id: "total", label: "TOTAL ITEMS", value: "1,428", meta: "+4.6%", metaTone: "text-emerald-600", icon: FiBox },
+  { id: "low", label: "LOW STOCK", value: "31", meta: "Needs attention", metaTone: "text-amber-600", icon: FiAlertTriangle },
+  { id: "expiring", label: "EXPIRING SOON", value: "9", meta: "Within 21 days", metaTone: "text-rose-600", icon: FiBell },
+];
+
+const categoryIcons = {
+  Vaccines: FiPackage,
+  Antibiotics: LuPill,
+  Supplies: FiTrendingUp,
+  Diagnostics: FiBarChart2,
+};
+
+const categoryIconStyles = {
+  Vaccines: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+  Antibiotics: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400",
+  Supplies: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  Diagnostics: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400",
+};
+
+const statusStyles = {
+  "Low Stock": "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  "In Stock": "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+  Expiring: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
+};
+
+function TrendMiniChart() {
+  const path = "M10 70 L58 50 L102 56 L152 34 L204 26 L258 18 L310 10";
+  return (
+    <svg viewBox="0 0 320 80" className="h-24 w-full">
+      <line x1="10" y1="20" x2="310" y2="20" className="stroke-slate-200 dark:stroke-zinc-700" strokeDasharray="4 5" />
+      <line x1="10" y1="45" x2="310" y2="45" className="stroke-slate-200 dark:stroke-zinc-700" strokeDasharray="4 5" />
+      <line x1="10" y1="70" x2="310" y2="70" className="stroke-slate-200 dark:stroke-zinc-700" strokeDasharray="4 5" />
+      <path d={path} className="fill-none stroke-blue-500" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="310" cy="10" r="5" className="fill-blue-500" />
+    </svg>
+  );
+}
+
+function InventoryView() {
+  const [activeFilter, setActiveFilter] = useState("All Items");
+  const [showAiAside, setShowAiAside] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [inventoryRows, setInventoryRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const response = await fetch("/api/inventory");
+        if (response.ok) {
+          const data = await response.json();
+          setInventoryRows(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch inventory:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInventory();
+  }, []);
+
+  const handleSaveNewItem = (newItem) => {
+    // Optimistically push the newly saved backend item to the top of the local state 
+    // without triggering a full screen refresh!
+    setInventoryRows((prev) => [newItem, ...prev]);
+    alert(`Successfully added ${newItem.item_name} to the database!`);
+  };
+
+  const filteredRows = inventoryRows.filter((row) => {
+    if (activeFilter === "All Items") return true;
+    return row.status === activeFilter;
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
+        </div>
+        <button onClick={() => alert("Running AI Forecast simulation...")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+          <LuSparkles className="h-4 w-4" />
+          Run AI Forecast
+        </button>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <article key={card.id} className="card-shell p-5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{card.label}</p>
+                <Icon className="h-5 w-5 text-slate-400 dark:text-zinc-500" />
+              </div>
+              <p className="mt-2 text-5xl font-bold leading-none text-slate-900 dark:text-zinc-50">{card.value}</p>
+              <p className={clsx("mt-2 text-sm font-semibold", card.metaTone)}>{card.meta}</p>
+            </article>
+          );
+        })}
+
+        <article className="rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 p-5 text-white shadow-soft">
+          <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-blue-100">
+            <LuSparkles className="h-4 w-4" />
+            AI Insight
+          </p>
+          <p className="mt-1 text-2xl font-bold">Stock Optimization</p>
+          <p className="mt-2 text-sm text-blue-100">Forecast refresh complete. 6 items flagged for reorder planning.</p>
+        </article>
+      </section>
+
+      <section className="relative card-shell overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-dark-border p-4">
+          <label className="flex h-11 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-500 lg:max-w-md dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
+            <FiSearch className="h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search medicines, supplies, or SKUs..."
+              className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface">
+              <FiFilter className="h-4 w-4" />
+              Filter
+            </button>
+            <button
+              onClick={() => setActiveFilter("All Items")}
+              className={clsx("rounded-xl border px-4 py-2 text-sm font-semibold", activeFilter === "All Items" ? "border-slate-400 bg-slate-100 text-slate-900 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-50" : "border-slate-200 bg-white text-slate-700 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300")}
+            >
+              All Items
+            </button>
+            <button
+              onClick={() => setActiveFilter("Low Stock")}
+              className={clsx("rounded-xl border px-4 py-2 text-sm font-semibold", activeFilter === "Low Stock" ? "border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : "border-slate-200 bg-white text-amber-700 dark:border-dark-border dark:bg-dark-card dark:text-amber-400")}
+            >
+              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-amber-500" />
+              Low Stock
+            </button>
+            <button
+              onClick={() => setActiveFilter("Expiring")}
+              className={clsx("rounded-xl border px-4 py-2 text-sm font-semibold", activeFilter === "Expiring" ? "border-rose-400 bg-rose-50 text-rose-900 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-300" : "border-slate-200 bg-white text-rose-700 dark:border-dark-border dark:bg-dark-card dark:text-rose-400")}
+            >
+              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-500" />
+              Expiring
+            </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="ml-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"
+            >
+              <FiPlus className="h-4 w-4" />
+              Add Item
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1150px]">
+            <thead className="bg-slate-50 dark:bg-dark-surface">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                <th className="px-5 py-4">Item Name</th>
+                <th className="px-5 py-4">Category</th>
+                <th className="px-5 py-4">SKU</th>
+                <th className="px-5 py-4">Stock Level</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4">AI Forecast</th>
+                <th className="px-5 py-4">Internal Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="7" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                    Loading inventory data...
+                  </td>
+                </tr>
+              ) : filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                    No items found matching the current filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((row) => {
+                  const Icon = categoryIcons[row.category] || FiBox;
+                  const iconStyle = categoryIconStyles[row.category] || "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400";
+                  return (
+                    <tr key={row.id} className="border-t border-slate-200 dark:border-dark-border align-top hover:bg-slate-50 dark:hover:bg-dark-surface/50">
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-3">
+                          <span className={clsx("mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-lg", iconStyle)}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div>
+                            <p className="text-lg font-semibold text-slate-900 dark:text-zinc-50">{row.item_name}</p>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400">{row.sub_details}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-lg text-slate-700 dark:text-zinc-300">{row.category}</td>
+                      <td className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">{row.sku}</td>
+                      <td className="px-5 py-4 text-lg font-medium text-slate-800 dark:text-zinc-200">{row.stock_level} units</td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={clsx(
+                            "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
+                            statusStyles[row.status] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                          )}
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-base font-semibold text-slate-500 dark:text-zinc-400">
+                          Pending Initial Load
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-zinc-500">Awaiting historical data</p>
+                      </td>
+                      <td className="px-5 py-4 text-base font-semibold text-slate-500 dark:text-zinc-400">View Data</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">Showing 1 to {filteredRows.length} of 1,428 entries</div>
+
+        {showAiAside && (
+          <aside className="pointer-events-none static p-4 lg:absolute lg:bottom-4 lg:right-4 lg:w-[430px]">
+            <div className="pointer-events-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft">
+              <div className="flex items-center justify-between bg-blue-600 px-5 py-3 text-white">
+                <p className="text-xl font-bold">AI Analysis: Rabies Vaccine</p>
+                <button onClick={() => setShowAiAside(false)} className="rounded-md p-1 hover:bg-white/15">
+                  <FiX className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Recommended Stock Level</p>
+                    <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-zinc-50">150 Units</p>
+                  </div>
+                  <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">+12% vs last year</span>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
+                  <TrendMiniChart />
+                  <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                    <span>Jun</span>
+                    <span>Jul</span>
+                    <span>Aug</span>
+                    <span>Sep</span>
+                    <span>Oct</span>
+                    <span>Nov</span>
+                    <span className="text-blue-600 dark:text-blue-400">Dec (Est)</span>
+                  </div>
+                </div>
+
+                <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                  Based on the last 6 months of usage and expected seasonal demand, current stock is projected to run below
+                  safety level by December 15.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => alert("Item marked for manual review.")}
+                    className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                  >
+                    Mark for Review
+                  </button>
+                  <button
+                    onClick={() => alert("Target stock updated in system based on AI forecast.")}
+                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Update Target Stock
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
+      </section>
+
+      <AddInventoryModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleSaveNewItem}
+      />
+    </div>
+  );
+}
+
+export default InventoryView;
