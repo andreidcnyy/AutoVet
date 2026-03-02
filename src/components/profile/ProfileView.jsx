@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { FiCamera, FiSave, FiUser } from "react-icons/fi";
+import { useToast } from "../../context/ToastContext";
 
 function ProfileView() {
+    const toast = useToast();
     const fileInputRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
@@ -59,12 +61,12 @@ function ProfileView() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    alert("Profile saved successfully to database!");
+                    toast.success("Profile saved successfully to database!");
                 } else {
-                    alert("Error saving profile: " + JSON.stringify(data));
+                    toast.error("Error saving profile: " + JSON.stringify(data));
                 }
             })
-            .catch(err => alert("Network error saving profile: " + err.message));
+            .catch(err => toast.error("Network error saving profile: " + err.message));
     };
 
     if (isLoading) {

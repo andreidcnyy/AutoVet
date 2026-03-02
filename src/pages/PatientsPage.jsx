@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
+import { useToast } from "../context/ToastContext";
 
 function PatientsPage() {
+  const toast = useToast();
   const [view, setView] = useState("records");
   const [patients, setPatients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,9 +30,10 @@ function PatientsPage() {
       await fetch(`/api/patients/${patientId}`, { method: "DELETE" });
       setPatients((prev) => prev.filter((p) => p.id !== patientId));
       setSelectedPatientId(null);
+      toast.success("Patient deleted successfully.");
     } catch (err) {
       console.error("Failed to delete patient:", err);
-      alert("Could not delete the patient. Please try again.");
+      toast.error("Could not delete the patient. Please try again.");
     }
   };
 

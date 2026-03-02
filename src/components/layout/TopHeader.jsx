@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
+import { useToast } from "../../context/ToastContext";
 
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
+  const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -53,7 +55,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
 
           <button
             type="button"
-            onClick={() => alert("You have no new notifications.")}
+            onClick={() => toast.info("You have no new notifications.")}
             className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
           >
             <FiBell className="h-5 w-5" />
@@ -96,7 +98,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                 <button
                   type="button"
                   onClick={() => {
-                    alert("Logged out successfully.");
+                    toast.success("Logged out successfully.");
                     setOpenProfileMenu(false);
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"

@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useToast } from "../../context/ToastContext";
 
 const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
@@ -8,13 +9,14 @@ const iconToneStyles = {
 };
 
 function RecentNotificationsCard({ items }) {
+  const toast = useToast();
   return (
     <aside className="card-shell overflow-hidden">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-dark-border">
         <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Recent Notifications</h3>
         <button
           type="button"
-          onClick={() => alert("All notifications marked as read.")}
+          onClick={() => toast.success("All notifications marked as read.")}
           className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
           Mark all read
@@ -52,7 +54,7 @@ function RecentNotificationsCard({ items }) {
 
       <button
         type="button"
-        onClick={() => alert("Opening full notification history...")}
+        onClick={() => toast.info("Opening full notification history...")}
         className="w-full px-6 py-4 text-center text-lg font-semibold text-slate-700 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-dark-surface"
       >
         View all notifications

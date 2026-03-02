@@ -10,6 +10,7 @@ import {
 import { LuSparkles } from "react-icons/lu";
 import { format, addMonths, subMonths } from "date-fns";
 import { generateCalendarGrid } from "../../utils/calendarUtils";
+import { useToast } from "../../context/ToastContext";
 
 const viewModes = ["Month", "Week", "Day"];
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -44,6 +45,7 @@ const webRequests = [
 ];
 
 function AppointmentsView() {
+  const toast = useToast();
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
@@ -66,7 +68,7 @@ function AppointmentsView() {
 
   const handleQuickAdd = () => {
     if (!newTitle || !newDate || !newTime) {
-      return alert("Title, Date, and Time are required!");
+      return toast.warning("Title, Date, and Time are required!");
     }
     fetch("/api/appointments", {
       method: "POST",
@@ -75,11 +77,11 @@ function AppointmentsView() {
     })
       .then((res) => res.json())
       .then(() => {
-        alert("Appointment Scheduled!");
+        toast.success("Appointment Scheduled!");
         setNewTitle(""); setNewDate(""); setNewTime("");
         fetchAppointments();
       })
-      .catch((err) => alert("Error scheduling: " + err.message));
+      .catch((err) => toast.error("Error scheduling: " + err.message));
   };
 
   const calendarDays = generateCalendarGrid(currentDate, appointments);
@@ -175,7 +177,10 @@ function AppointmentsView() {
         <section className="card-shell p-5">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">QUICK ADD</h3>
-            <button onClick={() => alert("Form cleared.")} className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+            <button onClick={() => {
+              setNewTitle(""); setNewDate(""); setNewTime("");
+              toast.info("Form cleared.");
+            }} className="text-sm font-semibold text-blue-600 dark:text-blue-400">
               Clear
             </button>
           </div>
@@ -258,13 +263,13 @@ function AppointmentsView() {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => alert("Reschedule requested sent to user.")}
+                    onClick={() => toast.info("Reschedule requested sent to user.")}
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface"
                   >
                     Reschedule
                   </button>
                   <button
-                    onClick={() => alert("Request approved and booked.")}
+                    onClick={() => toast.success("Request approved and booked.")}
                     className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     Approve
@@ -285,7 +290,7 @@ function AppointmentsView() {
             Increased flea and dermatology visits are expected next week due to humidity trends. Review inventory and block triage slots in advance.
           </p>
           <button
-            onClick={() => alert("Opened AI scheduling hints.")}
+            onClick={() => toast.info("Opened AI scheduling hints.")}
             className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <FiBell className="h-4 w-4" />

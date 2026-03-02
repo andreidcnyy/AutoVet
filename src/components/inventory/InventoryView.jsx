@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState, useEffect } from "react";
+import { useToast } from "../../context/ToastContext";
 import {
   FiAlertTriangle,
   FiBarChart2,
@@ -55,6 +56,7 @@ function TrendMiniChart() {
 }
 
 function InventoryView() {
+  const toast = useToast();
   const [activeFilter, setActiveFilter] = useState("All Items");
   const [showAiAside, setShowAiAside] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -82,7 +84,7 @@ function InventoryView() {
     // Optimistically push the newly saved backend item to the top of the local state 
     // without triggering a full screen refresh!
     setInventoryRows((prev) => [newItem, ...prev]);
-    alert(`Successfully added ${newItem.item_name} to the database!`);
+    toast.success(`Successfully added ${newItem.item_name} to the database!`);
   };
 
   const filteredRows = inventoryRows.filter((row) => {
@@ -97,7 +99,7 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        <button onClick={() => alert("Running AI Forecast simulation...")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+        <button onClick={() => toast.info("Running AI Forecast simulation...")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
           <LuSparkles className="h-4 w-4" />
           Run AI Forecast
         </button>
@@ -286,13 +288,13 @@ function InventoryView() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => alert("Item marked for manual review.")}
+                    onClick={() => toast.info("Item marked for manual review.")}
                     className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
                   >
                     Mark for Review
                   </button>
                   <button
-                    onClick={() => alert("Target stock updated in system based on AI forecast.")}
+                    onClick={() => toast.success("Target stock updated in system based on AI forecast.")}
                     className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     Update Target Stock

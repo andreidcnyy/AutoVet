@@ -23,6 +23,20 @@ export default {
         soft: "0 1px 2px 0 rgb(15 23 42 / 0.08), 0 1px 1px -1px rgb(15 23 42 / 0.08)",
         "dark-soft": "0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4)",
       },
+      keyframes: {
+        "slide-in-right": {
+          "0%": { transform: "translateX(100%)", opacity: 0 },
+          "100%": { transform: "translateX(0)", opacity: 1 },
+        },
+        "slide-out-right": {
+          "0%": { transform: "translateX(0)", opacity: 1 },
+          "100%": { transform: "translateX(100%)", opacity: 0 },
+        },
+      },
+      animation: {
+        "slide-in-right": "slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-out-right": "slide-out-right 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+      },
     },
   },
   plugins: [],

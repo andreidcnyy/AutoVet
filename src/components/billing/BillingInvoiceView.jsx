@@ -10,6 +10,7 @@ import {
   FiSend,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
+import { useToast } from "../../context/ToastContext";
 
 const quickAdds = ["+ Consultation", "+ Rabies Vax", "+ Nail Trim"];
 
@@ -41,6 +42,7 @@ const taxRate = 8;
 const currency = (value) => `$${value.toFixed(2)}`;
 
 function BillingInvoiceView() {
+  const toast = useToast();
   const [items, setItems] = useState(lineItems);
   const [taxRateVal, setTaxRateVal] = useState(taxRate);
   const [discountVal, setDiscountVal] = useState(discount);
@@ -209,7 +211,7 @@ function BillingInvoiceView() {
               Reset
             </button>
             <button
-              onClick={() => alert("Invoice draft saved.")}
+              onClick={() => toast.success("Invoice draft saved.")}
               className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700"
             >
               Save Draft
@@ -228,19 +230,19 @@ function BillingInvoiceView() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => alert("Printing invoice...")}
+                onClick={() => toast.info("Printing invoice...")}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiPrinter className="h-4 w-4" />
               </button>
               <button
-                onClick={() => alert("Downloading PDF...")}
+                onClick={() => toast.info("Downloading PDF...")}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiDownload className="h-4 w-4" />
               </button>
               <button
-                onClick={() => alert("Invoice scheduled for sending.")}
+                onClick={() => toast.success("Invoice scheduled for sending.")}
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 <FiSend className="h-4 w-4" />

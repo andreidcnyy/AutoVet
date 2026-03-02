@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useState } from "react";
 import { FiHome, FiSave, FiSettings, FiTrash2, FiUserPlus, FiUsers } from "react-icons/fi";
+import { useToast } from "../../context/ToastContext";
 
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
@@ -24,7 +25,7 @@ function Toggle({ checked, onChange }) {
       onClick={onChange}
       className={clsx(
         "relative inline-flex h-6 w-11 items-center rounded-full transition",
-        checked ? "bg-blue-600" : "bg-slate-300"
+        checked ? "bg-blue-600" : "bg-slate-300 dark:bg-zinc-600"
       )}
     >
       <span
@@ -38,58 +39,59 @@ function Toggle({ checked, onChange }) {
 }
 
 function ClinicProfileTab() {
+  const toast = useToast();
   return (
     <section className="card-shell p-6">
-      <h3 className="text-2xl font-bold text-slate-900">Clinic Profile</h3>
-      <p className="mt-1 text-sm text-slate-500">Manage core clinic details and billing defaults.</p>
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Clinic Profile</h3>
+      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and billing defaults.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600">Clinic Name</label>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Name</label>
           <input
             defaultValue="AutoVet Downtown Clinic"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600">Primary Email</label>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Primary Email</label>
           <input
             defaultValue="support@autovetclinic.com"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600">Phone Number</label>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
           <input
             defaultValue="(415) 555-0123"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600">Address</label>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Address</label>
           <input
             defaultValue="1234 Veterinary Lane, San Francisco, CA 94103"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
-      <div className="mt-8 border-t border-slate-200 pt-6">
-        <h4 className="text-lg font-bold text-slate-900">Billing Settings</h4>
+      <div className="mt-8 border-t border-slate-200 pt-6 dark:border-dark-border">
+        <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Billing Settings</h4>
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-600">Default Tax Rate (%)</label>
-            <input defaultValue="8.0" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700" />
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Default Tax Rate (%)</label>
+            <input defaultValue="8.0" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none" />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-600">Currency</label>
-            <input defaultValue="USD ($)" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700" />
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Currency</label>
+            <input defaultValue="USD ($)" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none" />
           </div>
         </div>
       </div>
 
       <button
-        onClick={() => alert("Clinic profile changes saved securely.")}
+        onClick={() => toast.success("Clinic profile changes saved securely.")}
         className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
       >
         <FiSave className="h-4 w-4" />
@@ -100,14 +102,15 @@ function ClinicProfileTab() {
 }
 
 function UserManagementTab() {
+  const toast = useToast();
   return (
     <section className="card-shell p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-2xl font-bold text-slate-900">User Management</h3>
-          <p className="mt-1 text-sm text-slate-500">Role-based access for clinic staff.</p>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">User Management</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Role-based access for clinic staff.</p>
         </div>
-        <button onClick={() => alert("User creation form opened.")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+        <button onClick={() => toast.info("User creation form opened.")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
           <FiUserPlus className="h-4 w-4" />
           Add New User
         </button>
@@ -115,7 +118,7 @@ function UserManagementTab() {
 
       <div className="mt-5 overflow-x-auto">
         <table className="w-full min-w-[680px]">
-          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Role</th>
@@ -125,16 +128,16 @@ function UserManagementTab() {
           </thead>
           <tbody>
             {staffMembers.map((member) => (
-              <tr key={member.id} className="border-b border-slate-200/80">
-                <td className="px-4 py-4 text-sm font-medium text-slate-900">{member.name}</td>
-                <td className="px-4 py-4 text-sm text-slate-700">{member.role}</td>
+              <tr key={member.id} className="border-b border-slate-200/80 dark:border-dark-border">
+                <td className="px-4 py-4 text-sm font-medium text-slate-900 dark:text-zinc-50">{member.name}</td>
+                <td className="px-4 py-4 text-sm text-slate-700 dark:text-zinc-300">{member.role}</td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
                       "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
                       member.status === "Active"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-slate-100 text-slate-600"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "border-slate-200 bg-slate-100 text-slate-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400"
                     )}
                   >
                     {member.status}
@@ -142,8 +145,8 @@ function UserManagementTab() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => alert(`Edit details for ${member.name}`)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600">Edit</button>
-                    <button onClick={() => alert(`Requested deletion for ${member.name}`)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600">
+                    <button onClick={() => toast.info(`Edit details for ${member.name}`)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface">Edit</button>
+                    <button onClick={() => toast.warning(`Requested deletion for ${member.name}`)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30">
                       <FiTrash2 className="h-3.5 w-3.5" />
                       Delete
                     </button>
@@ -159,38 +162,39 @@ function UserManagementTab() {
 }
 
 function SystemPreferencesTab() {
+  const toast = useToast();
   const [aiForecasting, setAiForecasting] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [cloudSync, setCloudSync] = useState(false);
 
   return (
     <section className="card-shell p-6">
-      <h3 className="text-2xl font-bold text-slate-900">System &amp; AI Preferences</h3>
-      <p className="mt-1 text-sm text-slate-500">Adjust automation and notification behavior.</p>
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">System &amp; AI Preferences</h3>
+      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Adjust automation and notification behavior.</p>
 
       <div className="mt-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Enable AI Inventory Forecasting</p>
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
+          <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Enable AI Inventory Forecasting</p>
           <Toggle checked={aiForecasting} onChange={() => setAiForecasting((value) => !value)} />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Low Stock Email Alerts</p>
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
+          <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Low Stock Email Alerts</p>
           <Toggle checked={lowStockAlerts} onChange={() => setLowStockAlerts((value) => !value)} />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
           <div>
-            <p className="text-sm font-semibold text-slate-800">Auto-sync with Cloud Server</p>
-            <p className="mt-0.5 text-xs text-slate-500">Syncs offline local data when internet is available.</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Auto-sync with Cloud Server</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Syncs offline local data when internet is available.</p>
           </div>
           <Toggle checked={cloudSync} onChange={() => setCloudSync((value) => !value)} />
         </div>
       </div>
 
       <button
-        onClick={() => alert("Manual database backup initiated...")}
-        className="mt-7 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400"
+        onClick={() => toast.info("Manual database backup initiated...")}
+        className="mt-7 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface"
       >
         Perform Manual Backup
       </button>
@@ -214,7 +218,7 @@ function Settings() {
                 onClick={() => setActiveTab(tab.id)}
                 className={clsx(
                   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
-                  active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-100"
+                  active ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "text-slate-600 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
                 )}
               >
                 <Icon className="h-4 w-4" />

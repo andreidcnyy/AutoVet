@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { FiX, FiCheckCircle } from "react-icons/fi";
+import { useToast } from "../../context/ToastContext";
 
 const CATEGORY_OPTIONS = ["Vaccines", "Antibiotics", "Supplies", "Diagnostics"];
 const STATUS_OPTIONS = ["In Stock", "Low Stock", "Expiring"];
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
+    const toast = useToast();
     const [formData, setFormData] = useState({
         item_name: "",
         sub_details: "",
@@ -48,6 +50,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
 
             const savedItem = await response.json();
             onSave(savedItem);
+            toast.success("Inventory item added successfully!");
 
             // Reset form after successful save
             setFormData({
@@ -60,7 +63,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             });
             onClose();
         } catch (err) {
-            setErrorData(err.message);
+            toast.error(err.message || "An error occurred while saving.");
         } finally {
             setIsSubmitting(false);
         }
@@ -80,13 +83,6 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6">
-                    {errorData && (
-                        <div className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                            <p className="font-semibold">Submission Error</p>
-                            <p>{errorData}</p>
-                        </div>
-                    )}
-
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div className="md:col-span-2">
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Item Name *</label>

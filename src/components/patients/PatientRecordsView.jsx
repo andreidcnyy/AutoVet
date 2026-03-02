@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { useToast } from "../../context/ToastContext";
 import {
   FiCalendar,
   FiFilter,
@@ -40,6 +41,7 @@ function StatusBadge({ value }) {
 }
 
 function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOpenAddPatient, onDeletePatient }) {
+  const toast = useToast();
   const [activeFilter, setActiveFilter] = useState("All Species");
   const [searchValue, setSearchValue] = useState("");
 
@@ -70,7 +72,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => alert("Importing patient records is not configured.")}
+            onClick={() => toast.info("Importing patient records is not configured.")}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
           >
             <FiUploadCloud className="h-4 w-4" />
@@ -184,8 +186,8 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
               <span className="font-semibold text-slate-700 dark:text-zinc-200">{patients.length}</span> patients
             </p>
             <div className="flex gap-2">
-              <button onClick={() => alert("End of list.")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface">Previous</button>
-              <button onClick={() => alert("End of list.")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface">Next</button>
+              <button onClick={() => toast.info("End of list.")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface">Previous</button>
+              <button onClick={() => toast.info("End of list.")} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface">Next</button>
             </div>
           </div>
         </section>
@@ -215,7 +217,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
               </div>
 
               <button
-                onClick={() => alert(`Appointment booking initiated for ${selectedPatient.name}.`)}
+                onClick={() => toast.success(`Appointment booking initiated for ${selectedPatient.name}.`)}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 <FiCalendar className="h-4 w-4" />
