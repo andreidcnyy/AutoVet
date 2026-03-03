@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   FiCalendar,
   FiChevronDown,
@@ -43,27 +43,192 @@ const currency = (value) => `$${value.toFixed(2)}`;
 
 function BillingInvoiceView() {
   const toast = useToast();
-  const [items, setItems] = useState(lineItems);
-  const [taxRateVal, setTaxRateVal] = useState(taxRate);
-  const [discountVal, setDiscountVal] = useState(discount);
+  const [items, setItems] = useState([]);
+  const [taxRateVal, setTaxRateVal] = useState(0);
+  const [discountVal, setDiscountVal] = useState(0);
+  const [discountType, setDiscountType] = useState("percentage");
+
+  const [patients, setPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [patientDetails, setPatientDetails] = useState(null);
+  const [clinicSettings, setClinicSettings] = useState(null);
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("Draft");
+
+  useEffect(() => {
+    // Fetch patients and settings on mount
+    Promise.all([
+      fetch("/api/patients").then(res => res.json()),
+      fetch("/api/settings").then(res => res.json())
+    ])
+      .then(([patientsData, settingsData]) => {
+        setPatients(patientsData);
+        setClinicSettings(settingsData);
+        setTaxRateVal(parseFloat(settingsData.tax_rate) || 0);
+        setNotes(settingsData.invoice_notes_template || "");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load initial data.");
+      });
+  }, []);
+
+  const handlePatientSelect = (e) => {
+    const pId = e.target.value;
+    setSelectedPatientId(pId);
+    if (!pId) {
+      setPatientDetails(null);
+      return;
+    }
+    const patientData = patients.find(p => p.id.toString() === pId.toString());
+    setPatientDetails(patientData);
+
+    // Auto replace placeholders in the notes if clinic template is present
+    if (clinicSettings && clinicSettings.invoice_notes_template) {
+      let template = clinicSettings.invoice_notes_template;
+      template = template.replace(/{clinic_name}/g, clinicSettings.clinic_name || "");
+      template = template.replace(/{pet_name}/g, patientData.name || "");
+      template = template.replace(/{owner_name}/g, patientData.owner_name || "");
+      setNotes(template);
+    }
+  };
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
-  const discountAmount = useMemo(() => subtotal * (discountVal / 100), [subtotal, discountVal]);
+
+  // Real-time discount calculations safely capping out at subtotal
+  const discountAmount = useMemo(() => {
+    let amt = 0;
+    if (discountType === "percentage") {
+      amt = subtotal * ((discountVal || 0) / 100);
+    } else {
+      amt = discountVal || 0;
+    }
+    return amt > subtotal ? subtotal : amt;
+  }, [subtotal, discountVal, discountType]);
+
   const taxable = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
-  const taxAmount = useMemo(() => taxable * (taxRateVal / 100), [taxable, taxRateVal]);
+  const taxAmount = useMemo(() => taxable * ((taxRateVal || 0) / 100), [taxable, taxRateVal]);
   const totalDue = useMemo(() => taxable + taxAmount, [taxable, taxAmount]);
 
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const [serviceInput, setServiceInput] = useState("");
+  const [qtyInput, setQtyInput] = useState(1);
+  const [priceInput, setPriceInput] = useState(50);
+
   const handleQuickAdd = (service) => {
+    const price = service.includes("Consultation") ? 60 : service.includes("Vax") ? 45 : 30;
     const newItem = {
       id: `li-${Date.now()}`,
       name: service.replace("+ ", ""),
       notes: "Quick Add Service",
       qty: 1,
-      unitPrice: 50,
-      amount: 50,
+      unitPrice: price,
+      amount: price,
       indicator: "bg-blue-50 dark:bg-blue-900/200",
     };
     setItems((prev) => [...prev, newItem]);
+  };
+
+  const manuallyAddItem = () => {
+    if (!serviceInput) return;
+    const price = Number(priceInput) || 0;
+    const qty = Number(qtyInput) || 1;
+    const newItem = {
+      id: `li-${Date.now()}`,
+      name: serviceInput,
+      notes: "Manual Entry",
+      qty: qty,
+      unitPrice: price,
+      amount: price * qty,
+      indicator: "bg-slate-200 dark:bg-zinc-700",
+    };
+    setItems((prev) => [...prev, newItem]);
+    setServiceInput("");
+    setQtyInput(1);
+    setPriceInput(50);
+  };
+
+  const removeItem = (id) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const resetForm = () => {
+    setItems([]);
+    setDiscountVal(0);
+    setTaxRateVal(clinicSettings ? parseFloat(clinicSettings.tax_rate) || 0 : 0);
+    setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
+    setSelectedPatientId("");
+    setPatientDetails(null);
+    setStatus("Draft");
+    setAmountPaid(0);
+    setPaymentMethod("");
+  };
+
+  const submitInvoice = async (finalStatus) => {
+    if (items.length === 0) {
+      toast.error("Cannot save an invoice without items.");
+      return;
+    }
+    if (!selectedPatientId) {
+      toast.error("Please select a patient.");
+      return;
+    }
+
+    // Determine status logic based on amount paid vs total
+    let actualStatus = finalStatus;
+    if (finalStatus === "Finalized" && amountPaid > 0) {
+      if (amountPaid >= totalDue) {
+        actualStatus = "Paid";
+      } else {
+        actualStatus = "Partially Paid";
+      }
+    }
+
+    const payload = {
+      patient_id: selectedPatientId,
+      status: actualStatus,
+      subtotal: subtotal,
+      discount_type: discountType,
+      discount_value: discountVal,
+      tax_rate: taxRateVal,
+      total: totalDue,
+      amount_paid: amountPaid,
+      payment_method: paymentMethod,
+      notes_to_client: notes,
+      items: items.map(item => ({
+        name: item.name,
+        notes: item.notes,
+        qty: item.qty,
+        unit_price: item.unitPrice,
+        amount: item.amount
+      }))
+    };
+
+    try {
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to save invoice");
+      }
+
+      toast.success(`Invoice ${finalStatus === "Draft" ? "saved as draft" : "finalized"} successfully.`);
+
+      if (finalStatus !== "Draft") {
+        setStatus(actualStatus);
+      } else {
+        resetForm();
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to save invoice");
+      console.error(err);
+    }
   };
 
   return (
@@ -80,38 +245,36 @@ function BillingInvoiceView() {
             </div>
           </div>
 
-          <div className="flex-1 space-y-6 overflow-y-auto p-5">
+          <div className="flex-1 min-h-0 space-y-6 overflow-y-auto p-5">
             <section>
               <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
               <div className="space-y-3">
-                <label className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-slate-500 dark:text-zinc-400">
-                  <FiSearch className="h-4 w-4" />
-                  <input
-                    type="text"
-                    defaultValue="Rover (Owner: John Doe)"
-                    className="w-full bg-transparent text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
-                  />
-                </label>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      defaultValue="Dr. Sarah Jenkins"
-                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 pr-8 text-sm text-slate-700 dark:text-zinc-300"
-                    />
-                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="text"
-                      defaultValue="10/24/2026"
-                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 pr-8 text-sm text-slate-700 dark:text-zinc-300"
-                    />
-                    <FiCalendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  </div>
+                <div className="relative">
+                  <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                  <select
+                    value={selectedPatientId}
+                    onChange={handlePatientSelect}
+                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                    disabled={status === "Finalized"}
+                  >
+                    <option value="">Select a patient...</option>
+                    {patients.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (Owner: {p.owner_name})
+                      </option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                 </div>
+
+                {patientDetails && (
+                  <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
+                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
+                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
+                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {patientDetails.owner_address || "N/A"}</p>
+                    <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -130,24 +293,41 @@ function BillingInvoiceView() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-[1fr_74px] gap-2">
+              <div className="grid grid-cols-[1fr_54px_80px] gap-2">
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Add service or medication..."
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 pr-8 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500"
+                    placeholder="Add service..."
+                    value={serviceInput}
+                    onChange={(e) => setServiceInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
+                    disabled={status === "Finalized"}
+                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
                   />
-                  <FiPlusCircle className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                 </div>
                 <input
-                  type="text"
-                  defaultValue="1"
-                  className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-center text-sm text-slate-700 dark:text-zinc-300"
+                  type="number"
+                  min="1"
+                  value={qtyInput}
+                  onChange={(e) => setQtyInput(e.target.value)}
+                  disabled={status === "Finalized"}
+                  className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                 />
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    disabled={status === "Finalized"}
+                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                  />
+                </div>
               </div>
 
-              <div className="mt-3 space-y-2">
-                {items.map((item) => (
+              <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                {items.length > 0 ? items.map((item) => (
                   <article key={item.id} className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -166,7 +346,9 @@ function BillingInvoiceView() {
                       </span>
                     ) : null}
                   </article>
-                ))}
+                )) : (
+                  <p className="pt-4 text-center text-sm text-slate-400">No items added yet.</p>
+                )}
               </div>
             </section>
 
@@ -174,12 +356,30 @@ function BillingInvoiceView() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
-                  <input
-                    type="text"
-                    value={discountVal}
-                    onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={discountType}
+                      onChange={(e) => {
+                        setDiscountType(e.target.value);
+                        setDiscountVal(0);
+                      }}
+                      disabled={status === "Finalized"}
+                      className="h-11 w-1/3 rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    >
+                      <option value="percentage">%</option>
+                      <option value="fixed">$</option>
+                    </select>
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        value={discountVal}
+                        onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
+                        disabled={status === "Finalized"}
+                        className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
@@ -193,11 +393,14 @@ function BillingInvoiceView() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Notes (Internal)</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
                 <textarea
-                  rows={3}
-                  placeholder="Add administrative notes here..."
-                  className="w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 py-2.5 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500"
+                  rows={4}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={status === "Finalized"}
+                  placeholder="Visible on the invoice..."
+                  className="w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 py-2.5 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
                 />
               </div>
             </section>
@@ -205,14 +408,16 @@ function BillingInvoiceView() {
 
           <div className="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-dark-border p-4">
             <button
-              onClick={() => setItems(lineItems)}
-              className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300"
+              onClick={resetForm}
+              disabled={status !== "Draft"}
+              className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 disabled:opacity-50"
             >
               Reset
             </button>
             <button
-              onClick={() => toast.success("Invoice draft saved.")}
-              className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700"
+              onClick={() => submitInvoice("Draft")}
+              disabled={status !== "Draft"}
+              className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-50"
             >
               Save Draft
             </button>
@@ -226,7 +431,7 @@ function BillingInvoiceView() {
                 <FiEye className="h-4 w-4" />
                 Preview Mode
               </span>
-              <span>Auto-saved 2m ago</span>
+              <span>Invoice Status: <b className="text-slate-700 dark:text-slate-300">{status}</b></span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -242,8 +447,9 @@ function BillingInvoiceView() {
                 <FiDownload className="h-4 w-4" />
               </button>
               <button
-                onClick={() => toast.success("Invoice scheduled for sending.")}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                onClick={() => submitInvoice("Finalized")}
+                disabled={status !== "Draft"}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 <FiSend className="h-4 w-4" />
                 Finalize &amp; Send
@@ -251,7 +457,7 @@ function BillingInvoiceView() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">
             <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-12 shadow-md">
               <header className="flex flex-wrap items-start justify-between gap-6">
                 <div>
@@ -315,7 +521,7 @@ function BillingInvoiceView() {
                   <p className="text-right">Amount</p>
                 </div>
 
-                <div className="mt-4 space-y-5">
+                <div className="mt-4 space-y-5 max-h-[400px] overflow-y-auto pr-3 print:max-h-none print:overflow-visible">
                   {items.map((item) => (
                     <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_80px_130px_120px] items-start gap-2">
                       <div>
@@ -324,7 +530,14 @@ function BillingInvoiceView() {
                       </div>
                       <p className="text-right text-xl text-slate-700 dark:text-zinc-300">{item.qty}</p>
                       <p className="text-right text-xl text-slate-700 dark:text-zinc-300">{currency(item.unitPrice)}</p>
-                      <p className="text-right text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                      <div className="flex items-center justify-end gap-3">
+                        <p className="text-right text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                        {status === "Draft" && (
+                          <button onClick={() => removeItem(item.id)} className="text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300">
+                            <span className="text-xs font-bold leading-none">X</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -339,19 +552,53 @@ function BillingInvoiceView() {
                   <span>Tax ({taxRateVal}%)</span>
                   <span>{currency(taxAmount)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex items-center justify-between text-lg text-emerald-600 dark:text-emerald-400">
+                    <span>Discount</span>
+                    <span>-{currency(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="mt-2 flex items-center justify-between border-t border-slate-200 dark:border-dark-border pt-3">
                   <span className="text-3xl font-bold text-slate-900 dark:text-zinc-50">Total Due</span>
                   <span className="text-5xl font-bold text-blue-600">{currency(totalDue)}</span>
+                </div>
+
+                <div className="mt-6 border-t border-slate-200 dark:border-dark-border pt-4">
+                  <p className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">Record Payment</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      disabled={status !== "Draft"}
+                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    >
+                      <option value="">Select Method...</option>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Cash">Cash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={amountPaid}
+                        onChange={(e) => setAmountPaid(Number(e.target.value))}
+                        disabled={status !== "Draft"}
+                        placeholder="Amount Paid"
+                        className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
                 </div>
               </section>
 
               <footer className="mt-16 border-t border-slate-200 dark:border-dark-border pt-8">
                 <p className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Notes to Client</p>
-                <p className="mt-2 text-lg leading-8 text-slate-600 dark:text-zinc-300">
-                  Thank you for trusting VetBot with Rover's care. Please continue monthly prevention as prescribed. Next
-                  wellness exam is recommended in October 2027.
+                <p className="mt-2 text-lg leading-8 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
+                  {notes || "No additional notes provided."}
                 </p>
-                <p className="mt-10 text-center text-sm text-slate-400 dark:text-zinc-500">Powered by VetBot Systems</p>
+                <p className="mt-10 text-center text-sm text-slate-400 dark:text-zinc-500">Powered by AutoVet Systems</p>
               </footer>
             </article>
           </div>

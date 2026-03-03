@@ -11,6 +11,9 @@ import { LuSparkles } from "react-icons/lu";
 import { format, addMonths, subMonths } from "date-fns";
 import { generateCalendarGrid } from "../../utils/calendarUtils";
 import { useToast } from "../../context/ToastContext";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const viewModes = ["Month", "Week", "Day"];
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -44,16 +47,33 @@ const webRequests = [
   },
 ];
 
+const quickAddSchema = z.object({
+  title: z.string().min(1, "Title is required").max(255),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().min(1, "Time is required").regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
+  tone: z.string().min(1, "Tone is required").max(50),
+});
+
 function AppointmentsView() {
   const toast = useToast();
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
 
-  const [newTitle, setNewTitle] = useState("");
-  const [newDate, setNewDate] = useState("");
-  const [newTime, setNewTime] = useState("");
-  const [newTone, setNewTone] = useState("green");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: zodResolver(quickAddSchema),
+    defaultValues: {
+      title: "",
+      date: "",
+      time: "",
+      tone: "green"
+    }
+  });
 
   const fetchAppointments = () => {
     fetch("/api/appointments")
@@ -66,28 +86,35 @@ function AppointmentsView() {
     fetchAppointments();
   }, []);
 
-  const handleQuickAdd = () => {
-    if (!newTitle || !newDate || !newTime) {
-      return toast.warning("Title, Date, and Time are required!");
+  const onSubmit = async (data) => {
+    try {
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        if (err.errors) {
+          throw new Error(Object.values(err.errors)[0][0]);
+        }
+        throw new Error(err.message || "Failed to schedule appointment.");
+      }
+
+      toast.success("Appointment Scheduled!");
+      reset();
+      fetchAppointments();
+    } catch (err) {
+      toast.error(err.message || "Error scheduling: " + err.message);
     }
-    fetch("/api/appointments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle, date: newDate, time: newTime, tone: newTone }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        toast.success("Appointment Scheduled!");
-        setNewTitle(""); setNewDate(""); setNewTime("");
-        fetchAppointments();
-      })
-      .catch((err) => toast.error("Error scheduling: " + err.message));
   };
 
   const calendarDays = generateCalendarGrid(currentDate, appointments);
 
   // shared input class for Quick Add form
-  const qInput = "h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
+  const qInputBase = "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
+  const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
 
   return (
     <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[2.35fr_1fr]">
@@ -178,33 +205,35 @@ function AppointmentsView() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">QUICK ADD</h3>
             <button onClick={() => {
-              setNewTitle(""); setNewDate(""); setNewTime("");
+              reset();
               toast.info("Form cleared.");
             }} className="text-sm font-semibold text-blue-600 dark:text-blue-400">
               Clear
             </button>
           </div>
 
-          <div className="space-y-3">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Event Title</label>
               <input
                 type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
+                {...register("title")}
                 placeholder="e.g. Bella - Vaccination"
-                className={qInput}
+                className={getQInputClass(errors.title)}
               />
+              {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Date</label>
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={qInput} />
+                <input type="date" {...register("date")} className={getQInputClass(errors.date)} />
+                {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date.message}</p>}
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Time</label>
-                <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className={qInput} />
+                <input type="time" {...register("time")} className={getQInputClass(errors.time)} />
+                {errors.time && <p className="mt-1 text-xs text-red-500">{errors.time.message}</p>}
               </div>
             </div>
 
@@ -212,9 +241,8 @@ function AppointmentsView() {
               <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Event Color Tag</label>
               <div className="relative">
                 <select
-                  value={newTone}
-                  onChange={(e) => setNewTone(e.target.value)}
-                  className={clsx(qInput, "appearance-none pr-9")}
+                  {...register("tone")}
+                  className={clsx(getQInputClass(errors.tone), "appearance-none pr-9")}
                 >
                   <option value="green">Green (General)</option>
                   <option value="blue">Blue (Wellness)</option>
@@ -225,16 +253,18 @@ function AppointmentsView() {
                 </select>
                 <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               </div>
+              {errors.tone && <p className="mt-1 text-xs text-red-500">{errors.tone.message}</p>}
             </div>
 
             <button
-              onClick={handleQuickAdd}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               <FiPlusCircle className="h-4 w-4" />
-              Schedule
+              {isSubmitting ? "Scheduling..." : "Schedule"}
             </button>
-          </div>
+          </form>
         </section>
 
         {/* Web Requests */}

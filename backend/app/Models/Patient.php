@@ -11,4 +11,9 @@ class Patient extends Model
         'color', 'weight', 'status', 'owner_name', 'owner_phone',
         'owner_email', 'allergies', 'medication', 'notes', 'photo',
     ];
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }
