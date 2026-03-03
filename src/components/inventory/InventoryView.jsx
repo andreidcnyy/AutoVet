@@ -58,6 +58,7 @@ function InventoryView() {
   const [viewedProduct, setViewedProduct] = useState(null);
   const [inventoryRows, setInventoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   useEffect(() => {
     const fetchInventory = async () => {
@@ -120,12 +121,23 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        <button onClick={() => {
-          setShowAiAside(true);
-          toast.info("Running AI Forecast simulation...");
-        }} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-          <LuSparkles className="h-4 w-4" />
-          Run AI Forecast
+        <button
+          onClick={() => {
+            setShowAiAside(false);
+            setIsSimulating(true);
+            setTimeout(() => {
+              setIsSimulating(false);
+              setShowAiAside(true);
+            }, 2500);
+          }}
+          disabled={isSimulating}
+          className={clsx(
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition",
+            isSimulating ? "bg-blue-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700"
+          )}
+        >
+          <LuSparkles className={clsx("h-4 w-4", isSimulating && "animate-spin")} />
+          {isSimulating ? "Analyzing..." : "Run AI Forecast"}
         </button>
       </div>
 
@@ -280,61 +292,6 @@ function InventoryView() {
 
         <div className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">Showing {filteredRows.length} entries</div>
 
-        {showAiAside && (
-          <aside className="pointer-events-none static p-4 lg:absolute lg:bottom-4 lg:right-4 lg:w-[430px]">
-            <div className="pointer-events-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft">
-              <div className="flex items-center justify-between bg-blue-600 px-5 py-3 text-white">
-                <p className="text-xl font-bold">AI Analysis: Rabies Vaccine</p>
-                <button onClick={() => setShowAiAside(false)} className="rounded-md p-1 hover:bg-white/15">
-                  <FiX className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4 p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Recommended Stock Level</p>
-                    <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-zinc-50">150 Units</p>
-                  </div>
-                  <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">+12% vs last year</span>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
-                  <TrendMiniChart />
-                  <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
-                    <span>Jun</span>
-                    <span>Jul</span>
-                    <span>Aug</span>
-                    <span>Sep</span>
-                    <span>Oct</span>
-                    <span>Nov</span>
-                    <span className="text-blue-600 dark:text-blue-400">Dec (Est)</span>
-                  </div>
-                </div>
-
-                <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
-                  Based on the last 6 months of usage and expected seasonal demand, current stock is projected to run below
-                  safety level by December 15.
-                </p>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => toast.info("Item marked for manual review.")}
-                    className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                  >
-                    Mark for Review
-                  </button>
-                  <button
-                    onClick={() => toast.success("Target stock updated in system based on AI forecast.")}
-                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-                  >
-                    Update Target Stock
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
-        )}
       </section>
 
       <AddInventoryModal
@@ -348,6 +305,80 @@ function InventoryView() {
         product={viewedProduct}
         onDeleteRequest={handleDeleteProduct}
       />
+
+      {showAiAside && (
+        <aside className="fixed bottom-6 right-6 z-[9500] w-[430px] animate-in slide-in-from-bottom-10 fade-in duration-300">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="flex items-center justify-between bg-blue-600 px-5 py-3 text-white">
+              <p className="text-xl font-bold flex items-center gap-2">
+                <LuSparkles className="h-5 w-5" />
+                AI Analysis: Rabies Vaccine
+              </p>
+              <button onClick={() => setShowAiAside(false)} className="rounded-md p-1 hover:bg-white/15 transition-colors">
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Recommended Stock Level</p>
+                  <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-zinc-50">150 Units</p>
+                </div>
+                <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">+12% vs last year</span>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
+                <TrendMiniChart />
+                <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                  <span>Jun</span>
+                  <span>Jul</span>
+                  <span>Aug</span>
+                  <span>Sep</span>
+                  <span>Oct</span>
+                  <span>Nov</span>
+                  <span className="text-blue-600 dark:text-blue-400">Dec (Est)</span>
+                </div>
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                Based on the last 6 months of usage and expected seasonal demand, current stock is projected to run below
+                safety level by December 15.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  onClick={() => toast.info("Item marked for manual review.")}
+                  className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                >
+                  Mark for Review
+                </button>
+                <button
+                  onClick={() => {
+                    toast.success("Target stock updated in system based on AI forecast.");
+                    setShowAiAside(false);
+                  }}
+                  className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-md shadow-blue-500/20"
+                >
+                  Update Target Stock
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {isSimulating && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex w-[320px] transform items-center gap-4 rounded-xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-1 ring-slate-200 dark:bg-dark-card dark:ring-dark-border animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+            <LuSparkles className="h-5 w-5 animate-pulse" />
+          </div>
+          <div>
+            <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-zinc-50">Running AI Forecast simulation...</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Analyzing historical patterns</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

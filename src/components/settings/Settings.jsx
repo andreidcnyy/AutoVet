@@ -44,11 +44,11 @@ function Toggle({ checked, onChange }) {
 const clinicSchema = z.object({
   clinic_name: z.string().min(1, "Clinic Name is required").max(255),
   primary_email: z.string().min(1, "Primary Email is required").email("Invalid email address").max(255),
-  phone_number: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).optional().or(z.literal("")),
-  address: z.string().max(500).optional(),
-  tax_rate: z.coerce.number().min(0, "Tax rate cannot be negative").max(100, "Tax rate cannot exceed 100").optional(),
-  currency: z.string().max(50).optional(),
-  invoice_notes_template: z.string().optional()
+  phone_number: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).nullable().optional().or(z.literal("")),
+  address: z.string().max(500).nullable().optional(),
+  tax_rate: z.coerce.number().min(0, "Tax rate cannot exceed negative").max(100, "Tax rate cannot exceed 100").nullable().optional(),
+  currency: z.string().max(50).nullable().optional(),
+  invoice_notes_template: z.string().nullable().optional()
 });
 
 function ClinicProfileTab() {
@@ -91,10 +91,17 @@ function ClinicProfileTab() {
     try {
       const response = await fetch("/api/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ settings: data })
       });
-      if (!response.ok) throw new Error("Failed to save settings");
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to save settings");
+      }
 
       const result = await response.json();
       reset(result.settings);

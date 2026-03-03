@@ -41,6 +41,10 @@ const patientSchema = z.object({
   owner_name: z.string().min(1, "Owner name is required").max(255),
   owner_phone: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).optional().or(z.literal("")),
   owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
+  owner_address: z.string().min(1, "Street address is required").max(255),
+  owner_city: z.string().min(1, "City is required").max(255),
+  owner_province: z.string().min(1, "Province is required").max(255),
+  owner_zip: z.string().min(1, "Zip Code is required").max(20),
   allergies: z.string().max(255).optional(),
   medication: z.string().max(255).optional(),
   notes: z.string().optional(),
@@ -64,6 +68,7 @@ function AddPatientFormView({ onCancel, onSave }) {
       gender: "Male", color: "", weight: "",
       status: "Healthy",
       owner_name: "", owner_phone: "", owner_email: "",
+      owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
       allergies: "", medication: "", notes: "",
       photo: "",
     }
@@ -276,6 +281,28 @@ function AddPatientFormView({ onCancel, onSave }) {
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
                 <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
                 {errors.owner_email && <p className="mt-1 text-sm text-red-500">{errors.owner_email.message}</p>}
+              </div>
+              <div className="lg:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Street Address *</label>
+                <input {...register("owner_address")} className={getInputClass(errors.owner_address)} placeholder="123 Main St" />
+                {errors.owner_address && <p className="mt-1 text-sm text-red-500">{errors.owner_address.message}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">City *</label>
+                <input {...register("owner_city")} className={getInputClass(errors.owner_city)} placeholder="City" />
+                {errors.owner_city && <p className="mt-1 text-sm text-red-500">{errors.owner_city.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Province *</label>
+                  <input {...register("owner_province")} className={getInputClass(errors.owner_province)} placeholder="State/Province" />
+                  {errors.owner_province && <p className="mt-1 text-sm text-red-500">{errors.owner_province.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Zip Code *</label>
+                  <input {...register("owner_zip")} className={getInputClass(errors.owner_zip)} placeholder="Zip" />
+                  {errors.owner_zip && <p className="mt-1 text-sm text-red-500">{errors.owner_zip.message}</p>}
+                </div>
               </div>
             </div>
           </section>
