@@ -21,15 +21,15 @@ class PatientController extends Controller
             'date_of_birth' => 'nullable|date',
             'gender'      => 'nullable|string|max:50',
             'color'       => 'nullable|string|max:255',
-            'weight'      => 'nullable|string|max:50',
+            'weight'      => 'nullable|numeric|min:0',
             'status'      => 'nullable|string|max:50',
             'owner_name'  => 'required|string|max:255',
-            'owner_phone' => 'nullable|string|max:50',
+            'owner_phone' => 'nullable|string|regex:/^([0-9\s\-\+\(\)]*)$/|max:50',
             'owner_email' => 'nullable|email|max:255',
             'allergies'   => 'nullable|string|max:255',
             'medication'  => 'nullable|string|max:255',
             'notes'       => 'nullable|string',
-            'photo'       => 'nullable|string',
+            'photo'       => 'nullable|string|max:1000000',
         ]);
 
         $patient = Patient::create($validated);

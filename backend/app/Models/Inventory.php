@@ -12,6 +12,9 @@ class Inventory extends Model
         'category',
         'sku',
         'stock_level',
-        'status'
+        'status',
+        'price',
+        'supplier',
+        'expiration_date'
     ];
 }

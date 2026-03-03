@@ -15,12 +15,7 @@ import {
 } from "react-icons/fi";
 import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
-
-const summaryCards = [
-  { id: "total", label: "TOTAL ITEMS", value: "1,428", meta: "+4.6%", metaTone: "text-emerald-600", icon: FiBox },
-  { id: "low", label: "LOW STOCK", value: "31", meta: "Needs attention", metaTone: "text-amber-600", icon: FiAlertTriangle },
-  { id: "expiring", label: "EXPIRING SOON", value: "9", meta: "Within 21 days", metaTone: "text-rose-600", icon: FiBell },
-];
+import ViewInventoryModal from "./ViewInventoryModal";
 
 const categoryIcons = {
   Vaccines: FiPackage,
@@ -58,8 +53,9 @@ function TrendMiniChart() {
 function InventoryView() {
   const toast = useToast();
   const [activeFilter, setActiveFilter] = useState("All Items");
-  const [showAiAside, setShowAiAside] = useState(true);
+  const [showAiAside, setShowAiAside] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewedProduct, setViewedProduct] = useState(null);
   const [inventoryRows, setInventoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -87,10 +83,35 @@ function InventoryView() {
     toast.success(`Successfully added ${newItem.item_name} to the database!`);
   };
 
+  const handleDeleteProduct = async (product) => {
+    if (!window.confirm(`Are you sure you want to delete ${product.item_name}?`)) return;
+
+    try {
+      const response = await fetch(`/api/inventory/${product.id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete product.");
+
+      setInventoryRows((prev) => prev.filter((item) => item.id !== product.id));
+      setViewedProduct(null);
+      toast.success(`${product.item_name} deleted successfully.`);
+    } catch (err) {
+      toast.error(err.message || "An error occurred while deleting.");
+    }
+  };
+
   const filteredRows = inventoryRows.filter((row) => {
     if (activeFilter === "All Items") return true;
     return row.status === activeFilter;
   });
+
+  const totalItems = inventoryRows.length;
+  const lowStock = inventoryRows.filter((r) => r.status === "Low Stock").length;
+  const expiring = inventoryRows.filter((r) => r.status === "Expiring").length;
+
+  const dynamicSummaryCards = [
+    { id: "total", label: "TOTAL ITEMS", value: totalItems.toLocaleString(), meta: "Based on DB", metaTone: "text-emerald-600", icon: FiBox },
+    { id: "low", label: "LOW STOCK", value: lowStock.toLocaleString(), meta: "Needs attention", metaTone: "text-amber-600", icon: FiAlertTriangle },
+    { id: "expiring", label: "EXPIRING SOON", value: expiring.toLocaleString(), meta: "Check dates", metaTone: "text-rose-600", icon: FiBell },
+  ];
 
   return (
     <div className="space-y-5">
@@ -99,14 +120,17 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        <button onClick={() => toast.info("Running AI Forecast simulation...")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+        <button onClick={() => {
+          setShowAiAside(true);
+          toast.info("Running AI Forecast simulation...");
+        }} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
           <LuSparkles className="h-4 w-4" />
           Run AI Forecast
         </button>
       </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        {summaryCards.map((card) => {
+        {dynamicSummaryCards.map((card) => {
           const Icon = card.icon;
           return (
             <article key={card.id} className="card-shell p-5">
@@ -238,7 +262,14 @@ function InventoryView() {
                         </p>
                         <p className="text-sm text-slate-500 dark:text-zinc-500">Awaiting historical data</p>
                       </td>
-                      <td className="px-5 py-4 text-base font-semibold text-slate-500 dark:text-zinc-400">View Data</td>
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => setViewedProduct(row)}
+                          className="text-base font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none"
+                        >
+                          View Data
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -247,7 +278,7 @@ function InventoryView() {
           </table>
         </div>
 
-        <div className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">Showing 1 to {filteredRows.length} of 1,428 entries</div>
+        <div className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">Showing {filteredRows.length} entries</div>
 
         {showAiAside && (
           <aside className="pointer-events-none static p-4 lg:absolute lg:bottom-4 lg:right-4 lg:w-[430px]">
@@ -310,6 +341,12 @@ function InventoryView() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleSaveNewItem}
+      />
+      <ViewInventoryModal
+        isOpen={!!viewedProduct}
+        onClose={() => setViewedProduct(null)}
+        product={viewedProduct}
+        onDeleteRequest={handleDeleteProduct}
       />
     </div>
   );

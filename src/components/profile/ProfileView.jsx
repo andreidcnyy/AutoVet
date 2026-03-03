@@ -1,18 +1,42 @@
 import { useState, useRef, useEffect } from "react";
 import { FiCamera, FiSave, FiUser } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import clsx from "clsx";
+
+const profileSchema = z.object({
+    name: z.string().min(1, "Name is required").max(255),
+    role: z.string().max(255).optional(),
+    email: z.string().min(1, "Email is required").email("Invalid email address").max(255),
+    avatar: z.string().optional()
+});
 
 function ProfileView() {
     const toast = useToast();
     const fileInputRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
-    const [user, setUser] = useState({
-        name: "",
-        role: "",
-        email: "",
-        avatar: ""
+
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        resolver: zodResolver(profileSchema),
+        defaultValues: {
+            name: "",
+            role: "",
+            email: "",
+            avatar: ""
+        }
     });
+
+    const avatarValue = watch("avatar");
 
     useEffect(() => {
         fetch("/api/profile")
@@ -22,7 +46,7 @@ function ProfileView() {
             })
             .then(data => {
                 if (data && !data.error) {
-                    setUser({
+                    reset({
                         name: data.name || "",
                         role: data.role || "",
                         email: data.email || "",
@@ -38,7 +62,7 @@ function ProfileView() {
                 setFetchError("Could not connect to the database or backend server. Please ensure MySQL is running.");
                 setIsLoading(false);
             });
-    }, []);
+    }, [reset]);
 
     const handleImageUpload = (event) => {
         const file = event.target.files?.[0];
@@ -47,23 +71,25 @@ function ProfileView() {
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result;
-            setUser((prev) => ({ ...prev, avatar: base64String }));
+            setValue("avatar", base64String, { shouldDirty: true });
         };
         reader.readAsDataURL(file);
     };
 
-    const handleSave = () => {
-        fetch("/api/profile", {
+    const onSubmit = (data) => {
+        return fetch("/api/profile", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(user)
+            body: JSON.stringify(data)
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
+            .then(async res => {
+                const response = await res.json();
+                if (res.ok && (response.status === "success" || response.message)) {
                     toast.success("Profile saved successfully to database!");
+                } else if (!res.ok && response.errors) {
+                    toast.error(Object.values(response.errors)[0][0]);
                 } else {
-                    toast.error("Error saving profile: " + JSON.stringify(data));
+                    toast.error(response.error || "Error saving profile");
                 }
             })
             .catch(err => toast.error("Network error saving profile: " + err.message));
@@ -90,20 +116,20 @@ function ProfileView() {
     return (
         <div className="mx-auto max-w-3xl space-y-6">
             <div>
-                <h2 className="text-4xl font-bold tracking-tight text-slate-900">My Profile</h2>
-                <p className="mt-1 text-base text-slate-500">Manage your personal clinic information and avatar.</p>
+                <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">My Profile</h2>
+                <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">Manage your personal clinic information and avatar.</p>
             </div>
 
             <section className="card-shell p-6">
-                <h3 className="mb-6 flex items-center gap-2 text-2xl font-bold text-slate-900">
+                <h3 className="mb-6 flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
                     <FiUser className="h-6 w-6 text-blue-600" />
                     Personal Details
                 </h3>
 
-                <div className="flex flex-col gap-8 md:flex-row md:items-start">
+                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8 md:flex-row md:items-start">
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group overflow-hidden rounded-full">
-                            <img src={user.avatar} alt={user.name} className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm" />
+                            <img src={avatarValue || ""} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-slate-100 dark:bg-dark-surface" />
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
@@ -125,46 +151,56 @@ function ProfileView() {
                     <div className="flex-1 space-y-4">
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-slate-600">Full Name</label>
+                                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Full Name *</label>
                                 <input
-                                    value={user.name}
-                                    onChange={(e) => setUser({ ...user, name: e.target.value })}
-                                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none"
+                                    {...register("name")}
+                                    className={clsx(
+                                        "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        errors.name ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500"
+                                    )}
                                     placeholder="e.g. Dr. Sarah Jenkins"
                                 />
+                                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
                             </div>
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-slate-600">Role</label>
+                                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Role</label>
                                 <input
-                                    value={user.role}
-                                    onChange={(e) => setUser({ ...user, role: e.target.value })}
-                                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none"
+                                    {...register("role")}
+                                    className={clsx(
+                                        "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        errors.role ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500"
+                                    )}
                                     placeholder="e.g. Chief Veterinarian"
                                 />
+                                {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>}
                             </div>
                             <div className="lg:col-span-2">
-                                <label className="mb-1 block text-sm font-semibold text-slate-600">Email Address</label>
+                                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address *</label>
                                 <input
-                                    value={user.email}
-                                    onChange={(e) => setUser({ ...user, email: e.target.value })}
+                                    {...register("email")}
                                     type="email"
-                                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none"
+                                    className={clsx(
+                                        "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        errors.email ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500"
+                                    )}
                                     placeholder="vet@example.com"
                                 />
+                                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
                             </div>
                         </div>
 
                         <div className="pt-4">
                             <button
-                                onClick={handleSave}
-                                className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                             >
                                 <FiSave className="h-4 w-4" />
-                                Save Profile
+                                {isSubmitting ? "Saving..." : "Save Profile"}
                             </button>
                         </div>
                     </div>
-                </div>
+                </form>
             </section>
         </div>
     );

@@ -1,38 +1,52 @@
 import { useState } from "react";
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import clsx from "clsx";
 
 const CATEGORY_OPTIONS = ["Vaccines", "Antibiotics", "Supplies", "Diagnostics"];
 const STATUS_OPTIONS = ["In Stock", "Low Stock", "Expiring"];
 
+const inventorySchema = z.object({
+    item_name: z.string().min(1, "Item name is required").max(255),
+    sub_details: z.string().max(255).optional(),
+    category: z.string().min(1, "Category is required").max(255),
+    sku: z.string().min(1, "SKU is required").max(255),
+    stock_level: z.coerce.number().min(0, "Stock must be 0 or more"),
+    status: z.string().min(1, "Status is required").max(255),
+    price: z.coerce.number().min(0, "Price must be 0 or more").optional().or(z.literal("")),
+    supplier: z.string().max(255).optional(),
+    expiration_date: z.string().optional().or(z.literal(""))
+});
+
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
-    const [formData, setFormData] = useState({
-        item_name: "",
-        sub_details: "",
-        category: "Vaccines",
-        sku: "",
-        stock_level: 0,
-        status: "In Stock",
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        resolver: zodResolver(inventorySchema),
+        defaultValues: {
+            item_name: "",
+            sub_details: "",
+            category: "Vaccines",
+            sku: "",
+            stock_level: 0,
+            status: "In Stock",
+            price: "",
+            supplier: "",
+            expiration_date: "",
+        }
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errorData, setErrorData] = useState(null);
 
     if (!isOpen) return null;
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: name === "stock_level" ? Number(value) : value,
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setErrorData(null);
-
+    const onSubmit = async (data) => {
         try {
             const response = await fetch("/api/inventory", {
                 method: "POST",
@@ -40,11 +54,14 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                     "Content-Type": "application/json",
                     Accept: "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(data),
             });
 
             if (!response.ok) {
                 const err = await response.json();
+                if (err.errors) {
+                    throw new Error(Object.values(err.errors)[0][0]);
+                }
                 throw new Error(err.message || "Failed to save inventory item.");
             }
 
@@ -52,22 +69,15 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             onSave(savedItem);
             toast.success("Inventory item added successfully!");
 
-            // Reset form after successful save
-            setFormData({
-                item_name: "",
-                sub_details: "",
-                category: "Vaccines",
-                sku: "",
-                stock_level: 0,
-                status: "In Stock",
-            });
+            reset();
             onClose();
         } catch (err) {
             toast.error(err.message || "An error occurred while saving.");
-        } finally {
-            setIsSubmitting(false);
         }
     };
+
+    const inputBase = "w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-500";
+    const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500 focus:ring-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
@@ -82,40 +92,35 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="p-6">
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div className="md:col-span-2">
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Item Name *</label>
                             <input
-                                required
                                 type="text"
-                                name="item_name"
-                                value={formData.item_name}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-500"
+                                {...register("item_name")}
+                                className={getInputClass(errors.item_name)}
                                 placeholder="e.g. Parvovirus Vaccine"
                             />
+                            {errors.item_name && <p className="mt-1 text-sm text-red-500">{errors.item_name.message}</p>}
                         </div>
 
                         <div className="md:col-span-2">
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Sub Details</label>
                             <input
                                 type="text"
-                                name="sub_details"
-                                value={formData.sub_details}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-500"
+                                {...register("sub_details")}
+                                className={getInputClass(errors.sub_details)}
                                 placeholder="e.g. 10ml Vial"
                             />
+                            {errors.sub_details && <p className="mt-1 text-sm text-red-500">{errors.sub_details.message}</p>}
                         </div>
 
                         <div>
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Category *</label>
                             <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500"
+                                {...register("category")}
+                                className={getInputClass(errors.category)}
                             >
                                 {CATEGORY_OPTIONS.map((cat) => (
                                     <option key={cat} value={cat}>
@@ -123,41 +128,36 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                                     </option>
                                 ))}
                             </select>
+                            {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>}
                         </div>
 
                         <div>
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Unique SKU *</label>
                             <input
-                                required
                                 type="text"
-                                name="sku"
-                                value={formData.sku}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm uppercase text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500"
+                                {...register("sku")}
+                                className={clsx(getInputClass(errors.sku), "uppercase")}
                                 placeholder="e.g. VAC-PAR-01"
                             />
+                            {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku.message}</p>}
                         </div>
 
                         <div>
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Initial Stock Level *</label>
                             <input
-                                required
                                 type="number"
-                                name="stock_level"
                                 min="0"
-                                value={formData.stock_level}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500"
+                                {...register("stock_level")}
+                                className={getInputClass(errors.stock_level)}
                             />
+                            {errors.stock_level && <p className="mt-1 text-sm text-red-500">{errors.stock_level.message}</p>}
                         </div>
 
                         <div>
                             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Status Tracking *</label>
                             <select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleInputChange}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500"
+                                {...register("status")}
+                                className={getInputClass(errors.status)}
                             >
                                 {STATUS_OPTIONS.map((status) => (
                                     <option key={status} value={status}>
@@ -165,6 +165,41 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                                     </option>
                                 ))}
                             </select>
+                            {errors.status && <p className="mt-1 text-sm text-red-500">{errors.status.message}</p>}
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Price ($)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...register("price")}
+                                className={getInputClass(errors.price)}
+                                placeholder="0.00"
+                            />
+                            {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>}
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Supplier</label>
+                            <input
+                                type="text"
+                                {...register("supplier")}
+                                className={getInputClass(errors.supplier)}
+                                placeholder="e.g. Zoetis"
+                            />
+                            {errors.supplier && <p className="mt-1 text-sm text-red-500">{errors.supplier.message}</p>}
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Expiration Date</label>
+                            <input
+                                type="date"
+                                {...register("expiration_date")}
+                                className={getInputClass(errors.expiration_date)}
+                            />
+                            {errors.expiration_date && <p className="mt-1 text-sm text-red-500">{errors.expiration_date.message}</p>}
                         </div>
                     </div>
 
@@ -196,3 +231,4 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         </div>
     );
 }
+

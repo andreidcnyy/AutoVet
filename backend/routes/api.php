@@ -17,6 +17,7 @@ Route::put('/profile', [ProfileController::class, 'update']);
 
 Route::get('/inventory', [InventoryController::class, 'index']);
 Route::post('/inventory', [InventoryController::class, 'store']);
+Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy']);
 
 Route::get('/patients', [PatientController::class, 'index']);
 Route::post('/patients', [PatientController::class, 'store']);
