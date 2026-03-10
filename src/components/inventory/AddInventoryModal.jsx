@@ -23,13 +23,15 @@ const inventorySchema = z.object({
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
+    const [priceDisplay, setPriceDisplay] = useState("");
 
     const {
         register,
         handleSubmit,
         reset,
+        setValue, // <-- needed for interactive input
         formState: { errors, isSubmitting }
-    } = useForm({
+        } = useForm({
         resolver: zodResolver(inventorySchema),
         defaultValues: {
             item_name: "",
@@ -42,7 +44,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             supplier: "",
             expiration_date: "",
         }
-    });
+        });
 
     if (!isOpen) return null;
 
@@ -213,20 +215,33 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           {/* Price */}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
-              Price ($)
+                Amount ($)
             </label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("price")}
-              className={getInputClass(errors.price)}
-              placeholder="0.00"
+                type="text"
+                value={priceDisplay}
+                onChange={(e) => {
+                let raw = e.target.value.replace(/,/g, ""); // remove commas
+                // only digits and optional dot
+                if (/^\d*\.?\d*$/.test(raw)) {
+                    setPriceDisplay(
+                        raw
+                        ? (() => {
+                            const [intPart, decPart] = raw.split(".");
+                            return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (decPart !== undefined ? "." + decPart : "");
+                            })()
+                        : ""
+                    );
+                    setValue("price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
+                }
+                }}
+                className={getInputClass(errors.price)}
+                placeholder="0.00"
             />
             {errors.price && (
-              <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
+                <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
             )}
-          </div>
+            </div>
 
           {/* Expiration Date */}
           <div className="md:col-span-2">
