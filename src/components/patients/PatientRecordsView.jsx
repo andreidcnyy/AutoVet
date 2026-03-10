@@ -11,8 +11,10 @@ import {
   FiTrash2,
   FiUploadCloud,
   FiUser,
+  FiEdit2,
 } from "react-icons/fi";
 import { LuStethoscope } from "react-icons/lu";
+import EditPatientModal from "./EditPatientModal";
 
 const filters = ["All Species", "Healthy", "Overdue"];
 
@@ -40,10 +42,11 @@ function StatusBadge({ value }) {
   );
 }
 
-function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOpenAddPatient, onDeletePatient }) {
+function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOpenAddPatient, onDeletePatient, onPatientEdited }) {
   const toast = useToast();
   const [activeFilter, setActiveFilter] = useState("All Species");
   const [searchValue, setSearchValue] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const filteredPatients = useMemo(() => {
     const search = searchValue.trim().toLowerCase();
@@ -52,8 +55,8 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
       const matchesSearch =
         !search ||
         patient.name.toLowerCase().includes(search) ||
-        patient.ownerName.toLowerCase().includes(search) ||
-        patient.breed.toLowerCase().includes(search);
+        patient.ownerName?.toLowerCase().includes(search) ||
+        patient.breed?.toLowerCase().includes(search);
 
       const matchesFilter = activeFilter === "All Species" ? true : patient.status === activeFilter;
 
@@ -193,8 +196,15 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
         </section>
 
         {selectedPatient ? (
-          <aside className="card-shell overflow-hidden">
-            <div className="border-b border-slate-200 p-6 dark:border-dark-border">
+          <aside className="card-shell overflow-hidden relative">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="absolute top-6 right-6 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-surface/80"
+            >
+              <FiEdit2 className="h-3.5 w-3.5" />
+              Edit
+            </button>
+            <div className="border-b border-slate-200 p-6 pt-10 dark:border-dark-border">
               <img src={selectedPatient.photo || selectedPatient.avatar || "https://via.placeholder.com/96"} alt={selectedPatient.name} className="h-24 w-24 rounded-2xl object-cover" />
               <h3 className="mt-4 text-4xl font-bold text-slate-900 dark:text-zinc-50">{selectedPatient.name}</h3>
               <p className="mt-1 text-lg text-slate-500 dark:text-zinc-400">
@@ -239,21 +249,37 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
 
             <div className="space-y-6 p-6">
               <section>
-                <h4 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
-                  <FiUser className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
-                  Owner Details
-                </h4>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
+                    <FiUser className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
+                    Owner Details
+                  </h4>
+                </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
                   <p className="text-lg font-semibold text-slate-900 dark:text-zinc-50">{selectedPatient.ownerName}</p>
-                  <p className="text-sm text-slate-500 dark:text-zinc-400">{selectedPatient.ownerSince}</p>
-                  <p className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-                    <FiPhone className="h-4 w-4" />
-                    {selectedPatient.ownerPhone}
-                  </p>
-                  <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-                    <FiMail className="h-4 w-4" />
-                    {selectedPatient.ownerEmail}
-                  </p>
+                  <p className="text-sm text-slate-500 dark:text-zinc-400">{selectedPatient.ownerSince || "Recently Added"}</p>
+
+                  <div className="mt-4 space-y-2">
+                    {selectedPatient.ownerPhone && (
+                      <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
+                        <FiPhone className="h-4 w-4 text-slate-400" />
+                        {selectedPatient.ownerPhone}
+                      </p>
+                    )}
+                    {selectedPatient.ownerEmail && (
+                      <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
+                        <FiMail className="h-4 w-4 text-slate-400" />
+                        {selectedPatient.ownerEmail}
+                      </p>
+                    )}
+                    {selectedPatient.owner_address && (
+                      <div className="mt-3 text-sm text-slate-600 dark:text-zinc-300">
+                        <p className="font-medium text-slate-500 dark:text-zinc-400 uppercase tracking-wider text-xs mb-1">Address</p>
+                        <p>{selectedPatient.owner_address}</p>
+                        <p>{selectedPatient.owner_city}{selectedPatient.owner_province ? `, ${selectedPatient.owner_province}` : ''} {selectedPatient.owner_zip}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -286,6 +312,13 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
           </aside>
         )}
       </div>
+
+      <EditPatientModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        patient={selectedPatient}
+        onSaveSuccess={onPatientEdited}
+      />
     </div>
   );
 }

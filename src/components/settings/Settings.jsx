@@ -1,7 +1,10 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiHome, FiSave, FiSettings, FiTrash2, FiUserPlus, FiUsers } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
@@ -38,66 +41,174 @@ function Toggle({ checked, onChange }) {
   );
 }
 
+const clinicSchema = z.object({
+  clinic_name: z.string().min(1, "Clinic Name is required").max(255),
+  primary_email: z.string().min(1, "Primary Email is required").email("Invalid email address").max(255),
+  phone_number: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).nullable().optional().or(z.literal("")),
+  address: z.string().max(500).nullable().optional(),
+  tax_rate: z.coerce.number().min(0, "Tax rate cannot exceed negative").max(100, "Tax rate cannot exceed 100").nullable().optional(),
+  currency: z.string().max(50).nullable().optional(),
+  invoice_notes_template: z.string().nullable().optional()
+});
+
 function ClinicProfileTab() {
   const toast = useToast();
+  const [loading, setLoading] = useState(true);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: zodResolver(clinicSchema),
+    defaultValues: {
+      clinic_name: "",
+      primary_email: "",
+      phone_number: "",
+      address: "",
+      tax_rate: 8.0,
+      currency: "USD ($)",
+      invoice_notes_template: ""
+    }
+  });
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        reset(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching settings:", err);
+        toast.error("Failed to load clinic settings.");
+        setLoading(false);
+      });
+  }, [reset, toast]);
+
+  const onSubmit = async (data) => {
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ settings: data })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to save settings");
+      }
+
+      const result = await response.json();
+      reset(result.settings);
+      toast.success("Clinic profile changes saved securely.");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const inputBase = "w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 dark:bg-dark-surface dark:text-zinc-200 focus:outline-none";
+  const getInputClass = (error, isTextarea = false) => clsx(inputBase, isTextarea ? "py-2.5" : "h-11", error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
+
+  if (loading) {
+    return <div className="p-6 text-slate-500">Loading settings...</div>;
+  }
+
   return (
     <section className="card-shell p-6">
       <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Clinic Profile</h3>
       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and billing defaults.</p>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Name</label>
-          <input
-            defaultValue="AutoVet Downtown Clinic"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Primary Email</label>
-          <input
-            defaultValue="support@autovetclinic.com"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
-          <input
-            defaultValue="(415) 555-0123"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Address</label>
-          <input
-            defaultValue="1234 Veterinary Lane, San Francisco, CA 94103"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 border-t border-slate-200 pt-6 dark:border-dark-border">
-        <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Billing Settings</h4>
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Default Tax Rate (%)</label>
-            <input defaultValue="8.0" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none" />
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Name *</label>
+            <input
+              {...register("clinic_name")}
+              className={getInputClass(errors.clinic_name)}
+            />
+            {errors.clinic_name && <p className="mt-1 text-sm text-red-500">{errors.clinic_name.message}</p>}
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Currency</label>
-            <input defaultValue="USD ($)" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:border-blue-500 focus:outline-none" />
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Primary Email *</label>
+            <input
+              {...register("primary_email")}
+              type="email"
+              className={getInputClass(errors.primary_email)}
+            />
+            {errors.primary_email && <p className="mt-1 text-sm text-red-500">{errors.primary_email.message}</p>}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
+            <input
+              {...register("phone_number")}
+              className={getInputClass(errors.phone_number)}
+            />
+            {errors.phone_number && <p className="mt-1 text-sm text-red-500">{errors.phone_number.message}</p>}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Address</label>
+            <input
+              {...register("address")}
+              className={getInputClass(errors.address)}
+            />
+            {errors.address && <p className="mt-1 text-sm text-red-500">{errors.address.message}</p>}
           </div>
         </div>
-      </div>
 
-      <button
-        onClick={() => toast.success("Clinic profile changes saved securely.")}
-        className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-      >
-        <FiSave className="h-4 w-4" />
-        Save Changes
-      </button>
-    </section>
+        <div className="mt-8 border-t border-slate-200 pt-6 dark:border-dark-border">
+          <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Billing Settings</h4>
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Default Tax Rate (%)</label>
+              <input
+                {...register("tax_rate")}
+                type="number"
+                step="0.01"
+                min="0"
+                className={getInputClass(errors.tax_rate)}
+              />
+              {errors.tax_rate && <p className="mt-1 text-sm text-red-500">{errors.tax_rate.message}</p>}
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Currency</label>
+              <input
+                {...register("currency")}
+                className={getInputClass(errors.currency)}
+              />
+              {errors.currency && <p className="mt-1 text-sm text-red-500">{errors.currency.message}</p>}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Default Invoice Note Template</label>
+            <textarea
+              {...register("invoice_notes_template")}
+              rows="3"
+              className={getInputClass(errors.invoice_notes_template, true)}
+              placeholder="Use placeholders like {clinic_name}, {pet_name}, {owner_name}..."
+            />
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-zinc-400">
+              Available variables: {`{clinic_name}, {pet_name}, {owner_name}`}
+            </p>
+            {errors.invoice_notes_template && <p className="mt-1 text-sm text-red-500">{errors.invoice_notes_template.message}</p>}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          <FiSave className="h-4 w-4" />
+          {isSubmitting ? "Saving..." : "Save Changes"}
+        </button>
+      </form>
+    </section >
   );
 }
 

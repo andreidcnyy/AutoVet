@@ -9,6 +9,12 @@ class Patient extends Model
     protected $fillable = [
         'name', 'species', 'breed', 'date_of_birth', 'gender',
         'color', 'weight', 'status', 'owner_name', 'owner_phone',
-        'owner_email', 'allergies', 'medication', 'notes', 'photo',
+        'owner_email', 'owner_address', 'owner_city', 'owner_province', 'owner_zip',
+        'allergies', 'medication', 'notes', 'photo',
     ];
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

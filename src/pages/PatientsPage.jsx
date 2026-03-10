@@ -37,6 +37,13 @@ function PatientsPage() {
     }
   };
 
+  const handleEditPatient = (updatedPatient) => {
+    setPatients((prev) =>
+      prev.map((p) => (p.id === updatedPatient.id ? updatedPatient : p))
+    );
+    setSelectedPatientId(updatedPatient.id);
+  };
+
   if (view === "add") {
     return (
       <AddPatientFormView
@@ -61,6 +68,7 @@ function PatientsPage() {
       onSelectPatient={setSelectedPatientId}
       onOpenAddPatient={() => setView("add")}
       onDeletePatient={handleDeletePatient}
+      onPatientEdited={handleEditPatient}
     />
   );
 }

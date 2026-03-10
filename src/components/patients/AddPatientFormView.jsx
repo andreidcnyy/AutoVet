@@ -3,14 +3,20 @@ import clsx from "clsx";
 import { FiCalendar, FiChevronDown, FiCheckCircle, FiAlertCircle, FiCamera } from "react-icons/fi";
 import { LuFilePlus2, LuPawPrint } from "react-icons/lu";
 import { FiUser } from "react-icons/fi";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
 const inputBase =
-  "h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:border-blue-500 dark:focus:bg-gray-800";
+  "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
 
 const selectBase =
-  "h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 focus:border-blue-300 focus:bg-white focus:outline-none appearance-none pr-10 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500 dark:focus:bg-gray-800";
+  "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
+
+const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
+const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
 
 function StepPill({ label, index, active }) {
   return (
@@ -23,46 +29,71 @@ function StepPill({ label, index, active }) {
   );
 }
 
-const INITIAL_FORM = {
-  name: "", species: "Canine", breed: "", date_of_birth: "",
-  gender: "Male", color: "", weight: "",
-  status: "Healthy",
-  owner_name: "", owner_phone: "", owner_email: "",
-  allergies: "", medication: "", notes: "",
-  photo: "",
-};
+const patientSchema = z.object({
+  name: z.string().min(1, "Pet name is required").max(255),
+  species: z.string().min(1, "Species is required").max(255),
+  breed: z.string().max(255).optional(),
+  date_of_birth: z.string().optional().or(z.literal("")),
+  gender: z.string().max(50).optional(),
+  color: z.string().max(255).optional(),
+  weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+  status: z.string().max(50).optional(),
+  owner_name: z.string().min(1, "Owner name is required").max(255),
+  owner_phone: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).optional().or(z.literal("")),
+  owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
+  owner_address: z.string().min(1, "Street address is required").max(255),
+  owner_city: z.string().min(1, "City is required").max(255),
+  owner_province: z.string().min(1, "Province is required").max(255),
+  owner_zip: z.string().min(1, "Zip Code is required").max(20),
+  allergies: z.string().max(255).optional(),
+  medication: z.string().max(255).optional(),
+  notes: z.string().optional(),
+  photo: z.string().optional()
+});
 
 function AddPatientFormView({ onCancel, onSave }) {
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const photoInputRef = useRef(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: zodResolver(patientSchema),
+    defaultValues: {
+      name: "", species: "Canine", breed: "", date_of_birth: "",
+      gender: "Male", color: "", weight: "",
+      status: "Healthy",
+      owner_name: "", owner_phone: "", owner_email: "",
+      owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
+      allergies: "", medication: "", notes: "",
+      photo: "",
+    }
+  });
+
+  const photoValue = watch("photo");
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      setForm((prev) => ({ ...prev, photo: reader.result }));
+      setValue("photo", reader.result, { shouldDirty: true });
     };
     reader.readAsDataURL(file);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const onSubmit = async (data) => {
     setError(null);
 
     try {
       const response = await fetch("/api/patients", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -75,8 +106,6 @@ function AddPatientFormView({ onCancel, onSave }) {
       onSave(savedPatient);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -115,7 +144,7 @@ function AddPatientFormView({ onCancel, onSave }) {
           </div>
         )}
 
-        <form id="add-patient-form" onSubmit={handleSubmit} className="space-y-8 p-6">
+        <form id="add-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
           {/* Pet Profile */}
           <section className="space-y-4">
             <h3 className="flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-zinc-50">
@@ -130,15 +159,15 @@ function AddPatientFormView({ onCancel, onSave }) {
                 onClick={() => photoInputRef.current?.click()}
                 className="group relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-colors dark:border-dark-border dark:bg-dark-surface dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
               >
-                {form.photo ? (
-                  <img src={form.photo} alt="Pet preview" className="h-full w-full object-cover" />
+                {photoValue ? (
+                  <img src={photoValue} alt="Pet preview" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-1 text-slate-400 group-hover:text-blue-500">
                     <FiCamera className="h-7 w-7" />
                     <span className="text-xs font-medium">Add Photo</span>
                   </div>
                 )}
-                {form.photo && (
+                {photoValue && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                     <FiCamera className="h-6 w-6 text-white" />
                   </div>
@@ -155,10 +184,10 @@ function AddPatientFormView({ onCancel, onSave }) {
                 <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Pet Photo</p>
                 <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">Click the box to upload a photo of the pet.</p>
                 <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">JPG, PNG, GIF up to 5MB</p>
-                {form.photo && (
+                {photoValue && (
                   <button
                     type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, photo: "" }))}
+                    onClick={() => setValue("photo", "")}
                     className="mt-2 text-xs font-medium text-red-500 hover:text-red-700"
                   >
                     Remove photo
@@ -170,12 +199,13 @@ function AddPatientFormView({ onCancel, onSave }) {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Pet Name *</label>
-                <input required name="name" value={form.name} onChange={handleChange} className={inputBase} placeholder="e.g. Daisy" />
+                <input {...register("name")} className={getInputClass(errors.name)} placeholder="e.g. Daisy" />
+                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Species *</label>
                 <div className="relative">
-                  <select name="species" value={form.species} onChange={handleChange} className={selectBase}>
+                  <select {...register("species")} className={getSelectClass(errors.species)}>
                     <option>Canine</option>
                     <option>Feline</option>
                     <option>Avian</option>
@@ -185,23 +215,26 @@ function AddPatientFormView({ onCancel, onSave }) {
                   </select>
                   <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>
+                {errors.species && <p className="mt-1 text-sm text-red-500">{errors.species.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Breed</label>
-                <input name="breed" value={form.breed} onChange={handleChange} className={inputBase} placeholder="e.g. Golden Retriever" />
+                <input {...register("breed")} className={getInputClass(errors.breed)} placeholder="e.g. Golden Retriever" />
+                {errors.breed && <p className="mt-1 text-sm text-red-500">{errors.breed.message}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Date of Birth</label>
                   <div className="relative">
-                    <input type="date" name="date_of_birth" value={form.date_of_birth} onChange={handleChange} className={clsx(inputBase, "pr-10")} />
+                    <input type="date" {...register("date_of_birth")} className={clsx(getInputClass(errors.date_of_birth), "pr-10")} />
                     <FiCalendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
+                  {errors.date_of_birth && <p className="mt-1 text-sm text-red-500">{errors.date_of_birth.message}</p>}
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Gender</label>
                   <div className="relative">
-                    <select name="gender" value={form.gender} onChange={handleChange} className={selectBase}>
+                    <select {...register("gender")} className={getSelectClass(errors.gender)}>
                       <option>Male</option>
                       <option>Female</option>
                       <option>Male (Neutered)</option>
@@ -209,15 +242,18 @@ function AddPatientFormView({ onCancel, onSave }) {
                     </select>
                     <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
+                  {errors.gender && <p className="mt-1 text-sm text-red-500">{errors.gender.message}</p>}
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Weight</label>
-                <input name="weight" value={form.weight} onChange={handleChange} className={inputBase} placeholder="e.g. 12.5 kg" />
+                <input type="number" step="0.01" min="0" {...register("weight")} className={getInputClass(errors.weight)} placeholder="e.g. 12.5 kg" />
+                {errors.weight && <p className="mt-1 text-sm text-red-500">{errors.weight.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Color / Markings</label>
-                <input name="color" value={form.color} onChange={handleChange} className={inputBase} placeholder="e.g. White with brown patches" />
+                <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. White with brown patches" />
+                {errors.color && <p className="mt-1 text-sm text-red-500">{errors.color.message}</p>}
               </div>
             </div>
           </section>
@@ -233,20 +269,45 @@ function AddPatientFormView({ onCancel, onSave }) {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Full Name *</label>
-                <input required name="owner_name" value={form.owner_name} onChange={handleChange} className={inputBase} placeholder="e.g. Jordan Miller" />
+                <input {...register("owner_name")} className={getInputClass(errors.owner_name)} placeholder="e.g. Jordan Miller" />
+                {errors.owner_name && <p className="mt-1 text-sm text-red-500">{errors.owner_name.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
-                <input name="owner_phone" value={form.owner_phone} onChange={handleChange} className={inputBase} placeholder="(555) 000-0000" />
+                <input {...register("owner_phone")} className={getInputClass(errors.owner_phone)} placeholder="(555) 000-0000" />
+                {errors.owner_phone && <p className="mt-1 text-sm text-red-500">{errors.owner_phone.message}</p>}
               </div>
               <div className="lg:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
-                <input type="email" name="owner_email" value={form.owner_email} onChange={handleChange} className={inputBase} placeholder="owner@example.com" />
+                <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
+                {errors.owner_email && <p className="mt-1 text-sm text-red-500">{errors.owner_email.message}</p>}
+              </div>
+              <div className="lg:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Street Address *</label>
+                <input {...register("owner_address")} className={getInputClass(errors.owner_address)} placeholder="123 Main St" />
+                {errors.owner_address && <p className="mt-1 text-sm text-red-500">{errors.owner_address.message}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">City *</label>
+                <input {...register("owner_city")} className={getInputClass(errors.owner_city)} placeholder="City" />
+                {errors.owner_city && <p className="mt-1 text-sm text-red-500">{errors.owner_city.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Province *</label>
+                  <input {...register("owner_province")} className={getInputClass(errors.owner_province)} placeholder="State/Province" />
+                  {errors.owner_province && <p className="mt-1 text-sm text-red-500">{errors.owner_province.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Zip Code *</label>
+                  <input {...register("owner_zip")} className={getInputClass(errors.owner_zip)} placeholder="Zip" />
+                  {errors.owner_zip && <p className="mt-1 text-sm text-red-500">{errors.owner_zip.message}</p>}
+                </div>
               </div>
             </div>
           </section>
 
-          <div className="h-px bg-slate-200" />
+          <div className="h-px bg-slate-200 dark:bg-dark-surface" />
 
           {/* Medical Data */}
           <section className="space-y-4">
@@ -257,22 +318,23 @@ function AddPatientFormView({ onCancel, onSave }) {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Allergies</label>
-                <input name="allergies" value={form.allergies} onChange={handleChange} className={inputBase} placeholder="Enter known allergies" />
+                <input {...register("allergies")} className={getInputClass(errors.allergies)} placeholder="Enter known allergies" />
+                {errors.allergies && <p className="mt-1 text-sm text-red-500">{errors.allergies.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Current Medication</label>
-                <input name="medication" value={form.medication} onChange={handleChange} className={inputBase} placeholder="List active medications" />
+                <input {...register("medication")} className={getInputClass(errors.medication)} placeholder="List active medications" />
+                {errors.medication && <p className="mt-1 text-sm text-red-500">{errors.medication.message}</p>}
               </div>
               <div className="lg:col-span-2">
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Notes</label>
                 <textarea
-                  name="notes"
-                  value={form.notes}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:border-blue-500 dark:focus:bg-gray-800"
+                  {...register("notes")}
+                  className={clsx("w-full rounded-xl border bg-slate-50 px-4 py-3 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800", errors.notes ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500")}
                   rows={4}
                   placeholder="Add initial notes about this patient..."
                 />
+                {errors.notes && <p className="mt-1 text-sm text-red-500">{errors.notes.message}</p>}
               </div>
             </div>
           </section>
