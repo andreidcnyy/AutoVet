@@ -215,7 +215,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           {/* Price */}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
-                Amount ($)
+                Amount (₱)
             </label>
             <input
                 type="text"

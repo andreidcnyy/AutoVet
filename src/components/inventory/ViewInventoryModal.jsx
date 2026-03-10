@@ -50,11 +50,19 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                         </div>
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Stock Level</p>
-                            <p className="font-semibold text-slate-800 dark:text-zinc-200">{product.stock_level} units</p>
+                            <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                            {product.stock_level !== null && product.stock_level !== undefined
+                                ? Number(product.stock_level).toLocaleString()
+                                : "0"} units
+                            </p>
                         </div>
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Price</p>
-                            <p className="font-semibold text-slate-800 dark:text-zinc-200">{product.price ? `$${Number(product.price).toFixed(2)}` : "N/A"}</p>
+                            <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                            {product.price !== null && product.price !== undefined
+                                ? `₱${Number(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                : "N/A"}
+                            </p>
                         </div>
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Supplier</p>
