@@ -14,6 +14,7 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
 Route::get('/profile', [ProfileController::class, 'show']);
 Route::put('/profile', [ProfileController::class, 'update']);
 

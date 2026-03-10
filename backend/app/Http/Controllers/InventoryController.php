@@ -7,6 +7,28 @@ use App\Models\Inventory;
 
 class InventoryController extends Controller
 {
+    public function update(Request $request, Inventory $inventory)
+{
+    $validated = $request->validate([
+        'item_name' => 'required|string|max:255',
+        'sub_details' => 'nullable|string|max:255',
+        'category' => 'required|string|max:255',
+        'sku' => 'required|string|max:255',
+        'stock_level' => 'required|integer|min:0',
+        'price' => 'required|numeric|min:0',
+        'supplier' => 'nullable|string|max:255',
+        'expiration_date' => 'nullable|date',
+        'status' => 'required|string|in:Low Stock,In Stock,Expiring',
+    ]);
+
+    $inventory->update($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Product updated successfully!',
+        'data' => $inventory
+    ]);
+}
     public function index()
     {
         return response()->json(Inventory::all());

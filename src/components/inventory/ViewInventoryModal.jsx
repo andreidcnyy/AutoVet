@@ -24,19 +24,31 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   };
 
   const handleSave = async () => {
-    try {
-      const res = await fetch(`/api/update-product/${formData.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error("Failed to save");
-      setIsEditing(false);
-      alert("Product updated successfully!");
-    } catch (err) {
-      alert("Error saving product: " + err.message);
+  try {
+    const res = await fetch(`/api/inventory/${formData.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json", // ensures Laravel returns JSON
+      },
+      credentials: "include", // required if Sanctum auth is used
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to save product");
     }
-  };
+
+    const updated = await res.json();
+    alert(updated.message);
+
+    setIsEditing(false);
+    onUpdateProduct(updated.data); // update parent list
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   if (!isOpen || !product) return null;
 
