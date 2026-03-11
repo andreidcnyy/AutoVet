@@ -2,7 +2,6 @@ import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import AppointmentsPage from "../pages/AppointmentsPage";
 import BillingPage from "../pages/BillingPage";
-import CalendarPage from "../pages/CalendarPage";
 import DashboardPage from "../pages/DashboardPage";
 import InventoryPage from "../pages/InventoryPage";
 import PatientsPage from "../pages/PatientsPage";
@@ -28,11 +27,6 @@ export const router = createBrowserRouter([
         path: "appointments",
         element: <AppointmentsPage />,
         handle: { title: "Appointments" },
-      },
-      {
-        path: "calendar",
-        element: <CalendarPage />,
-        handle: { title: "Calendar" },
       },
       {
         path: "inventory",

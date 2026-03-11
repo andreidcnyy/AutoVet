@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
   { id: "users", label: "User Management", icon: FiUsers },
+  { id: "data", label: "Data Management", icon: FiSettings },
   { id: "system", label: "System & AI Preferences", icon: FiSettings },
 ];
 
@@ -48,7 +49,8 @@ const clinicSchema = z.object({
   address: z.string().max(500).nullable().optional(),
   tax_rate: z.coerce.number().min(0, "Tax rate cannot exceed negative").max(100, "Tax rate cannot exceed 100").nullable().optional(),
   currency: z.string().max(50).nullable().optional(),
-  invoice_notes_template: z.string().nullable().optional()
+  invoice_notes_template: z.string().nullable().optional(),
+  clinic_logo: z.string().nullable().optional()
 });
 
 function ClinicProfileTab() {
@@ -59,6 +61,8 @@ function ClinicProfileTab() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(clinicSchema),
@@ -69,9 +73,22 @@ function ClinicProfileTab() {
       address: "",
       tax_rate: 8.0,
       currency: "USD ($)",
-      invoice_notes_template: ""
+      invoice_notes_template: "",
+      clinic_logo: ""
     }
   });
+
+  const logoValue = watch("clinic_logo");
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setValue("clinic_logo", reader.result, { shouldDirty: true });
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetch("/api/settings")
@@ -124,6 +141,28 @@ function ClinicProfileTab() {
       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and billing defaults.</p>
 
       <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="mt-6">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Logo</label>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface shrink-0">
+              {logoValue ? (
+                <img src={logoValue} alt="Clinic Logo" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-slate-400">
+                  <FiHome className="h-6 w-6" />
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface">
+              Upload Logo
+              <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+            </label>
+            {logoValue && (
+              <button type="button" onClick={() => setValue("clinic_logo", "", { shouldDirty: true })} className="text-sm font-semibold text-red-500 hover:text-red-700">Remove</button>
+            )}
+          </div>
+        </div>
+
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Name *</label>
@@ -277,6 +316,38 @@ function SystemPreferencesTab() {
   const [aiForecasting, setAiForecasting] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [cloudSync, setCloudSync] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+      });
+  }, []);
+
+  const toggleMaintenance = async () => {
+    const newValue = !maintenanceMode;
+    setMaintenanceMode(newValue);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ settings: { maintenance_mode: newValue ? 'true' : 'false' } })
+      });
+      toast.success(newValue ? "Maintenance Mode enabled." : "Maintenance Mode disabled.");
+    } catch {
+      toast.error("Failed to update maintenance settings.");
+      setMaintenanceMode(!newValue);
+    }
+  };
+
+  if (loading) return <div className="p-6 text-slate-500">Loading system preferences...</div>;
 
   return (
     <section className="card-shell p-6">
@@ -296,6 +367,14 @@ function SystemPreferencesTab() {
 
         <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
           <div>
+            <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">System Maintenance Mode</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Temporarily blocks users from accessing the clinic system.</p>
+          </div>
+          <Toggle checked={maintenanceMode} onChange={toggleMaintenance} />
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface">
+          <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Auto-sync with Cloud Server</p>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Syncs offline local data when internet is available.</p>
           </div>
@@ -308,6 +387,140 @@ function SystemPreferencesTab() {
         className="mt-7 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface"
       >
         Perform Manual Backup
+      </button>
+    </section>
+  );
+}
+
+function DataManagementTab() {
+  const toast = useToast();
+  const [speciesList, setSpeciesList] = useState([]);
+  const [categoryList, setCategoryList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newSpecies, setNewSpecies] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        try {
+          setSpeciesList(data.species_list ? JSON.parse(data.species_list) : ["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+          setCategoryList(data.inventory_categories ? JSON.parse(data.inventory_categories) : ["Vaccines", "Antibiotics", "Supplies", "Diagnostics"]);
+        } catch {
+          setSpeciesList(["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+          setCategoryList(["Vaccines", "Antibiotics", "Supplies", "Diagnostics"]);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          settings: {
+            species_list: JSON.stringify(speciesList),
+            inventory_categories: JSON.stringify(categoryList)
+          }
+        })
+      });
+      toast.success("Data lists updated securely.");
+    } catch {
+      toast.error("Failed to update lists.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddSpecies = (e) => {
+    e.preventDefault();
+    const name = newSpecies.trim();
+    if (name && !speciesList.includes(name)) {
+      setSpeciesList([...speciesList, name]);
+      setNewSpecies("");
+    }
+  };
+
+  const handleAddCategory = (e) => {
+    e.preventDefault();
+    const name = newCategory.trim();
+    if (name && !categoryList.includes(name)) {
+      setCategoryList([...categoryList, name]);
+      setNewCategory("");
+    }
+  };
+
+  if (loading) return <div className="p-6 text-slate-500">Loading data management...</div>;
+
+  return (
+    <section className="card-shell p-6">
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Data Management</h3>
+      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage dynamic list values used across the clinic system.</p>
+
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Species List</h4>
+          </div>
+          <form onSubmit={handleAddSpecies} className="flex gap-2">
+            <input
+              type="text"
+              value={newSpecies}
+              onChange={(e) => setNewSpecies(e.target.value)}
+              placeholder="e.g. Amphibian"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+            />
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Add</button>
+          </form>
+          <div className="flex flex-wrap gap-2">
+            {speciesList.map((s) => (
+              <span key={s} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 dark:bg-dark-surface dark:text-zinc-300">
+                {s} <button onClick={() => setSpeciesList(speciesList.filter(i => i !== s))} className="ml-1 text-red-500">&times;</button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Inventory Categories</h4>
+          </div>
+          <form onSubmit={handleAddCategory} className="flex gap-2">
+            <input
+              type="text"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="e.g. Preventatives"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+            />
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Add</button>
+          </form>
+          <div className="flex flex-wrap gap-2">
+            {categoryList.map((c) => (
+              <span key={c} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 dark:bg-dark-surface dark:text-zinc-300">
+                {c} <button onClick={() => setCategoryList(categoryList.filter(i => i !== c))} className="ml-1 text-red-500">&times;</button>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={isSaving}
+        className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+      >
+        <FiSave className="h-4 w-4" />
+        {isSaving ? "Saving..." : "Save List Changes"}
       </button>
     </section>
   );
@@ -343,6 +556,7 @@ function Settings() {
       <main>
         {activeTab === "clinic" && <ClinicProfileTab />}
         {activeTab === "users" && <UserManagementTab />}
+        {activeTab === "data" && <DataManagementTab />}
         {activeTab === "system" && <SystemPreferencesTab />}
       </main>
     </div>

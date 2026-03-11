@@ -172,11 +172,6 @@ class InvoiceController extends Controller
      */
     public function destroy(Invoice $invoice)
     {
-        if (!in_array($invoice->status, ['Draft', 'Cancelled'])) {
-            return response()->json(['error' => 'Only Draft or Cancelled invoices can be deleted.'], 403);
-        }
-        
-        $invoice->delete();
-        return response()->json(null, 204);
+        return response()->json(['error' => 'Transactions cannot be deleted as per system policy.'], 403);
     }
 }

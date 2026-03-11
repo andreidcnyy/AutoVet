@@ -12,7 +12,6 @@ export const primaryNavigation = [
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid },
   { id: "patients", label: "Patients", path: "/patients", icon: LuPawPrint },
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard },
-  { id: "calendar", label: "Calendar", path: "/calendar", icon: FiCalendar },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI" },
   { id: "billing", label: "Billing", path: "/billing", icon: FiCreditCard },
 ];

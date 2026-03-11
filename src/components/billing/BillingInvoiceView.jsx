@@ -154,6 +154,21 @@ function BillingInvoiceView() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const updateItem = (id, field, value) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          if (field === "qty" || field === "unitPrice") {
+            updated.amount = Number(updated.qty || 0) * Number(updated.unitPrice || 0);
+          }
+          return updated;
+        }
+        return item;
+      })
+    );
+  };
+
   const resetForm = () => {
     setItems([]);
     setDiscountVal(0);
@@ -570,8 +585,23 @@ function BillingInvoiceView() {
                         <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{item.name}</p>
                         <p className="text-base text-slate-500 dark:text-zinc-400">{item.notes}</p>
                       </div>
-                      <p className="text-right text-xl text-slate-700 dark:text-zinc-300">{item.qty}</p>
-                      <p className="text-right text-xl text-slate-700 dark:text-zinc-300">{currency(item.unitPrice)}</p>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.qty}
+                        onChange={(e) => updateItem(item.id, "qty", e.target.value)}
+                        disabled={status !== "Draft"}
+                        className="w-full bg-transparent text-right text-xl text-slate-700 focus:outline-none focus:border-b-2 focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
+                        disabled={status !== "Draft"}
+                        className="w-full bg-transparent text-right text-xl text-slate-700 focus:outline-none focus:border-b-2 focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
+                      />
                       <div className="flex items-center justify-end gap-3">
                         <p className="text-right text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
                         {status === "Draft" && (

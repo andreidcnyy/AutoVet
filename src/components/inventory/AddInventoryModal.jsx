@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiX, FiCheckCircle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
@@ -6,7 +6,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 
-const CATEGORY_OPTIONS = ["Vaccines", "Antibiotics", "Supplies", "Diagnostics"];
 const STATUS_OPTIONS = ["In Stock", "Low Stock", "Expiring"];
 
 const inventorySchema = z.object({
@@ -23,6 +22,18 @@ const inventorySchema = z.object({
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
+    const [categoryOptions, setCategoryOptions] = useState(["Vaccines", "Antibiotics", "Supplies", "Diagnostics"]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch("/api/settings")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.inventory_categories) setCategoryOptions(JSON.parse(data.inventory_categories));
+                })
+                .catch(console.error);
+        }
+    }, [isOpen]);
 
     const {
         register,
@@ -122,7 +133,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                                 {...register("category")}
                                 className={getInputClass(errors.category)}
                             >
-                                {CATEGORY_OPTIONS.map((cat) => (
+                                {categoryOptions.map((cat) => (
                                     <option key={cat} value={cat}>
                                         {cat}
                                     </option>
