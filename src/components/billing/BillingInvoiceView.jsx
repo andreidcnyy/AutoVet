@@ -55,17 +55,21 @@ function BillingInvoiceView() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
 
+  const [services, setServices] = useState([]);
+
   useEffect(() => {
     // Fetch patients and settings on mount
     Promise.all([
       fetch("/api/patients").then(res => res.json()),
-      fetch("/api/settings").then(res => res.json())
+      fetch("/api/settings").then(res => res.json()),
+      fetch("/api/services").then(res => res.json()).catch(() => [])
     ])
-      .then(([patientsData, settingsData]) => {
+      .then(([patientsData, settingsData, servicesData]) => {
         setPatients(patientsData);
         setClinicSettings(settingsData);
         setTaxRateVal(parseFloat(settingsData.tax_rate) || 0);
         setNotes(settingsData.invoice_notes_template || "");
+        setServices(servicesData || []);
       })
       .catch((err) => {
         console.error(err);
@@ -116,6 +120,15 @@ function BillingInvoiceView() {
   const [serviceInput, setServiceInput] = useState("");
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
+
+  const handleServiceChange = (e) => {
+    const val = e.target.value;
+    setServiceInput(val);
+    const matchedService = services.find(s => s.name === val);
+    if (matchedService) {
+      setPriceInput(matchedService.price);
+    }
+  };
 
   const handleQuickAdd = (service) => {
     const price = service.includes("Consultation") ? 60 : service.includes("Vax") ? 45 : 30;
@@ -322,14 +335,20 @@ function BillingInvoiceView() {
               <div className="grid grid-cols-[1fr_54px_80px] gap-2">
                 <div className="relative">
                   <input
+                    list="services-list"
                     type="text"
-                    placeholder="Add service..."
+                    placeholder="Search or add service..."
                     value={serviceInput}
-                    onChange={(e) => setServiceInput(e.target.value)}
+                    onChange={handleServiceChange}
                     onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
                     disabled={status === "Finalized"}
                     className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
                   />
+                  <datalist id="services-list">
+                    {services.map(s => (
+                      <option key={s.id} value={s.name} />
+                    ))}
+                  </datalist>
                 </div>
                 <input
                   type="number"
@@ -522,11 +541,11 @@ function BillingInvoiceView() {
 
               <section className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[1.2fr_0.8fr]">
                 <div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Bill To</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Bill To</p>
                   {patientDetails ? (
                     <>
-                      <p className="mt-2 text-4xl font-bold text-slate-900 dark:text-zinc-50">{patientDetails.owner_name}</p>
-                      <p className="mt-1 text-xl leading-8 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
+                      <p className="mt-2 text-xl font-bold text-slate-900 dark:text-zinc-50">{patientDetails.owner_name}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
                         {patientDetails.owner_address}
                         <br />
                         {patientDetails.owner_city && `${patientDetails.owner_city}, `}
@@ -538,22 +557,22 @@ function BillingInvoiceView() {
                       </p>
                     </>
                   ) : (
-                    <p className="mt-2 text-xl text-slate-400 dark:text-zinc-500 italic">No patient selected</p>
+                    <p className="mt-2 text-sm text-slate-400 dark:text-zinc-500 italic">No patient selected</p>
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-4">
+                <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Patient</p>
                   {patientDetails ? (
                     <div className="mt-2 flex items-center gap-3">
                       <img
                         src={patientDetails.photo || "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&w=120&q=80"}
                         alt={patientDetails.name}
-                        className="h-12 w-12 rounded-full object-cover"
+                        className="h-10 w-10 rounded-full object-cover"
                       />
                       <div>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{patientDetails.name}</p>
-                        <p className="text-sm text-slate-500 dark:text-zinc-400">
+                        <p className="text-sm font-bold text-slate-900 dark:text-zinc-50">{patientDetails.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
                           {patientDetails.breed || patientDetails.species}
                           {patientDetails.date_of_birth && ` • ${(() => {
                             const dob = new Date(patientDetails.date_of_birth);
@@ -565,25 +584,25 @@ function BillingInvoiceView() {
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-2 text-sm text-slate-400 dark:text-zinc-500 italic">Select to view pet details</p>
+                    <p className="mt-2 text-xs text-slate-400 dark:text-zinc-500 italic">Select to view pet details</p>
                   )}
                 </div>
               </section>
 
-              <section className="mt-10 border-y border-slate-200 dark:border-dark-border py-4">
-                <div className="grid grid-cols-[1fr_80px_130px_120px] text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+              <section className="mt-8 border-y border-slate-200 dark:border-dark-border py-3">
+                <div className="grid grid-cols-[1fr_60px_100px_100px] text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                   <p>Description</p>
                   <p className="text-right">Qty</p>
                   <p className="text-right">Unit Price</p>
                   <p className="text-right">Amount</p>
                 </div>
 
-                <div className="mt-4 space-y-5">
+                <div className="mt-3 space-y-3">
                   {items.map((item) => (
-                    <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_80px_130px_120px] items-start gap-2">
+                    <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-slate-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
                       <div>
-                        <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{item.name}</p>
-                        <p className="text-base text-slate-500 dark:text-zinc-400">{item.notes}</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-zinc-50">{item.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">{item.notes}</p>
                       </div>
                       <input
                         type="number"
@@ -591,7 +610,7 @@ function BillingInvoiceView() {
                         value={item.qty}
                         onChange={(e) => updateItem(item.id, "qty", e.target.value)}
                         disabled={status !== "Draft"}
-                        className="w-full bg-transparent text-right text-xl text-slate-700 focus:outline-none focus:border-b-2 focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
+                        className="w-full bg-transparent text-right text-sm text-slate-700 focus:outline-none focus:border-b focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
                       />
                       <input
                         type="number"
@@ -600,49 +619,52 @@ function BillingInvoiceView() {
                         value={item.unitPrice}
                         onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
                         disabled={status !== "Draft"}
-                        className="w-full bg-transparent text-right text-xl text-slate-700 focus:outline-none focus:border-b-2 focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
+                        className="w-full bg-transparent text-right text-sm text-slate-700 focus:outline-none focus:border-b focus:border-blue-500 disabled:opacity-50 dark:text-zinc-300"
                       />
-                      <div className="flex items-center justify-end gap-3">
-                        <p className="text-right text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                      <div className="flex items-center justify-end gap-2">
+                        <p className="text-right text-sm font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
                         {status === "Draft" && (
-                          <button onClick={() => removeItem(item.id)} className="text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300">
-                            <span className="text-xs font-bold leading-none">X</span>
+                          <button onClick={() => removeItem(item.id)} className="text-rose-400 hover:text-rose-600 dark:text-rose-500 dark:hover:text-rose-300">
+                            <span className="text-[10px] font-bold leading-none">✕</span>
                           </button>
                         )}
                       </div>
                     </div>
                   ))}
+                  {items.length === 0 && (
+                     <p className="py-4 text-center text-sm text-slate-400 dark:text-zinc-500 italic">No line items added yet.</p>
+                  )}
                 </div>
               </section>
 
-              <section className="mt-8 ml-auto w-full max-w-sm space-y-2">
-                <div className="flex items-center justify-between text-lg text-slate-600 dark:text-zinc-300">
+              <section className="mt-6 ml-auto w-full max-w-sm space-y-2">
+                <div className="flex items-center justify-between text-sm text-slate-600 dark:text-zinc-300">
                   <span>Subtotal</span>
                   <span>{currency(subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between text-lg text-slate-600 dark:text-zinc-300">
+                <div className="flex items-center justify-between text-sm text-slate-600 dark:text-zinc-300">
                   <span>Tax ({taxRateVal}%)</span>
                   <span>{currency(taxAmount)}</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex items-center justify-between text-lg text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center justify-between text-sm text-emerald-600 dark:text-emerald-400">
                     <span>Discount</span>
                     <span>-{currency(discountAmount)}</span>
                   </div>
                 )}
                 <div className="mt-2 flex items-center justify-between border-t border-slate-200 dark:border-dark-border pt-3">
-                  <span className="text-3xl font-bold text-slate-900 dark:text-zinc-50">Total Due</span>
-                  <span className="text-5xl font-bold text-blue-600">{currency(totalDue)}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-zinc-50">Total Due</span>
+                  <span className="text-2xl font-bold text-blue-600">{currency(totalDue)}</span>
                 </div>
 
                 <div className="mt-6 border-t border-slate-200 dark:border-dark-border pt-4">
-                  <p className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">Record Payment</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">Record Payment</p>
                   <div className="grid grid-cols-2 gap-3">
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       disabled={status !== "Draft"}
-                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                      className="h-9 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                     >
                       <option value="">Select Method...</option>
                       <option value="Credit Card">Credit Card</option>
@@ -650,7 +672,7 @@ function BillingInvoiceView() {
                       <option value="Bank Transfer">Bank Transfer</option>
                     </select>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500">₱</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 text-sm">₱</span>
                       <input
                         type="number"
                         min="0"
@@ -658,19 +680,19 @@ function BillingInvoiceView() {
                         onChange={(e) => setAmountPaid(Number(e.target.value))}
                         disabled={status !== "Draft"}
                         placeholder="Amount Paid"
-                        className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                        className="h-9 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                       />
                     </div>
                   </div>
                 </div>
               </section>
 
-              <footer className="mt-16 border-t border-slate-200 dark:border-dark-border pt-8">
-                <p className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Notes to Client</p>
-                <p className="mt-2 text-lg leading-8 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
+              <footer className="mt-12 border-t border-slate-200 dark:border-dark-border pt-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Notes to Client</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
                   {notes || "No additional notes provided."}
                 </p>
-                <p className="mt-10 text-center text-sm text-slate-400 dark:text-zinc-500">Powered by AutoVet Systems</p>
+                <p className="mt-8 text-center text-xs text-slate-400 dark:text-zinc-500">Powered by AutoVet Systems</p>
               </footer>
             </article>
           </div>
