@@ -194,7 +194,7 @@ function AppointmentsView() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Event Title</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Book Appointment:</label>
               <input
                 type="text"
                 {...register("title")}

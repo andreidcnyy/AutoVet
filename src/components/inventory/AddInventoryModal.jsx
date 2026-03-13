@@ -23,6 +23,7 @@ const inventorySchema = z.object({
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
     const [categoryOptions, setCategoryOptions] = useState(["Vaccines", "Antibiotics", "Supplies", "Diagnostics"]);
+    const [priceDisplay, setPriceDisplay] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -39,8 +40,9 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         register,
         handleSubmit,
         reset,
+        setValue, // <-- needed for interactive input
         formState: { errors, isSubmitting }
-    } = useForm({
+        } = useForm({
         resolver: zodResolver(inventorySchema),
         defaultValues: {
             item_name: "",
@@ -53,7 +55,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             supplier: "",
             expiration_date: "",
         }
-    });
+        });
 
     if (!isOpen) return null;
 
@@ -91,155 +93,210 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500 focus:ring-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
-            <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
-                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-dark-border">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-zinc-50">Add New Inventory Item</h3>
-                    <button
-                        onClick={onClose}
-                        className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
-                    >
-                        <FiX className="h-5 w-5" />
-                    </button>
-                </div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+    <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-dark-border">
+        <h3 className="text-xl font-bold text-slate-800 dark:text-zinc-50">
+          Add New Inventory Item
+        </h3>
+        <button
+          onClick={onClose}
+          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+        >
+          <FiX className="h-5 w-5" />
+        </button>
+      </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6">
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Item Name *</label>
-                            <input
-                                type="text"
-                                {...register("item_name")}
-                                className={getInputClass(errors.item_name)}
-                                placeholder="e.g. Parvovirus Vaccine"
-                            />
-                            {errors.item_name && <p className="mt-1 text-sm text-red-500">{errors.item_name.message}</p>}
-                        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {/* Category - moved to top */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Category *
+            </label>
+            <select {...register("category")} className={getInputClass(errors.category)}>
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            {errors.category && (
+              <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>
+            )}
+          </div>
 
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Sub Details</label>
-                            <input
-                                type="text"
-                                {...register("sub_details")}
-                                className={getInputClass(errors.sub_details)}
-                                placeholder="e.g. 10ml Vial"
-                            />
-                            {errors.sub_details && <p className="mt-1 text-sm text-red-500">{errors.sub_details.message}</p>}
-                        </div>
+          {/* Supplier - moved to top */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Supplier
+            </label>
+            <input
+              type="text"
+              {...register("supplier")}
+              className={getInputClass(errors.supplier)}
+              placeholder="e.g. Zoetis"
+            />
+            {errors.supplier && (
+              <p className="mt-1 text-sm text-red-500">{errors.supplier.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Category *</label>
-                            <select
-                                {...register("category")}
-                                className={getInputClass(errors.category)}
-                            >
-                                {categoryOptions.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                        {cat}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>}
-                        </div>
+          {/* Item Name */}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Item Name *
+            </label>
+            <input
+              type="text"
+              {...register("item_name")}
+              className={getInputClass(errors.item_name)}
+              placeholder="e.g. Parvovirus Vaccine"
+            />
+            {errors.item_name && (
+              <p className="mt-1 text-sm text-red-500">{errors.item_name.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Unique SKU *</label>
-                            <input
-                                type="text"
-                                {...register("sku")}
-                                className={clsx(getInputClass(errors.sku), "uppercase")}
-                                placeholder="e.g. VAC-PAR-01"
-                            />
-                            {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku.message}</p>}
-                        </div>
+          {/* Sub Details */}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Sub Details
+            </label>
+            <input
+              type="text"
+              {...register("sub_details")}
+              className={getInputClass(errors.sub_details)}
+              placeholder="e.g. 10ml Vial"
+            />
+            {errors.sub_details && (
+              <p className="mt-1 text-sm text-red-500">{errors.sub_details.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Initial Stock Level *</label>
-                            <input
-                                type="number"
-                                min="0"
-                                {...register("stock_level")}
-                                className={getInputClass(errors.stock_level)}
-                            />
-                            {errors.stock_level && <p className="mt-1 text-sm text-red-500">{errors.stock_level.message}</p>}
-                        </div>
+          {/* SKU */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Unique SKU *
+            </label>
+            <input
+              type="text"
+              {...register("sku")}
+              className={clsx(getInputClass(errors.sku), "uppercase")}
+              placeholder="e.g. VAC-PAR-01"
+            />
+            {errors.sku && (
+              <p className="mt-1 text-sm text-red-500">{errors.sku.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Status Tracking *</label>
-                            <select
-                                {...register("status")}
-                                className={getInputClass(errors.status)}
-                            >
-                                {STATUS_OPTIONS.map((status) => (
-                                    <option key={status} value={status}>
-                                        {status}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.status && <p className="mt-1 text-sm text-red-500">{errors.status.message}</p>}
-                        </div>
+          {/* Stock Level */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Initial Stock Level *
+            </label>
+            <input
+              type="number"
+              min="0"
+              {...register("stock_level")}
+              className={getInputClass(errors.stock_level)}
+            />
+            {errors.stock_level && (
+              <p className="mt-1 text-sm text-red-500">{errors.stock_level.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Price ($)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                {...register("price")}
-                                className={getInputClass(errors.price)}
-                                placeholder="0.00"
-                            />
-                            {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>}
-                        </div>
+          {/* Status */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Status Tracking *
+            </label>
+            <select {...register("status")} className={getInputClass(errors.status)}>
+              {STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+            {errors.status && (
+              <p className="mt-1 text-sm text-red-500">{errors.status.message}</p>
+            )}
+          </div>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Supplier</label>
-                            <input
-                                type="text"
-                                {...register("supplier")}
-                                className={getInputClass(errors.supplier)}
-                                placeholder="e.g. Zoetis"
-                            />
-                            {errors.supplier && <p className="mt-1 text-sm text-red-500">{errors.supplier.message}</p>}
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">Expiration Date</label>
-                            <input
-                                type="date"
-                                {...register("expiration_date")}
-                                className={getInputClass(errors.expiration_date)}
-                            />
-                            {errors.expiration_date && <p className="mt-1 text-sm text-red-500">{errors.expiration_date.message}</p>}
-                        </div>
-                    </div>
-
-                    <div className="mt-8 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 focus:outline-none dark:text-zinc-400 dark:hover:bg-dark-surface"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none disabled:opacity-50"
-                        >
-                            {isSubmitting ? (
-                                "Saving..."
-                            ) : (
-                                <>
-                                    <FiCheckCircle className="h-4 w-4" />
-                                    Save Item
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
+          {/* Price */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                Amount (₱)
+            </label>
+            <input
+                type="text"
+                value={priceDisplay}
+                onChange={(e) => {
+                let raw = e.target.value.replace(/,/g, ""); // remove commas
+                // only digits and optional dot
+                if (/^\d*\.?\d*$/.test(raw)) {
+                    setPriceDisplay(
+                        raw
+                        ? (() => {
+                            const [intPart, decPart] = raw.split(".");
+                            return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (decPart !== undefined ? "." + decPart : "");
+                            })()
+                        : ""
+                    );
+                    setValue("price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
+                }
+                }}
+                className={getInputClass(errors.price)}
+                placeholder="0.00"
+            />
+            {errors.price && (
+                <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
+            )}
             </div>
+
+          {/* Expiration Date */}
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Expiration Date
+            </label>
+            <input
+              type="date"
+              {...register("expiration_date")}
+              className={getInputClass(errors.expiration_date)}
+            />
+            {errors.expiration_date && (
+              <p className="mt-1 text-sm text-red-500">{errors.expiration_date.message}</p>
+            )}
+          </div>
         </div>
+
+        {/* Buttons */}
+        <div className="mt-8 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 focus:outline-none dark:text-zinc-400 dark:hover:bg-dark-surface"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              "Saving..."
+            ) : (
+              <>
+                <FiCheckCircle className="h-4 w-4" />
+                Save Item
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
     );
 }
 
