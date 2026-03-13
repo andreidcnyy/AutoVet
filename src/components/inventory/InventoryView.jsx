@@ -216,8 +216,7 @@ function InventoryView() {
           <table className="w-full min-w-[1150px]">
             <thead className="bg-slate-50 dark:bg-dark-surface">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                <th className="px-5 py-4">Item Name</th>
-                <th className="px-5 py-4">Category</th>
+                <th className="px-5 py-4">Item Name / Category</th>
                 <th className="px-5 py-4">SKU</th>
                 <th className="px-5 py-4">Stock Level</th>
                 <th className="px-5 py-4">Status</th>
@@ -228,13 +227,13 @@ function InventoryView() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                  <td colSpan="6" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                     Loading inventory data...
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
+                  <td colSpan="6" className="px-5 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">
                     No items found matching the current filter.
                   </td>
                 </tr>
@@ -250,12 +249,12 @@ function InventoryView() {
                             <Icon className="h-4 w-4" />
                           </span>
                           <div>
+                            <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">{row.category}</p>
                             <p className="text-lg font-semibold text-slate-900 dark:text-zinc-50">{row.item_name}</p>
                             <p className="text-sm text-slate-500 dark:text-zinc-400">{row.sub_details}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-lg text-slate-700 dark:text-zinc-300">{row.category}</td>
                       <td className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">{row.sku}</td>
                       <td className="px-5 py-4 text-lg font-medium text-slate-800 dark:text-zinc-200">{row.stock_level} units</td>
                       <td className="px-5 py-4">

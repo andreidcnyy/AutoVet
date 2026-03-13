@@ -12,22 +12,35 @@ import {
 function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState(initialUser);
+  const [clinic, setClinic] = useState(clinicInfo);
   const matches = useMatches();
 
+  const [isMaintenance, setIsMaintenance] = useState(false);
+
   useEffect(() => {
-    fetch("/api/profile")
-      .then(res => res.json())
-      .then(data => {
-        if (data && !data.error) {
-          setUser({
-            name: data.name || user.name,
-            role: data.role || user.role,
-            email: data.email || user.email,
-            avatar: data.avatar || user.avatar,
-          });
+    Promise.all([
+      fetch("/api/profile").then(res => res.json()).catch(() => ({})),
+      fetch("/api/settings").then(res => res.json()).catch(() => ({}))
+    ]).then(([profileData, settingsData]) => {
+      if (profileData && !profileData.error) {
+        setUser({
+          name: profileData.name || user.name,
+          role: profileData.role || user.role,
+          email: profileData.email || user.email,
+          avatar: profileData.avatar || user.avatar,
+        });
+      }
+      if (settingsData) {
+        if (settingsData.maintenance_mode === 'true' || settingsData.maintenance_mode === true) {
+          setIsMaintenance(true);
         }
-      })
-      .catch(err => console.error("Error fetching global profile data", err));
+        setClinic((prev) => ({
+          ...prev,
+          name: settingsData.clinic_name || prev.name,
+          logo: settingsData.clinic_logo || prev.logo,
+        }));
+      }
+    });
   }, []);
 
   const pageTitle = useMemo(() => {
@@ -35,12 +48,28 @@ function AppLayout() {
     return titledMatch?.handle?.title ?? "AutoVet";
   }, [matches]);
 
+  if (isMaintenance && user.role !== "Admin" && user.role !== "Chief Veterinarian") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center dark:bg-dark-bg">
+        <div className="mb-4 rounded-full bg-amber-100 p-4 dark:bg-amber-900/30">
+          <svg className="h-10 w-10 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">System Under Maintenance</h1>
+        <p className="mt-2 max-w-md text-slate-500 dark:text-zinc-400">
+          We are currently performing routine maintenance. Please check back later.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg transition-colors duration-300">
       <Sidebar
         items={primaryNavigation}
         bottomItems={bottomNavigation}
-        clinic={clinicInfo}
+        clinic={clinic}
         user={user}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}

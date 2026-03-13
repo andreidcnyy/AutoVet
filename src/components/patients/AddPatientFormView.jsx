@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
 import { FiCalendar, FiChevronDown, FiCheckCircle, FiAlertCircle, FiCamera } from "react-icons/fi";
 import { LuFilePlus2, LuPawPrint } from "react-icons/lu";
@@ -54,6 +54,18 @@ const patientSchema = z.object({
 function AddPatientFormView({ onCancel, onSave }) {
   const [error, setError] = useState(null);
   const photoInputRef = useRef(null);
+  const [speciesList, setSpeciesList] = useState(["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.species_list) {
+          setSpeciesList(JSON.parse(data.species_list));
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const {
     register,
@@ -206,12 +218,9 @@ function AddPatientFormView({ onCancel, onSave }) {
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Species *</label>
                 <div className="relative">
                   <select {...register("species")} className={getSelectClass(errors.species)}>
-                    <option>Canine</option>
-                    <option>Feline</option>
-                    <option>Avian</option>
-                    <option>Reptile</option>
-                    <option>Exotic</option>
-                    <option>Other</option>
+                    {speciesList.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                   <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </div>

@@ -41,6 +41,18 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const toast = useToast();
     const [error, setError] = useState(null);
     const photoInputRef = useRef(null);
+    const [speciesList, setSpeciesList] = useState(["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch("/api/settings")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.species_list) setSpeciesList(JSON.parse(data.species_list));
+                })
+                .catch(console.error);
+        }
+    }, [isOpen]);
 
     const {
         register,
@@ -176,8 +188,9 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Species *</label>
                                     <select {...register("species")} className={getSelectClass(errors.species)}>
-                                        <option>Canine</option><option>Feline</option><option>Avian</option>
-                                        <option>Reptile</option><option>Exotic</option><option>Other</option>
+                                        {speciesList.map((s) => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>

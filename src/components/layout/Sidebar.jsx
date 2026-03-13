@@ -50,9 +50,13 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
       >
         <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-dark-border">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
-              <LuPawPrint className="h-5 w-5" />
-            </div>
+            {clinic.logo ? (
+              <img src={clinic.logo} alt="Clinic Logo" className="h-10 w-10 rounded-xl object-cover border border-slate-200 dark:border-dark-border" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
+                <LuPawPrint className="h-5 w-5" />
+              </div>
+            )}
             <div>
               <p className="text-xl font-bold leading-tight text-slate-900 dark:text-zinc-50">{clinic.name}</p>
               <p className="text-sm text-slate-500 dark:text-zinc-500">{clinic.subtitle}</p>

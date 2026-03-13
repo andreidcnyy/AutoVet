@@ -26,26 +26,6 @@ const eventToneStyles = {
   slate: "border-slate-400 bg-slate-200/80 text-slate-700 dark:bg-zinc-700/60 dark:text-zinc-300 dark:border-zinc-500",
 };
 
-const webRequests = [
-  {
-    id: "wr-1",
-    petName: "Bella",
-    breed: "Golden Retriever",
-    request: "Vaccination Follow-up",
-    time: "Today @ 2:15 PM",
-    ago: "18m ago",
-    avatar: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=120&q=80",
-  },
-  {
-    id: "wr-2",
-    petName: "Whiskers",
-    breed: "Siamese Cat",
-    request: "Eye Infection Review",
-    time: "Tomorrow @ 9:30 AM",
-    ago: "1h ago",
-    avatar: "https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=120&q=80",
-  },
-];
 
 const quickAddSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
@@ -267,48 +247,6 @@ function AppointmentsView() {
           </form>
         </section>
 
-        {/* Web Requests */}
-        <section className="card-shell p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">WEB REQUESTS</h3>
-            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-              2 New
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {webRequests.map((request) => (
-              <article key={request.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
-                <div className="flex items-start gap-3">
-                  <img src={request.avatar} alt={request.petName} className="h-10 w-10 rounded-full object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-base font-semibold text-slate-900 dark:text-zinc-50">{request.petName}</p>
-                    <p className="text-sm text-slate-500 dark:text-zinc-400">{request.breed}</p>
-                  </div>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500">{request.ago}</p>
-                </div>
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-dark-border dark:bg-dark-card">
-                  <p className="text-sm text-slate-600 dark:text-zinc-300">Request: {request.request}</p>
-                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{request.time}</p>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => toast.info("Reschedule requested sent to user.")}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface"
-                  >
-                    Reschedule
-                  </button>
-                  <button
-                    onClick={() => toast.success("Request approved and booked.")}
-                    className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                  >
-                    Approve
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
 
         {/* AI Forecast Alert */}
         <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-600/30 dark:bg-blue-600/10">

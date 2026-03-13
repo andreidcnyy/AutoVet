@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import DashboardActions from "../components/dashboard/DashboardActions";
 import InventoryChartCard from "../components/dashboard/InventoryChartCard";
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
-import { dashboardActions } from "../data/dashboardData";
+import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
 
 function DashboardPage() {
   const [apiStatus, setApiStatus] = useState(null);
@@ -40,11 +39,12 @@ function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[2fr_1fr]">
-        <InventoryChartCard data={inventory} />
+        <div className="space-y-6">
+          <AiSalesForecastCard />
+          <InventoryChartCard data={inventory} />
+        </div>
         <RecentNotificationsCard items={notifications} />
       </section>
-
-      <DashboardActions actions={dashboardActions} />
     </div>
   );
 }
