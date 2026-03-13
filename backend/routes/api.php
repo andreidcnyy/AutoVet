@@ -9,6 +9,8 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\UserController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -32,6 +34,8 @@ Route::put('/settings', [SettingController::class, 'update']);
 
 Route::apiResource('appointments', AppointmentController::class);
 Route::apiResource('invoices', InvoiceController::class);
+Route::apiResource('services', ServiceController::class);
+Route::apiResource('users', UserController::class);
 
 Route::get('/status', function () {
     return response()->json([
