@@ -12,7 +12,6 @@ import {
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
 
-const quickAdds = ["+ Consultation", "+ Rabies Vax", "+ Nail Trim"];
 
 const lineItems = [
   {
@@ -131,10 +130,10 @@ function BillingInvoiceView() {
   };
 
   const handleQuickAdd = (service) => {
-    const price = service.includes("Consultation") ? 60 : service.includes("Vax") ? 45 : 30;
+    const price = Number(service.price) || 0;
     const newItem = {
       id: `li-${Date.now()}`,
-      name: service.replace("+ ", ""),
+      name: service.name,
       notes: "Quick Add Service",
       qty: 1,
       unitPrice: price,
@@ -321,13 +320,13 @@ function BillingInvoiceView() {
               <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
 
               <div className="mb-3 flex flex-wrap gap-2">
-                {quickAdds.map((pill) => (
+                {services.slice(0, 4).map((service) => (
                   <button
-                    key={pill}
-                    onClick={() => handleQuickAdd(pill)}
-                    className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 text-sm font-medium text-blue-600"
+                    key={service.id}
+                    onClick={() => handleQuickAdd(service)}
+                    className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                   >
-                    {pill}
+                    + {service.name}
                   </button>
                 ))}
               </div>
