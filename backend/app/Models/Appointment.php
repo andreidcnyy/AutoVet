@@ -10,6 +10,12 @@ class Appointment extends Model
         'title',
         'date',
         'time',
-        'tone'
+        'tone',
+        'patient_id',
     ];
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
 }

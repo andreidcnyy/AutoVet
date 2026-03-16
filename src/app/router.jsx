@@ -5,6 +5,7 @@ import BillingPage from "../pages/BillingPage";
 import DashboardPage from "../pages/DashboardPage";
 import InventoryPage from "../pages/InventoryPage";
 import PatientsPage from "../pages/PatientsPage";
+import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
 import ProfilePage from "../pages/ProfilePage";
 import SettingsPage from "../pages/SettingsPage";
 
@@ -22,6 +23,11 @@ export const router = createBrowserRouter([
         path: "patients",
         element: <PatientsPage />,
         handle: { title: "Patient Records" },
+      },
+      {
+        path: "patients/:id",
+        element: <ViewPatientProfilePage />,
+        handle: { title: "Patient Profile" },
       },
       {
         path: "appointments",

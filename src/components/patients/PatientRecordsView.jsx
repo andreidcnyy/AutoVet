@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import {
   FiCalendar,
@@ -12,6 +13,7 @@ import {
   FiUploadCloud,
   FiUser,
   FiEdit2,
+  FiExternalLink,
 } from "react-icons/fi";
 import { LuStethoscope } from "react-icons/lu";
 import EditPatientModal from "./EditPatientModal";
@@ -226,9 +228,17 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
                 </div>
               </div>
 
+              <Link
+                to={`/patients/${selectedPatient.id}`}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition"
+              >
+                <FiExternalLink className="h-4 w-4" />
+                View Full Profile
+              </Link>
+
               <button
                 onClick={() => toast.success(`Appointment booking initiated for ${selectedPatient.name}.`)}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
               >
                 <FiCalendar className="h-4 w-4" />
                 Book Appointment
