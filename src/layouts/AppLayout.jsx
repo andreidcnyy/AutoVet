@@ -1,54 +1,36 @@
-import { useMemo, useState, useEffect } from "react";
-import { Outlet, useMatches } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Outlet, useMatches, useNavigate } from "react-router-dom";
 import Sidebar from "../components/layout/Sidebar";
 import TopHeader from "../components/layout/TopHeader";
 import {
   bottomNavigation,
   clinicInfo,
-  currentUser as initialUser,
   primaryNavigation,
 } from "../config/navigation";
+import { useAuth } from "../context/AuthContext";
 
 function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [user, setUser] = useState(initialUser);
   const [clinic, setClinic] = useState(clinicInfo);
   const matches = useMatches();
-
+  const navigate = useNavigate();
+  const { user, login: setUser } = useAuth();
   const [isMaintenance, setIsMaintenance] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/profile").then(res => res.json()).catch(() => ({})),
-      fetch("/api/settings").then(res => res.json()).catch(() => ({}))
-    ]).then(([profileData, settingsData]) => {
-      if (profileData && !profileData.error) {
-        setUser({
-          name: profileData.name || user.name,
-          role: profileData.role || user.role,
-          email: profileData.email || user.email,
-          avatar: profileData.avatar || user.avatar,
-        });
-      }
-      if (settingsData) {
-        if (settingsData.maintenance_mode === 'true' || settingsData.maintenance_mode === true) {
-          setIsMaintenance(true);
-        }
-        setClinic((prev) => ({
-          ...prev,
-          name: settingsData.clinic_name || prev.name,
-          logo: settingsData.clinic_logo || prev.logo,
-        }));
-      }
-    });
-  }, []);
+  // If not authenticated, redirect to login (useEffect to avoid render loop)
+  React.useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+    }
+  }, [user, navigate]);
+  if (!user) return null;
 
   const pageTitle = useMemo(() => {
     const titledMatch = [...matches].reverse().find((match) => match.handle?.title);
     return titledMatch?.handle?.title ?? "AutoVet";
   }, [matches]);
 
-  if (isMaintenance && user.role !== "Admin" && user.role !== "Chief Veterinarian") {
+  if (isMaintenance && user?.role !== "Admin" && user?.role !== "Chief Veterinarian") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center dark:bg-dark-bg">
         <div className="mb-4 rounded-full bg-amber-100 p-4 dark:bg-amber-900/30">
@@ -63,6 +45,7 @@ function AppLayout() {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg transition-colors duration-300">

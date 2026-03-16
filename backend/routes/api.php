@@ -11,6 +11,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuthController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -39,6 +40,7 @@ Route::apiResource('appointments', AppointmentController::class);
 Route::apiResource('invoices', InvoiceController::class);
 Route::apiResource('services', ServiceController::class);
 Route::apiResource('users', UserController::class);
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/status', function () {
     return response()->json([
