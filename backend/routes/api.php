@@ -12,10 +12,13 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/dashboard/sales-forecast', [DashboardController::class, 'getSalesForecast']);
 
 Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
 Route::get('/profile', [ProfileController::class, 'show']);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiCircle } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
 import clsx from "clsx";
@@ -15,26 +15,33 @@ function createPath(points) {
         .join(" ");
 }
 
-const mockSalesData = [
-    { month: "Jul", actual: 125000, forecast: 120000 },
-    { month: "Aug", actual: 142000, forecast: 135000 },
-    { month: "Sep", actual: 138000, forecast: 140000 },
-    { month: "Oct", actual: 155000, forecast: 148000 },
-    { month: "Nov", actual: 162000, forecast: 158000 },
-    { month: "Dec", actual: null, forecast: 185000 },
-    { month: "Jan", actual: null, forecast: 172000 },
-];
-
 function AiSalesForecastCard() {
     const [activeRange, setActiveRange] = useState("6 Months");
-    const data = mockSalesData;
+    const [data, setData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        fetch(`/api/dashboard/sales-forecast?range=${activeRange}`)
+            .then(res => res.json())
+            .then(fetchedData => {
+                setData(fetchedData);
+                setIsLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch forecast:", err);
+                setIsLoading(false);
+            });
+    }, [activeRange]);
 
     const allValues = data.flatMap((entry) => [entry.actual, entry.forecast]).filter((value) => value !== null);
-    const min = Math.min(...allValues) * 0.9;
-    const max = Math.max(...allValues) * 1.1;
+    
+    // To avoid NaN when data is empty
+    const min = allValues.length ? Math.min(...allValues) * 0.9 : 0;
+    const max = allValues.length ? Math.max(...allValues) * 1.1 : 100;
     const span = Math.max(max - min, 1);
 
-    const xStep = (WIDTH - PADDING_X * 2) / (data.length - 1);
+    const xStep = data.length > 1 ? (WIDTH - PADDING_X * 2) / (data.length - 1) : 0;
     const toY = (value) => HEIGHT - PADDING_Y - ((value - min) / span) * (HEIGHT - PADDING_Y * 2);
 
     const forecastPoints = data.map((entry, index) => ({
@@ -46,7 +53,7 @@ function AiSalesForecastCard() {
         .map((entry, index) => (entry.actual === null ? null : { x: PADDING_X + xStep * index, y: toY(entry.actual) }))
         .filter(Boolean);
 
-    const latestActualPoint = actualPoints[actualPoints.length - 1];
+    const latestActualPoint = actualPoints.length > 0 ? actualPoints[actualPoints.length - 1] : null;
     const latestActualValue = data.filter((entry) => entry.actual !== null).at(-1)?.actual;
 
     const currency = (val) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(val);
@@ -103,39 +110,45 @@ function AiSalesForecastCard() {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface relative z-10">
-                <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[330px] w-full">
-                    {[0.2, 0.4, 0.6, 0.8].map((ratio) => (
-                        <line
-                            key={ratio}
-                            x1={PADDING_X}
-                            y1={HEIGHT * ratio}
-                            x2={WIDTH - PADDING_X}
-                            y2={HEIGHT * ratio}
-                            className="stroke-slate-200 dark:stroke-zinc-700"
-                            strokeDasharray="4 4"
-                        />
-                    ))}
+                {isLoading ? (
+                    <div className="h-[330px] w-full flex items-center justify-center">
+                        <div className="text-slate-500 dark:text-zinc-400 font-medium">Loading AI Forecast...</div>
+                    </div>
+                ) : (
+                    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[330px] w-full">
+                        {[0.2, 0.4, 0.6, 0.8].map((ratio) => (
+                            <line
+                                key={ratio}
+                                x1={PADDING_X}
+                                y1={HEIGHT * ratio}
+                                x2={WIDTH - PADDING_X}
+                                y2={HEIGHT * ratio}
+                                className="stroke-slate-200 dark:stroke-zinc-700"
+                                strokeDasharray="4 4"
+                            />
+                        ))}
 
-                    <path d={createPath(forecastPoints)} className="fill-none stroke-slate-400 dark:stroke-zinc-500" strokeWidth="2.5" strokeDasharray="8 8" />
-                    <path d={createPath(actualPoints)} className="fill-none stroke-emerald-500" strokeWidth="4" strokeLinecap="round" />
+                        <path d={createPath(forecastPoints)} className="fill-none stroke-slate-400 dark:stroke-zinc-500" strokeWidth="2.5" strokeDasharray="8 8" />
+                        <path d={createPath(actualPoints)} className="fill-none stroke-emerald-500" strokeWidth="4" strokeLinecap="round" />
 
-                    {latestActualPoint ? (
-                        <>
-                            <circle cx={latestActualPoint.x} cy={latestActualPoint.y} r="6" className="fill-emerald-500" />
-                            <g transform={`translate(${latestActualPoint.x - 45}, ${latestActualPoint.y - 52})`}>
-                                <rect width="90" height="36" rx="8" className="fill-zinc-800 dark:fill-zinc-700" />
-                                <text x="45" y="23" textAnchor="middle" className="fill-white text-sm font-semibold">
-                                    {currency(latestActualValue)}
-                                </text>
-                            </g>
-                        </>
-                    ) : null}
-                </svg>
+                        {latestActualPoint ? (
+                            <>
+                                <circle cx={latestActualPoint.x} cy={latestActualPoint.y} r="6" className="fill-emerald-500" />
+                                <g transform={`translate(${latestActualPoint.x - 45}, ${latestActualPoint.y - 52})`}>
+                                    <rect width="90" height="36" rx="8" className="fill-zinc-800 dark:fill-zinc-700" />
+                                    <text x="45" y="23" textAnchor="middle" className="fill-white text-sm font-semibold">
+                                        {currency(latestActualValue)}
+                                    </text>
+                                </g>
+                            </>
+                        ) : null}
+                    </svg>
+                )}
             </div>
 
-            <div className="mt-4 grid grid-cols-7 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400 relative z-10">
-                {data.map((entry) => (
-                    <span key={entry.month}>{entry.month}</span>
+            <div className="mt-4 grid grid-cols-7 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400 relative z-10" style={{ gridTemplateColumns: `repeat(${data.length || 7}, minmax(0, 1fr))` }}>
+                {data.map((entry, i) => (
+                    <span key={i}>{entry.month}</span>
                 ))}
             </div>
         </section>
