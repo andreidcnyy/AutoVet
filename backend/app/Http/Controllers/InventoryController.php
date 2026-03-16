@@ -12,6 +12,12 @@ class InventoryController extends Controller
         return response()->json(Inventory::all());
     }
 
+    public function lowStock(Request $request)
+    {
+        $lowStockItems = Inventory::whereRaw('stock_level <= min_stock_level')->get();
+        return response()->json($lowStockItems);
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([

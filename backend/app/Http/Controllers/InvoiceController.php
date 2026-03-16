@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Services\InvoiceFinalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +41,7 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.amount' => 'required|numeric|min:0',
+            'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
         if ($validated['discount_value'] > clone $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
@@ -75,6 +77,9 @@ class InvoiceController extends Controller
             foreach ($validated['items'] as $item) {
                 $invoice->items()->create($item);
             }
+
+            $invoice->load('items');
+            (new InvoiceFinalizationService())->finalizeInvoice($invoice);
 
             DB::commit();
             return response()->json($invoice->load('patient', 'items'), 201);
@@ -118,6 +123,7 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required_with:items|integer|min:1',
             'items.*.unit_price' => 'required_with:items|numeric|min:0',
             'items.*.amount' => 'required_with:items|numeric|min:0',
+            'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
         if ($invoice->status === 'Finalized' && in_array($validated['status'], ['Draft', 'Finalized'])) {
@@ -158,6 +164,9 @@ class InvoiceController extends Controller
                     }
                 }
             }
+
+            $invoice->load('items');
+            (new InvoiceFinalizationService())->finalizeInvoice($invoice);
 
             DB::commit();
             return response()->json($invoice->load('patient', 'items'));

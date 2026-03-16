@@ -15,6 +15,7 @@ class Inventory extends Model
         'status',
         'price',
         'supplier',
-        'expiration_date'
+        'expiration_date',
+        'min_stock_level'
     ];
 }
