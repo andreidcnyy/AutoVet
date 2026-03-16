@@ -44,7 +44,7 @@ class InvoiceController extends Controller
             'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
-        if ($validated['discount_value'] > clone $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
+        if ($validated['discount_value'] > $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
              throw ValidationException::withMessages(['discount_value' => 'Discount cannot exceed subtotal.']);
         }
         
