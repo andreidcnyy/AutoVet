@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { getPetImageUrl } from "../../utils/petImages";
 import {
   FiCalendar,
   FiFilter,
@@ -226,7 +227,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
                       )}
                     >
                       <td className="px-5 py-4">
-                        <img src={patient.photo || patient.avatar || "https://via.placeholder.com/48"} alt={patient.name} className="h-12 w-12 rounded-full object-cover" />
+                        <img src={patient.photo || getPetImageUrl(patient.species, patient.breed)} alt={patient.name} className="h-12 w-12 rounded-full object-cover bg-slate-100" />
                       </td>
                       <td className="px-5 py-4">
                         <p className="text-lg font-semibold text-slate-900 dark:text-zinc-50">{patient.name}</p>
@@ -274,7 +275,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
               Edit
             </button>
             <div className="border-b border-slate-200 p-6 pt-10 dark:border-dark-border">
-              <img src={selectedPatient.photo || selectedPatient.avatar || "https://via.placeholder.com/96"} alt={selectedPatient.name} className="h-24 w-24 rounded-2xl object-cover" />
+              <img src={selectedPatient.photo || getPetImageUrl(selectedPatient.species, selectedPatient.breed)} alt={selectedPatient.name} className="h-24 w-24 rounded-2xl object-cover bg-slate-100" />
               <h3 className="mt-4 text-4xl font-bold text-slate-900 dark:text-zinc-50">{selectedPatient.name}</h3>
               <p className="mt-1 text-lg text-slate-500 dark:text-zinc-400">
                 {selectedPatient.breed} • {selectedPatient.gender}

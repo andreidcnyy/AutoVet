@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import { getPetImageUrl } from "../../utils/petImages";
 import {
   FiArrowLeft,
   FiPhone,
@@ -298,9 +299,9 @@ function OverviewTab({ patient }) {
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
         <img
-          src={patient.photo || "https://via.placeholder.com/160?text=🐾"}
+          src={patient.photo || getPetImageUrl(patient.species, patient.breed)}
           alt={patient.name}
-          className="h-40 w-40 rounded-2xl border-2 border-slate-100 object-cover shadow-sm dark:border-dark-border"
+          className="h-40 w-40 rounded-2xl border-2 border-slate-100 object-cover shadow-sm dark:border-dark-border bg-slate-100"
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
