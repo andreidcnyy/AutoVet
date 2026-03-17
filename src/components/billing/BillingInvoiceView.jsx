@@ -150,6 +150,7 @@ function BillingInvoiceView() {
   const [clinicSettings, setClinicSettings] = useState(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const [services, setServices] = useState([]);
 
