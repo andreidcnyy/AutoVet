@@ -16,126 +16,179 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
+const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /* ───────────────────────────────────────── PDF Generation ── */
 async function generateInvoicePDF(invoiceData, patient, clinic) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
 
-  // Header bar
-  doc.setFillColor(37, 99, 235); // blue-600
-  doc.rect(0, 0, pageW, 40, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  // 1. Light Theme Background (White)
+  doc.setFillColor(255, 255, 255); 
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  let y = 15;
+
+  // 2. Header Section
+  if (clinic?.clinic_logo) {
+    try {
+      doc.addImage(clinic.clinic_logo, 'PNG', 14, y, 16, 16, undefined, 'FAST');
+    } catch (e) {
+      console.error("PDF Logo error:", e);
+    }
+  }
+
+  // Clinic Info (Left Aligned)
+  doc.setTextColor(30, 41, 59); // Slate-800 (Dark)
   doc.setFont("helvetica", "bold");
-  doc.text(clinic?.clinic_name || "AutoVet Clinic", 14, 18);
-  doc.setFontSize(10);
+  doc.setFontSize(18);
+  doc.text(clinic?.clinic_name || "AutoVet Clinic", 34, y + 8);
+  
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(clinic?.address || "", 14, 26);
-  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 14, 32);
+  doc.setTextColor(100, 116, 139); // Slate-500
+  doc.text(clinic?.address || "", 34, y + 13);
+  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 34, y + 17);
 
-  doc.setFontSize(30);
-  doc.text("INVOICE", pageW - 14, 25, { align: "right" });
-  doc.setFontSize(10);
-  doc.text(`#${invoiceData.invoice_number || "DRAFT"}`, pageW - 14, 33, { align: "right" });
-
-  let y = 55;
-  doc.setTextColor(30, 41, 59); // slate-800
-
-  // Bill To / Patient Info
-  doc.setFontSize(12);
+  // Invoice Title (Right Aligned)
+  doc.setTextColor(203, 213, 225); // Light slate for the word "INVOICE"
+  doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
-  doc.text("BILL TO:", 14, y);
-  doc.text("PATIENT:", 110, y);
-  
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  y += 6;
-  doc.text(patient?.owner_name || "N/A", 14, y);
-  doc.text(patient?.name || "N/A", 110, y);
-  
-  y += 5;
+  doc.text("INVOICE", pageW - 14, y + 10, { align: "right" });
+
   doc.setFontSize(9);
+  doc.setTextColor(30, 41, 59);
+  doc.text(`#${invoiceData.invoice_number || "VB-2026-000"}`, pageW - 14, y + 18, { align: "right" });
   doc.setTextColor(100, 116, 139);
-  const ownerAddress = [patient?.owner_address, patient?.owner_city, patient?.owner_province].filter(Boolean).join(", ");
-  doc.text(ownerAddress || "No address provided", 14, y);
-  doc.text(`${patient?.species || ""} ${patient?.breed ? "• " + patient.breed : ""}`, 110, y);
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
+  doc.text(`Due: Upon Receipt`, pageW - 14, y + 28, { align: "right" });
 
-  y += 5;
-  doc.text(patient?.owner_email || "", 14, y);
-  doc.text(patient?.owner_phone || "", 14, y + 5);
+  y = 55;
 
-  y += 15;
+  // 3. Billing Sections
+  // Bill To Box
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("BILL TO", 14, y);
+  
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(12);
+  doc.text(patient?.owner_name || "Guest Client", 14, y + 7);
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 116, 139);
+  doc.text(patient?.owner_address || "No address", 14, y + 13);
+  doc.text(patient?.owner_email || "", 14, y + 18);
+  doc.text(patient?.owner_phone || "", 14, y + 23);
 
-  // Invoice Items Table
+  // Patient Card (Subtle Gray Box)
+  const patientCardX = 110;
+  doc.setFillColor(248, 250, 252); // Slate-50 (Very light gray)
+  doc.roundedRect(patientCardX - 4, y - 4, 90, 32, 4, 4, "F");
+  
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("PATIENT", patientCardX, y + 2);
+
+  if (patient?.photo) {
+    try {
+        doc.addImage(patient.photo, 'JPEG', patientCardX, y + 5, 10, 10);
+    } catch(e){}
+  }
+
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(10);
+  doc.text(patient?.name || "N/A", patientCardX + 13, y + 10);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`${patient?.species || ""} • ${patient?.breed || ""}`, patientCardX + 13, y + 15);
+
+  y += 45;
+
+  // 4. Line Items Table (Clean Light Design)
   autoTable(doc, {
     startY: y,
     theme: "striped",
-    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold" },
-    head: [["Description", "Qty", "Unit Price", "Amount"]],
-    body: invoiceData.items.map(item => [
-      item.name + (item.notes ? "\n" + item.notes : ""),
-      item.qty,
-      currency(item.unitPrice || item.unit_price),
-      currency(item.amount)
-    ]),
+    styles: {
+      fillColor: [255, 255, 255],
+      textColor: [30, 41, 59],
+      cellPadding: 4,
+      fontSize: 9,
+    },
+    headStyles: {
+      fillColor: [37, 99, 235], // Blue header for branding
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8,
+    },
     columnStyles: {
-      1: { halign: "right" },
-      2: { halign: "right" },
-      3: { halign: "right" }
-    }
+      0: { halign: 'left' }, 
+      1: { halign: 'right', cellWidth: 20 },
+      2: { halign: 'right', cellWidth: 30 },
+      3: { halign: 'right', cellWidth: 35 },
+    },
+    head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
+    body: invoiceData.items.map(item => [
+      item.name.toUpperCase() + (item.notes ? "\n" + item.notes : ""),
+      item.qty,
+      (item.unitPrice || 0).toFixed(2),
+      (item.amount || 0).toFixed(2)
+    ]),
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  y = doc.lastAutoTable.finalY + 15;
 
-  // Totals
-  const rightColX = pageW - 14;
-  doc.setFontSize(10);
+  // 5. Totals Section
+  const totalsX = pageW - 14;
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
+  
+  // Subtotal
+  doc.text("Subtotal", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
+  doc.text(pdfCurrency(invoiceData.subtotal), totalsX, y, { align: "right" });
   
-  const drawTotalLine = (label, value, isBold = false) => {
-    if (isBold) doc.setFont("helvetica", "bold");
-    else doc.setFont("helvetica", "normal");
-    doc.text(label, rightColX - 40, y, { align: "right" });
-    doc.text(currency(value), rightColX, y, { align: "right" });
-    y += 6;
-  };
+  // Tax
+  y += 7;
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Tax (${invoiceData.tax_rate}%)`, totalsX - 40, y, { align: "right" });
+  doc.setTextColor(30, 41, 59);
+  const taxAmt = (invoiceData.taxable || invoiceData.subtotal) * (invoiceData.tax_rate / 100);
+  doc.text(pdfCurrency(taxAmt), totalsX, y, { align: "right" });
 
-  drawTotalLine("Subtotal:", invoiceData.subtotal);
-  drawTotalLine(`Tax (${invoiceData.tax_rate}%):`, (invoiceData.taxable || invoiceData.subtotal) * (invoiceData.tax_rate / 100));
-  if (invoiceData.discountAmount > 0 || invoiceData.discount_value > 0) {
-    const dAmt = invoiceData.discountAmount || (invoiceData.discount_type === 'percentage' ? invoiceData.subtotal * (invoiceData.discount_value/100) : invoiceData.discount_value);
-    drawTotalLine("Discount:", -dAmt);
-  }
-  
-  y += 2;
-  doc.setLineWidth(0.5);
-  doc.line(rightColX - 50, y - 4, rightColX, y - 4);
-  
+  // Total Due
+  y += 12;
   doc.setFontSize(14);
-  drawTotalLine("TOTAL DUE:", invoiceData.total, true);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("Total Due", totalsX - 45, y, { align: "right" });
+  doc.setTextColor(37, 99, 235); // Blue-600 Highlight
+  doc.text(pdfCurrency(invoiceData.total), totalsX, y, { align: "right" });
 
-  // Notes
-  if (invoiceData.notes || invoiceData.notes_to_client) {
-    y += 10;
-    doc.setFontSize(10);
+  // 6. Notes Footer
+  if (invoiceData.notes_to_client || invoiceData.notes) {
+    y += 20;
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("NOTES:", 14, y);
+    doc.text("NOTES TO CLIENT", 14, y);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139);
-    const splitNotes = doc.splitTextToSize(invoiceData.notes || invoiceData.notes_to_client, 120);
+    doc.setTextColor(30, 41, 59);
+    const splitNotes = doc.splitTextToSize(invoiceData.notes_to_client || invoiceData.notes, 140);
     doc.text(splitNotes, 14, y + 6);
   }
 
-  // Footer
-  const pageH = doc.internal.pageSize.getHeight();
+  // Final Footer
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.text("Thank you for choosing AutoVet Clinic for your pet's care.", pageW / 2, pageH - 15, { align: "center" });
   doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
 
-  doc.save(`Invoice_${invoiceData.invoice_number || "Draft"}.pdf`);
+  doc.save(`Invoice_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
 
 function BillingInvoiceView() {

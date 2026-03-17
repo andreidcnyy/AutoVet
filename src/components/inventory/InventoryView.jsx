@@ -130,12 +130,28 @@ function InventoryView() {
 
   const filteredRows = inventoryRows.filter((row) => {
     if (activeFilter === "All Items") return true;
+    if (activeFilter === "Low Stock") return Number(row.stock_level) <= Number(row.min_stock_level);
+    if (activeFilter === "Expiring") {
+      if (!row.expiration_date) return false;
+      const expDate = new Date(row.expiration_date);
+      const today = new Date();
+      const diffTime = expDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 && diffDays <= 30;
+    }
     return row.status === activeFilter;
   });
 
   const totalItems = inventoryRows.length;
-  const lowStock = inventoryRows.filter((r) => r.status === "Low Stock").length;
-  const expiring = inventoryRows.filter((r) => r.status === "Expiring").length;
+  const lowStock = inventoryRows.filter((r) => Number(r.stock_level) <= Number(r.min_stock_level)).length;
+  const expiring = inventoryRows.filter((r) => {
+    if (!r.expiration_date) return false;
+    const expDate = new Date(r.expiration_date);
+    const today = new Date();
+    const diffTime = expDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 && diffDays <= 30; // Flag if expiring within 30 days
+  }).length;
 
   const dynamicSummaryCards = [
     { id: "total", label: "TOTAL ITEMS", value: totalItems.toLocaleString(), meta: "Based on DB", metaTone: "text-emerald-600", icon: FiBox },
@@ -280,14 +296,27 @@ function InventoryView() {
                       <td className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">{row.sku}</td>
                       <td className="px-5 py-4 text-lg font-medium text-slate-800 dark:text-zinc-200">{row.stock_level} units</td>
                       <td className="px-5 py-4">
-                        <span
-                          className={clsx(
-                            "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
-                            statusStyles[row.status] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                          )}
-                        >
-                          {row.status}
-                        </span>
+                        {(() => {
+                           const isLowStock = Number(row.stock_level) <= Number(row.min_stock_level);
+                           const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
+                           const isExpiring = expDate && (expDate - new Date()) / (1000 * 60 * 60 * 24) <= 30;
+                           
+                           let currentStatus = row.status;
+                           if (isLowStock) currentStatus = "Low Stock";
+                           else if (isExpiring) currentStatus = "Expiring";
+                           else currentStatus = "In Stock";
+
+                           return (
+                             <span
+                               className={clsx(
+                                 "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
+                                 statusStyles[currentStatus] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                               )}
+                             >
+                               {currentStatus}
+                             </span>
+                           );
+                        })()}
                       </td>
                       <td className="px-5 py-4">
                         <p className="text-base font-semibold text-slate-500 dark:text-zinc-400">

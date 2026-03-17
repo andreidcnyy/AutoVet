@@ -118,7 +118,13 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">{label}</p>
                 {isEditing ? (
                   <input
-                    type={field === "price" || field === "stock_level" || field === "min_stock_level" ? "number" : "text"}
+                    type={
+                      field === "price" || field === "stock_level" || field === "min_stock_level" 
+                        ? "number" 
+                        : field === "expiration_date" 
+                          ? "date" 
+                          : "text"
+                    }
                     className={inputClass}
                     value={formData[field] ?? ""}
                     onChange={(e) => handleChange(field, e.target.value)}
