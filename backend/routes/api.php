@@ -11,10 +11,19 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/dashboard/sales-forecast', [DashboardController::class, 'getSalesForecast']);
+Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
+Route::get('/dashboard/notifications', [DashboardController::class, 'getNotifications']);
+Route::get('/dashboard/inventory-forecast', [DashboardController::class, 'getInventoryForecast']);
+Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
 
 Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
 Route::get('/profile', [ProfileController::class, 'show']);
@@ -29,6 +38,7 @@ Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])
 Route::get('/patients', [PatientController::class, 'index']);
 Route::get('/patients/{patient}', [PatientController::class, 'show']);
 Route::post('/patients', [PatientController::class, 'store']);
+Route::post('/patients/import', [PatientController::class, 'import']);
 Route::put('/patients/{patient}', [PatientController::class, 'update']);
 Route::delete('/patients/{patient}', [PatientController::class, 'destroy']);
 
@@ -39,6 +49,7 @@ Route::apiResource('appointments', AppointmentController::class);
 Route::apiResource('invoices', InvoiceController::class);
 Route::apiResource('services', ServiceController::class);
 Route::apiResource('users', UserController::class);
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/status', function () {
     return response()->json([

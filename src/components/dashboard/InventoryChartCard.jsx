@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { FiCircle } from "react-icons/fi";
 import clsx from "clsx";
 
@@ -14,8 +14,32 @@ function createPath(points) {
     .join(" ");
 }
 
-function InventoryChartCard({ data = [] }) {
+function InventoryChartCard() {
   const [activeRange, setActiveRange] = useState("6 Months");
+  const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`/api/dashboard/inventory-consumption?range=${activeRange}`)
+      .then(res => res.json())
+      .then(fetchedData => {
+        setData(fetchedData);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch inventory data:", err);
+        setIsLoading(false);
+      });
+  }, [activeRange]);
+
+  if (isLoading) {
+    return (
+      <section className="card-shell flex min-h-[460px] items-center justify-center p-6 border-dashed border-2 dark:border-dark-border">
+        <span className="text-slate-400 dark:text-zinc-500 font-medium">Loading Inventory Data...</span>
+      </section>
+    );
+  }
 
   if (!data || data.length === 0) {
     return (
@@ -26,11 +50,11 @@ function InventoryChartCard({ data = [] }) {
   }
 
   const allValues = data.flatMap((entry) => [entry.actual, entry.forecast]).filter((value) => value !== null);
-  const min = Math.min(...allValues);
-  const max = Math.max(...allValues);
+  const min = allValues.length ? Math.min(...allValues) * 0.9 : 0;
+  const max = allValues.length ? Math.max(...allValues) * 1.1 : 100;
   const span = Math.max(max - min, 1);
 
-  const xStep = (WIDTH - PADDING_X * 2) / (data.length - 1);
+  const xStep = data.length > 1 ? (WIDTH - PADDING_X * 2) / (data.length - 1) : 0;
   const toY = (value) => HEIGHT - PADDING_Y - ((value - min) / span) * (HEIGHT - PADDING_Y * 2);
 
   const forecastPoints = data.map((entry, index) => ({
@@ -42,7 +66,7 @@ function InventoryChartCard({ data = [] }) {
     .map((entry, index) => (entry.actual === null ? null : { x: PADDING_X + xStep * index, y: toY(entry.actual) }))
     .filter(Boolean);
 
-  const latestActualPoint = actualPoints[actualPoints.length - 1];
+  const latestActualPoint = actualPoints.length > 0 ? actualPoints[actualPoints.length - 1] : null;
   const latestActualValue = data.filter((entry) => entry.actual !== null).at(-1)?.actual;
 
   return (
@@ -112,7 +136,7 @@ function InventoryChartCard({ data = [] }) {
               <g transform={`translate(${latestActualPoint.x - 40}, ${latestActualPoint.y - 52})`}>
                 <rect width="88" height="36" rx="8" className="fill-zinc-800 dark:fill-zinc-700" />
                 <text x="44" y="23" textAnchor="middle" className="fill-white text-sm font-semibold">
-                  {latestActualValue} ml
+                  {latestActualValue} units
                 </text>
               </g>
             </>
@@ -120,9 +144,9 @@ function InventoryChartCard({ data = [] }) {
         </svg>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400 md:grid-cols-7">
-        {data.map((entry) => (
-          <span key={entry.month}>{entry.month}</span>
+      <div className="mt-4 grid grid-cols-4 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400" style={{ gridTemplateColumns: `repeat(${data.length || 4}, minmax(0, 1fr))` }}>
+        {data.map((entry, i) => (
+          <span key={i}>{entry.month}</span>
         ))}
       </div>
     </section>

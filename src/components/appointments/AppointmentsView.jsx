@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import {
   FiBell,
@@ -37,15 +38,21 @@ const quickAddSchema = z.object({
 
 function AppointmentsView() {
   const toast = useToast();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const preSelectedPatientId = queryParams.get("patientId");
+
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [aiForecast, setAiForecast] = useState(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(quickAddSchema),
@@ -54,9 +61,16 @@ function AppointmentsView() {
       date: "",
       time: "",
       tone: "green",
-      patient_id: ""
+      patient_id: preSelectedPatientId || ""
     }
   });
+
+  // Update form if preSelectedPatientId changes
+  useEffect(() => {
+    if (preSelectedPatientId) {
+      setValue("patient_id", preSelectedPatientId);
+    }
+  }, [preSelectedPatientId, setValue]);
 
   const fetchAppointments = () => {
     fetch("/api/appointments")
@@ -71,7 +85,29 @@ function AppointmentsView() {
       .then((res) => res.json())
       .then((data) => setPatients(data))
       .catch((err) => console.error("Error fetching patients:", err));
+
+    // Fetch initial AI forecast
+    fetch("/api/dashboard/appointment-forecast")
+      .then(res => res.json())
+      .then(data => setAiForecast(data))
+      .catch(() => {});
   }, []);
+
+  const handleReviewHints = () => {
+    if (aiForecast) {
+      toast.info(
+        <div className="text-left">
+          <p className="font-bold border-b border-blue-200 dark:border-blue-800 pb-1 mb-2">AI Planning Hints:</p>
+          <ul className="list-disc pl-4 space-y-1 text-sm">
+            {aiForecast.hints.map((hint, i) => <li key={i}>{hint}</li>)}
+          </ul>
+        </div>, 
+        { duration: 6000 }
+      );
+    } else {
+      toast.info("AI Analysis is still processing historical data.");
+    }
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -290,10 +326,10 @@ function AppointmentsView() {
             <p className="text-sm font-bold uppercase tracking-wide">AI Forecast Alert</p>
           </div>
           <p className="text-sm text-blue-900 dark:text-blue-300">
-            Increased flea and dermatology visits are expected next week due to humidity trends. Review inventory and block triage slots in advance.
+            {aiForecast?.insight || "Analyzing clinic data for scheduling trends and staffing recommendations..."}
           </p>
           <button
-            onClick={() => toast.info("Opened AI scheduling hints.")}
+            onClick={handleReviewHints}
             className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <FiBell className="h-4 w-4" />

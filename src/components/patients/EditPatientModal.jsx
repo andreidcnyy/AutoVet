@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
+import { getPetImageUrl } from "../../utils/petImages";
 
 const inputBase =
     "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
@@ -102,6 +103,8 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     if (!isOpen || !patient) return null;
 
     const photoValue = watch("photo");
+    const speciesValue = watch("species");
+    const breedValue = watch("breed");
 
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -164,13 +167,21 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     onClick={() => photoInputRef.current?.click()}
                                     className="group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400 dark:border-dark-border dark:bg-dark-surface"
                                 >
-                                    {photoValue && typeof photoValue === 'string' && photoValue.length > 0 ? (
+                                    {photoValue ? (
                                         <img src={photoValue} alt="Pet" className="h-full w-full object-cover" />
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full gap-1 text-slate-400">
-                                            <FiCamera className="h-5 w-5" />
-                                        </div>
+                                        <img 
+                                            src={getPetImageUrl(speciesValue, breedValue)} 
+                                            alt="Species preview" 
+                                            className="h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" 
+                                        />
                                     )}
+                                    <div className={clsx(
+                                        "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
+                                        photoValue ? "opacity-0 group-hover:opacity-100" : "opacity-100 group-hover:bg-black/30"
+                                    )}>
+                                        <FiCamera className="h-5 w-5 text-white shadow-sm" />
+                                    </div>
                                 </button>
                                 <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
                                 <div>

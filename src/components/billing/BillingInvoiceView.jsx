@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import clsx from "clsx";
 import {
   FiCalendar,
   FiChevronDown,
@@ -11,34 +12,131 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
-
-
-const lineItems = [
-  {
-    id: "li-1",
-    name: "General Consultation",
-    notes: "Service • Dr. Jenkins",
-    qty: 1,
-    unitPrice: 60,
-    amount: 60,
-    indicator: "bg-blue-50 dark:bg-blue-900/200",
-  },
-  {
-    id: "li-2",
-    name: "Heartgard Plus (Blue)",
-    notes: "Medication • 6 Pack",
-    qty: 1,
-    unitPrice: 45,
-    amount: 45,
-    indicator: "bg-emerald-500",
-    warning: "Low Stock",
-  },
-];
-
-const discount = 0;
-const taxRate = 8;
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
+
+/* ───────────────────────────────────────── PDF Generation ── */
+async function generateInvoicePDF(invoiceData, patient, clinic) {
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // Header bar
+  doc.setFillColor(37, 99, 235); // blue-600
+  doc.rect(0, 0, pageW, 40, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text(clinic?.clinic_name || "AutoVet Clinic", 14, 18);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(clinic?.address || "", 14, 26);
+  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 14, 32);
+
+  doc.setFontSize(30);
+  doc.text("INVOICE", pageW - 14, 25, { align: "right" });
+  doc.setFontSize(10);
+  doc.text(`#${invoiceData.invoice_number || "DRAFT"}`, pageW - 14, 33, { align: "right" });
+
+  let y = 55;
+  doc.setTextColor(30, 41, 59); // slate-800
+
+  // Bill To / Patient Info
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("BILL TO:", 14, y);
+  doc.text("PATIENT:", 110, y);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  y += 6;
+  doc.text(patient?.owner_name || "N/A", 14, y);
+  doc.text(patient?.name || "N/A", 110, y);
+  
+  y += 5;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  const ownerAddress = [patient?.owner_address, patient?.owner_city, patient?.owner_province].filter(Boolean).join(", ");
+  doc.text(ownerAddress || "No address provided", 14, y);
+  doc.text(`${patient?.species || ""} ${patient?.breed ? "• " + patient.breed : ""}`, 110, y);
+
+  y += 5;
+  doc.text(patient?.owner_email || "", 14, y);
+  doc.text(patient?.owner_phone || "", 14, y + 5);
+
+  y += 15;
+
+  // Invoice Items Table
+  autoTable(doc, {
+    startY: y,
+    theme: "striped",
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold" },
+    head: [["Description", "Qty", "Unit Price", "Amount"]],
+    body: invoiceData.items.map(item => [
+      item.name + (item.notes ? "\n" + item.notes : ""),
+      item.qty,
+      currency(item.unitPrice || item.unit_price),
+      currency(item.amount)
+    ]),
+    columnStyles: {
+      1: { halign: "right" },
+      2: { halign: "right" },
+      3: { halign: "right" }
+    }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // Totals
+  const rightColX = pageW - 14;
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59);
+  
+  const drawTotalLine = (label, value, isBold = false) => {
+    if (isBold) doc.setFont("helvetica", "bold");
+    else doc.setFont("helvetica", "normal");
+    doc.text(label, rightColX - 40, y, { align: "right" });
+    doc.text(currency(value), rightColX, y, { align: "right" });
+    y += 6;
+  };
+
+  drawTotalLine("Subtotal:", invoiceData.subtotal);
+  drawTotalLine(`Tax (${invoiceData.tax_rate}%):`, (invoiceData.taxable || invoiceData.subtotal) * (invoiceData.tax_rate / 100));
+  if (invoiceData.discountAmount > 0 || invoiceData.discount_value > 0) {
+    const dAmt = invoiceData.discountAmount || (invoiceData.discount_type === 'percentage' ? invoiceData.subtotal * (invoiceData.discount_value/100) : invoiceData.discount_value);
+    drawTotalLine("Discount:", -dAmt);
+  }
+  
+  y += 2;
+  doc.setLineWidth(0.5);
+  doc.line(rightColX - 50, y - 4, rightColX, y - 4);
+  
+  doc.setFontSize(14);
+  drawTotalLine("TOTAL DUE:", invoiceData.total, true);
+
+  // Notes
+  if (invoiceData.notes || invoiceData.notes_to_client) {
+    y += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("NOTES:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    const splitNotes = doc.splitTextToSize(invoiceData.notes || invoiceData.notes_to_client, 120);
+    doc.text(splitNotes, 14, y + 6);
+  }
+
+  // Footer
+  const pageH = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  doc.text("Thank you for choosing AutoVet Clinic for your pet's care.", pageW / 2, pageH - 15, { align: "center" });
+  doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
+
+  doc.save(`Invoice_${invoiceData.invoice_number || "Draft"}.pdf`);
+}
 
 function BillingInvoiceView() {
   const toast = useToast();
@@ -53,6 +151,7 @@ function BillingInvoiceView() {
   const [clinicSettings, setClinicSettings] = useState(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const [services, setServices] = useState([]);
 
@@ -260,234 +359,260 @@ function BillingInvoiceView() {
 
   return (
     <div className="card-shell overflow-hidden p-0">
-      <div className="grid grid-cols-1 lg:h-[calc(100vh-11rem)] lg:grid-cols-[410px_1fr]">
-        <aside className="flex h-full flex-col overflow-hidden border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-slate-200 dark:border-dark-border">
-          <div className="shrink-0 border-b border-slate-200 dark:border-dark-border p-5">
-            <p className="text-sm text-slate-500 dark:text-zinc-400">Billing &gt; New Invoice</p>
-            <div className="mt-2 flex items-center gap-3">
-              <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">New Invoice</h2>
-              <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-                Draft
-              </span>
+      <div className={clsx(
+        "grid grid-cols-1 lg:h-[calc(100vh-11rem)]",
+        isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]"
+      )}>
+        {!isPreviewMode && (
+          <aside className="flex h-full flex-col overflow-hidden border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-slate-200 dark:border-dark-border">
+            <div className="shrink-0 border-b border-slate-200 dark:border-dark-border p-5">
+              <p className="text-sm text-slate-500 dark:text-zinc-400">Billing &gt; New Invoice</p>
+              <div className="mt-2 flex items-center gap-3">
+                <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">New Invoice</h2>
+                <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                  {status}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
-            <section>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
-              <div className="space-y-3">
-                <div className="relative">
-                  <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  <select
-                    value={selectedPatientId}
-                    onChange={handlePatientSelect}
-                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
-                    disabled={status === "Finalized"}
-                  >
-                    <option value="">Select a patient...</option>
-                    {patients.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (Owner: {p.owner_name})
-                      </option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                </div>
-
-                {patientDetails && (
-                  <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner_phone || "N/A"}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {
-                      [patientDetails.owner_address, patientDetails.owner_city, patientDetails.owner_province, patientDetails.owner_zip].filter(Boolean).join(", ") || "N/A"
-                    }</p>
-                    <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
-                    {patientDetails.date_of_birth && (
-                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Age:</strong> {(() => {
-                        const dob = new Date(patientDetails.date_of_birth);
-                        const diff = Date.now() - dob.getTime();
-                        const ageDate = new Date(diff);
-                        return Math.abs(ageDate.getUTCFullYear() - 1970);
-                      })()} yrs</p>
-                    )}
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
+              <section>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                    <select
+                      value={selectedPatientId}
+                      onChange={handlePatientSelect}
+                      className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                      disabled={status === "Finalized"}
+                    >
+                      <option value="">Select a patient...</option>
+                      {patients.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (Owner: {p.owner_name})
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   </div>
-                )}
-              </div>
-            </section>
 
-            <section>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
-
-              <div className="mb-3 flex flex-wrap gap-2">
-                {services.slice(0, 4).map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => handleQuickAdd(service)}
-                    className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                  >
-                    + {service.name}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-[1fr_54px_80px] gap-2">
-                <div className="relative">
-                  <input
-                    list="services-list"
-                    type="text"
-                    placeholder="Search or add service..."
-                    value={serviceInput}
-                    onChange={handleServiceChange}
-                    onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
-                    disabled={status === "Finalized"}
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
-                  />
-                  <datalist id="services-list">
-                    {services.map(s => (
-                      <option key={s.id} value={s.name} />
-                    ))}
-                  </datalist>
+                  {patientDetails && (
+                    <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner_phone || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {
+                        [patientDetails.owner_address, patientDetails.owner_city, patientDetails.owner_province, patientDetails.owner_zip].filter(Boolean).join(", ") || "N/A"
+                      }</p>
+                      <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
+                      {patientDetails.date_of_birth && (
+                        <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Age:</strong> {(() => {
+                          const dob = new Date(patientDetails.date_of_birth);
+                          const diff = Date.now() - dob.getTime();
+                          const ageDate = new Date(diff);
+                          return Math.abs(ageDate.getUTCFullYear() - 1970);
+                        })()} yrs</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  value={qtyInput}
-                  onChange={(e) => setQtyInput(e.target.value)}
-                  disabled={status === "Finalized"}
-                  className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
-                />
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">₱</span>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
+
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {services.slice(0, 4).map((service) => (
+                    <button
+                      key={service.id}
+                      onClick={() => handleQuickAdd(service)}
+                      className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      + {service.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-[1fr_54px_80px] gap-2">
+                  <div className="relative">
+                    <input
+                      list="services-list"
+                      type="text"
+                      placeholder="Search or add service..."
+                      value={serviceInput}
+                      onChange={handleServiceChange}
+                      onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
+                      disabled={status === "Finalized"}
+                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
+                    />
+                    <datalist id="services-list">
+                      {services.map(s => (
+                        <option key={s.id} value={s.name} />
+                      ))}
+                    </datalist>
+                  </div>
                   <input
                     type="number"
-                    min="0"
-                    value={priceInput}
-                    onChange={(e) => setPriceInput(e.target.value)}
+                    min="1"
+                    value={qtyInput}
+                    onChange={(e) => setQtyInput(e.target.value)}
                     disabled={status === "Finalized"}
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                   />
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {items.length > 0 ? items.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
-                          <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
-                          {item.name}
-                        </p>
-                        <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">{item.notes}</p>
-                      </div>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                    </div>
-
-                    {item.warning ? (
-                      <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                        {item.warning}
-                      </span>
-                    ) : null}
-                  </article>
-                )) : (
-                  <p className="pt-4 text-center text-sm text-slate-400">No items added yet.</p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <div className="shrink-0 space-y-4 border-t border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-            <section className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={discountType}
-                      onChange={(e) => {
-                        setDiscountType(e.target.value);
-                        setDiscountVal(0);
-                      }}
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">₱</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={priceInput}
+                      onChange={(e) => setPriceInput(e.target.value)}
                       disabled={status === "Finalized"}
-                      className="h-10 w-1/3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                    >
-                      <option value="percentage">%</option>
-                      <option value="fixed">₱</option>
-                    </select>
-                    <div className="relative flex-1">
-                      <input
-                        type="number"
-                        min="0"
-                        value={discountVal}
-                        onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
-                        disabled={status === "Finalized"}
-                        className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                      />
-                    </div>
+                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    />
                   </div>
                 </div>
+
+                <div className="mt-3 space-y-2">
+                  {items.length > 0 ? items.map((item) => (
+                    <article key={item.id} className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
+                            <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
+                            {item.name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">{item.notes}</p>
+                        </div>
+                        <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                      </div>
+
+                      {item.warning ? (
+                        <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          {item.warning}
+                        </span>
+                      ) : null}
+                    </article>
+                  )) : (
+                    <p className="pt-4 text-center text-sm text-slate-400">No items added yet.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <div className="shrink-0 space-y-4 border-t border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+              <section className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={discountType}
+                        onChange={(e) => {
+                          setDiscountType(e.target.value);
+                          setDiscountVal(0);
+                        }}
+                        disabled={status === "Finalized"}
+                        className="h-10 w-1/3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
+                      >
+                        <option value="percentage">%</option>
+                        <option value="fixed">₱</option>
+                      </select>
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={discountVal}
+                          onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
+                          disabled={status === "Finalized"}
+                          className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
+                    <input
+                      type="text"
+                      value={taxRateVal}
+                      onChange={(e) => setTaxRateVal(Number(e.target.value) || 0)}
+                      className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
-                  <input
-                    type="text"
-                    value={taxRateVal}
-                    onChange={(e) => setTaxRateVal(Number(e.target.value) || 0)}
-                    className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    disabled={status === "Finalized"}
+                    placeholder="Visible on the invoice..."
+                    className="w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
                   />
                 </div>
-              </div>
+              </section>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  disabled={status === "Finalized"}
-                  placeholder="Visible on the invoice..."
-                  className="w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
-                />
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={resetForm}
+                  className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => submitInvoice("Draft")}
+                  disabled={status !== "Draft"}
+                  className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-50 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                >
+                  Save Draft
+                </button>
               </div>
-            </section>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                onClick={resetForm}
-                disabled={status !== "Draft"}
-                className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-zinc-800"
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => submitInvoice("Draft")}
-                disabled={status !== "Draft"}
-                className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-50 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-              >
-                Save Draft
-              </button>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
 
         <section className="flex h-full flex-col overflow-hidden bg-slate-100 dark:bg-zinc-950">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
             <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-zinc-400">
-              <span className="inline-flex items-center gap-2 font-semibold text-slate-600 dark:text-zinc-300">
+              <button 
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                className={clsx(
+                  "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
+                  isPreviewMode ? "bg-blue-600 text-white" : "text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-dark-surface"
+                )}
+              >
                 <FiEye className="h-4 w-4" />
-                Preview Mode
-              </span>
+                {isPreviewMode ? "Exit Preview" : "Preview Mode"}
+              </button>
               <span>Invoice Status: <b className="text-slate-700 dark:text-slate-300">{status}</b></span>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => toast.info("Printing invoice...")}
+                onClick={() => window.print()}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiPrinter className="h-4 w-4" />
               </button>
               <button
-                onClick={() => toast.info("Downloading PDF...")}
+                onClick={() => {
+                  if (items.length === 0) {
+                    toast.error("Add items before downloading PDF.");
+                    return;
+                  }
+                  const invoiceData = {
+                    invoice_number: "DRAFT-" + Date.now(),
+                    subtotal,
+                    tax_rate: taxRateVal,
+                    discount_value: discountVal,
+                    discount_type: discountType,
+                    total: totalDue,
+                    notes_to_client: notes,
+                    items: items
+                  };
+                  generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
+                }}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiDownload className="h-4 w-4" />
@@ -504,7 +629,7 @@ function BillingInvoiceView() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 md:p-6 text-left">
-            <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md">
+            <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
               <header className="flex flex-row items-start justify-between gap-4 sm:gap-6">
                 <div className="flex-1 min-w-0 pr-2 sm:pr-4">
                   <p className="inline-flex items-center gap-2.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">

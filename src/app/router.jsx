@@ -8,8 +8,14 @@ import PatientsPage from "../pages/PatientsPage";
 import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
 import ProfilePage from "../pages/ProfilePage";
 import SettingsPage from "../pages/SettingsPage";
+import LoginPage from "../pages/LoginPage";
 
 export const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+    handle: { title: "Login" },
+  },
   {
     path: "/",
     element: <AppLayout />,

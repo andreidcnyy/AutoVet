@@ -6,6 +6,7 @@ import { FiUser } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { getPetImageUrl } from "../../utils/petImages";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -87,6 +88,8 @@ function AddPatientFormView({ onCancel, onSave }) {
   });
 
   const photoValue = watch("photo");
+  const speciesValue = watch("species");
+  const breedValue = watch("breed");
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -174,16 +177,18 @@ function AddPatientFormView({ onCancel, onSave }) {
                 {photoValue ? (
                   <img src={photoValue} alt="Pet preview" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-1 text-slate-400 group-hover:text-blue-500">
-                    <FiCamera className="h-7 w-7" />
-                    <span className="text-xs font-medium">Add Photo</span>
-                  </div>
+                  <img 
+                    src={getPetImageUrl(speciesValue, breedValue)} 
+                    alt="Species preview" 
+                    className="h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" 
+                  />
                 )}
-                {photoValue && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <FiCamera className="h-6 w-6 text-white" />
-                  </div>
-                )}
+                <div className={clsx(
+                  "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
+                  photoValue ? "opacity-0 group-hover:opacity-100" : "opacity-100 group-hover:bg-black/30"
+                )}>
+                  <FiCamera className="h-7 w-7 text-white shadow-sm" />
+                </div>
               </button>
               <input
                 ref={photoInputRef}

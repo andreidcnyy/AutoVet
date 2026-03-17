@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const menuRef = useRef(null);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -100,6 +103,8 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                   onClick={() => {
                     toast.success("Logged out successfully.");
                     setOpenProfileMenu(false);
+                    logout();
+                    navigate("/login");
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                 >

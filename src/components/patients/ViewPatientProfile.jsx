@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import { getPetImageUrl } from "../../utils/petImages";
 import {
   FiArrowLeft,
   FiPhone,
@@ -298,9 +299,9 @@ function OverviewTab({ patient }) {
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
         <img
-          src={patient.photo || "https://via.placeholder.com/160?text=🐾"}
+          src={patient.photo || getPetImageUrl(patient.species, patient.breed)}
           alt={patient.name}
-          className="h-40 w-40 rounded-2xl border-2 border-slate-100 object-cover shadow-sm dark:border-dark-border"
+          className="h-40 w-40 rounded-2xl border-2 border-slate-100 object-cover shadow-sm dark:border-dark-border bg-slate-100"
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
@@ -312,6 +313,8 @@ function OverviewTab({ patient }) {
             { label: "Weight", value: patient.weight ? `${patient.weight} kg` : "—" },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
             { label: "Status", value: patient.status || "—" },
+            { label: "Last Visit", value: patient.last_visit },
+            { label: "Next Due", value: patient.next_due },
           ].map((item) => (
             <div
               key={item.label}
@@ -376,13 +379,22 @@ function OverviewTab({ patient }) {
       </section>
 
       {/* Download PDF */}
-      <button
-        onClick={() => generatePatientPDF(patient)}
-        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
-      >
-        <FiDownload className="h-4 w-4" />
-        Download Summary (PDF)
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={() => generatePatientPDF(patient)}
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+        >
+          <FiDownload className="h-4 w-4" />
+          Download Summary (PDF)
+        </button>
+        <button
+          onClick={() => navigate(`/appointments?patientId=${patient.id}`)}
+          className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 transition"
+        >
+          <FiCalendar className="h-4 w-4" />
+          Book Appointment
+        </button>
+      </div>
     </div>
   );
 }
