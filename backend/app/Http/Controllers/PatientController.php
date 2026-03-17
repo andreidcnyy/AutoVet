@@ -12,6 +12,15 @@ class PatientController extends Controller
         return response()->json(Patient::orderBy('created_at', 'desc')->get());
     }
 
+    public function show(Patient $patient)
+    {
+        return response()->json(
+            $patient->load(['appointments' => function ($q) {
+                $q->orderBy('date', 'desc');
+            }, 'invoices.items'])
+        );
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

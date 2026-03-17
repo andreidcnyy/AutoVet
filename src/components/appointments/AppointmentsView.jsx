@@ -32,6 +32,7 @@ const quickAddSchema = z.object({
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required").regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
   tone: z.string().min(1, "Tone is required").max(50),
+  patient_id: z.string().optional(),
 });
 
 function AppointmentsView() {
@@ -39,6 +40,7 @@ function AppointmentsView() {
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
+  const [patients, setPatients] = useState([]);
 
   const {
     register,
@@ -51,7 +53,8 @@ function AppointmentsView() {
       title: "",
       date: "",
       time: "",
-      tone: "green"
+      tone: "green",
+      patient_id: ""
     }
   });
 
@@ -64,14 +67,25 @@ function AppointmentsView() {
 
   useEffect(() => {
     fetchAppointments();
+    fetch("/api/patients")
+      .then((res) => res.json())
+      .then((data) => setPatients(data))
+      .catch((err) => console.error("Error fetching patients:", err));
   }, []);
 
   const onSubmit = async (data) => {
     try {
+      const payload = { ...data };
+      // Convert patient_id to number or remove if empty
+      if (payload.patient_id) {
+        payload.patient_id = Number(payload.patient_id);
+      } else {
+        delete payload.patient_id;
+      }
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -170,6 +184,9 @@ function AppointmentsView() {
                   >
                     <p className="font-semibold">{event.time}</p>
                     <p className="truncate">{event.title}</p>
+                    {event.patient && (
+                      <p className="truncate text-[10px] opacity-75">🐾 {event.patient.name}</p>
+                    )}
                   </article>
                 ))}
               </div>
@@ -234,6 +251,24 @@ function AppointmentsView() {
                 <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               </div>
               {errors.tone && <p className="mt-1 text-xs text-red-500">{errors.tone.message}</p>}
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Link Patient (optional)</label>
+              <div className="relative">
+                <select
+                  {...register("patient_id")}
+                  className={clsx(getQInputClass(false), "appearance-none pr-9")}
+                >
+                  <option value="">— No patient —</option>
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {p.species || "Unknown"}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
+              </div>
             </div>
 
             <button

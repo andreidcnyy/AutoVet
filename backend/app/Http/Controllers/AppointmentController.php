@@ -10,7 +10,7 @@ class AppointmentController extends Controller
 {
     public function index()
     {
-        return response()->json(Appointment::all());
+        return response()->json(Appointment::with('patient')->orderBy('date', 'desc')->get());
     }
 
     public function store(Request $request)
@@ -19,11 +19,12 @@ class AppointmentController extends Controller
             'title' => 'required|string|max:255',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'tone' => 'nullable|string'
+            'tone' => 'nullable|string',
+            'patient_id' => 'nullable|exists:patients,id',
         ]);
 
         $appointment = Appointment::create($validated);
 
-        return response()->json($appointment, 201);
+        return response()->json($appointment->load('patient'), 201);
     }
 }

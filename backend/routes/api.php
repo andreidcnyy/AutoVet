@@ -21,10 +21,13 @@ Route::get('/profile', [ProfileController::class, 'show']);
 Route::put('/profile', [ProfileController::class, 'update']);
 
 Route::get('/inventory', [InventoryController::class, 'index']);
+Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock']);
+Route::get('/reports/inventory/low-stock', [\App\Http\Controllers\LowStockReportController::class, 'generate']);
 Route::post('/inventory', [InventoryController::class, 'store']);
 Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy']);
 
 Route::get('/patients', [PatientController::class, 'index']);
+Route::get('/patients/{patient}', [PatientController::class, 'show']);
 Route::post('/patients', [PatientController::class, 'store']);
 Route::put('/patients/{patient}', [PatientController::class, 'update']);
 Route::delete('/patients/{patient}', [PatientController::class, 'destroy']);
