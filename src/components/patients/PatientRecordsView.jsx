@@ -50,6 +50,56 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
   const [activeFilter, setActiveFilter] = useState("All Species");
   const [searchValue, setSearchValue] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check if it's a CSV
+    if (!file.name.endsWith(".csv")) {
+      toast.error("Please upload a valid CSV file.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsImporting(true);
+    try {
+      const response = await fetch("/api/patients/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to import patients.");
+      }
+
+      const result = await response.json();
+      toast.success(`Successfully imported ${result.count} patients!`);
+      
+      // Refresh the page or call a parent refresh function
+      window.location.reload(); 
+    } catch (err) {
+      toast.error(err.message);
+      console.error(err);
+    } finally {
+      setIsImporting(false);
+      e.target.value = ""; // Reset input
+    }
+  };
+
+  const downloadTemplate = () => {
+    const headers = "name,species,breed,gender,date_of_birth,owner_name,owner_phone,owner_email,owner_address\n";
+    const blob = new Blob([headers], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "autovet_patient_template.csv";
+    a.click();
+  };
 
   const filteredPatients = useMemo(() => {
     const search = searchValue.trim().toLowerCase();
@@ -77,13 +127,29 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
           <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">Manage history, appointments, and medical follow-ups.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => toast.info("Importing patient records is not configured.")}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
-          >
-            <FiUploadCloud className="h-4 w-4" />
-            Import
-          </button>
+          <input
+            type="file"
+            id="csv-import"
+            accept=".csv"
+            className="hidden"
+            onChange={handleImport}
+          />
+          <div className="flex flex-col items-end">
+            <button
+              onClick={() => document.getElementById("csv-import").click()}
+              disabled={isImporting}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500 disabled:opacity-50"
+            >
+              <FiUploadCloud className="h-4 w-4" />
+              {isImporting ? "Importing..." : "Import CSV"}
+            </button>
+            <button 
+              onClick={downloadTemplate}
+              className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Download Template
+            </button>
+          </div>
           <button
             onClick={onOpenAddPatient}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"

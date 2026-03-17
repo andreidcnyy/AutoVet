@@ -84,4 +84,37 @@ class PatientController extends Controller
         $patient->delete();
         return response()->json(null, 204);
     }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle); // Skip header
+
+        $count = 0;
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < 5) continue;
+
+            Patient::create([
+                'name' => $row[0] ?? 'Unknown',
+                'species' => $row[1] ?? 'Unknown',
+                'breed' => $row[2] ?? '',
+                'gender' => $row[3] ?? 'Unknown',
+                'date_of_birth' => $row[4] ?? null,
+                'owner_name' => $row[5] ?? 'Unknown',
+                'owner_phone' => $row[6] ?? '',
+                'owner_email' => $row[7] ?? '',
+                'owner_address' => $row[8] ?? '',
+                'status' => 'Healthy',
+            ]);
+            $count++;
+        }
+        fclose($handle);
+
+        return response()->json(['message' => 'Import successful', 'count' => $count]);
+    }
 }

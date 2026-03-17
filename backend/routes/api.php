@@ -36,6 +36,7 @@ Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])
 Route::get('/patients', [PatientController::class, 'index']);
 Route::get('/patients/{patient}', [PatientController::class, 'show']);
 Route::post('/patients', [PatientController::class, 'store']);
+Route::post('/patients/import', [PatientController::class, 'import']);
 Route::put('/patients/{patient}', [PatientController::class, 'update']);
 Route::delete('/patients/{patient}', [PatientController::class, 'destroy']);
 
