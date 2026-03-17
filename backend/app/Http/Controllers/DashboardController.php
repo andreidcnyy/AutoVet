@@ -11,6 +11,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+class DashboardController extends Controller
+{
     /**
      * Get detailed AI analysis for a specific inventory item or general stock.
      */
