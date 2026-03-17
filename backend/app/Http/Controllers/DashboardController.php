@@ -11,8 +11,60 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class DashboardController extends Controller
-{
+    /**
+     * Get detailed AI analysis for a specific inventory item or general stock.
+     */
+    public function getInventoryForecast()
+    {
+        // For this demo, let's pick the item with the lowest stock relative to its min level
+        $item = Inventory::orderByRaw('(stock_level - min_stock_level) ASC')->first();
+
+        if (!$item) {
+            return response()->json(['message' => 'No inventory items found.'], 404);
+        }
+
+        // Simulate monthly usage for the chart (last 5 months + current + 1 forecast)
+        $months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $usage = [120, 135, 110, 145, 160, 130]; // Mock usage
+        $forecast = 150; // Mock forecast
+
+        return response()->json([
+            'item_name' => $item->item_name,
+            'recommended_stock' => $item->min_stock_level * 2,
+            'current_stock' => $item->stock_level,
+            'growth_label' => '+12% vs last year',
+            'analysis' => "Based on the last 6 months of usage and expected seasonal demand, {$item->item_name} stock is projected to run below safety level by " . now()->addDays(15)->format('M d') . ".",
+            'chart_data' => [
+                'months' => $months,
+                'usage' => $usage,
+                'forecast' => $forecast
+            ]
+        ]);
+    }
+
+    /**
+     * Get AI planning hints for appointments.
+     */
+    public function getAppointmentForecast()
+    {
+        // Simple logic: if many dermatology or vaccine appointments in past, predict more
+        $totalApps = Appointment::count();
+        $insight = "Clinic activity is stable. Standard staffing recommended for the coming week.";
+        
+        if ($totalApps > 10) {
+            $insight = "Increased dermatology and wellness visits are expected next week based on seasonal patterns. Consider blocking additional triage slots.";
+        }
+
+        return response()->json([
+            'insight' => $insight,
+            'hints' => [
+                'Ensure vaccine stock is above 50 units.',
+                'Block 2 extra slots on Monday morning.',
+                'Prepare flea & tick preventative displays.'
+            ]
+        ]);
+    }
+
     /**
      * Get overall dashboard statistics.
      */

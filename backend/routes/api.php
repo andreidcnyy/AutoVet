@@ -22,6 +22,8 @@ Route::get('/dashboard/sales-forecast', [DashboardController::class, 'getSalesFo
 Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
 Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
 Route::get('/dashboard/notifications', [DashboardController::class, 'getNotifications']);
+Route::get('/dashboard/inventory-forecast', [DashboardController::class, 'getInventoryForecast']);
+Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
 
 Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
 Route::get('/profile', [ProfileController::class, 'show']);

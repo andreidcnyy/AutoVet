@@ -59,6 +59,7 @@ function InventoryView() {
   const [inventoryRows, setInventoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [aiForecastData, setAiForecastData] = useState(null);
 
   useEffect(() => {
     const fetchInventory = async () => {
@@ -76,6 +77,27 @@ function InventoryView() {
     };
     fetchInventory();
   }, []);
+
+  const handleRunForecast = async () => {
+    setIsSimulating(true);
+    setShowAiAside(false);
+    
+    try {
+      const response = await fetch("/api/dashboard/inventory-forecast");
+      if (!response.ok) throw new Error("Failed to fetch forecast");
+      const data = await response.json();
+      setAiForecastData(data);
+      
+      // Simulate analysis delay
+      setTimeout(() => {
+        setIsSimulating(false);
+        setShowAiAside(true);
+      }, 1500);
+    } catch (err) {
+      toast.error("AI Analysis failed. Please check your data.");
+      setIsSimulating(false);
+    }
+  };
 
   const handleSaveNewItem = (newItem) => {
     // Optimistically push the newly saved backend item to the top of the local state 
@@ -305,13 +327,13 @@ function InventoryView() {
         onDeleteRequest={handleDeleteProduct}
       />
 
-      {showAiAside && (
+      {showAiAside && aiForecastData && (
         <aside className="fixed bottom-6 right-6 z-[9500] w-[430px] animate-in slide-in-from-bottom-10 fade-in duration-300">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft ring-1 ring-slate-900/5 dark:ring-white/10">
             <div className="flex items-center justify-between bg-blue-600 px-5 py-3 text-white">
               <p className="text-xl font-bold flex items-center gap-2">
                 <LuSparkles className="h-5 w-5" />
-                AI Analysis: Rabies Vaccine
+                AI Analysis: {aiForecastData.item_name}
               </p>
               <button onClick={() => setShowAiAside(false)} className="rounded-md p-1 hover:bg-white/15 transition-colors">
                 <FiX className="h-5 w-5" />
@@ -322,27 +344,22 @@ function InventoryView() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Recommended Stock Level</p>
-                  <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-zinc-50">150 Units</p>
+                  <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-zinc-50">{aiForecastData.recommended_stock} Units</p>
                 </div>
-                <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">+12% vs last year</span>
+                <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{aiForecastData.growth_label}</span>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
                 <TrendMiniChart />
                 <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
-                  <span>Jun</span>
-                  <span>Jul</span>
-                  <span>Aug</span>
-                  <span>Sep</span>
-                  <span>Oct</span>
-                  <span>Nov</span>
-                  <span className="text-blue-600 dark:text-blue-400">Dec (Est)</span>
+                  {aiForecastData.chart_data.months.map((m, i) => (
+                    <span key={i} className={i === 6 ? "text-blue-600 dark:text-blue-400" : ""}>{m} {i === 6 ? "(Est)" : ""}</span>
+                  ))}
                 </div>
               </div>
 
               <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
-                Based on the last 6 months of usage and expected seasonal demand, current stock is projected to run below
-                safety level by December 15.
+                {aiForecastData.analysis}
               </p>
 
               <div className="grid grid-cols-2 gap-3 mt-2">
