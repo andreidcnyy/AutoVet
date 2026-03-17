@@ -19,6 +19,9 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/dashboard/sales-forecast', [DashboardController::class, 'getSalesForecast']);
+Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
+Route::get('/dashboard/notifications', [DashboardController::class, 'getNotifications']);
 
 Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
 Route::get('/profile', [ProfileController::class, 'show']);
