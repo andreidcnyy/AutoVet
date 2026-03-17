@@ -11,34 +11,131 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
-
-
-const lineItems = [
-  {
-    id: "li-1",
-    name: "General Consultation",
-    notes: "Service • Dr. Jenkins",
-    qty: 1,
-    unitPrice: 60,
-    amount: 60,
-    indicator: "bg-blue-50 dark:bg-blue-900/200",
-  },
-  {
-    id: "li-2",
-    name: "Heartgard Plus (Blue)",
-    notes: "Medication • 6 Pack",
-    qty: 1,
-    unitPrice: 45,
-    amount: 45,
-    indicator: "bg-emerald-500",
-    warning: "Low Stock",
-  },
-];
-
-const discount = 0;
-const taxRate = 8;
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
+
+/* ───────────────────────────────────────── PDF Generation ── */
+async function generateInvoicePDF(invoiceData, patient, clinic) {
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // Header bar
+  doc.setFillColor(37, 99, 235); // blue-600
+  doc.rect(0, 0, pageW, 40, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text(clinic?.clinic_name || "AutoVet Clinic", 14, 18);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(clinic?.address || "", 14, 26);
+  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 14, 32);
+
+  doc.setFontSize(30);
+  doc.text("INVOICE", pageW - 14, 25, { align: "right" });
+  doc.setFontSize(10);
+  doc.text(`#${invoiceData.invoice_number || "DRAFT"}`, pageW - 14, 33, { align: "right" });
+
+  let y = 55;
+  doc.setTextColor(30, 41, 59); // slate-800
+
+  // Bill To / Patient Info
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("BILL TO:", 14, y);
+  doc.text("PATIENT:", 110, y);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  y += 6;
+  doc.text(patient?.owner_name || "N/A", 14, y);
+  doc.text(patient?.name || "N/A", 110, y);
+  
+  y += 5;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  const ownerAddress = [patient?.owner_address, patient?.owner_city, patient?.owner_province].filter(Boolean).join(", ");
+  doc.text(ownerAddress || "No address provided", 14, y);
+  doc.text(`${patient?.species || ""} ${patient?.breed ? "• " + patient.breed : ""}`, 110, y);
+
+  y += 5;
+  doc.text(patient?.owner_email || "", 14, y);
+  doc.text(patient?.owner_phone || "", 14, y + 5);
+
+  y += 15;
+
+  // Invoice Items Table
+  autoTable(doc, {
+    startY: y,
+    theme: "striped",
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold" },
+    head: [["Description", "Qty", "Unit Price", "Amount"]],
+    body: invoiceData.items.map(item => [
+      item.name + (item.notes ? "\n" + item.notes : ""),
+      item.qty,
+      currency(item.unitPrice || item.unit_price),
+      currency(item.amount)
+    ]),
+    columnStyles: {
+      1: { halign: "right" },
+      2: { halign: "right" },
+      3: { halign: "right" }
+    }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // Totals
+  const rightColX = pageW - 14;
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59);
+  
+  const drawTotalLine = (label, value, isBold = false) => {
+    if (isBold) doc.setFont("helvetica", "bold");
+    else doc.setFont("helvetica", "normal");
+    doc.text(label, rightColX - 40, y, { align: "right" });
+    doc.text(currency(value), rightColX, y, { align: "right" });
+    y += 6;
+  };
+
+  drawTotalLine("Subtotal:", invoiceData.subtotal);
+  drawTotalLine(`Tax (${invoiceData.tax_rate}%):`, (invoiceData.taxable || invoiceData.subtotal) * (invoiceData.tax_rate / 100));
+  if (invoiceData.discountAmount > 0 || invoiceData.discount_value > 0) {
+    const dAmt = invoiceData.discountAmount || (invoiceData.discount_type === 'percentage' ? invoiceData.subtotal * (invoiceData.discount_value/100) : invoiceData.discount_value);
+    drawTotalLine("Discount:", -dAmt);
+  }
+  
+  y += 2;
+  doc.setLineWidth(0.5);
+  doc.line(rightColX - 50, y - 4, rightColX, y - 4);
+  
+  doc.setFontSize(14);
+  drawTotalLine("TOTAL DUE:", invoiceData.total, true);
+
+  // Notes
+  if (invoiceData.notes || invoiceData.notes_to_client) {
+    y += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("NOTES:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    const splitNotes = doc.splitTextToSize(invoiceData.notes || invoiceData.notes_to_client, 120);
+    doc.text(splitNotes, 14, y + 6);
+  }
+
+  // Footer
+  const pageH = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  doc.text("Thank you for choosing AutoVet Clinic for your pet's care.", pageW / 2, pageH - 15, { align: "center" });
+  doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
+
+  doc.save(`Invoice_${invoiceData.invoice_number || "Draft"}.pdf`);
+}
 
 function BillingInvoiceView() {
   const toast = useToast();
@@ -454,8 +551,7 @@ function BillingInvoiceView() {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={resetForm}
-                disabled={status !== "Draft"}
-                className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-zinc-800"
+                className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
               >
                 Reset
               </button>
@@ -481,13 +577,29 @@ function BillingInvoiceView() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => toast.info("Printing invoice...")}
+                onClick={() => window.print()}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiPrinter className="h-4 w-4" />
               </button>
               <button
-                onClick={() => toast.info("Downloading PDF...")}
+                onClick={() => {
+                  if (items.length === 0) {
+                    toast.error("Add items before downloading PDF.");
+                    return;
+                  }
+                  const invoiceData = {
+                    invoice_number: "DRAFT-" + Date.now(),
+                    subtotal,
+                    tax_rate: taxRateVal,
+                    discount_value: discountVal,
+                    discount_type: discountType,
+                    total: totalDue,
+                    notes_to_client: notes,
+                    items: items
+                  };
+                  generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
+                }}
                 className="rounded-lg p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
               >
                 <FiDownload className="h-4 w-4" />
