@@ -50,6 +50,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             category: "Vaccines",
             sku: "",
             stock_level: 0,
+            min_stock_level: 10,
             status: "In Stock",
             price: "",
             supplier: "",
@@ -203,6 +204,23 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             />
             {errors.stock_level && (
               <p className="mt-1 text-sm text-red-500">{errors.stock_level.message}</p>
+            )}
+          </div>
+
+          {/* Min Stock Level */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+              Alert Stock Level *
+            </label>
+            <input
+              type="number"
+              min="0"
+              {...register("min_stock_level")}
+              className={getInputClass(errors.min_stock_level)}
+              placeholder="e.g. 10"
+            />
+            {errors.min_stock_level && (
+              <p className="mt-1 text-sm text-red-500">{errors.min_stock_level.message}</p>
             )}
           </div>
 

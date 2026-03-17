@@ -106,6 +106,13 @@ function InventoryView() {
     toast.success(`Successfully added ${newItem.item_name} to the database!`);
   };
 
+  const handleEditProduct = (updatedProduct) => {
+    setInventoryRows((prev) =>
+      prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item))
+    );
+    setViewedProduct(updatedProduct);
+  };
+
   const handleDeleteProduct = async (product) => {
     if (!window.confirm(`Are you sure you want to delete ${product.item_name}?`)) return;
 
@@ -318,6 +325,7 @@ function InventoryView() {
         onClose={() => setViewedProduct(null)}
         product={viewedProduct}
         onDeleteRequest={handleDeleteProduct}
+        onUpdate={handleEditProduct}
       />
 
       {showAiAside && aiForecastData && (
