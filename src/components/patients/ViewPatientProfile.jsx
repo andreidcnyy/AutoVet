@@ -312,6 +312,8 @@ function OverviewTab({ patient }) {
             { label: "Weight", value: patient.weight ? `${patient.weight} kg` : "—" },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
             { label: "Status", value: patient.status || "—" },
+            { label: "Last Visit", value: patient.last_visit },
+            { label: "Next Due", value: patient.next_due },
           ].map((item) => (
             <div
               key={item.label}

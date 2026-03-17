@@ -174,7 +174,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
                         <p className="text-sm text-slate-500 dark:text-zinc-400">{patient.breed}</p>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="text-lg text-slate-800 dark:text-zinc-200">{patient.lastVisit}</p>
+                        <p className="text-lg text-slate-800 dark:text-zinc-200">{patient.last_visit}</p>
                       </td>
                       <td className="px-5 py-4">
                         <StatusBadge value={patient.status} />
@@ -221,11 +221,11 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-dark-border dark:bg-dark-surface">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">Last Visit</p>
-                  <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-zinc-100">{selectedPatient.lastVisit}</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-zinc-100">{selectedPatient.last_visit}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-dark-border dark:bg-dark-surface">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">Next Due</p>
-                  <p className="mt-1 text-xl font-semibold text-blue-600 dark:text-blue-400">{selectedPatient.nextDue}</p>
+                  <p className="mt-1 text-xl font-semibold text-blue-600 dark:text-blue-400">{selectedPatient.next_due}</p>
                 </div>
               </div>
 
