@@ -144,14 +144,7 @@ function InventoryView() {
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
         <button
-          onClick={() => {
-            setShowAiAside(false);
-            setIsSimulating(true);
-            setTimeout(() => {
-              setIsSimulating(false);
-              setShowAiAside(true);
-            }, 2500);
-          }}
+          onClick={handleRunForecast}
           disabled={isSimulating}
           className={clsx(
             "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition",
