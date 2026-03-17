@@ -1,3 +1,4 @@
+import { FiBell, FiX } from "react-icons/fi";
 import clsx from "clsx";
 import { useToast } from "../../context/ToastContext";
 
@@ -8,31 +9,48 @@ const iconToneStyles = {
   neutral: "bg-slate-100 text-slate-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 
-function RecentNotificationsCard({ items }) {
+function RecentNotificationsCard({ items, onMarkAllRead, onDismiss }) {
   const toast = useToast();
+
+  const handleMarkAll = () => {
+    if (onMarkAllRead) {
+      onMarkAllRead();
+      toast.success("All notifications marked as read.");
+    }
+  };
+
   return (
-    <aside className="card-shell overflow-hidden">
+    <aside className="card-shell overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-dark-border">
-        <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Recent Notifications</h3>
-        <button
-          type="button"
-          onClick={() => toast.success("All notifications marked as read.")}
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Mark all read
-        </button>
+        <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+          <FiBell className="text-blue-500" />
+          Recent Notifications
+        </h3>
+        {items?.length > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAll}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Mark all read
+          </button>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-[150px]">
+      <div className="flex-1 overflow-y-auto min-h-[150px] slim-scroll">
         {(!items || items.length === 0) ? (
-          <div className="flex h-full min-h-[250px] items-center justify-center p-6 text-slate-400 dark:text-zinc-500">
-            No recent notifications...
+          <div className="flex h-full min-h-[250px] flex-col items-center justify-center p-6 text-center">
+            <div className="mb-3 rounded-full bg-slate-100 p-4 dark:bg-dark-surface">
+              <FiBell className="h-8 w-8 text-slate-300 dark:text-zinc-600" />
+            </div>
+            <p className="text-lg font-medium text-slate-400 dark:text-zinc-500">You're all caught up!</p>
+            <p className="text-sm text-slate-400 dark:text-zinc-600">No new notifications to show.</p>
           </div>
         ) : (
           items.map((item) => {
             const Icon = item.icon;
             return (
-              <article key={item.id} className="flex gap-4 border-b border-slate-200 px-6 py-5 dark:border-dark-border">
+              <article key={item.id} className="group relative flex gap-4 border-b border-slate-100 px-6 py-5 dark:border-dark-border last:border-0 hover:bg-slate-50/50 dark:hover:bg-dark-surface/30 transition-colors">
                 <span
                   className={clsx(
                     "mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
@@ -41,11 +59,19 @@ function RecentNotificationsCard({ items }) {
                 >
                   <Icon className="h-5 w-5" />
                 </span>
-                <div>
-                  <h4 className="text-xl font-semibold leading-tight text-slate-900 dark:text-zinc-50">{item.title}</h4>
-                  <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">{item.message}</p>
-                  <p className="mt-3 text-sm text-slate-400 dark:text-zinc-500">{item.time}</p>
+                <div className="flex-1 min-w-0 pr-6">
+                  <h4 className="text-xl font-semibold leading-tight text-slate-900 dark:text-zinc-50 truncate">{item.title}</h4>
+                  <p className="mt-1 text-base text-slate-500 dark:text-zinc-400 line-clamp-2">{item.message}</p>
+                  <p className="mt-3 text-sm font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">{item.time}</p>
                 </div>
+                
+                <button
+                  onClick={() => onDismiss && onDismiss(item.id)}
+                  className="absolute right-4 top-5 p-2 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all dark:text-zinc-600 dark:hover:text-rose-400"
+                  title="Dismiss"
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
               </article>
             );
           })
@@ -54,10 +80,10 @@ function RecentNotificationsCard({ items }) {
 
       <button
         type="button"
-        onClick={() => toast.info("Opening full notification history...")}
-        className="w-full px-6 py-4 text-center text-lg font-semibold text-slate-700 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-dark-surface"
+        onClick={() => toast.info("Full notification history is being implemented.")}
+        className="w-full border-t border-slate-200 dark:border-dark-border px-6 py-4 text-center text-lg font-semibold text-slate-700 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-dark-surface transition-colors"
       >
-        View all notifications
+        View all history
       </button>
     </aside>
   );

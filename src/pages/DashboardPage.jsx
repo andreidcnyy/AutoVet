@@ -43,6 +43,14 @@ function DashboardPage() {
       });
   }, []);
 
+  const handleMarkAllRead = () => {
+    setNotifications([]);
+  };
+
+  const handleDismissNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -70,7 +78,11 @@ function DashboardPage() {
           <AiSalesForecastCard />
           <InventoryChartCard />
         </div>
-        <RecentNotificationsCard items={notifications} />
+        <RecentNotificationsCard 
+          items={notifications} 
+          onMarkAllRead={handleMarkAllRead}
+          onDismiss={handleDismissNotification}
+        />
       </section>
     </div>
   );
