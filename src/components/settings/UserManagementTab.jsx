@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { getUserAvatarUrl } from "../../utils/userImages";
 
 export default function UserManagementTab() {
   const toast = useToast();
@@ -97,7 +98,7 @@ export default function UserManagementTab() {
         <table className="w-full min-w-[680px]">
           <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
             <tr>
-              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
@@ -107,7 +108,12 @@ export default function UserManagementTab() {
           <tbody>
             {users.map((member) => (
               <tr key={member.id} className="border-b border-slate-200/80 dark:border-dark-border">
-                <td className="px-4 py-4 text-sm font-medium text-slate-900 dark:text-zinc-50">{member.name}</td>
+                <td className="px-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <img src={member.avatar || getUserAvatarUrl(member.role, member.name)} alt={member.name} className="h-9 w-9 rounded-full object-cover bg-slate-100" />
+                    <span className="text-sm font-medium text-slate-900 dark:text-zinc-50">{member.name}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-4 text-sm text-slate-500 dark:text-zinc-400">{member.email}</td>
                 <td className="px-4 py-4 text-sm text-slate-700 dark:text-zinc-300">{member.role}</td>
                 <td className="px-4 py-4">

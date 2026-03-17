@@ -4,6 +4,7 @@ import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser }
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { getUserAvatarUrl } from "../../utils/userImages";
 
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
   const toast = useToast();
@@ -71,7 +72,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
               onClick={() => setOpenProfileMenu((prev) => !prev)}
               className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-dark-surface"
             >
-              <img src={user.avatar} alt={user.name} className="h-11 w-11 rounded-full object-cover" />
+              <img src={user.avatar || getUserAvatarUrl(user.role, user.name)} alt={user.name} className="h-11 w-11 rounded-full object-cover bg-slate-100 dark:bg-dark-surface" />
               <div className="min-w-0 text-left">
                 <p className="truncate text-base font-semibold text-slate-900 dark:text-zinc-50">{user.name}</p>
                 <p className="truncate text-sm text-slate-500 dark:text-zinc-400">{user.role}</p>
