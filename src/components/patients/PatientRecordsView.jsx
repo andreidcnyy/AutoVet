@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import {
   FiCalendar,
@@ -46,6 +46,7 @@ function StatusBadge({ value }) {
 
 function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOpenAddPatient, onDeletePatient, onPatientEdited }) {
   const toast = useToast();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All Species");
   const [searchValue, setSearchValue] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -237,7 +238,7 @@ function PatientRecordsView({ patients, selectedPatientId, onSelectPatient, onOp
               </Link>
 
               <button
-                onClick={() => toast.success(`Appointment booking initiated for ${selectedPatient.name}.`)}
+                onClick={() => navigate(`/appointments?patientId=${selectedPatient.id}`)}
                 className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
               >
                 <FiCalendar className="h-4 w-4" />

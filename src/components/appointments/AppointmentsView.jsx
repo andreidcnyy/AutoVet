@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import {
   FiBell,
@@ -37,6 +38,10 @@ const quickAddSchema = z.object({
 
 function AppointmentsView() {
   const toast = useToast();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const preSelectedPatientId = queryParams.get("patientId");
+
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
@@ -46,6 +51,7 @@ function AppointmentsView() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(quickAddSchema),
@@ -54,9 +60,16 @@ function AppointmentsView() {
       date: "",
       time: "",
       tone: "green",
-      patient_id: ""
+      patient_id: preSelectedPatientId || ""
     }
   });
+
+  // Update form if preSelectedPatientId changes
+  useEffect(() => {
+    if (preSelectedPatientId) {
+      setValue("patient_id", preSelectedPatientId);
+    }
+  }, [preSelectedPatientId, setValue]);
 
   const fetchAppointments = () => {
     fetch("/api/appointments")
