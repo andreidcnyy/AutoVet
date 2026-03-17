@@ -1,6 +1,7 @@
 import { FiX, FiTrash2, FiSave, FiEdit2 } from "react-icons/fi";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
+import { useToast } from "../../context/ToastContext";
 
 const statusStyles = {
   "Low Stock": "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
@@ -8,7 +9,8 @@ const statusStyles = {
   Expiring: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteRequest }) {
+export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteRequest, onUpdate }) {
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
 
@@ -24,36 +26,34 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   };
 
   const handleSave = async () => {
-  try {
-    const res = await fetch(`/api/inventory/${formData.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json", // ensures Laravel returns JSON
-      },
-      credentials: "include", // required if Sanctum auth is used
-      body: JSON.stringify(formData),
-    });
+    try {
+      const res = await fetch(`/api/inventory/${formData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to save product");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to save product");
+      }
+
+      const updated = await res.json();
+      toast.success("Inventory item updated successfully!");
+      setIsEditing(false);
+      onUpdate(updated); 
+    } catch (err) {
+      toast.error(err.message || "An error occurred while saving.");
     }
-
-    const updated = await res.json();
-    alert(updated.message);
-
-    setIsEditing(false);
-    onUpdateProduct(updated.data); // update parent list
-  } catch (err) {
-    alert(err.message);
-  }
-};
+  };
 
   if (!isOpen || !product) return null;
 
   const inputClass =
-    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-slate-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
+    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-slate-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded-sm";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
@@ -109,6 +109,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ["Category", "category"],
               ["SKU", "sku"],
               ["Stock Level", "stock_level"],
+              ["Min Stock (Alert)", "min_stock_level"],
               ["Price", "price"],
               ["Supplier", "supplier"],
               ["Expiration Date", "expiration_date"],
@@ -117,7 +118,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">{label}</p>
                 {isEditing ? (
                   <input
-                    type={field === "price" || field === "stock_level" ? "number" : "text"}
+                    type={field === "price" || field === "stock_level" || field === "min_stock_level" ? "number" : "text"}
                     className={inputClass}
                     value={formData[field] ?? ""}
                     onChange={(e) => handleChange(field, e.target.value)}
@@ -126,8 +127,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">
                     ₱{Number(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                ) : field === "stock_level" ? (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product.stock_level).toLocaleString()} units</p>
+                ) : (field === "stock_level" || field === "min_stock_level") ? (
+                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} units</p>
                 ) : (
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
                 )}
@@ -147,7 +148,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
             <button
               onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-5 py-2.5 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 focus:outline-none dark:border-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30"
             >
               {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
               {isEditing ? "Save" : "Edit"}

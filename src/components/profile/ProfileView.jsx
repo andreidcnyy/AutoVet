@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
+import { getUserAvatarUrl } from "../../utils/userImages";
 
 const profileSchema = z.object({
     name: z.string().min(1, "Name is required").max(255),
@@ -37,6 +38,8 @@ function ProfileView() {
     });
 
     const avatarValue = watch("avatar");
+    const nameValue = watch("name");
+    const roleValue = watch("role");
 
     useEffect(() => {
         fetch("/api/profile")
@@ -129,7 +132,7 @@ function ProfileView() {
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8 md:flex-row md:items-start">
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group overflow-hidden rounded-full">
-                            <img src={avatarValue || ""} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-slate-100 dark:bg-dark-surface" />
+                            <img src={avatarValue || getUserAvatarUrl(roleValue, nameValue)} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-slate-100 dark:bg-dark-surface" />
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
