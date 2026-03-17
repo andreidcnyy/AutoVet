@@ -358,222 +358,233 @@ function BillingInvoiceView() {
 
   return (
     <div className="card-shell overflow-hidden p-0">
-      <div className="grid grid-cols-1 lg:h-[calc(100vh-11rem)] lg:grid-cols-[410px_1fr]">
-        <aside className="flex h-full flex-col overflow-hidden border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-slate-200 dark:border-dark-border">
-          <div className="shrink-0 border-b border-slate-200 dark:border-dark-border p-5">
-            <p className="text-sm text-slate-500 dark:text-zinc-400">Billing &gt; New Invoice</p>
-            <div className="mt-2 flex items-center gap-3">
-              <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">New Invoice</h2>
-              <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-                Draft
-              </span>
+      <div className={clsx(
+        "grid grid-cols-1 lg:h-[calc(100vh-11rem)]",
+        isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]"
+      )}>
+        {!isPreviewMode && (
+          <aside className="flex h-full flex-col overflow-hidden border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-slate-200 dark:border-dark-border">
+            <div className="shrink-0 border-b border-slate-200 dark:border-dark-border p-5">
+              <p className="text-sm text-slate-500 dark:text-zinc-400">Billing &gt; New Invoice</p>
+              <div className="mt-2 flex items-center gap-3">
+                <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">New Invoice</h2>
+                <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                  {status}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
-            <section>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
-              <div className="space-y-3">
-                <div className="relative">
-                  <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  <select
-                    value={selectedPatientId}
-                    onChange={handlePatientSelect}
-                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
-                    disabled={status === "Finalized"}
-                  >
-                    <option value="">Select a patient...</option>
-                    {patients.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (Owner: {p.owner_name})
-                      </option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                </div>
-
-                {patientDetails && (
-                  <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner_phone || "N/A"}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
-                    <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {
-                      [patientDetails.owner_address, patientDetails.owner_city, patientDetails.owner_province, patientDetails.owner_zip].filter(Boolean).join(", ") || "N/A"
-                    }</p>
-                    <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
-                    {patientDetails.date_of_birth && (
-                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Age:</strong> {(() => {
-                        const dob = new Date(patientDetails.date_of_birth);
-                        const diff = Date.now() - dob.getTime();
-                        const ageDate = new Date(diff);
-                        return Math.abs(ageDate.getUTCFullYear() - 1970);
-                      })()} yrs</p>
-                    )}
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
+              <section>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                    <select
+                      value={selectedPatientId}
+                      onChange={handlePatientSelect}
+                      className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                      disabled={status === "Finalized"}
+                    >
+                      <option value="">Select a patient...</option>
+                      {patients.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (Owner: {p.owner_name})
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   </div>
-                )}
-              </div>
-            </section>
 
-            <section>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
-
-              <div className="mb-3 flex flex-wrap gap-2">
-                {services.slice(0, 4).map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => handleQuickAdd(service)}
-                    className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                  >
-                    + {service.name}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-[1fr_54px_80px] gap-2">
-                <div className="relative">
-                  <input
-                    list="services-list"
-                    type="text"
-                    placeholder="Search or add service..."
-                    value={serviceInput}
-                    onChange={handleServiceChange}
-                    onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
-                    disabled={status === "Finalized"}
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
-                  />
-                  <datalist id="services-list">
-                    {services.map(s => (
-                      <option key={s.id} value={s.name} />
-                    ))}
-                  </datalist>
+                  {patientDetails && (
+                    <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner_phone || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {
+                        [patientDetails.owner_address, patientDetails.owner_city, patientDetails.owner_province, patientDetails.owner_zip].filter(Boolean).join(", ") || "N/A"
+                      }</p>
+                      <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
+                      {patientDetails.date_of_birth && (
+                        <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Age:</strong> {(() => {
+                          const dob = new Date(patientDetails.date_of_birth);
+                          const diff = Date.now() - dob.getTime();
+                          const ageDate = new Date(diff);
+                          return Math.abs(ageDate.getUTCFullYear() - 1970);
+                        })()} yrs</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  value={qtyInput}
-                  onChange={(e) => setQtyInput(e.target.value)}
-                  disabled={status === "Finalized"}
-                  className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
-                />
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">₱</span>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
+
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {services.slice(0, 4).map((service) => (
+                    <button
+                      key={service.id}
+                      onClick={() => handleQuickAdd(service)}
+                      className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      + {service.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-[1fr_54px_80px] gap-2">
+                  <div className="relative">
+                    <input
+                      list="services-list"
+                      type="text"
+                      placeholder="Search or add service..."
+                      value={serviceInput}
+                      onChange={handleServiceChange}
+                      onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
+                      disabled={status === "Finalized"}
+                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
+                    />
+                    <datalist id="services-list">
+                      {services.map(s => (
+                        <option key={s.id} value={s.name} />
+                      ))}
+                    </datalist>
+                  </div>
                   <input
                     type="number"
-                    min="0"
-                    value={priceInput}
-                    onChange={(e) => setPriceInput(e.target.value)}
+                    min="1"
+                    value={qtyInput}
+                    onChange={(e) => setQtyInput(e.target.value)}
                     disabled={status === "Finalized"}
-                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                   />
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {items.length > 0 ? items.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
-                          <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
-                          {item.name}
-                        </p>
-                        <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">{item.notes}</p>
-                      </div>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                    </div>
-
-                    {item.warning ? (
-                      <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                        {item.warning}
-                      </span>
-                    ) : null}
-                  </article>
-                )) : (
-                  <p className="pt-4 text-center text-sm text-slate-400">No items added yet.</p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <div className="shrink-0 space-y-4 border-t border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-            <section className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={discountType}
-                      onChange={(e) => {
-                        setDiscountType(e.target.value);
-                        setDiscountVal(0);
-                      }}
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">₱</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={priceInput}
+                      onChange={(e) => setPriceInput(e.target.value)}
                       disabled={status === "Finalized"}
-                      className="h-10 w-1/3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                    >
-                      <option value="percentage">%</option>
-                      <option value="fixed">₱</option>
-                    </select>
-                    <div className="relative flex-1">
-                      <input
-                        type="number"
-                        min="0"
-                        value={discountVal}
-                        onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
-                        disabled={status === "Finalized"}
-                        className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                      />
-                    </div>
+                      className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
+                    />
                   </div>
                 </div>
+
+                <div className="mt-3 space-y-2">
+                  {items.length > 0 ? items.map((item) => (
+                    <article key={item.id} className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
+                            <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
+                            {item.name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">{item.notes}</p>
+                        </div>
+                        <p className="text-2xl font-semibold text-slate-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                      </div>
+
+                      {item.warning ? (
+                        <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          {item.warning}
+                        </span>
+                      ) : null}
+                    </article>
+                  )) : (
+                    <p className="pt-4 text-center text-sm text-slate-400">No items added yet.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <div className="shrink-0 space-y-4 border-t border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+              <section className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={discountType}
+                        onChange={(e) => {
+                          setDiscountType(e.target.value);
+                          setDiscountVal(0);
+                        }}
+                        disabled={status === "Finalized"}
+                        className="h-10 w-1/3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
+                      >
+                        <option value="percentage">%</option>
+                        <option value="fixed">₱</option>
+                      </select>
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={discountVal}
+                          onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
+                          disabled={status === "Finalized"}
+                          className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
+                    <input
+                      type="text"
+                      value={taxRateVal}
+                      onChange={(e) => setTaxRateVal(Number(e.target.value) || 0)}
+                      className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
-                  <input
-                    type="text"
-                    value={taxRateVal}
-                    onChange={(e) => setTaxRateVal(Number(e.target.value) || 0)}
-                    className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
+                  <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    disabled={status === "Finalized"}
+                    placeholder="Visible on the invoice..."
+                    className="w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
                   />
                 </div>
-              </div>
+              </section>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  disabled={status === "Finalized"}
-                  placeholder="Visible on the invoice..."
-                  className="w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
-                />
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={resetForm}
+                  className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => submitInvoice("Draft")}
+                  disabled={status !== "Draft"}
+                  className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-50 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                >
+                  Save Draft
+                </button>
               </div>
-            </section>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                onClick={resetForm}
-                className="rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => submitInvoice("Draft")}
-                disabled={status !== "Draft"}
-                className="rounded-xl border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-50 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-              >
-                Save Draft
-              </button>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
 
         <section className="flex h-full flex-col overflow-hidden bg-slate-100 dark:bg-zinc-950">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
             <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-zinc-400">
-              <span className="inline-flex items-center gap-2 font-semibold text-slate-600 dark:text-zinc-300">
+              <button 
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                className={clsx(
+                  "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
+                  isPreviewMode ? "bg-blue-600 text-white" : "text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-dark-surface"
+                )}
+              >
                 <FiEye className="h-4 w-4" />
-                Preview Mode
-              </span>
+                {isPreviewMode ? "Exit Preview" : "Preview Mode"}
+              </button>
               <span>Invoice Status: <b className="text-slate-700 dark:text-slate-300">{status}</b></span>
             </div>
             <div className="flex items-center gap-2">
@@ -617,7 +628,7 @@ function BillingInvoiceView() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 md:p-6 text-left">
-            <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md">
+            <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
               <header className="flex flex-row items-start justify-between gap-4 sm:gap-6">
                 <div className="flex-1 min-w-0 pr-2 sm:pr-4">
                   <p className="inline-flex items-center gap-2.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">
