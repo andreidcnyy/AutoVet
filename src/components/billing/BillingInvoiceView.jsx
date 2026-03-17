@@ -218,11 +218,32 @@ function BillingInvoiceView() {
   const [serviceInput, setServiceInput] = useState("");
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const groupedServices = useMemo(() => {
+    const filtered = services.filter(s => 
+      s.name.toLowerCase().includes(serviceInput.toLowerCase()) || 
+      (s.category && s.category.toLowerCase().includes(serviceInput.toLowerCase()))
+    );
+    return filtered.reduce((acc, service) => {
+      const cat = service.category || "Uncategorized";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(service);
+      return acc;
+    }, {});
+  }, [services, serviceInput]);
+
+  const selectServiceFromDropdown = (svc) => {
+    setServiceInput(svc.name);
+    setPriceInput(svc.price);
+    setIsDropdownOpen(false);
+  };
 
   const handleServiceChange = (e) => {
     const val = e.target.value;
     setServiceInput(val);
-    const matchedService = services.find(s => s.name === val);
+    setIsDropdownOpen(true);
+    const matchedService = services.find(s => s.name.toLowerCase() === val.toLowerCase());
     if (matchedService) {
       setPriceInput(matchedService.price);
     }
@@ -434,23 +455,70 @@ function BillingInvoiceView() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-[1fr_54px_80px] gap-2">
+                <div className="grid grid-cols-[1fr_54px_80px_auto] gap-2 items-center">
                   <div className="relative">
                     <input
-                      list="services-list"
                       type="text"
                       placeholder="Search or add service..."
                       value={serviceInput}
                       onChange={handleServiceChange}
-                      onKeyDown={(e) => e.key === "Enter" && manuallyAddItem()}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          manuallyAddItem();
+                          setIsDropdownOpen(false);
+                        }
+                      }}
                       disabled={status === "Finalized"}
                       className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:text-zinc-500 disabled:opacity-50"
                     />
-                    <datalist id="services-list">
-                      {services.map(s => (
-                        <option key={s.id} value={s.name} />
-                      ))}
-                    </datalist>
+                    {isDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
+                        {Object.keys(groupedServices).length > 0 ? (
+                          Object.entries(groupedServices).map(([category, svcs]) => (
+                            <div key={category} className="mb-2 last:mb-0">
+                              <div className="bg-slate-50 dark:bg-dark-surface px-2 py-1 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 rounded-md">
+                                {category}
+                              </div>
+                              <ul className="mt-1 space-y-1">
+                                {svcs.map((svc) => (
+                                  <li key={svc.id}>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      onClick={() => selectServiceFromDropdown(svc)}
+                                      className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-dark-surface"
+                                    >
+                                      <span>{svc.name}</span>
+                                      <span className="text-slate-400 dark:text-zinc-500">{currency(svc.price)}</span>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-3 text-center text-sm text-slate-500 dark:text-zinc-400">
+                            {services.length === 0 ? "No services found. Please add services in Settings → Data Management." : "No matching services."}
+                          </div>
+                        )}
+                        {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
+                           <div className="mt-2 border-t border-slate-100 dark:border-dark-border pt-2 text-center">
+                              <p className="text-xs text-slate-500 mb-1 dark:text-zinc-500">Create new item</p>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                                className="w-full text-center text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                              >
+                                + Add &quot;{serviceInput}&quot;
+                              </button>
+                           </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <input
                     type="number"
@@ -460,7 +528,7 @@ function BillingInvoiceView() {
                     disabled={status === "Finalized"}
                     className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-2 text-center text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                   />
-                  <div className="relative">
+                  <div className="relative w-full">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">₱</span>
                     <input
                       type="number"
@@ -471,6 +539,14 @@ function BillingInvoiceView() {
                       className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                    disabled={!serviceInput || status === "Finalized"}
+                    className="h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-slate-900 dark:hover:bg-zinc-200"
+                  >
+                    Add
+                  </button>
                 </div>
 
                 <div className="mt-3 space-y-2">

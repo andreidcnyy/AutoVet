@@ -23,6 +23,23 @@ function AppLayout() {
       navigate("/login", { replace: true });
     }
   }, [user, navigate]);
+
+  React.useEffect(() => {
+    if (user) {
+      fetch("/api/settings")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.clinic_name) {
+            setClinic((prev) => ({ ...prev, name: data.clinic_name }));
+          }
+          if (data.clinic_logo) {
+            setClinic((prev) => ({ ...prev, logo: data.clinic_logo }));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user]);
+
   if (!user) return null;
 
   const pageTitle = useMemo(() => {

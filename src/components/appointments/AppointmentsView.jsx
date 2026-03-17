@@ -90,7 +90,7 @@ function AppointmentsView() {
     fetch("/api/dashboard/appointment-forecast")
       .then(res => res.json())
       .then(data => setAiForecast(data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleReviewHints = () => {
@@ -101,7 +101,7 @@ function AppointmentsView() {
           <ul className="list-disc pl-4 space-y-1 text-sm">
             {aiForecast.hints.map((hint, i) => <li key={i}>{hint}</li>)}
           </ul>
-        </div>, 
+        </div>,
         { duration: 6000 }
       );
     } else {

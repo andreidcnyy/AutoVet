@@ -12,6 +12,7 @@ export default function DataManagementTab() {
   const [newSpecies, setNewSpecies] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [newServiceCategory, setNewServiceCategory] = useState("");
+  const [services, setServices] = useState([]); // To track synced services for deletion
 
   useEffect(() => {
     fetch("/api/settings")
@@ -32,6 +33,10 @@ export default function DataManagementTab() {
         console.error(err);
         setLoading(false);
       });
+    fetch("/api/services")
+      .then(res => res.json())
+      .then(data => setServices(data))
+      .catch(console.error);
   }, []);
 
   const handleSave = async () => {
@@ -74,12 +79,53 @@ export default function DataManagementTab() {
     }
   };
 
-  const handleAddServiceCategory = (e) => {
+  const handleAddServiceCategory = async (e) => {
     e.preventDefault();
     const name = newServiceCategory.trim();
     if (name && !serviceCategoryList.includes(name)) {
       setServiceCategoryList([...serviceCategoryList, name]);
       setNewServiceCategory("");
+
+      // Automatically create a Service record in the database
+      try {
+        const res = await fetch("/api/services", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            name: name,
+            category: name, // Using the name as category too for grouping
+            price: 0,
+            status: "Active"
+          })
+        });
+        if (res.ok) {
+          const newSvc = await res.json();
+          setServices(prev => [...prev, newSvc]);
+          toast.success(`Service "${name}" added to database.`);
+        }
+      } catch (err) {
+        console.error("Failed to sync service:", err);
+      }
+    }
+  };
+
+  const handleRemoveServiceCategory = async (name) => {
+    setServiceCategoryList(serviceCategoryList.filter(i => i !== name));
+    
+    // Find the corresponding service and delete it
+    const svcToDelete = services.find(s => s.name === name);
+    if (svcToDelete) {
+      try {
+        const res = await fetch(`/api/services/${svcToDelete.id}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          setServices(services.filter(s => s.id !== svcToDelete.id));
+          toast.success(`Service "${name}" removed from database.`);
+        }
+      } catch (err) {
+        console.error("Failed to delete synced service:", err);
+      }
     }
   };
 
@@ -154,7 +200,7 @@ export default function DataManagementTab() {
           <div className="flex flex-wrap gap-2">
             {serviceCategoryList.map((c) => (
               <span key={c} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 dark:bg-dark-surface dark:text-zinc-300">
-                {c} <button onClick={() => setServiceCategoryList(serviceCategoryList.filter(i => i !== c))} className="ml-1 text-red-500">&times;</button>
+                {c} <button onClick={() => handleRemoveServiceCategory(c)} className="ml-1 text-red-500">&times;</button>
               </span>
             ))}
           </div>
