@@ -4,9 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inventory;
+use App\Models\InventoryTransaction;
 
 class InventoryController extends Controller
 {
+    protected $skuGenerator;
+
+    public function __construct(\App\Services\SkuGeneratorService $skuGenerator)
+    {
+        $this->skuGenerator = $skuGenerator;
+    }
+
     public function index()
     {
         return response()->json(Inventory::all());
@@ -23,17 +31,39 @@ class InventoryController extends Controller
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
             'sub_details' => 'nullable|string|max:255',
-            'category' => 'required|string|max:255',
-            'sku' => 'required|string|unique:inventories,sku|max:255',
+            'category' => 'required|string|in:Consumables,Medicines,Retail,Supplies,Vaccines,Clinic assets',
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
             'price' => 'nullable|numeric|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
+            'is_billable' => 'boolean',
+            'is_consumable' => 'boolean',
+            'deduct_on_finalize' => 'boolean',
         ]);
 
+        // Automatically generate SKU
+        $validatedData['sku'] = $this->skuGenerator->generate(
+            $validatedData['category'],
+            $validatedData['item_name'],
+            $validatedData['sub_details']
+        );
+
         $item = Inventory::create($validatedData);
+
+        if ($item->stock_level > 0) {
+            InventoryTransaction::create([
+                'inventory_id' => $item->id,
+                'transaction_type' => 'Stock In',
+                'quantity' => $item->stock_level,
+                'previous_stock' => 0,
+                'new_stock' => $item->stock_level,
+                'remarks' => 'Initial Stock',
+                'created_by' => auth()->id() ?? (\App\Models\User::first()->id ?? null)
+            ]);
+        }
 
         return response()->json($item, 201);
     }
@@ -43,17 +73,37 @@ class InventoryController extends Controller
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
             'sub_details' => 'nullable|string|max:255',
-            'category' => 'required|string|max:255',
+            'category' => 'required|string|in:Consumables,Medicines,Retail,Supplies,Vaccines,Clinic assets',
             'sku' => 'required|string|max:255|unique:inventories,sku,' . $inventory->id,
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
             'price' => 'nullable|numeric|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
+            'is_billable' => 'boolean',
+            'is_consumable' => 'boolean',
+            'deduct_on_finalize' => 'boolean',
         ]);
 
+        $oldStock = $inventory->stock_level;
+        $newStock = $validatedData['stock_level'];
+
         $inventory->update($validatedData);
+
+        if ($oldStock != $newStock) {
+            $qtyDiff = $newStock - $oldStock;
+            InventoryTransaction::create([
+                'inventory_id' => $inventory->id,
+                'transaction_type' => 'Adjustment',
+                'quantity' => $qtyDiff,
+                'previous_stock' => $oldStock,
+                'new_stock' => $newStock,
+                'remarks' => 'Manual adjustment via UI',
+                'created_by' => auth()->id() ?? (\App\Models\User::first()->id ?? null)
+            ]);
+        }
 
         return response()->json($inventory);
     }
@@ -62,5 +112,11 @@ class InventoryController extends Controller
     {
         $inventory->delete();
         return response()->json(null, 204);
+    }
+
+    public function transactions(Inventory $inventory)
+    {
+        $transactions = $inventory->transactions()->with('creator:id,name')->orderBy('created_at', 'desc')->get();
+        return response()->json($transactions);
     }
 }

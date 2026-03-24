@@ -8,9 +8,9 @@ class Invoice extends Model
 {
     protected $guarded = [];
 
-    public function patient()
+    public function pet()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Pet::class);
     }
 
     public function items()
