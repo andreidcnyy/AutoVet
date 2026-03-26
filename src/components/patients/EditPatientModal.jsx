@@ -28,7 +28,14 @@ const patientSchema = z.object({
     size_category_id: z.string().optional().or(z.literal("")),
     status: z.string().max(50).optional(),
     owner_name: z.string().min(1, "Owner name is required").max(255),
-    owner_phone: z.string().max(50).optional().or(z.literal("")),
+    owner_phone: z.string()
+        .min(1, "Phone number is required")
+        .regex(/^(09|\+639)\d{9,10}$/, "Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX")
+        .refine(val => {
+            if (val.startsWith('09')) return val.length === 11;
+            if (val.startsWith('+639')) return val.length === 13;
+            return false;
+        }, "Phone number must start with 09 (11 digits) or +639 (13 characters)"),
     owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
     owner_address: z.string().min(1, "Street address is required").max(255),
     owner_city: z.string().min(1, "City is required").max(255),
@@ -329,8 +336,20 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Phone</label>
-                                    <input {...register("owner_phone")} className={getInputClass(errors.owner_phone)} />
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Phone *</label>
+                                    <input 
+                                        {...register("owner_phone")} 
+                                        type="text"
+                                        className={getInputClass(errors.owner_phone)} 
+                                        placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
+                                        onInput={(e) => {
+                                            e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                                            if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
+                                                e.target.value = e.target.value.replace(/\+/g, '');
+                                            }
+                                        }}
+                                    />
+                                    {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Email Address</label>
