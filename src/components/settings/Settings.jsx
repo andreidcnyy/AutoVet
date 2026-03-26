@@ -5,7 +5,7 @@ import { FiHome, FiSettings, FiUsers, FiBriefcase } from "react-icons/fi";
 import ClinicProfileTab from "./ClinicProfileTab";
 import UserManagementTab from "./UserManagementTab";
 import ServiceManagementTab from "./ServiceManagementTab";
-import DataManagementTab from "./DataManagementTab";
+import MasterDataManagementTab from "./MasterDataManagementTab";
 import SystemPreferencesTab from "./SystemPreferencesTab";
 
 import SpeciesBreedsTab from "./SpeciesBreedsTab";
@@ -13,7 +13,7 @@ import VetScheduleTab from "./VetScheduleTab";
 
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
-  { id: "data", label: "Data Lists", icon: FiSettings },
+  { id: "data", label: "Master Data", icon: FiSettings },
   { id: "services", label: "Service Management", icon: FiBriefcase },
   { id: "species", label: "Species & Breeds", icon: FiHome },
   { id: "users", label: "Users / Roles", icon: FiUsers },
@@ -50,7 +50,7 @@ function Settings() {
 
       <main>
         {activeTab === "clinic" && <ClinicProfileTab />}
-        {activeTab === "data" && <DataManagementTab />}
+        {activeTab === "data" && <MasterDataManagementTab />}
         {activeTab === "services" && <ServiceManagementTab />}
         {activeTab === "species" && <SpeciesBreedsTab />}
         {activeTab === "users" && <UserManagementTab />}

@@ -43,6 +43,8 @@ Route::apiResource('invoices', InvoiceController::class);
 Route::apiResource('services', ServiceController::class);
 Route::apiResource('users', UserController::class);
 
+Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class);
+Route::apiResource('service-categories', \App\Http\Controllers\ServiceCategoryController::class);
 Route::apiResource('species', \App\Http\Controllers\SpeciesController::class);
 Route::apiResource('breeds', \App\Http\Controllers\BreedController::class);
 Route::apiResource('owners', \App\Http\Controllers\OwnerController::class);
