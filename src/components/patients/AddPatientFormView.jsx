@@ -36,9 +36,9 @@ const patientSchema = z.object({
   date_of_birth: z.string().optional().or(z.literal("")),
   gender: z.string().max(50).optional(),
   color: z.string().max(255).optional(),
-  weight_value: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+  weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
-  size_class: z.enum(["Small", "Medium", "Large", "Giant"]).default("Small"),
+  size_category_id: z.string().optional().or(z.literal("")),
   status: z.string().max(50).optional(),
   owner_id: z.string().optional(),
   owner_name: z.string().optional(),
@@ -61,11 +61,13 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [error, setError] = useState(null);
   const photoInputRef = useRef(null);
   const [speciesList, setSpeciesList] = useState([]);
+  const [sizeCategories, setSizeCategories] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
 
   useEffect(() => {
     fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
+    fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
     if (!initialOwnerId) {
       fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
     }
@@ -81,7 +83,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     resolver: zodResolver(patientSchema),
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
-      gender: "Male", color: "", weight_value: "", weight_unit: "kg", size_class: "Small",
+      gender: "Male", color: "", weight: "", weight_unit: "kg", size_category_id: "",
       status: "Healthy",
       owner_id: initialOwnerId || "", owner_name: "", owner_phone: "", owner_email: "",
       owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
@@ -143,9 +145,9 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         date_of_birth: data.date_of_birth,
         gender: data.gender,
         color: data.color,
-        weight_value: data.weight_value,
+        weight: data.weight,
         weight_unit: data.weight_unit,
-        size_class: data.size_class,
+        size_category_id: data.size_category_id || null,
         status: data.status,
         allergies: data.allergies,
         medication: data.medication,
@@ -280,7 +282,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-1">
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Weight</label>
-                  <input type="number" step="0.01" {...register("weight_value")} className={getInputClass(errors.weight_value)} placeholder="0.0" />
+                  <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
                 </div>
                 <div className="col-span-1">
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Unit</label>
@@ -290,13 +292,14 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                   </select>
                 </div>
                 <div className="col-span-1">
-                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Class</label>
-                  <select {...register("size_class")} className={getSelectClass(errors.size_class)}>
-                    <option value="Small">Small</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Large">Large</option>
-                    <option value="Giant">Giant</option>
-                  </select>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Category</label>
+                  <div className="relative">
+                    <select {...register("size_category_id")} className={getSelectClass(errors.size_category_id)}>
+                      <option value="">Select...</option>
+                      {sizeCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 

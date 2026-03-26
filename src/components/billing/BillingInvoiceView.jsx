@@ -218,6 +218,7 @@ function BillingInvoiceView() {
   const [services, setServices] = useState([]);
 
   const [inventory, setInventory] = useState([]);
+  const [weightRanges, setWeightRanges] = useState([]);
 
   useEffect(() => {
     // Fetch owners, pets, and settings on mount
@@ -240,6 +241,11 @@ function BillingInvoiceView() {
         console.error(err);
         toast.error("Failed to load initial data.");
       });
+
+    fetch("/api/weight-ranges")
+      .then(res => res.json())
+      .then(data => setWeightRanges(data.data || data))
+      .catch(console.error);
   }, []);
 
   const handlePatientSelect = (e) => {
@@ -318,11 +324,24 @@ function BillingInvoiceView() {
   }, [services, inventory, serviceInput]);
 
   const calculateDynamicPrice = (service) => {
-    if (service.pricing_mode === "size_based" && patientDetails?.size_class) {
-      const sizePrice = service.size_prices?.find(sp => sp.size_class === patientDetails.size_class);
-      if (sizePrice) return Number(sizePrice.price);
+    if (service.pricing_type === "size_based" && patientDetails?.size_category_id) {
+      const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === patientDetails.size_category_id);
+      if (rule) return Number(rule.price);
     }
-    return Number(service.price) || 0;
+    
+    if (service.pricing_type === "weight_based" && patientDetails?.weight !== null) {
+      const petWeight = Number(patientDetails.weight);
+      const range = weightRanges.find(r => 
+        Number(r.min_weight) <= petWeight && 
+        (r.max_weight === null || Number(r.max_weight) >= petWeight)
+      );
+      if (range) {
+        const rule = service.pricing_rules?.find(r => r.basis_type === 'weight' && r.reference_id === range.id);
+        if (rule) return Number(rule.price);
+      }
+    }
+
+    return Number(service.base_price || service.price) || 0;
   };
 
   const selectItemFromDropdown = (item) => {
@@ -371,8 +390,10 @@ function BillingInvoiceView() {
     let serviceId = itemType === 'service' ? selectedService?.id : null;
     let inventoryId = itemType === 'inventory' ? selectedService?.id : null;
 
-    if (itemType === 'service' && selectedService?.pricing_mode === "size_based" && patientDetails?.size_class && !serviceInput.includes("(")) {
-      itemName = `${serviceInput} (${patientDetails.size_class})`;
+    if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
+       itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
+    } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && patientDetails?.weight !== null) {
+       itemName = `${serviceInput} (${patientDetails.weight}kg)`;
     }
       
     const newItem = {

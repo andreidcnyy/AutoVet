@@ -11,7 +11,7 @@ class Pet extends Model
     
     protected $fillable = [
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth',
-        'gender', 'color', 'weight_value', 'weight_unit', 'status',
+        'gender', 'color', 'weight_value', 'weight_unit', 'weight', 'size_category_id', 'status',
         'size_class', 'allergies', 'medication', 'notes', 'photo'
     ];
 
@@ -30,6 +30,11 @@ class Pet extends Model
     public function breed()
     {
         return $this->belongsTo(Breed::class);
+    }
+
+    public function sizeCategory()
+    {
+        return $this->belongsTo(PetSizeCategory::class, 'size_category_id');
     }
 
     public function appointments()

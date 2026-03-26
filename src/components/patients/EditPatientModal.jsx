@@ -22,9 +22,9 @@ const patientSchema = z.object({
     date_of_birth: z.string().optional().or(z.literal("")),
     gender: z.string().max(50).optional().or(z.literal("")),
     color: z.string().max(255).optional().or(z.literal("")),
-    weight_value: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+    weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
     weight_unit: z.enum(["kg", "lbs"]).default("kg"),
-    size_class: z.enum(["Small", "Medium", "Large", "Giant"]).default("Small"),
+    size_category_id: z.string().optional().or(z.literal("")),
     status: z.string().max(50).optional(),
     owner_name: z.string().min(1, "Owner name is required").max(255),
     owner_phone: z.string().max(50).optional().or(z.literal("")),
@@ -44,12 +44,17 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const [error, setError] = useState(null);
     const photoInputRef = useRef(null);
     const [speciesList, setSpeciesList] = useState([]);
+    const [sizeCategories, setSizeCategories] = useState([]);
 
     useEffect(() => {
         if (isOpen) {
             fetch("/api/species")
                 .then(res => res.json())
                 .then(setSpeciesList)
+                .catch(console.error);
+            fetch("/api/pet-size-categories")
+                .then(res => res.json())
+                .then(data => setSizeCategories(data.data || data))
                 .catch(console.error);
         }
     }, [isOpen]);
@@ -65,7 +70,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         resolver: zodResolver(patientSchema),
         defaultValues: {
             name: "", species_id: "", breed_id: "", date_of_birth: "",
-            gender: "Male", color: "", weight_value: "", weight_unit: "kg", size_class: "Small", status: "Healthy",
+            gender: "Male", color: "", weight: "", weight_unit: "kg", size_category_id: "", status: "Healthy",
             owner_name: "", owner_phone: "", owner_email: "",
             owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
             allergies: "", medication: "", notes: "", photo: "",
@@ -81,9 +86,9 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 date_of_birth: patient.date_of_birth ? patient.date_of_birth.substring(0, 10) : "",
                 gender: patient.gender || "Male",
                 color: patient.color || "",
-                weight_value: patient.weight_value || "",
+                weight: patient.weight || "",
                 weight_unit: patient.weight_unit || "kg",
-                size_class: patient.size_class || "Small",
+                size_category_id: patient.size_category_id ? patient.size_category_id.toString() : "",
                 status: patient.status || "Healthy",
                 owner_name: patient.owner?.name || patient.ownerName || "",
                 owner_phone: patient.owner?.phone || patient.ownerPhone || "",
@@ -148,9 +153,9 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 date_of_birth: data.date_of_birth,
                 gender: data.gender,
                 color: data.color,
-                weight_value: data.weight_value,
+                weight: data.weight,
                 weight_unit: data.weight_unit,
-                size_class: data.size_class,
+                size_category_id: data.size_category_id || null,
                 status: data.status,
                 allergies: data.allergies,
                 medication: data.medication,
@@ -254,7 +259,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div className="col-span-1 sm:col-span-2 grid grid-cols-3 gap-3">
                                   <div>
                                       <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight</label>
-                                      <input type="number" step="0.01" {...register("weight_value")} className={getInputClass(errors.weight_value)} />
+                                      <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} />
                                   </div>
                                   <div>
                                       <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Unit</label>
@@ -264,13 +269,14 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                       </select>
                                   </div>
                                   <div>
-                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Class</label>
-                                      <select {...register("size_class")} className={getSelectClass(errors.size_class)}>
-                                          <option value="Small">Small</option>
-                                          <option value="Medium">Medium</option>
-                                          <option value="Large">Large</option>
-                                          <option value="Giant">Giant</option>
-                                      </select>
+                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size</label>
+                                      <div className="relative">
+                                        <select {...register("size_category_id")} className={getSelectClass(errors.size_category_id)}>
+                                            <option value="">Select...</option>
+                                            {sizeCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                      </div>
                                   </div>
                                 </div>
 

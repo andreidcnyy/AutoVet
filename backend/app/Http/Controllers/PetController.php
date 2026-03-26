@@ -9,7 +9,7 @@ class PetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Pet::with(['owner', 'species', 'breed']);
+        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory']);
         
         if ($request->has('owner_id')) {
             $query->where('owner_id', $request->owner_id);
@@ -28,10 +28,10 @@ class PetController extends Controller
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|string',
             'color' => 'nullable|string',
-            'weight_value' => 'nullable|numeric',
+            'weight' => 'nullable|numeric',
             'weight_unit' => 'nullable|string|in:kg,lbs',
             'status' => 'nullable|string',
-            'size_class' => 'nullable|string|in:Small,Medium,Large,Giant',
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -50,12 +50,12 @@ class PetController extends Controller
         }
 
         $pet = Pet::create($validated);
-        return response()->json($pet->load(['owner', 'species', 'breed']), 201);
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']), 201);
     }
 
     public function show(Pet $pet)
     {
-        return response()->json($pet->load(['owner', 'species', 'breed', 'appointments.service', 'medicalRecords.vet', 'invoices']));
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices']));
     }
 
     public function update(Request $request, Pet $pet)
@@ -68,10 +68,10 @@ class PetController extends Controller
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|string',
             'color' => 'nullable|string',
-            'weight_value' => 'nullable|numeric',
+            'weight' => 'nullable|numeric',
             'weight_unit' => 'nullable|string|in:kg,lbs',
             'status' => 'nullable|string',
-            'size_class' => 'nullable|string|in:Small,Medium,Large,Giant',
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -95,7 +95,7 @@ class PetController extends Controller
         }
 
         $pet->update($validated);
-        return response()->json($pet->load(['owner', 'species', 'breed']));
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']));
     }
 
     public function destroy(Pet $pet)
