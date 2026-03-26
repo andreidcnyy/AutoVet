@@ -12,6 +12,7 @@ class Appointment extends Model
         'time',
         'category',
         'notes',
+        'status',
         'pet_id',
         'service_id',
         'vet_id'

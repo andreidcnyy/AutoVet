@@ -24,37 +24,41 @@ Route::get('/dashboard/notifications', [DashboardController::class, 'getNotifica
 Route::get('/dashboard/inventory-forecast', [DashboardController::class, 'getInventoryForecast']);
 Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
 
-Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); //edit in modal
-Route::get('/profile', [ProfileController::class, 'show']);
-Route::put('/profile', [ProfileController::class, 'update']);
+// Specialized Reports protected by roles
+Route::group(['prefix' => 'reports', 'middleware' => ['auth:sanctum', 'role:Admin,Chief Veterinarian,Veterinarian']], function () {
+    Route::get('/inventory/low-stock', [\App\Http\Controllers\LowStockReportController::class, 'generate']);
+    Route::get('/sales/revenue-summary', [\App\Http\Controllers\SalesReportController::class, 'getRevenueSummary']);
+    Route::get('/sales/top-services', [\App\Http\Controllers\SalesReportController::class, 'getTopServices']);
+    Route::get('/sales/transaction-volume', [\App\Http\Controllers\SalesReportController::class, 'getTransactionVolume']);
+    Route::get('/patients/species-distribution', [\App\Http\Controllers\PatientReportController::class, 'getSpeciesDistribution']);
+    Route::get('/patients/registration-trends', [\App\Http\Controllers\PatientReportController::class, 'getRegistrationTrends']);
+    Route::get('/patients/demographics', [\App\Http\Controllers\PatientReportController::class, 'getDemographics']);
+});
 
-Route::get('/inventory', [InventoryController::class, 'index']);
-Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock']);
-Route::get('/reports/inventory/low-stock', [\App\Http\Controllers\LowStockReportController::class, 'generate']);
-Route::post('/inventory', [InventoryController::class, 'store']);
-Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy']);
-Route::get('/inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
+Route::group(['middleware' => ['auth:sanctum']], function() {
+    Route::put('/inventory/{inventory}', [InventoryController::class, 'update']); 
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::get('/inventory', [InventoryController::class, 'index']);
+    Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock']);
+    Route::post('/inventory', [InventoryController::class, 'store'])->middleware('role:Admin,Chief Veterinarian,Staff');
+    Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->middleware('role:Admin,Chief Veterinarian');
+    Route::get('/inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
 
-Route::get('/settings', [SettingController::class, 'index']);
-Route::put('/settings', [SettingController::class, 'update']);
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::put('/settings', [SettingController::class, 'update'])->middleware('role:Admin,Chief Veterinarian');
 
-Route::apiResource('appointments', AppointmentController::class);
-Route::apiResource('invoices', InvoiceController::class);
-Route::apiResource('services', ServiceController::class);
-Route::apiResource('users', UserController::class);
+    Route::apiResource('appointments', AppointmentController::class);
+    Route::apiResource('invoices', InvoiceController::class);
+    Route::apiResource('services', ServiceController::class);
+    
+    // Admin only resources
+    Route::apiResource('users', UserController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('service-categories', \App\Http\Controllers\ServiceCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
+});
 
-Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class);
-Route::apiResource('service-categories', \App\Http\Controllers\ServiceCategoryController::class);
-Route::apiResource('pet-size-categories', \App\Http\Controllers\PetSizeCategoryController::class);
-Route::apiResource('weight-ranges', \App\Http\Controllers\WeightRangeController::class);
-Route::apiResource('units-of-measure', \App\Http\Controllers\UnitOfMeasureController::class);
-Route::apiResource('species', \App\Http\Controllers\SpeciesController::class);
-Route::apiResource('breeds', \App\Http\Controllers\BreedController::class);
-Route::apiResource('owners', \App\Http\Controllers\OwnerController::class);
-Route::apiResource('pets', \App\Http\Controllers\PetController::class);
-Route::apiResource('vet-schedules', \App\Http\Controllers\VetScheduleController::class);
-Route::apiResource('medical-records', \App\Http\Controllers\MedicalRecordController::class);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::get('/status', function () {
     return response()->json([

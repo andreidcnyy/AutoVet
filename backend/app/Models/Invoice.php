@@ -10,7 +10,7 @@ class Invoice extends Model
 
     public function pet()
     {
-        return $this->belongsTo(Pet::class);
+        return $this->belongsTo(Pet::class, 'patient_id');
     }
 
     public function items()

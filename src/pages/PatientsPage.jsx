@@ -106,8 +106,19 @@ function PatientsPage() {
                   <input name="name" required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="e.g. Maria Clara" />
                 </div>
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Phone</label>
-                  <input name="phone" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="0917..." />
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Phone *</label>
+                  <input 
+                    name="phone" 
+                    required 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" 
+                    placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
+                    onInput={(e) => {
+                      e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                      if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
+                        e.target.value = e.target.value.replace(/\+/g, '');
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Email</label>

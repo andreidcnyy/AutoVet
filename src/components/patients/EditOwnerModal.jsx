@@ -13,7 +13,14 @@ const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:b
 
 const ownerSchema = z.object({
     name: z.string().min(1, "Owner name is required").max(255),
-    phone: z.string().max(255).optional().or(z.literal("")),
+    phone: z.string()
+        .min(1, "Phone number is required")
+        .regex(/^(09|\+639)\d{9,10}$/, "Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX")
+        .refine(val => {
+            if (val.startsWith('09')) return val.length === 11;
+            if (val.startsWith('+639')) return val.length === 13;
+            return false;
+        }, "Phone number must start with 09 (11 digits) or +639 (13 characters)"),
     email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
     address: z.string().max(255).optional().or(z.literal("")),
     city: z.string().max(255).optional().or(z.literal("")),
@@ -110,8 +117,19 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">Phone</label>
-                                <input {...register("phone")} className={getInputClass(errors.phone)} placeholder="0917..." />
+                                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">Phone *</label>
+                                <input 
+                                    {...register("phone")} 
+                                    type="text"
+                                    className={getInputClass(errors.phone)} 
+                                    placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
+                                    onInput={(e) => {
+                                        e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                                        if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
+                                            e.target.value = e.target.value.replace(/\+/g, '');
+                                        }
+                                    }}
+                                />
                                 {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>}
                             </div>
                             <div>

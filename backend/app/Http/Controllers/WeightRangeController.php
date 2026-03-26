@@ -9,7 +9,7 @@ class WeightRangeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WeightRange::query();
+        $query = WeightRange::with('sizeCategory');
 
         if ($request->has('search')) {
             $query->where('label', 'like', '%' . $request->search . '%');
@@ -29,6 +29,7 @@ class WeightRangeController extends Controller
             'min_weight' => 'required|numeric',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'status' => 'nullable|string'
         ]);
 
@@ -45,6 +46,7 @@ class WeightRangeController extends Controller
             'min_weight' => 'required|numeric',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'status' => 'nullable|string'
         ]);
 
