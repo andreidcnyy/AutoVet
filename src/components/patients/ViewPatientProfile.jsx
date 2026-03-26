@@ -140,7 +140,8 @@ async function generatePatientPDF(patient) {
     body: [
       ["Species", patient.species?.name || "—"],
       ["Breed", patient.breed?.name || "—"],
-      ["Gender", patient.gender || "—"],
+      ["Sex", patient.sex || "—"],
+      ["Age Group", patient.age_group || "—"],
       ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
       ["Color", patient.color || "—"],
       ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit}` : "—"],
@@ -248,7 +249,7 @@ function ViewPatientProfile({ patient }) {
               {patient.name}
             </h2>
             <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">
-              {patient.species?.name || "N/A"} • {patient.breed?.name || "N/A"} • ID #{patient.id}
+              {patient.species?.name || "N/A"} • {patient.breed?.name || "N/A"} • {patient.sex || "N/A"} • ID #{patient.id}
             </p>
           </div>
         </div>
@@ -319,7 +320,8 @@ function OverviewTab({ patient, onOpenOwner }) {
           {[
             { label: "Species", value: patient.species?.name || "N/A" },
             { label: "Breed", value: patient.breed?.name || "N/A" },
-            { label: "Gender", value: patient.gender || "N/A" },
+            { label: "Sex", value: patient.sex || "N/A" },
+            { label: "Age Group", value: patient.age_group || "N/A" },
             { label: "Age", value: calculateAge(patient.date_of_birth) || "N/A" },
             { label: "Color", value: patient.color || "N/A" },
             { label: "Weight", value: patient.weight ? `${patient.weight} ${patient.weight_unit}` : "N/A" },

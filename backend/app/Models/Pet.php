@@ -10,9 +10,9 @@ class Pet extends Model
     use SoftDeletes;
     
     protected $fillable = [
-        'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth',
-        'gender', 'color', 'weight_value', 'weight_unit', 'weight', 'size_category_id', 'status',
-        'size_class', 'allergies', 'medication', 'notes', 'photo'
+        'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
+        'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
+        'allergies', 'medication', 'notes', 'photo'
     ];
 
     protected $appends = ['last_visit', 'next_due'];

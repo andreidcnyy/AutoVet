@@ -34,7 +34,8 @@ const patientSchema = z.object({
   species_id: z.string().min(1, "Species is required"),
   breed_id: z.string().optional(),
   date_of_birth: z.string().optional().or(z.literal("")),
-  gender: z.string().max(50).optional(),
+  sex: z.string().max(50).optional(),
+  age_group: z.string().optional().or(z.literal("")),
   color: z.string().max(255).optional(),
   weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
@@ -83,7 +84,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     resolver: zodResolver(patientSchema),
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
-      gender: "Male", color: "", weight: "", weight_unit: "kg", size_category_id: "",
+      sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg", size_category_id: "",
       status: "Healthy",
       owner_id: initialOwnerId || "", owner_name: "", owner_phone: "", owner_email: "",
       owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
@@ -143,7 +144,8 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         species_id: data.species_id || null,
         breed_id: data.breed_id || null,
         date_of_birth: data.date_of_birth,
-        gender: data.gender,
+        sex: data.sex,
+        age_group: data.age_group,
         color: data.color,
         weight: data.weight,
         weight_unit: data.weight_unit,
@@ -265,12 +267,22 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Gender</label>
-                  <select {...register("gender")} className={getSelectClass(errors.gender)}>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Sex</label>
+                  <select {...register("sex")} className={getSelectClass(errors.sex)}>
                     <option>Male</option>
                     <option>Female</option>
                     <option>Male (Neutered)</option>
                     <option>Female (Spayed)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Age Group</label>
+                  <select {...register("age_group")} className={getSelectClass(errors.age_group)}>
+                    <option value="">Select Age Group...</option>
+                    <option>Puppy/Kitten</option>
+                    <option>Junior</option>
+                    <option>Adult</option>
+                    <option>Senior</option>
                   </select>
                 </div>
                 <div>
