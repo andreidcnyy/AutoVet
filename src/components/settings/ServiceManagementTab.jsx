@@ -8,10 +8,22 @@ export default function ServiceManagementTab() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceCategories, setServiceCategories] = useState([]);
+  const [petSizes, setPetSizes] = useState([]);
+  const [weightRanges, setWeightRanges] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
 
-  const [formData, setFormData] = useState({ name: "", description: "", price: 0, category: "", status: "Active" });
+  const [formData, setFormData] = useState({ 
+    name: "", 
+    description: "", 
+    price: 0, 
+    category: "", 
+    status: "Active",
+    pricing_type: "fixed",
+    measurement_basis: "none",
+    base_price: 0,
+    pricing_rules: []
+  });
 
   const fetchServices = () => {
     setLoading(true);
@@ -23,25 +35,51 @@ export default function ServiceManagementTab() {
 
   useEffect(() => {
     fetchServices();
-    fetch("/api/settings")
+    
+    // Fetch categories from MDM
+    fetch("/api/service-categories")
       .then(res => res.json())
-      .then(data => {
-        try {
-          setServiceCategories(data.service_categories ? JSON.parse(data.service_categories) : []);
-        } catch {
-          setServiceCategories([]);
-        }
-      })
+      .then(data => setServiceCategories(data.data || data)) // handle paginated or flat
+      .catch(console.error);
+
+    fetch("/api/pet-size-categories")
+      .then(res => res.json())
+      .then(data => setPetSizes(data.data || data))
+      .catch(console.error);
+
+    fetch("/api/weight-ranges")
+      .then(res => res.json())
+      .then(data => setWeightRanges(data.data || data))
       .catch(console.error);
   }, []);
 
   const handleOpenModal = (service = null) => {
     if (service) {
       setEditingService(service);
-      setFormData({ name: service.name, description: service.description || "", price: service.price, category: service.category || "", status: service.status });
+      setFormData({ 
+        name: service.name, 
+        description: service.description || "", 
+        price: service.price, 
+        category: service.category || "", 
+        status: service.status,
+        pricing_type: service.pricing_type || "fixed",
+        measurement_basis: service.measurement_basis || "none",
+        base_price: service.base_price || service.price || 0,
+        pricing_rules: service.pricing_rules || []
+      });
     } else {
       setEditingService(null);
-      setFormData({ name: "", description: "", price: 0, category: "", status: "Active" });
+      setFormData({ 
+        name: "", 
+        description: "", 
+        price: 0, 
+        category: "", 
+        status: "Active",
+        pricing_type: "fixed",
+        measurement_basis: "none",
+        base_price: 0,
+        pricing_rules: []
+      });
     }
     setIsModalOpen(true);
   };
@@ -57,7 +95,20 @@ export default function ServiceManagementTab() {
     const url = isEditing ? `/api/services/${editingService.id}` : "/api/services";
     const method = isEditing ? "PUT" : "POST";
 
-    const payload = { ...formData, price: Number(formData.price) };
+    // Clean up pricing rules based on pricing_type
+    let cleanedRules = [];
+    if (formData.pricing_type === 'size_based') {
+      cleanedRules = formData.pricing_rules.filter(r => r.basis_type === 'size');
+    } else if (formData.pricing_type === 'weight_based') {
+      cleanedRules = formData.pricing_rules.filter(r => r.basis_type === 'weight');
+    }
+
+    const payload = { 
+      ...formData, 
+      price: Number(formData.base_price || formData.price),
+      base_price: Number(formData.base_price),
+      pricing_rules: cleanedRules
+    };
 
     try {
       const res = await fetch(url, {
@@ -107,7 +158,8 @@ export default function ServiceManagementTab() {
             <tr>
               <th className="px-4 py-3">Service Name</th>
               <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">Pricing Mode</th>
+              <th className="px-4 py-3">Base Price</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -120,7 +172,12 @@ export default function ServiceManagementTab() {
                   <p className="text-xs text-slate-500 dark:text-zinc-400 truncate max-w-[200px]">{svc.description}</p>
                 </td>
                 <td className="px-4 py-4 text-sm text-slate-700 dark:text-zinc-300">{svc.category || "-"}</td>
-                <td className="px-4 py-4 text-sm font-semibold text-slate-900 dark:text-zinc-50">₱{Number(svc.price).toFixed(2)}</td>
+                <td className="px-4 py-4">
+                  <span className="capitalize text-xs font-medium text-slate-600 dark:text-zinc-400 bg-slate-100 dark:bg-dark-surface px-2 py-1 rounded">
+                    {svc.pricing_type?.replace('_', ' ') || 'Fixed'}
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-sm font-semibold text-slate-900 dark:text-zinc-50">₱{Number(svc.base_price || svc.price).toFixed(2)}</td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
@@ -171,16 +228,109 @@ export default function ServiceManagementTab() {
                 <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Price (₱) *</label>
-                  <input required min="0" step="0.01" type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                <div className={formData.pricing_type === 'fixed' ? 'col-span-1' : 'col-span-2'}>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Pricing Type</label>
+                  <select 
+                    value={formData.pricing_type} 
+                    onChange={e => {
+                      const type = e.target.value;
+                      let basis = 'none';
+                      if (type === 'size_based') basis = 'size';
+                      if (type === 'weight_based') basis = 'weight';
+                      setFormData({...formData, pricing_type: type, measurement_basis: basis});
+                    }}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                  >
+                    <option value="fixed">Fixed Price</option>
+                    <option value="size_based">Size Based</option>
+                    <option value="weight_based">Weight Based</option>
+                  </select>
                 </div>
-                <div>
+                {formData.pricing_type === 'fixed' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
+                    <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                  </div>
+                )}
+              </div>
+
+              {formData.pricing_type === 'size_based' && (
+                <div className="mt-4 border-t pt-4 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface/50 p-3 rounded-xl">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-3">Size-based Pricing</p>
+                  <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+                    {petSizes.map(size => {
+                      const rule = formData.pricing_rules.find(r => r.basis_type === 'size' && r.reference_id === size.id);
+                      return (
+                        <div key={size.id} className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-slate-600 dark:text-zinc-400">{size.name}</span>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs text-sm">₱</span>
+                            <input 
+                              type="number" 
+                              required 
+                              placeholder="0.00"
+                              value={rule?.price || ""} 
+                              onChange={e => {
+                                const newPrice = e.target.value;
+                                const otherRules = formData.pricing_rules.filter(r => !(r.basis_type === 'size' && r.reference_id === size.id));
+                                setFormData({
+                                  ...formData, 
+                                  pricing_rules: [...otherRules, { basis_type: 'size', reference_id: size.id, price: newPrice }]
+                                });
+                              }}
+                              className="w-32 rounded-xl border border-slate-200 py-2 pl-7 pr-3 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {petSizes.length === 0 && <p className="text-xs text-rose-500">No size categories defined. Please add them in MDM first.</p>}
+                  </div>
+                </div>
+              )}
+
+              {formData.pricing_type === 'weight_based' && (
+                <div className="mt-4 border-t pt-4 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface/50 p-3 rounded-xl">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-3">Weight-based Pricing</p>
+                  <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+                    {weightRanges.map(range => {
+                      const rule = formData.pricing_rules.find(r => r.basis_type === 'weight' && r.reference_id === range.id);
+                      return (
+                        <div key={range.id} className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-slate-600 dark:text-zinc-400">{range.label} ({range.min_weight}-{range.max_weight || '∞'} {range.unit})</span>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs text-sm">₱</span>
+                            <input 
+                              type="number" 
+                              required 
+                              placeholder="0.00"
+                              value={rule?.price || ""} 
+                              onChange={e => {
+                                const newPrice = e.target.value;
+                                const otherRules = formData.pricing_rules.filter(r => !(r.basis_type === 'weight' && r.reference_id === range.id));
+                                setFormData({
+                                  ...formData, 
+                                  pricing_rules: [...otherRules, { basis_type: 'weight', reference_id: range.id, price: newPrice }]
+                                });
+                              }}
+                              className="w-32 rounded-xl border border-slate-200 py-2 pl-7 pr-3 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {weightRanges.length === 0 && <p className="text-xs text-rose-500">No weight ranges defined. Please add them in MDM first.</p>}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
                   <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Category</label>
                   <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
                     <option value="">Select Category</option>
                     {serviceCategories.map(c => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c.id || c} value={c.name || c}>{c.name || c}</option>
                     ))}
                   </select>
                 </div>

@@ -12,7 +12,10 @@ class Service extends Model
         'name',
         'description',
         'price',
-        'pricing_mode',
+        'pricing_mode', // Legacy
+        'pricing_type',
+        'measurement_basis',
+        'base_price',
         'category',
         'status',
     ];
@@ -20,5 +23,10 @@ class Service extends Model
     public function sizePrices()
     {
         return $this->hasMany(ServicePrice::class);
+    }
+
+    public function pricingRules()
+    {
+        return $this->hasMany(ServicePricingRule::class);
     }
 }
