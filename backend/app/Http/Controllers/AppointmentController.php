@@ -137,6 +137,12 @@ class AppointmentController extends Controller
                  return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
             }
 
+            if ($schedule->break_start && $schedule->break_end) {
+                if ($time >= $schedule->break_start && $time <= $schedule->break_end) {
+                    return response()->json(['message' => 'Selected time falls during the vet\'s break period (' . date('g:i A', strtotime($schedule->break_start)) . " - " . date('g:i A', strtotime($schedule->break_end)) . ")."], 422);
+                }
+            }
+
             // Check for double booking for this vet
             $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
                                                 ->where('date', $validated['date'])

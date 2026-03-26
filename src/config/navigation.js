@@ -5,6 +5,7 @@ import {
   FiGrid,
   FiPackage,
   FiSettings,
+  FiBarChart2,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 
@@ -14,6 +15,7 @@ export const primaryNavigation = [
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI" },
   { id: "billing", label: "Billing", path: "/billing", icon: FiCreditCard },
+  { id: "reports", label: "Reports", path: "/reports", icon: FiBarChart2 },
 ];
 
 export const bottomNavigation = [

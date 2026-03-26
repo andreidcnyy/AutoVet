@@ -9,6 +9,7 @@ import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
 import ProfilePage from "../pages/ProfilePage";
 import SettingsPage from "../pages/SettingsPage";
 import LoginPage from "../pages/LoginPage";
+import ReportsPage from "../pages/ReportsPage";
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +50,11 @@ export const router = createBrowserRouter([
         path: "billing",
         element: <BillingPage />,
         handle: { title: "Billing" },
+      },
+      {
+        path: "reports",
+        element: <ReportsPage />,
+        handle: { title: "Clinical & Business Reports" },
       },
       {
         path: "settings",
