@@ -21,6 +21,7 @@ class AppointmentController extends Controller
             'time' => 'required|date_format:H:i',
             'category' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:pending,completed,cancelled',
             'pet_id' => 'required|exists:pets,id',
             'service_id' => 'required|exists:services,id',
             'vet_id' => 'nullable|exists:users,id',
@@ -66,6 +67,24 @@ class AppointmentController extends Controller
                     return response()->json(['message' => 'Selected time falls during the vet\'s break period (' . date('g:i A', strtotime($schedule->break_start)) . " - " . date('g:i A', strtotime($schedule->break_end)) . ")."], 422);
                 }
             }
+
+            // Check for double booking for this vet
+            $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
+                                                ->where('date', $validated['date'])
+                                                ->where('time', $validated['time'])
+                                                ->first();
+            if ($existingVetAppointment) {
+                return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
+            }
+        }
+
+        // Check for double booking for this pet
+        $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
+                                            ->where('date', $validated['date'])
+                                            ->where('time', $validated['time'])
+                                            ->first();
+        if ($existingPetAppointment) {
+            return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
         }
 
         $appointment = Appointment::create($validated);
@@ -85,6 +104,7 @@ class AppointmentController extends Controller
             'time' => 'required|date_format:H:i',
             'category' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:pending,completed,cancelled',
             'pet_id' => 'required|exists:pets,id',
             'service_id' => 'required|exists:services,id',
             'vet_id' => 'nullable|exists:users,id',
@@ -116,6 +136,26 @@ class AppointmentController extends Controller
             if ($time < $schedule->start_time || $time > $schedule->end_time) {
                  return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
             }
+
+            // Check for double booking for this vet
+            $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
+                                                ->where('date', $validated['date'])
+                                                ->where('time', $validated['time'])
+                                                ->where('id', '!=', $appointment->id)
+                                                ->first();
+            if ($existingVetAppointment) {
+                return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
+            }
+        }
+
+        // Check for double booking for this pet
+        $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
+                                            ->where('date', $validated['date'])
+                                            ->where('time', $validated['time'])
+                                            ->where('id', '!=', $appointment->id)
+                                            ->first();
+        if ($existingPetAppointment) {
+            return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
         }
 
         if (empty($validated['title'])) {
