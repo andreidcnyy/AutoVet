@@ -25,6 +25,15 @@ export default function MasterDataManagementTab() {
     { key: "min_weight", label: "Min (kg)" },
     { key: "max_weight", label: "Max (kg)" },
     { 
+      key: "size_category_id", 
+      label: "Size Category",
+      render: (val, item) => (
+        <span className="font-medium text-blue-600 dark:text-blue-400">
+          {item.size_category?.name || "Unlinked"}
+        </span>
+      )
+    },
+    { 
       key: "status", 
       label: "Status",
       render: (val) => (
@@ -103,7 +112,8 @@ export default function MasterDataManagementTab() {
             description="Define weight tiers for weight-based service pricing."
             apiUrl="/api/weight-ranges"
             columns={weightRangeColumns}
-            initialForm={{ label: "", min_weight: 0, max_weight: "", unit: "kg", status: "Active" }}
+            initialForm={{ label: "", min_weight: 0, max_weight: "", unit: "kg", size_category_id: "", status: "Active" }}
+            defaultSortBy="min_weight"
           />
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />

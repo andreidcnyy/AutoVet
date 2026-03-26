@@ -29,10 +29,9 @@ class PetController extends Controller
             'age_group' => 'nullable|string',
             'sex' => 'nullable|string',
             'color' => 'nullable|string',
-            'weight' => 'nullable|numeric',
+            'weight' => 'required|numeric|min:0.01',
             'weight_unit' => 'nullable|string|exists:units_of_measure,abbreviation',
             'status' => 'nullable|string',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -70,10 +69,9 @@ class PetController extends Controller
             'age_group' => 'nullable|string',
             'sex' => 'nullable|string',
             'color' => 'nullable|string',
-            'weight' => 'nullable|numeric',
+            'weight' => 'required|numeric|min:0.01',
             'weight_unit' => 'nullable|string|exists:units_of_measure,abbreviation',
             'status' => 'nullable|string',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -91,8 +89,9 @@ class PetController extends Controller
             $validated['photo'] = $request->file('photo')->store('pets', 'public');
         } else {
             // Keep existing photo if a URL was sent back unchanged
-            if (isset($validated['photo']) && !preg_match('/^data:image/', $validated['photo'])) {
+            if (isset($request->photo) && !preg_match('/^data:image/', $request->photo)) {
                 // It's likely the existing path, so leave it untouched
+                unset($validated['photo']);
             }
         }
 

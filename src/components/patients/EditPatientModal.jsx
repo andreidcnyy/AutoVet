@@ -23,7 +23,7 @@ const patientSchema = z.object({
     sex: z.string().max(50).optional().or(z.literal("")),
     age_group: z.string().optional().or(z.literal("")),
     color: z.string().max(255).optional().or(z.literal("")),
-    weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+    weight: z.coerce.number().min(0.01, "Weight is required to determine pet size").max(500, "Weight exceeds valid range"),
     weight_unit: z.enum(["kg", "lbs"]).default("kg"),
     size_category_id: z.string().optional().or(z.literal("")),
     status: z.string().max(50).optional(),
@@ -71,7 +71,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         resolver: zodResolver(patientSchema),
         defaultValues: {
             name: "", species_id: "", breed_id: "", date_of_birth: "",
-            sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg", size_category_id: "", status: "Healthy",
+            sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg", status: "Healthy",
             owner_name: "", owner_phone: "", owner_email: "",
             owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
             allergies: "", medication: "", notes: "", photo: "",
@@ -124,6 +124,19 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         };
         reader.readAsDataURL(file);
     };
+
+    const weightValue = watch("weight");
+
+    const calculateSize = (w) => {
+        if (!w || isNaN(w)) return "N/A";
+        const val = parseFloat(w);
+        if (val <= 5) return "Small";
+        if (val <= 10) return "Medium";
+        if (val <= 20) return "Large";
+        return "Giant";
+    };
+
+    const calculatedSize = calculateSize(weightValue);
 
     const onSubmit = async (data) => {
         setError(null);
@@ -259,28 +272,25 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
                                 </div>
                                 
-                                <div className="col-span-1 sm:col-span-2 grid grid-cols-3 gap-3">
-                                  <div>
-                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight</label>
-                                      <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} />
-                                  </div>
-                                  <div>
-                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Unit</label>
-                                      <select {...register("weight_unit")} className={getSelectClass(errors.weight_unit)}>
-                                          <option value="kg">kg</option>
-                                          <option value="lbs">lbs</option>
-                                      </select>
-                                  </div>
-                                  <div>
-                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size</label>
-                                      <div className="relative">
-                                        <select {...register("size_category_id")} className={getSelectClass(errors.size_category_id)}>
-                                            <option value="">Select...</option>
-                                            {sizeCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                                        </select>
-                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                      </div>
-                                  </div>
+                                <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight ({watch("weight_unit") || "kg"})</label>
+                                        <div className="flex gap-2">
+                                            <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
+                                            <select {...register("weight_unit")} className="w-16 rounded border border-slate-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
+                                                <option value="kg">kg</option>
+                                                <option value="lbs">lbs</option>
+                                            </select>
+                                        </div>
+                                        {errors.weight && <p className="mt-1 text-[10px] text-rose-500 font-medium">{errors.weight.message}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size Category</label>
+                                        <div className="flex h-[34px] items-center rounded border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 dark:border-white/5 dark:bg-zinc-900/50 dark:text-zinc-300">
+                                            {calculatedSize}
+                                            <span className="ml-2 text-[9px] font-normal uppercase tracking-wider text-slate-400">Auto</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div>

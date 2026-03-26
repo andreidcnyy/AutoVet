@@ -9,6 +9,27 @@ class Pet extends Model
 {
     use SoftDeletes;
     
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($pet) {
+            if ($pet->weight !== null) {
+                $range = WeightRange::where('status', 'Active')
+                    ->where('min_weight', '<=', $pet->weight)
+                    ->where(function ($query) use ($pet) {
+                        $query->where('max_weight', '>=', $pet->weight)
+                              ->orWhereNull('max_weight');
+                    })
+                    ->first();
+
+                if ($range) {
+                    $pet->size_category_id = $range->size_category_id;
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',

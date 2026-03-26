@@ -3,13 +3,13 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChev
 import { useToast } from "../../context/ToastContext";
 import clsx from "clsx";
 
-export default function MasterDataTable({ title, description, apiUrl, columns, initialForm }) {
+export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
   const toast = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState(defaultSortBy);
   const [sortDir, setSortDir] = useState("asc");
   const [page, setPage] = useState(1);
 
