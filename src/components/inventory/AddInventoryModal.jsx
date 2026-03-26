@@ -12,18 +12,24 @@ const inventorySchema = z.object({
     item_name: z.string().min(1, "Item name is required").max(255),
     sub_details: z.string().max(255).optional(),
     category: z.string().min(1, "Category is required").max(255),
-    sku: z.string().min(1, "SKU is required").max(255),
+    sku: z.string().max(255).optional(),
     stock_level: z.coerce.number().min(0, "Stock must be 0 or more"),
+    min_stock_level: z.coerce.number().min(0, "Alert level must be 0 or more"),
     status: z.string().min(1, "Status is required").max(255),
-    price: z.coerce.number().min(0, "Price must be 0 or more").optional().or(z.literal("")),
+    price: z.coerce.number().min(0, "Cost price must be 0 or more").optional().or(z.literal("")),
+    selling_price: z.coerce.number().min(0, "Selling price must be 0 or more").optional().or(z.literal("")),
+    is_billable: z.boolean().default(true),
+    is_consumable: z.boolean().default(false),
+    deduct_on_finalize: z.boolean().default(true),
     supplier: z.string().max(255).optional(),
     expiration_date: z.string().optional().or(z.literal(""))
 });
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
-    const [categoryOptions, setCategoryOptions] = useState(["Vaccines", "Antibiotics", "Supplies", "Diagnostics"]);
-    const [priceDisplay, setPriceDisplay] = useState("");
+    const [categoryOptions, setCategoryOptions] = useState(["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"]);
+    const [costPriceDisplay, setCostPriceDisplay] = useState("");
+    const [sellingPriceDisplay, setSellingPriceDisplay] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -47,12 +53,16 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         defaultValues: {
             item_name: "",
             sub_details: "",
-            category: "Vaccines",
+            category: "Consumables",
             sku: "",
             stock_level: 0,
             min_stock_level: 10,
             status: "In Stock",
             price: "",
+            selling_price: "",
+            is_billable: true,
+            is_consumable: false,
+            deduct_on_finalize: true,
             supplier: "",
             expiration_date: "",
         }
@@ -178,17 +188,15 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           {/* SKU */}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
-              Unique SKU *
+              SKU (Auto-generated)
             </label>
             <input
               type="text"
-              {...register("sku")}
-              className={clsx(getInputClass(errors.sku), "uppercase")}
-              placeholder="e.g. VAC-PAR-01"
+              readOnly
+              className={clsx(getInputClass(errors.sku), "uppercase bg-slate-50 dark:bg-dark-surface/50 cursor-not-allowed")}
+              placeholder="GEN-AUTO-001"
+              value="AUTO-GENERATED"
             />
-            {errors.sku && (
-              <p className="mt-1 text-sm text-red-500">{errors.sku.message}</p>
-            )}
           </div>
 
           {/* Stock Level */}
@@ -241,25 +249,19 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             )}
           </div>
 
-          {/* Price */}
+          {/* Cost Price */}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
-                Amount (₱)
+                Cost Price (₱)
             </label>
             <input
                 type="text"
-                value={priceDisplay}
+                value={costPriceDisplay}
                 onChange={(e) => {
-                let raw = e.target.value.replace(/,/g, ""); // remove commas
-                // only digits and optional dot
+                let raw = e.target.value.replace(/,/g, ""); 
                 if (/^\d*\.?\d*$/.test(raw)) {
-                    setPriceDisplay(
-                        raw
-                        ? (() => {
-                            const [intPart, decPart] = raw.split(".");
-                            return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (decPart !== undefined ? "." + decPart : "");
-                            })()
-                        : ""
+                    setCostPriceDisplay(
+                        raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""
                     );
                     setValue("price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
                 }
@@ -271,6 +273,77 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
             )}
             </div>
+
+          {/* Selling Price */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
+                <span>Selling Price (₱) *</span>
+                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">For Billing</span>
+            </label>
+            <input
+                type="text"
+                value={sellingPriceDisplay}
+                onChange={(e) => {
+                let raw = e.target.value.replace(/,/g, ""); 
+                if (/^\d*\.?\d*$/.test(raw)) {
+                    setSellingPriceDisplay(
+                        raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""
+                    );
+                    setValue("selling_price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
+                }
+                }}
+                className={getInputClass(errors.selling_price)}
+                placeholder="0.00"
+            />
+            {errors.selling_price && (
+                <p className="mt-1 text-sm text-red-500">{errors.selling_price.message}</p>
+            )}
+          </div>
+
+          {/* Billing & Logic Flags */}
+          <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-dark-border dark:bg-dark-surface/30">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  {...register("is_billable")} 
+                  className="peer h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Billable?</span>
+                <span className="text-[10px] text-slate-500">Show in billing</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  {...register("is_consumable")} 
+                  className="peer h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Consumable?</span>
+                <span className="text-[10px] text-slate-500">Used in treatment</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="relative flex items-center">
+                <input 
+                  type="checkbox" 
+                  {...register("deduct_on_finalize")} 
+                  className="peer h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Auto-Deduct?</span>
+                <span className="text-[10px] text-slate-500">Deduct on finalize</span>
+              </div>
+            </label>
+          </div>
 
           {/* Expiration Date */}
           <div className="md:col-span-2">

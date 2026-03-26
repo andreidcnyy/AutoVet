@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServiceController;
@@ -34,13 +33,7 @@ Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock']);
 Route::get('/reports/inventory/low-stock', [\App\Http\Controllers\LowStockReportController::class, 'generate']);
 Route::post('/inventory', [InventoryController::class, 'store']);
 Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy']);
-
-Route::get('/patients', [PatientController::class, 'index']);
-Route::get('/patients/{patient}', [PatientController::class, 'show']);
-Route::post('/patients', [PatientController::class, 'store']);
-Route::post('/patients/import', [PatientController::class, 'import']);
-Route::put('/patients/{patient}', [PatientController::class, 'update']);
-Route::delete('/patients/{patient}', [PatientController::class, 'destroy']);
+Route::get('/inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
 
 Route::get('/settings', [SettingController::class, 'index']);
 Route::put('/settings', [SettingController::class, 'update']);
@@ -49,6 +42,13 @@ Route::apiResource('appointments', AppointmentController::class);
 Route::apiResource('invoices', InvoiceController::class);
 Route::apiResource('services', ServiceController::class);
 Route::apiResource('users', UserController::class);
+
+Route::apiResource('species', \App\Http\Controllers\SpeciesController::class);
+Route::apiResource('breeds', \App\Http\Controllers\BreedController::class);
+Route::apiResource('owners', \App\Http\Controllers\OwnerController::class);
+Route::apiResource('pets', \App\Http\Controllers\PetController::class);
+Route::apiResource('vet-schedules', \App\Http\Controllers\VetScheduleController::class);
+Route::apiResource('medical-records', \App\Http\Controllers\MedicalRecordController::class);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/status', function () {

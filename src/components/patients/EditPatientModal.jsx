@@ -1,32 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import clsx from "clsx";
-import { FiX, FiCamera, FiAlertCircle } from "react-icons/fi";
+import { FiX, FiCamera, FiAlertCircle, FiChevronDown } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
-import { getPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 
 const inputBase =
     "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
-
 const selectBase =
     "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
-const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
-const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
+const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
+const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
 
 const patientSchema = z.object({
     name: z.string().min(1, "Pet name is required").max(255),
-    species: z.string().min(1, "Species is required").max(255),
-    breed: z.string().max(255).optional().or(z.literal("")),
+    species_id: z.string().min(1, "Species is required"),
+    breed_id: z.string().optional(),
     date_of_birth: z.string().optional().or(z.literal("")),
     gender: z.string().max(50).optional().or(z.literal("")),
     color: z.string().max(255).optional().or(z.literal("")),
-    weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+    weight_value: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+    weight_unit: z.enum(["kg", "lbs"]).default("kg"),
+    size_class: z.enum(["Small", "Medium", "Large", "Giant"]).default("Small"),
     status: z.string().max(50).optional(),
     owner_name: z.string().min(1, "Owner name is required").max(255),
-    owner_phone: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).optional().or(z.literal("")),
+    owner_phone: z.string().max(50).optional().or(z.literal("")),
     owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
     owner_address: z.string().min(1, "Street address is required").max(255),
     owner_city: z.string().min(1, "City is required").max(255),
@@ -42,15 +43,13 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const toast = useToast();
     const [error, setError] = useState(null);
     const photoInputRef = useRef(null);
-    const [speciesList, setSpeciesList] = useState(["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+    const [speciesList, setSpeciesList] = useState([]);
 
     useEffect(() => {
         if (isOpen) {
-            fetch("/api/settings")
+            fetch("/api/species")
                 .then(res => res.json())
-                .then(data => {
-                    if (data.species_list) setSpeciesList(JSON.parse(data.species_list));
-                })
+                .then(setSpeciesList)
                 .catch(console.error);
         }
     }, [isOpen]);
@@ -65,8 +64,8 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     } = useForm({
         resolver: zodResolver(patientSchema),
         defaultValues: {
-            name: "", species: "Canine", breed: "", date_of_birth: "",
-            gender: "Male", color: "", weight: "", status: "Healthy",
+            name: "", species_id: "", breed_id: "", date_of_birth: "",
+            gender: "Male", color: "", weight_value: "", weight_unit: "kg", size_class: "Small", status: "Healthy",
             owner_name: "", owner_phone: "", owner_email: "",
             owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
             allergies: "", medication: "", notes: "", photo: "",
@@ -77,20 +76,22 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         if (patient && isOpen) {
             reset({
                 name: patient.name || "",
-                species: patient.species || "Canine",
-                breed: patient.breed || "",
-                date_of_birth: patient.date_of_birth || "",
+                species_id: patient.species_id ? patient.species_id.toString() : "",
+                breed_id: patient.breed_id ? patient.breed_id.toString() : "",
+                date_of_birth: patient.date_of_birth ? patient.date_of_birth.substring(0, 10) : "",
                 gender: patient.gender || "Male",
                 color: patient.color || "",
-                weight: patient.weight || "",
+                weight_value: patient.weight_value || "",
+                weight_unit: patient.weight_unit || "kg",
+                size_class: patient.size_class || "Small",
                 status: patient.status || "Healthy",
-                owner_name: patient.ownerName || patient.owner_name || "",
-                owner_phone: patient.ownerPhone || patient.owner_phone || "",
-                owner_email: patient.ownerEmail || patient.owner_email || "",
-                owner_address: patient.owner_address || "",
-                owner_city: patient.owner_city || "",
-                owner_province: patient.owner_province || "",
-                owner_zip: patient.owner_zip || "",
+                owner_name: patient.owner?.name || patient.ownerName || "",
+                owner_phone: patient.owner?.phone || patient.ownerPhone || "",
+                owner_email: patient.owner?.email || patient.ownerEmail || "",
+                owner_address: patient.owner?.address || patient.owner_address || "",
+                owner_city: patient.owner?.city || patient.owner_city || "",
+                owner_province: patient.owner?.province || patient.owner_province || "",
+                owner_zip: patient.owner?.zip || patient.owner_zip || "",
                 allergies: patient.allergies || "",
                 medication: patient.medication || "",
                 notes: patient.notes || "",
@@ -103,8 +104,9 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     if (!isOpen || !patient) return null;
 
     const photoValue = watch("photo");
-    const speciesValue = watch("species");
-    const breedValue = watch("breed");
+    const speciesIdValue = watch("species_id");
+    const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
+    const availableBreeds = selectedSpecies?.breeds || [];
 
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -119,21 +121,57 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const onSubmit = async (data) => {
         setError(null);
         try {
-            const response = await fetch(`/api/patients/${patient.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", Accept: "application/json" },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                const firstError = err.errors ? Object.values(err.errors)[0][0] : (err.message || "Failed to update patient.");
-                throw new Error(firstError);
+            // First update owner if owner_id exists
+            if (patient.owner_id) {
+                const ownerRes = await fetch(`/api/owners/${patient.owner_id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", Accept: "application/json" },
+                    body: JSON.stringify({
+                        name: data.owner_name,
+                        phone: data.owner_phone,
+                        email: data.owner_email,
+                        address: data.owner_address,
+                        city: data.owner_city,
+                        province: data.owner_province,
+                        zip: data.owner_zip
+                    })
+                });
+                if (!ownerRes.ok) throw new Error("Failed to update owner details.");
             }
 
-            const updatedPatient = await response.json();
-            toast.success("Patient profile updated successfully.");
-            onSaveSuccess(updatedPatient);
+            // Next update the pet itself
+            const petPayload = {
+                owner_id: patient.owner_id,
+                name: data.name,
+                species_id: data.species_id || null,
+                breed_id: data.breed_id || null,
+                date_of_birth: data.date_of_birth,
+                gender: data.gender,
+                color: data.color,
+                weight_value: data.weight_value,
+                weight_unit: data.weight_unit,
+                size_class: data.size_class,
+                status: data.status,
+                allergies: data.allergies,
+                medication: data.medication,
+                notes: data.notes,
+                photo: data.photo
+            };
+
+            const petRes = await fetch(`/api/pets/${patient.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify(petPayload),
+            });
+
+            if (!petRes.ok) {
+                const err = await petRes.json();
+                throw new Error(err.message || "Failed to update pet.");
+            }
+
+            const updatedPet = await petRes.json();
+            
+            onSaveSuccess(updatedPet);
             onClose();
         } catch (err) {
             setError(err.message);
@@ -168,13 +206,9 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     className="group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400 dark:border-dark-border dark:bg-dark-surface"
                                 >
                                     {photoValue ? (
-                                        <img src={photoValue} alt="Pet" className="h-full w-full object-cover" />
+                                        <img src={getActualPetImageUrl(photoValue)} alt="Pet" className="h-full w-full object-cover" />
                                     ) : (
-                                        <img 
-                                            src={getPetImageUrl(speciesValue, breedValue)} 
-                                            alt="Species preview" 
-                                            className="h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" 
-                                        />
+                                        <div className="flex h-full items-center justify-center text-slate-400"><FiCamera className="h-6 w-6"/></div>
                                     )}
                                     <div className={clsx(
                                         "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
@@ -184,10 +218,6 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                 </button>
                                 <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-                                <div>
-                                    <p className="text-sm font-medium text-slate-700 dark:text-zinc-300">Change Photo</p>
-                                    <p className="text-xs text-slate-500">JPG, PNG, GIF</p>
-                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -198,23 +228,57 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Species *</label>
-                                    <select {...register("species")} className={getSelectClass(errors.species)}>
-                                        {speciesList.map((s) => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select {...register("species_id")} className={getSelectClass(errors.species_id)}>
+                                            <option value="">Select Species...</option>
+                                            {speciesList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Breed</label>
-                                    <input {...register("breed")} className={getInputClass(errors.breed)} />
+                                    <div className="relative">
+                                        <select {...register("breed_id")} className={getSelectClass(errors.breed_id)} disabled={!speciesIdValue}>
+                                            <option value="">Select Breed...</option>
+                                            {availableBreeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Date of Birth</label>
                                     <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
                                 </div>
+                                
+                                <div className="col-span-1 sm:col-span-2 grid grid-cols-3 gap-3">
+                                  <div>
+                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight</label>
+                                      <input type="number" step="0.01" {...register("weight_value")} className={getInputClass(errors.weight_value)} />
+                                  </div>
+                                  <div>
+                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Unit</label>
+                                      <select {...register("weight_unit")} className={getSelectClass(errors.weight_unit)}>
+                                          <option value="kg">kg</option>
+                                          <option value="lbs">lbs</option>
+                                      </select>
+                                  </div>
+                                  <div>
+                                      <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Class</label>
+                                      <select {...register("size_class")} className={getSelectClass(errors.size_class)}>
+                                          <option value="Small">Small</option>
+                                          <option value="Medium">Medium</option>
+                                          <option value="Large">Large</option>
+                                          <option value="Giant">Giant</option>
+                                      </select>
+                                  </div>
+                                </div>
+
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight</label>
-                                    <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} />
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Gender</label>
+                                    <select {...register("gender")} className={getSelectClass(errors.gender)}>
+                                        <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Status</label>
@@ -246,24 +310,40 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div className="sm:col-span-2">
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Street Address *</label>
                                     <input {...register("owner_address")} className={getInputClass(errors.owner_address)} />
-                                    {errors.owner_address && <p className="mt-1 text-xs text-red-500">{errors.owner_address.message}</p>}
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">City *</label>
                                     <input {...register("owner_city")} className={getInputClass(errors.owner_city)} />
-                                    {errors.owner_city && <p className="mt-1 text-xs text-red-500">{errors.owner_city.message}</p>}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Province *</label>
                                         <input {...register("owner_province")} className={getInputClass(errors.owner_province)} />
-                                        {errors.owner_province && <p className="mt-1 text-xs text-red-500">{errors.owner_province.message}</p>}
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Zip *</label>
                                         <input {...register("owner_zip")} className={getInputClass(errors.owner_zip)} />
-                                        {errors.owner_zip && <p className="mt-1 text-xs text-red-500">{errors.owner_zip.message}</p>}
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div className="h-px bg-slate-200 dark:bg-dark-border" />
+
+                        <section>
+                            <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-zinc-100">Medical History</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Allergies</label>
+                                    <input {...register("allergies")} className={getInputClass(errors.allergies)} />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Current Medication</label>
+                                    <input {...register("medication")} className={getInputClass(errors.medication)} />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Additional Notes / Status</label>
+                                    <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
                                 </div>
                             </div>
                         </section>

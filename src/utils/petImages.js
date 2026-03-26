@@ -1,6 +1,12 @@
+export const getActualPetImageUrl = (photoPath) => {
+  if (!photoPath) return null;
+  if (photoPath.startsWith("http") || photoPath.startsWith("data:image")) return photoPath;
+  return `http://localhost:8000/storage/${photoPath}`;
+};
+
 export const getPetImageUrl = (species, breed) => {
-  const s = species?.toLowerCase() || "";
-  const b = breed?.toLowerCase() || "";
+  const s = (typeof species === 'string' ? species : species?.name || '').toLowerCase();
+  const b = (typeof breed === 'string' ? breed : breed?.name || '').toLowerCase();
 
   // Dog Breeds
   if (s.includes("dog") || s === "canine") {

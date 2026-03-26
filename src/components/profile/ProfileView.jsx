@@ -14,7 +14,7 @@ const profileSchema = z.object({
     avatar: z.string().optional()
 });
 
-function ProfileView() {
+function ProfileView({ user, setUser }) {
     const toast = useToast();
     const fileInputRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +89,11 @@ function ProfileView() {
                 const response = await res.json();
                 if (res.ok && (response.status === "success" || response.message)) {
                     toast.success("Profile saved successfully to database!");
+                    if (response.user && setUser) {
+                        setUser(response.user);
+                        // Also update localStorage as AuthContext does on login
+                        localStorage.setItem("user", JSON.stringify(response.user));
+                    }
                 } else if (!res.ok && response.errors) {
                     toast.error(Object.values(response.errors)[0][0]);
                 } else {
@@ -167,14 +172,19 @@ function ProfileView() {
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Role</label>
-                                <input
+                                <select
                                     {...register("role")}
                                     className={clsx(
-                                        "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
                                         errors.role ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500"
                                     )}
-                                    placeholder="e.g. Chief Veterinarian"
-                                />
+                                >
+                                    <option value="">Select Role</option>
+                                    <option value="admin">Administrator</option>
+                                    <option value="Veterinarian">Veterinarian</option>
+                                    <option value="Clinic Manager">Clinic Manager</option>
+                                    <option value="Assistant">Assistant</option>
+                                </select>
                                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>}
                             </div>
                             <div className="lg:col-span-2">

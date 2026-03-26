@@ -8,7 +8,7 @@ class ServiceController extends Controller
 {
     public function index()
     {
-        return response()->json(\App\Models\Service::all());
+        return response()->json(\App\Models\Service::with('sizePrices')->get());
     }
 
     public function store(Request $request)
@@ -27,7 +27,7 @@ class ServiceController extends Controller
 
     public function show(string $id)
     {
-        $service = \App\Models\Service::findOrFail($id);
+        $service = \App\Models\Service::with('sizePrices')->findOrFail($id);
         return response()->json($service);
     }
 

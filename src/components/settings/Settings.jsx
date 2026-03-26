@@ -8,16 +8,21 @@ import ServiceManagementTab from "./ServiceManagementTab";
 import DataManagementTab from "./DataManagementTab";
 import SystemPreferencesTab from "./SystemPreferencesTab";
 
+import SpeciesBreedsTab from "./SpeciesBreedsTab";
+import VetScheduleTab from "./VetScheduleTab";
+
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
-  { id: "users", label: "User Management", icon: FiUsers },
+  { id: "data", label: "Data Lists", icon: FiSettings },
   { id: "services", label: "Service Management", icon: FiBriefcase },
-  { id: "data", label: "Data Management", icon: FiSettings },
+  { id: "species", label: "Species & Breeds", icon: FiHome },
+  { id: "users", label: "Users / Roles", icon: FiUsers },
+  { id: "schedule", label: "Vet Schedule", icon: FiBriefcase },
   { id: "system", label: "System & AI Preferences", icon: FiSettings },
 ];
 
 function Settings() {
-  const [activeTab, setActiveTab] = useState("clinic");
+  const [activeTab, setActiveTab] = useState("data");
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[280px_1fr]">
@@ -45,9 +50,11 @@ function Settings() {
 
       <main>
         {activeTab === "clinic" && <ClinicProfileTab />}
-        {activeTab === "users" && <UserManagementTab />}
-        {activeTab === "services" && <ServiceManagementTab />}
         {activeTab === "data" && <DataManagementTab />}
+        {activeTab === "services" && <ServiceManagementTab />}
+        {activeTab === "species" && <SpeciesBreedsTab />}
+        {activeTab === "users" && <UserManagementTab />}
+        {activeTab === "schedule" && <VetScheduleTab />}
         {activeTab === "system" && <SystemPreferencesTab />}
       </main>
     </div>

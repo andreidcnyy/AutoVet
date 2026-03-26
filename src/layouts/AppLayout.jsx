@@ -14,15 +14,15 @@ function AppLayout() {
   const [clinic, setClinic] = useState(clinicInfo);
   const matches = useMatches();
   const navigate = useNavigate();
-  const { user, login: setUser } = useAuth();
+  const { user, loading, login: setUser } = useAuth();
   const [isMaintenance, setIsMaintenance] = useState(false);
 
   // If not authenticated, redirect to login (useEffect to avoid render loop)
   React.useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate("/login", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   React.useEffect(() => {
     if (user) {
@@ -40,12 +40,12 @@ function AppLayout() {
     }
   }, [user]);
 
-  if (!user) return null;
-
   const pageTitle = useMemo(() => {
     const titledMatch = [...matches].reverse().find((match) => match.handle?.title);
     return titledMatch?.handle?.title ?? "AutoVet";
   }, [matches]);
+
+  if (loading || !user) return null;
 
   if (isMaintenance && user?.role !== "Admin" && user?.role !== "Chief Veterinarian") {
     return (

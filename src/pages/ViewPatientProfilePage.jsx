@@ -8,12 +8,14 @@ function ViewPatientProfilePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`/api/patients/${id}`)
+    fetch(`/api/pets/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load patient.");
         return res.json();
       })
-      .then((data) => setPatient(data))
+      .then((data) => {
+        setPatient(data);
+      })
       .catch((err) => setError(err.message));
   }, [id]);
 

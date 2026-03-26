@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
+import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -75,14 +76,14 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(12);
-  doc.text(patient?.owner_name || "Guest Client", 14, y + 7);
+  doc.text(patient?.owner?.name || "Guest Client", 14, y + 7);
   
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(patient?.owner_address || "No address", 14, y + 13);
-  doc.text(patient?.owner_email || "", 14, y + 18);
-  doc.text(patient?.owner_phone || "", 14, y + 23);
+  doc.text(patient?.owner?.address || "No address", 14, y + 13);
+  doc.text(patient?.owner?.email || "", 14, y + 18);
+  doc.text(patient?.owner?.phone || "", 14, y + 23);
 
   // Patient Card (Subtle Gray Box)
   const patientCardX = 110;
@@ -94,10 +95,15 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setFont("helvetica", "bold");
   doc.text("PATIENT", patientCardX, y + 2);
 
-  if (patient?.photo) {
-    try {
-        doc.addImage(patient.photo, 'JPEG', patientCardX, y + 5, 10, 10);
-    } catch(e){}
+  if (patient) {
+    const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name);
+    if (photoUrl) {
+      try {
+          doc.addImage(photoUrl, 'JPEG', patientCardX, y + 5, 10, 10);
+      } catch(e){
+        console.error("PDF Patient Image error:", e);
+      }
+    }
   }
 
   doc.setTextColor(30, 41, 59);
@@ -105,7 +111,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.text(patient?.name || "N/A", patientCardX + 13, y + 10);
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text(`${patient?.species || ""} • ${patient?.breed || ""}`, patientCardX + 13, y + 15);
+  doc.text(`${patient?.species?.name || ""} • ${patient?.breed?.name || ""}`, patientCardX + 13, y + 15);
 
   y += 45;
 
@@ -152,13 +158,14 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setTextColor(30, 41, 59);
   doc.text(pdfCurrency(invoiceData.subtotal), totalsX, y, { align: "right" });
   
-  // Tax
-  y += 7;
+  // Fixed VAT 12%
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(`Tax (${invoiceData.tax_rate}%)`, totalsX - 40, y, { align: "right" });
+  doc.text("VAT (12%)", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
-  const taxAmt = (invoiceData.taxable || invoiceData.subtotal) * (invoiceData.tax_rate / 100);
-  doc.text(pdfCurrency(taxAmt), totalsX, y, { align: "right" });
+  doc.text(pdfCurrency(invoiceData.subtotal * 0.12), totalsX, y, { align: "right" });
 
   // Total Due
   y += 12;
@@ -194,11 +201,13 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 function BillingInvoiceView() {
   const toast = useToast();
   const [items, setItems] = useState([]);
-  const [taxRateVal, setTaxRateVal] = useState(0);
   const [discountVal, setDiscountVal] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
 
-  const [patients, setPatients] = useState([]);
+  const [owners, setOwners] = useState([]);
+  const [pets, setPets] = useState([]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState("");
+
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [patientDetails, setPatientDetails] = useState(null);
   const [clinicSettings, setClinicSettings] = useState(null);
@@ -208,19 +217,24 @@ function BillingInvoiceView() {
 
   const [services, setServices] = useState([]);
 
+  const [inventory, setInventory] = useState([]);
+
   useEffect(() => {
-    // Fetch patients and settings on mount
+    // Fetch owners, pets, and settings on mount
     Promise.all([
-      fetch("/api/patients").then(res => res.json()),
+      fetch("/api/owners").then(res => res.json()),
+      fetch("/api/pets").then(res => res.json()),
       fetch("/api/settings").then(res => res.json()),
-      fetch("/api/services").then(res => res.json()).catch(() => [])
+      fetch("/api/services").then(res => res.json()).catch(() => []),
+      fetch("/api/inventory").then(res => res.json()).catch(() => [])
     ])
-      .then(([patientsData, settingsData, servicesData]) => {
-        setPatients(patientsData);
+      .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
+        setOwners(ownersData);
+        setPets(petsData);
         setClinicSettings(settingsData);
-        setTaxRateVal(parseFloat(settingsData.tax_rate) || 0);
         setNotes(settingsData.invoice_notes_template || "");
         setServices(servicesData || []);
+        setInventory(inventoryData || []);
       })
       .catch((err) => {
         console.error(err);
@@ -235,7 +249,10 @@ function BillingInvoiceView() {
       setPatientDetails(null);
       return;
     }
-    const patientData = patients.find(p => p.id.toString() === pId.toString());
+    const patientData = pets.find(p => p.id.toString() === pId.toString());
+    const ownerData = patientData?.owner;
+
+    // Simply use the raw patient data, the UI will access nested properties
     setPatientDetails(patientData);
 
     // Auto replace placeholders in the notes if clinic template is present
@@ -243,7 +260,7 @@ function BillingInvoiceView() {
       let template = clinicSettings.invoice_notes_template;
       template = template.replace(/{clinic_name}/g, clinicSettings.clinic_name || "");
       template = template.replace(/{pet_name}/g, patientData.name || "");
-      template = template.replace(/{owner_name}/g, patientData.owner_name || "");
+      template = template.replace(/{owner_name}/g, patientData.owner?.name || "");
       setNotes(template);
     }
   };
@@ -262,7 +279,7 @@ function BillingInvoiceView() {
   }, [subtotal, discountVal, discountType]);
 
   const taxable = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
-  const taxAmount = useMemo(() => taxable * ((taxRateVal || 0) / 100), [taxable, taxRateVal]);
+  const taxAmount = useMemo(() => taxable * 0.12, [taxable]);
   const totalDue = useMemo(() => taxable + taxAmount, [taxable, taxAmount]);
 
   const [amountPaid, setAmountPaid] = useState(0);
@@ -272,23 +289,50 @@ function BillingInvoiceView() {
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
 
-  const groupedServices = useMemo(() => {
-    const filtered = services.filter(s => 
-      s.name.toLowerCase().includes(serviceInput.toLowerCase()) || 
-      (s.category && s.category.toLowerCase().includes(serviceInput.toLowerCase()))
-    );
-    return filtered.reduce((acc, service) => {
-      const cat = service.category || "Uncategorized";
+  const groupedItems = useMemo(() => {
+    const term = serviceInput.toLowerCase();
+    
+    const filteredServices = services.filter(s => 
+      s.name.toLowerCase().includes(term) || 
+      (s.category && s.category.toLowerCase().includes(term))
+    ).map(s => ({ ...s, type: 'service' }));
+
+    const filteredInventory = inventory.filter(i => 
+      i.is_billable && (
+        i.item_name.toLowerCase().includes(term) || 
+        i.sku?.toLowerCase().includes(term) ||
+        i.category?.toLowerCase().includes(term)
+      )
+    ).map(i => ({ ...i, name: i.item_name, price: i.selling_price, type: 'inventory' }));
+
+    const all = [...filteredServices, ...filteredInventory];
+
+    return all.reduce((acc, item) => {
+      const cat = item.type === 'service' ? (item.category || "Services") : (item.category || "Products");
       if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(service);
+      acc[cat].push(item);
       return acc;
     }, {});
-  }, [services, serviceInput]);
+  }, [services, inventory, serviceInput]);
 
-  const selectServiceFromDropdown = (svc) => {
-    setServiceInput(svc.name);
-    setPriceInput(svc.price);
+  const calculateDynamicPrice = (service) => {
+    if (service.pricing_mode === "size_based" && patientDetails?.size_class) {
+      const sizePrice = service.size_prices?.find(sp => sp.size_class === patientDetails.size_class);
+      if (sizePrice) return Number(sizePrice.price);
+    }
+    return Number(service.price) || 0;
+  };
+
+  const selectItemFromDropdown = (item) => {
+    setServiceInput(item.name);
+    if (item.type === 'service') {
+      setPriceInput(calculateDynamicPrice(item));
+    } else {
+      setPriceInput(item.selling_price || item.price || 0);
+    }
+    setSelectedService(item);
     setIsDropdownOpen(false);
   };
 
@@ -296,43 +340,58 @@ function BillingInvoiceView() {
     const val = e.target.value;
     setServiceInput(val);
     setIsDropdownOpen(true);
+    
+    // Check services first
     const matchedService = services.find(s => s.name.toLowerCase() === val.toLowerCase());
     if (matchedService) {
-      setPriceInput(matchedService.price);
+      setPriceInput(calculateDynamicPrice(matchedService));
+      setSelectedService({ ...matchedService, type: 'service' });
+      return;
     }
+
+    // Check inventory
+    const matchedInv = inventory.find(i => i.item_name.toLowerCase() === val.toLowerCase() && i.is_billable);
+    if (matchedInv) {
+      setPriceInput(matchedInv.selling_price || 0);
+      setSelectedService({ ...matchedInv, name: matchedInv.item_name, type: 'inventory' });
+      return;
+    }
+
+    setSelectedService(null);
   };
 
-  const handleQuickAdd = (service) => {
-    const price = Number(service.price) || 0;
-    const newItem = {
-      id: `li-${Date.now()}`,
-      name: service.name,
-      notes: "Quick Add Service",
-      qty: 1,
-      unitPrice: price,
-      amount: price,
-      indicator: "bg-blue-50 dark:bg-blue-900/200",
-    };
-    setItems((prev) => [...prev, newItem]);
-  };
 
   const manuallyAddItem = () => {
     if (!serviceInput) return;
     const price = Number(priceInput) || 0;
     const qty = Number(qtyInput) || 1;
+    
+    let itemName = serviceInput;
+    let itemType = selectedService?.type || 'service';
+    let serviceId = itemType === 'service' ? selectedService?.id : null;
+    let inventoryId = itemType === 'inventory' ? selectedService?.id : null;
+
+    if (itemType === 'service' && selectedService?.pricing_mode === "size_based" && patientDetails?.size_class && !serviceInput.includes("(")) {
+      itemName = `${serviceInput} (${patientDetails.size_class})`;
+    }
+      
     const newItem = {
       id: `li-${Date.now()}`,
-      name: serviceInput,
-      notes: "Manual Entry",
+      name: itemName,
+      item_type: itemType,
+      service_id: serviceId,
+      inventory_id: inventoryId,
+      notes: itemType === 'inventory' ? "Inventory Product" : "Service",
       qty: qty,
       unitPrice: price,
       amount: price * qty,
-      indicator: "bg-slate-200 dark:bg-zinc-700",
+      indicator: itemType === 'inventory' ? "bg-emerald-400" : "bg-blue-400",
     };
     setItems((prev) => [...prev, newItem]);
     setServiceInput("");
     setQtyInput(1);
     setPriceInput(50);
+    setSelectedService(null);
   };
 
   const removeItem = (id) => {
@@ -357,7 +416,6 @@ function BillingInvoiceView() {
   const resetForm = () => {
     setItems([]);
     setDiscountVal(0);
-    setTaxRateVal(clinicSettings ? parseFloat(clinicSettings.tax_rate) || 0 : 0);
     setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
     setSelectedPatientId("");
     setPatientDetails(null);
@@ -387,17 +445,20 @@ function BillingInvoiceView() {
     }
 
     const payload = {
-      patient_id: selectedPatientId,
+      pet_id: selectedPatientId,
       status: actualStatus,
       subtotal: subtotal,
       discount_type: discountType,
       discount_value: discountVal,
-      tax_rate: taxRateVal,
+      tax_rate: 12.00,
       total: totalDue,
       amount_paid: amountPaid,
       payment_method: paymentMethod,
       notes_to_client: notes,
       items: items.map(item => ({
+        item_type: item.item_type || 'service',
+        service_id: item.service_id,
+        inventory_id: item.inventory_id,
         name: item.name,
         notes: item.notes,
         qty: item.qty,
@@ -456,15 +517,36 @@ function BillingInvoiceView() {
                   <div className="relative">
                     <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                     <select
-                      value={selectedPatientId}
-                      onChange={handlePatientSelect}
+                      value={selectedOwnerId}
+                      onChange={(e) => {
+                        setSelectedOwnerId(e.target.value);
+                        setSelectedPatientId(""); // reset pet
+                        setPatientDetails(null);
+                      }}
                       className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
                       disabled={status === "Finalized"}
                     >
-                      <option value="">Select a patient...</option>
-                      {patients.map(p => (
+                      <option value="">Select an owner...</option>
+                      {owners.map(o => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                  </div>
+
+                  <div className="relative">
+                    <select
+                      value={selectedPatientId}
+                      onChange={handlePatientSelect}
+                      disabled={!selectedOwnerId || status === "Finalized"}
+                      className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-4 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
+                    >
+                      <option value="">Select a pet...</option>
+                      {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.name} (Owner: {p.owner_name})
+                          {p.name} — {p.species?.name || "Unknown"}
                         </option>
                       ))}
                     </select>
@@ -473,13 +555,13 @@ function BillingInvoiceView() {
 
                   {patientDetails && (
                     <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
-                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner_name}</p>
-                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner_phone || "N/A"}</p>
-                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner_email || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
+                      <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Address:</strong> {
-                        [patientDetails.owner_address, patientDetails.owner_city, patientDetails.owner_province, patientDetails.owner_zip].filter(Boolean).join(", ") || "N/A"
+                        [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip_code].filter(Boolean).join(", ") || "N/A"
                       }</p>
-                      <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species} {patientDetails.breed ? `• ${patientDetails.breed}` : ""}</p>
+                      <p className="mt-2 text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
                       {patientDetails.date_of_birth && (
                         <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Age:</strong> {(() => {
                           const dob = new Date(patientDetails.date_of_birth);
@@ -496,17 +578,6 @@ function BillingInvoiceView() {
               <section>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Services &amp; Meds</h3>
 
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {services.slice(0, 4).map((service) => (
-                    <button
-                      key={service.id}
-                      onClick={() => handleQuickAdd(service)}
-                      className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                    >
-                      + {service.name}
-                    </button>
-                  ))}
-                </div>
 
                 <div className="grid grid-cols-[1fr_54px_80px_auto] gap-2 items-center">
                   <div className="relative">
@@ -529,23 +600,29 @@ function BillingInvoiceView() {
                     />
                     {isDropdownOpen && (
                       <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
-                        {Object.keys(groupedServices).length > 0 ? (
-                          Object.entries(groupedServices).map(([category, svcs]) => (
+                        {Object.keys(groupedItems).length > 0 ? (
+                          Object.entries(groupedItems).map(([category, svcs]) => (
                             <div key={category} className="mb-2 last:mb-0">
                               <div className="bg-slate-50 dark:bg-dark-surface px-2 py-1 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 rounded-md">
                                 {category}
                               </div>
                               <ul className="mt-1 space-y-1">
-                                {svcs.map((svc) => (
-                                  <li key={svc.id}>
+                                {svcs.map((item) => (
+                                  <li key={`${item.type}-${item.id}`}>
                                     <button
                                       type="button"
                                       onMouseDown={(e) => e.preventDefault()}
-                                      onClick={() => selectServiceFromDropdown(svc)}
+                                      onClick={() => selectItemFromDropdown(item)}
                                       className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-dark-surface"
                                     >
-                                      <span>{svc.name}</span>
-                                      <span className="text-slate-400 dark:text-zinc-500">{currency(svc.price)}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className={clsx(
+                                          "h-1.5 w-1.5 rounded-full",
+                                          item.type === 'inventory' ? "bg-emerald-500" : "bg-blue-500"
+                                        )} />
+                                        <span>{item.name}</span>
+                                      </div>
+                                      <span className="text-slate-400 dark:text-zinc-500">{currency(item.price)}</span>
                                     </button>
                                   </li>
                                 ))}
@@ -554,7 +631,7 @@ function BillingInvoiceView() {
                           ))
                         ) : (
                           <div className="p-3 text-center text-sm text-slate-500 dark:text-zinc-400">
-                            {services.length === 0 ? "No services found. Please add services in Settings → Data Management." : "No matching services."}
+                            {services.length === 0 && inventory.length === 0 ? "No services or products found." : "No matching items."}
                           </div>
                         )}
                         {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
@@ -588,7 +665,7 @@ function BillingInvoiceView() {
                       min="0"
                       value={priceInput}
                       onChange={(e) => setPriceInput(e.target.value)}
-                      disabled={status === "Finalized"}
+                      disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
                       className="h-11 w-full rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                     />
                   </div>
@@ -610,6 +687,12 @@ function BillingInvoiceView() {
                           <p className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-zinc-50">
                             <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
                             {item.name}
+                            <span className={clsx(
+                              "ml-2 text-[10px] uppercase px-1.5 py-0.5 rounded-md font-bold",
+                              item.item_type === 'inventory' ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+                            )}>
+                              {item.item_type === 'inventory' ? 'Product' : 'Service'}
+                            </span>
                           </p>
                           <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">{item.notes}</p>
                         </div>
@@ -631,44 +714,7 @@ function BillingInvoiceView() {
 
             <div className="shrink-0 space-y-4 border-t border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
               <section className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Discount (%)</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={discountType}
-                        onChange={(e) => {
-                          setDiscountType(e.target.value);
-                          setDiscountVal(0);
-                        }}
-                        disabled={status === "Finalized"}
-                        className="h-10 w-1/3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-2 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                      >
-                        <option value="percentage">%</option>
-                        <option value="fixed">₱</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <input
-                          type="number"
-                          min="0"
-                          value={discountVal}
-                          onChange={(e) => setDiscountVal(Number(e.target.value) || 0)}
-                          disabled={status === "Finalized"}
-                          className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 pl-3 pr-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Tax Rate (%)</label>
-                    <input
-                      type="text"
-                      value={taxRateVal}
-                      onChange={(e) => setTaxRateVal(Number(e.target.value) || 0)}
-                      className="h-10 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
-                    />
-                  </div>
-                </div>
+                {/* Tax and Discount removed as per user request */}
 
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-zinc-300">Note to Client</label>
@@ -733,7 +779,7 @@ function BillingInvoiceView() {
                   const invoiceData = {
                     invoice_number: "DRAFT-" + Date.now(),
                     subtotal,
-                    tax_rate: taxRateVal,
+                    tax_rate: 12.00,
                     discount_value: discountVal,
                     discount_type: discountType,
                     total: totalDue,
@@ -797,17 +843,12 @@ function BillingInvoiceView() {
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Bill To</p>
                   {patientDetails ? (
                     <>
-                      <p className="mt-2 text-xl font-bold text-slate-900 dark:text-zinc-50">{patientDetails.owner_name}</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-zinc-300 whitespace-pre-wrap">
-                        {patientDetails.owner_address}
-                        <br />
-                        {patientDetails.owner_city && `${patientDetails.owner_city}, `}
-                        {patientDetails.owner_province} {patientDetails.owner_zip}
-                        <br />
-                        {patientDetails.owner_email}
-                        <br />
-                        {patientDetails.owner_phone}
-                      </p>
+                      <p className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 dark:text-zinc-50">{patientDetails?.owner?.name || "Guest Client"}</p>
+                      <div className="mt-2 space-y-1 text-sm text-slate-500 dark:text-zinc-400">
+                        <p>{patientDetails?.owner?.address || "No address provided"}</p>
+                        <p>{patientDetails?.owner?.email}</p>
+                        <p>{patientDetails?.owner?.phone}</p>
+                      </div>
                     </>
                   ) : (
                     <p className="mt-2 text-sm text-slate-400 dark:text-zinc-500 italic">No patient selected</p>
@@ -819,14 +860,14 @@ function BillingInvoiceView() {
                   {patientDetails ? (
                     <div className="mt-2 flex items-center gap-3">
                       <img
-                        src={patientDetails.photo || "https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&w=120&q=80"}
+                        src={patientDetails.photo ? getActualPetImageUrl(patientDetails.photo) : getPetImageUrl(patientDetails.species?.name, patientDetails.breed?.name)}
                         alt={patientDetails.name}
-                        className="h-10 w-10 rounded-full object-cover"
+                        className="h-10 w-10 rounded-full object-cover bg-slate-100 dark:bg-zinc-800"
                       />
                       <div>
                         <p className="text-sm font-bold text-slate-900 dark:text-zinc-50">{patientDetails.name}</p>
                         <p className="text-xs text-slate-500 dark:text-zinc-400">
-                          {patientDetails.breed || patientDetails.species}
+                          {patientDetails?.species?.name || "Unknown"} • {patientDetails?.breed?.name || "Unknown"}
                           {patientDetails.date_of_birth && ` • ${(() => {
                             const dob = new Date(patientDetails.date_of_birth);
                             const diff = Date.now() - dob.getTime();
@@ -854,7 +895,15 @@ function BillingInvoiceView() {
                   {items.map((item) => (
                     <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-slate-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-zinc-50">{item.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-zinc-50">{item.name}</p>
+                          <span className={clsx(
+                            "text-[8px] uppercase px-1 rounded-sm font-bold border",
+                            item.item_type === 'inventory' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-blue-200 text-blue-600 bg-blue-50"
+                          )}>
+                            {item.item_type === 'inventory' ? 'PROD' : 'SERV'}
+                          </span>
+                        </div>
                         <p className="text-xs text-slate-500 dark:text-zinc-400">{item.notes}</p>
                       </div>
                       <input
@@ -896,15 +945,9 @@ function BillingInvoiceView() {
                   <span>{currency(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-slate-600 dark:text-zinc-300">
-                  <span>Tax ({taxRateVal}%)</span>
+                  <span>VAT (12%)</span>
                   <span>{currency(taxAmount)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm text-emerald-600 dark:text-emerald-400">
-                    <span>Discount</span>
-                    <span>-{currency(discountAmount)}</span>
-                  </div>
-                )}
                 <div className="mt-2 flex items-center justify-between border-t border-slate-200 dark:border-dark-border pt-3">
                   <span className="text-lg font-bold text-slate-900 dark:text-zinc-50">Total Due</span>
                   <span className="text-2xl font-bold text-blue-600">{currency(totalDue)}</span>
@@ -920,7 +963,6 @@ function BillingInvoiceView() {
                       className="h-9 w-full rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface px-3 text-sm text-slate-700 dark:text-zinc-300 disabled:opacity-50"
                     >
                       <option value="">Select Method...</option>
-                      <option value="Credit Card">Credit Card</option>
                       <option value="Cash">Cash</option>
                       <option value="Bank Transfer">Bank Transfer</option>
                     </select>

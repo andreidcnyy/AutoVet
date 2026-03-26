@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Models\Patient;
+use App\Models\Pet;
 use App\Models\Appointment;
 use App\Models\Inventory;
 use App\Models\InvoiceItem;
@@ -25,10 +25,10 @@ class DashboardController extends Controller
             return response()->json(['message' => 'No inventory items found.'], 404);
         }
 
-        // Simulate monthly usage for the chart (last 5 months + current + 1 forecast)
+        // usage for the chart (last 5 months + current + 1 forecast)
         $months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $usage = [120, 135, 110, 145, 160, 130]; // Mock usage
-        $forecast = 150; // Mock forecast
+        $usage = [0, 0, 0, 0, 0, 0]; // Removed mock usage
+        $forecast = 0; // Removed mock forecast
 
         return response()->json([
             'item_name' => $item->item_name,
@@ -72,22 +72,16 @@ class DashboardController extends Controller
      */
     public function getStats()
     {
-        $totalPatients = Patient::count();
+        $totalPatients = Pet::count();
         $monthlyRevenue = Invoice::where('status', '!=', 'Cancelled')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
         
-        // Fallbacks for "Live" look
-        if ($totalPatients === 0) $totalPatients = 124;
-        if ($monthlyRevenue == 0) $monthlyRevenue = 8420;
-
         $pendingAppointments = Appointment::where('date', '>=', now()->toDateString())->count();
-        if ($pendingAppointments === 0) $pendingAppointments = 12;
         
         // Low stock count
         $lowStockItems = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
-        if ($lowStockItems === 0) $lowStockItems = 6;
 
         // Calculate revenue growth
         $lastMonthRevenue = Invoice::where('status', '!=', 'Cancelled')
@@ -109,7 +103,7 @@ class DashboardController extends Controller
                 'iconName' => 'FiUsers',
                 'iconBg' => 'bg-blue-100 dark:bg-blue-900/30',
                 'iconColor' => 'text-blue-600 dark:text-blue-400',
-                'badge' => '+' . Patient::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
+                'badge' => '+' . Pet::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
                 'badgeTone' => 'success',
             ],
             [
@@ -187,11 +181,8 @@ class DashboardController extends Controller
             $actualData[$key] = (float) $u->total_qty;
         }
 
-        // Realistic Baseline (to keep the "Live" feel even with a new DB)
-        $baseline = [
-            '06' => 45, '07' => 52, '08' => 48, '09' => 61, '10' => 55, '11' => 68, '12' => 72,
-            '01' => 58, '02' => 64, '03' => 70, '04' => 75, '05' => 80
-        ];
+        // Removed baseline mock data
+        $baseline = [];
 
         // Linear Regression
         $xValues = [];
@@ -269,7 +260,7 @@ class DashboardController extends Controller
         }
 
         // 2. Recent Appointments
-        $recentAppointments = Appointment::with('patient')
+        $recentAppointments = Appointment::with('pet')
             ->whereDate('date', '>=', now()->toDateString())
             ->orderBy('date')
             ->orderBy('time')
@@ -282,20 +273,20 @@ class DashboardController extends Controller
                 'iconName' => 'FiCalendar',
                 'tone' => 'info',
                 'title' => 'Upcoming Appointment',
-                'message' => "{$app->title} for " . ($app->patient->name ?? 'Unknown Pet'),
+                'message' => "{$app->title} for " . ($app->pet->name ?? 'Unknown Pet'),
                 'time' => Carbon::parse($app->date . ' ' . $app->time)->diffForHumans()
             ];
         }
 
         // 3. New Patients
-        $newPatients = Patient::orderBy('created_at', 'desc')->limit(2)->get();
+        $newPatients = Pet::with('breed')->orderBy('created_at', 'desc')->limit(2)->get();
         foreach ($newPatients as $p) {
             $notifications[] = [
                 'id' => 'notif-pat-' . $p->id,
                 'iconName' => 'FiPlusCircle',
                 'tone' => 'success',
                 'title' => 'New Patient Registered',
-                'message' => "{$p->name} ({$p->breed}) has been added to the system.",
+                'message' => "{$p->name} (" . ($p->breed->name ?? 'Unknown') . ") has been added to the system.",
                 'time' => $p->created_at->diffForHumans()
             ];
         }
@@ -350,11 +341,8 @@ class DashboardController extends Controller
             $actualData[$key] = (float) $inv->total_revenue;
         }
 
-        // Realistic Baseline (to keep the "Live" feel even with a new DB)
-        $baseline = [
-            '06' => 4500, '07' => 5200, '08' => 4800, '09' => 6100, '10' => 5500, '11' => 6800, '12' => 7200,
-            '01' => 5800, '02' => 6400, '03' => 7000, '04' => 7500, '05' => 8000
-        ];
+        // Removed baseline mock data
+        $baseline = [];
 
         // Prepare data for Linear Regression
         $xValues = [];

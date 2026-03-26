@@ -10,8 +10,8 @@ class ProfileController extends Controller
 {
     public function show()
     {
-        // For a single-tenant or initial local setup, returning the first user
-        $user = User::first();
+        // Use authenticated user if available, otherwise fallback to first user for early dev
+        $user = auth()->user() ?: User::first();
         if (!$user) {
             return response()->json(['error' => 'No user found'], 404);
         }
@@ -20,7 +20,7 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $user = User::first();
+        $user = auth()->user() ?: User::first();
         if (!$user) {
             return response()->json(['error' => 'No user found'], 404);
         }
@@ -34,6 +34,11 @@ class ProfileController extends Controller
 
         $user->update($validated);
 
-        return response()->json(['status' => 'success', 'user' => $user]);
+        // Return the full user object for frontend sync
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh()
+        ]);
     }
 }

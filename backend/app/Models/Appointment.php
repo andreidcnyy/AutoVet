@@ -10,12 +10,25 @@ class Appointment extends Model
         'title',
         'date',
         'time',
-        'tone',
-        'patient_id',
+        'category',
+        'notes',
+        'pet_id',
+        'service_id',
+        'vet_id'
     ];
 
-    public function patient()
+    public function pet()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Pet::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function vet()
+    {
+        return $this->belongsTo(User::class, 'vet_id');
     }
 }

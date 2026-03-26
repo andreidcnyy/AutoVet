@@ -1,23 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
-import { FiCalendar, FiChevronDown, FiCheckCircle, FiAlertCircle, FiCamera } from "react-icons/fi";
+import { FiCalendar, FiChevronDown, FiCheckCircle, FiAlertCircle, FiCamera, FiUserPlus, FiUserCheck } from "react-icons/fi";
 import { LuFilePlus2, LuPawPrint } from "react-icons/lu";
 import { FiUser } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
 const inputBase =
   "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
-
 const selectBase =
   "h-12 w-full rounded-xl border bg-slate-50 px-4 text-base text-slate-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
-const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
-const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500");
+const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
+const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
 
 function StepPill({ label, index, active }) {
   return (
@@ -32,41 +31,45 @@ function StepPill({ label, index, active }) {
 
 const patientSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
-  species: z.string().min(1, "Species is required").max(255),
-  breed: z.string().max(255).optional(),
+  species_id: z.string().min(1, "Species is required"),
+  breed_id: z.string().optional(),
   date_of_birth: z.string().optional().or(z.literal("")),
   gender: z.string().max(50).optional(),
   color: z.string().max(255).optional(),
-  weight: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+  weight_value: z.coerce.number().min(0, "Weight must be valid").optional().or(z.literal("")),
+  weight_unit: z.enum(["kg", "lbs"]).default("kg"),
+  size_class: z.enum(["Small", "Medium", "Large", "Giant"]).default("Small"),
   status: z.string().max(50).optional(),
-  owner_name: z.string().min(1, "Owner name is required").max(255),
-  owner_phone: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).optional().or(z.literal("")),
-  owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
-  owner_address: z.string().min(1, "Street address is required").max(255),
-  owner_city: z.string().min(1, "City is required").max(255),
-  owner_province: z.string().min(1, "Province is required").max(255),
-  owner_zip: z.string().min(1, "Zip Code is required").max(20),
+  owner_id: z.string().optional(),
+  owner_name: z.string().optional(),
+  owner_phone: z.string().max(50).optional().or(z.literal("")),
+  owner_email: z.string().max(255).optional().or(z.literal("")),
+  owner_address: z.string().optional(),
+  owner_city: z.string().optional(),
+  owner_province: z.string().optional(),
+  owner_zip: z.string().max(20).optional(),
   allergies: z.string().max(255).optional(),
   medication: z.string().max(255).optional(),
   notes: z.string().optional(),
   photo: z.string().optional()
-});
+}).refine(data => {
+  if (!data.owner_id && !data.owner_name?.trim()) return false;
+  return true;
+}, { message: "Either select an existing owner or provide a new owner name", path: ["owner_name"] });
 
-function AddPatientFormView({ onCancel, onSave }) {
+function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [error, setError] = useState(null);
   const photoInputRef = useRef(null);
-  const [speciesList, setSpeciesList] = useState(["Canine", "Feline", "Avian", "Reptile", "Exotic", "Other"]);
+  const [speciesList, setSpeciesList] = useState([]);
+  const [ownersList, setOwnersList] = useState([]);
+  const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then(res => res.json())
-      .then(data => {
-        if (data.species_list) {
-          setSpeciesList(JSON.parse(data.species_list));
-        }
-      })
-      .catch(console.error);
-  }, []);
+    fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
+    if (!initialOwnerId) {
+      fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
+    }
+  }, [initialOwnerId]);
 
   const {
     register,
@@ -77,19 +80,19 @@ function AddPatientFormView({ onCancel, onSave }) {
   } = useForm({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      name: "", species: "Canine", breed: "", date_of_birth: "",
-      gender: "Male", color: "", weight: "",
+      name: "", species_id: "", breed_id: "", date_of_birth: "",
+      gender: "Male", color: "", weight_value: "", weight_unit: "kg", size_class: "Small",
       status: "Healthy",
-      owner_name: "", owner_phone: "", owner_email: "",
+      owner_id: initialOwnerId || "", owner_name: "", owner_phone: "", owner_email: "",
       owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
-      allergies: "", medication: "", notes: "",
-      photo: "",
+      allergies: "", medication: "", notes: "", photo: "",
     }
   });
 
   const photoValue = watch("photo");
-  const speciesValue = watch("species");
-  const breedValue = watch("breed");
+  const speciesIdValue = watch("species_id");
+  const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
+  const availableBreeds = selectedSpecies?.breeds || [];
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -103,57 +106,103 @@ function AddPatientFormView({ onCancel, onSave }) {
 
   const onSubmit = async (data) => {
     setError(null);
-
     try {
-      const response = await fetch("/api/patients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(data),
-      });
+      let finalOwnerId = initialOwnerId || data.owner_id;
 
-      if (!response.ok) {
-        const err = await response.json();
-        const firstError = err.errors ? Object.values(err.errors)[0][0] : (err.message || "Failed to save patient.");
-        throw new Error(firstError);
+      if (!initialOwnerId && isNewOwner) {
+        if (!data.owner_name) throw new Error("Owner name is required for a new owner.");
+        const ownerRes = await fetch("/api/owners", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            name: data.owner_name,
+            phone: data.owner_phone,
+            email: data.owner_email,
+            address: data.owner_address,
+            city: data.owner_city,
+            province: data.owner_province,
+            zip: data.owner_zip
+          }),
+        });
+        if (!ownerRes.ok) {
+          const err = await ownerRes.json();
+          throw new Error(err.message || "Failed to create new owner.");
+        }
+        const newOwner = await ownerRes.json();
+        finalOwnerId = newOwner.id;
       }
 
-      const savedPatient = await response.json();
-      onSave(savedPatient);
+      if (!finalOwnerId) throw new Error("No owner selected or created.");
+
+      // Now create pet
+      const petPayload = {
+        owner_id: finalOwnerId,
+        name: data.name,
+        species_id: data.species_id || null,
+        breed_id: data.breed_id || null,
+        date_of_birth: data.date_of_birth,
+        gender: data.gender,
+        color: data.color,
+        weight_value: data.weight_value,
+        weight_unit: data.weight_unit,
+        size_class: data.size_class,
+        status: data.status,
+        allergies: data.allergies,
+        medication: data.medication,
+        notes: data.notes,
+        photo: data.photo
+      };
+
+      const res = await fetch("/api/pets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(petPayload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to save pet details.");
+      }
+
+      const savedPet = await res.json();
+      
+      onSave(savedPet);
     } catch (err) {
       setError(err.message);
     }
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-5xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Add New Patient</h2>
-          <p className="mt-1 text-lg text-slate-500 dark:text-zinc-400">Register a new animal profile into your clinic records.</p>
+          <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">
+            {initialOwnerId ? "Register New Pet" : "Add New Patient"}
+          </h2>
+          <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">
+            {initialOwnerId ? "Register a new pet to this owner." : "Register a new pet and link it to an owner."}
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
             Cancel
           </button>
-          <button
-            type="submit"
-            form="add-patient-form"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" form="add-patient-form" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
             <FiCheckCircle className="h-4 w-4" />
-            {isSubmitting ? "Saving..." : "Save Patient"}
+            {isSubmitting ? "Saving..." : "Save Pet Record"}
           </button>
         </div>
       </div>
 
       <section className="card-shell overflow-hidden">
-        <div className="flex flex-wrap items-center gap-8 border-b border-slate-200 px-6 py-4 dark:border-dark-border">
-          {steps.map((step, index) => <StepPill key={step} index={index} label={step} active={index === 0} />)}
-        </div>
+        {!initialOwnerId && (
+          <div className="flex flex-wrap items-center gap-8 border-b border-slate-200 px-6 py-4 dark:border-dark-border">
+            {steps.map((step, index) => <StepPill key={step} index={index} label={step} active={index === 0} />)}
+          </div>
+        )}
 
         {error && (
-          <div className="mx-6 mt-5 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mx-6 mt-5 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-200">
             <FiAlertCircle className="h-5 w-5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -162,196 +211,178 @@ function AddPatientFormView({ onCancel, onSave }) {
         <form id="add-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
           {/* Pet Profile */}
           <section className="space-y-4">
-            <h3 className="flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-zinc-50">
-              <LuPawPrint className="h-6 w-6 text-blue-600" />
-              Pet Profile
+            <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
+              <LuPawPrint className="h-6 w-6 text-blue-600" /> Pet Details
             </h3>
 
-            {/* Photo Upload */}
-            <div className="flex items-center gap-5">
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                className="group relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-colors dark:border-dark-border dark:bg-dark-surface dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
-              >
+            <div className="flex items-center gap-5 pb-2">
+              <button type="button" onClick={() => photoInputRef.current?.click()} className="group relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400">
                 {photoValue ? (
-                  <img src={photoValue} alt="Pet preview" className="h-full w-full object-cover" />
+                  <img src={getActualPetImageUrl(photoValue)} alt="Pet" className="h-full w-full object-cover" />
                 ) : (
-                  <img 
-                    src={getPetImageUrl(speciesValue, breedValue)} 
-                    alt="Species preview" 
-                    className="h-full w-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" 
-                  />
+                  <div className="flex h-full items-center justify-center text-slate-400"><FiCamera className="h-8 w-8" /></div>
                 )}
-                <div className={clsx(
-                  "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
-                  photoValue ? "opacity-0 group-hover:opacity-100" : "opacity-100 group-hover:bg-black/30"
-                )}>
-                  <FiCamera className="h-7 w-7 text-white shadow-sm" />
-                </div>
               </button>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
+              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Pet Photo</p>
-                <p className="mt-0.5 text-sm text-slate-500 dark:text-zinc-400">Click the box to upload a photo of the pet.</p>
-                <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">JPG, PNG, GIF up to 5MB</p>
-                {photoValue && (
-                  <button
-                    type="button"
-                    onClick={() => setValue("photo", "")}
-                    className="mt-2 text-xs font-medium text-red-500 hover:text-red-700"
-                  >
-                    Remove photo
-                  </button>
-                )}
+                <p className="text-xs text-slate-500">JPG, PNG up to 5MB</p>
+                {photoValue && <button type="button" onClick={() => setValue("photo", "")} className="text-xs text-red-500 mt-1">Remove</button>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Pet Name *</label>
                 <input {...register("name")} className={getInputClass(errors.name)} placeholder="e.g. Daisy" />
-                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Species *</label>
-                <div className="relative">
-                  <select {...register("species")} className={getSelectClass(errors.species)}>
-                    {speciesList.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </div>
-                {errors.species && <p className="mt-1 text-sm text-red-500">{errors.species.message}</p>}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Breed</label>
-                <input {...register("breed")} className={getInputClass(errors.breed)} placeholder="e.g. Golden Retriever" />
-                {errors.breed && <p className="mt-1 text-sm text-red-500">{errors.breed.message}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Date of Birth</label>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Species *</label>
                   <div className="relative">
-                    <input type="date" {...register("date_of_birth")} className={clsx(getInputClass(errors.date_of_birth), "pr-10")} />
-                    <FiCalendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <select {...register("species_id")} className={getSelectClass(errors.species_id)}>
+                      <option value="">Select Species...</option>
+                      {speciesList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
-                  {errors.date_of_birth && <p className="mt-1 text-sm text-red-500">{errors.date_of_birth.message}</p>}
+                  {errors.species_id && <p className="mt-1 text-xs text-red-500">{errors.species_id.message}</p>}
                 </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Breed</label>
+                  <div className="relative">
+                    <select {...register("breed_id")} className={getSelectClass(errors.breed_id)} disabled={!speciesIdValue}>
+                      <option value="">Select Breed...</option>
+                      {availableBreeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Gender</label>
-                  <div className="relative">
-                    <select {...register("gender")} className={getSelectClass(errors.gender)}>
-                      <option>Male</option>
-                      <option>Female</option>
-                      <option>Male (Neutered)</option>
-                      <option>Female (Spayed)</option>
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <select {...register("gender")} className={getSelectClass(errors.gender)}>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Male (Neutered)</option>
+                    <option>Female (Spayed)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Date of Birth</label>
+                  <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1">
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Weight</label>
+                  <input type="number" step="0.01" {...register("weight_value")} className={getInputClass(errors.weight_value)} placeholder="0.0" />
+                </div>
+                <div className="col-span-1">
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Unit</label>
+                  <select {...register("weight_unit")} className={getSelectClass(errors.weight_unit)}>
+                    <option value="kg">kg</option>
+                    <option value="lbs">lbs</option>
+                  </select>
+                </div>
+                <div className="col-span-1">
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Class</label>
+                  <select {...register("size_class")} className={getSelectClass(errors.size_class)}>
+                    <option value="Small">Small</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Large">Large</option>
+                    <option value="Giant">Giant</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {!initialOwnerId && (
+            <>
+              <div className="h-px bg-slate-200 dark:bg-dark-surface" />
+
+              {/* Owner Details */}
+              <section className="space-y-4">
+                <h3 className="flex items-center justify-between text-2xl font-bold text-slate-900 dark:text-zinc-50">
+                  <span className="flex items-center gap-2"><FiUser className="h-6 w-6 text-blue-600" /> Owner Details</span>
+                </h3>
+                
+                <div className="flex gap-4 border-b border-slate-200 pb-4 dark:border-dark-border">
+                  <button type="button" onClick={() => setIsNewOwner(true)} className={`flex items-center gap-2 pb-2 border-b-2 font-medium transition ${isNewOwner ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                    <FiUserPlus /> Register New Owner
+                  </button>
+                  <button type="button" onClick={() => setIsNewOwner(false)} className={`flex items-center gap-2 pb-2 border-b-2 font-medium transition ${!isNewOwner ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+                    <FiUserCheck /> Select Existing Owner
+                  </button>
+                </div>
+
+                {isNewOwner ? (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Full Name *</label>
+                      <input {...register("owner_name")} className={getInputClass(errors.owner_name)} placeholder="e.g. Jordan Miller" />
+                      {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
+                      <input {...register("owner_phone")} className={getInputClass(errors.owner_phone)} placeholder="(555) 000-0000" />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
+                      <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Street Address</label>
+                      <input {...register("owner_address")} className={getInputClass(errors.owner_address)} placeholder="123 Main St" />
+                    </div>
                   </div>
-                  {errors.gender && <p className="mt-1 text-sm text-red-500">{errors.gender.message}</p>}
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Weight</label>
-                <input type="number" step="0.01" min="0" {...register("weight")} className={getInputClass(errors.weight)} placeholder="e.g. 12.5 kg" />
-                {errors.weight && <p className="mt-1 text-sm text-red-500">{errors.weight.message}</p>}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Color / Markings</label>
-                <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. White with brown patches" />
-                {errors.color && <p className="mt-1 text-sm text-red-500">{errors.color.message}</p>}
-              </div>
-            </div>
-          </section>
+                ) : (
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Existing Owner *</label>
+                    <div className="relative">
+                      <select {...register("owner_id")} className={getSelectClass(errors.owner_id)}>
+                        <option value="">Search and select an owner...</option>
+                        {ownersList.map(o => <option key={o.id} value={o.id}>{o.name} ({o.email || o.phone || "No contact info"})</option>)}
+                      </select>
+                      <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
 
           <div className="h-px bg-slate-200 dark:bg-dark-surface" />
 
-          {/* Primary Owner */}
+          {/* Medical History */}
           <section className="space-y-4">
-            <h3 className="flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-zinc-50">
-              <FiUser className="h-6 w-6 text-blue-600" />
-              Primary Owner
+            <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
+              <LuFilePlus2 className="h-6 w-6 text-blue-600" /> Medical Information
             </h3>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Full Name *</label>
-                <input {...register("owner_name")} className={getInputClass(errors.owner_name)} placeholder="e.g. Jordan Miller" />
-                {errors.owner_name && <p className="mt-1 text-sm text-red-500">{errors.owner_name.message}</p>}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
-                <input {...register("owner_phone")} className={getInputClass(errors.owner_phone)} placeholder="(555) 000-0000" />
-                {errors.owner_phone && <p className="mt-1 text-sm text-red-500">{errors.owner_phone.message}</p>}
-              </div>
-              <div className="lg:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
-                <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
-                {errors.owner_email && <p className="mt-1 text-sm text-red-500">{errors.owner_email.message}</p>}
-              </div>
-              <div className="lg:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Street Address *</label>
-                <input {...register("owner_address")} className={getInputClass(errors.owner_address)} placeholder="123 Main St" />
-                {errors.owner_address && <p className="mt-1 text-sm text-red-500">{errors.owner_address.message}</p>}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">City *</label>
-                <input {...register("owner_city")} className={getInputClass(errors.owner_city)} placeholder="City" />
-                {errors.owner_city && <p className="mt-1 text-sm text-red-500">{errors.owner_city.message}</p>}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Province *</label>
-                  <input {...register("owner_province")} className={getInputClass(errors.owner_province)} placeholder="State/Province" />
-                  {errors.owner_province && <p className="mt-1 text-sm text-red-500">{errors.owner_province.message}</p>}
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Zip Code *</label>
-                  <input {...register("owner_zip")} className={getInputClass(errors.owner_zip)} placeholder="Zip" />
-                  {errors.owner_zip && <p className="mt-1 text-sm text-red-500">{errors.owner_zip.message}</p>}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div className="h-px bg-slate-200 dark:bg-dark-surface" />
-
-          {/* Medical Data */}
-          <section className="space-y-4">
-            <h3 className="flex items-center gap-2 text-3xl font-bold text-slate-900 dark:text-zinc-50">
-              <LuFilePlus2 className="h-6 w-6 text-blue-600" />
-              Initial Medical Data
-            </h3>
+            
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Allergies</label>
-                <input {...register("allergies")} className={getInputClass(errors.allergies)} placeholder="Enter known allergies" />
-                {errors.allergies && <p className="mt-1 text-sm text-red-500">{errors.allergies.message}</p>}
+                <input {...register("allergies")} className={getInputClass(errors.allergies)} placeholder="e.g. Penicillin, Pollen (Leave blank if none)" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Current Medication</label>
-                <input {...register("medication")} className={getInputClass(errors.medication)} placeholder="List active medications" />
-                {errors.medication && <p className="mt-1 text-sm text-red-500">{errors.medication.message}</p>}
+                <input {...register("medication")} className={getInputClass(errors.medication)} placeholder="e.g. Heartgard (Leave blank if none)" />
               </div>
               <div className="lg:col-span-2">
-                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Notes</label>
-                <textarea
-                  {...register("notes")}
-                  className={clsx("w-full rounded-xl border bg-slate-50 px-4 py-3 text-base text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800", errors.notes ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-300 dark:border-dark-border dark:focus:border-blue-500")}
-                  rows={4}
-                  placeholder="Add initial notes about this patient..."
-                />
-                {errors.notes && <p className="mt-1 text-sm text-red-500">{errors.notes.message}</p>}
+                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Additional Notes / History</label>
+                <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500" placeholder="Any other important medical history or behavioral notes..."></textarea>
               </div>
             </div>
           </section>
+
         </form>
       </section>
     </div>

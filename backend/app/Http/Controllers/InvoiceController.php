@@ -54,8 +54,8 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.amount' => 'required|numeric|min:0',
-            'items.*.service_id' => 'required_if:items.*.item_type,service|nullable|exists:services,id',
-            'items.*.inventory_id' => 'required_if:items.*.item_type,inventory|nullable|exists:inventories,id',
+            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
         if ($validated['discount_value'] > $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
@@ -172,8 +172,8 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required_with:items|integer|min:1',
             'items.*.unit_price' => 'required_with:items|numeric|min:0',
             'items.*.amount' => 'required_with:items|numeric|min:0',
-            'items.*.service_id' => 'required_if:items.*.item_type,service|nullable|exists:services,id',
-            'items.*.inventory_id' => 'required_if:items.*.item_type,inventory|nullable|exists:inventories,id',
+            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
         if ($invoice->status === 'Finalized' && in_array($validated['status'], ['Draft', 'Finalized'])) {

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { getPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import {
   FiArrowLeft,
   FiPhone,
@@ -15,12 +15,15 @@ import {
   FiAlertCircle,
   FiClipboard,
 } from "react-icons/fi";
+import { useToast } from "../../context/ToastContext";
 import { LuStethoscope, LuPawPrint, LuPill } from "react-icons/lu";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import OwnerProfileModal from "./OwnerProfileModal";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
+  { key: "medical", label: "Medical Records", icon: LuStethoscope },
   { key: "appointments", label: "Appointments", icon: FiCalendar },
   { key: "billing", label: "Billing", icon: FiFileText },
 ];
@@ -135,12 +138,12 @@ async function generatePatientPDF(patient) {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
     head: [["Field", "Details"]],
     body: [
-      ["Species", patient.species || "—"],
-      ["Breed", patient.breed || "—"],
+      ["Species", patient.species?.name || "—"],
+      ["Breed", patient.breed?.name || "—"],
       ["Gender", patient.gender || "—"],
       ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
       ["Color", patient.color || "—"],
-      ["Weight", patient.weight ? `${patient.weight} kg` : "—"],
+      ["Weight", patient.weight_value ? `${patient.weight_value} ${patient.weight_unit}` : "—"],
       ["Status", patient.status || "—"],
     ],
     margin: { left: 14, right: 14 },
@@ -181,12 +184,12 @@ async function generatePatientPDF(patient) {
   y += 6;
 
   const ownerBody = [
-    ["Name", patient.owner_name || "—"],
-    ["Phone", patient.owner_phone || "—"],
-    ["Email", patient.owner_email || "—"],
+    ["Name", patient.owner?.name || "—"],
+    ["Phone", patient.owner?.phone || "—"],
+    ["Email", patient.owner?.email || "—"],
     [
       "Address",
-      [patient.owner_address, patient.owner_city, patient.owner_province, patient.owner_zip]
+      [patient.owner?.address, patient.owner?.city, patient.owner?.province, patient.owner?.zip]
         .filter(Boolean)
         .join(", ") || "—",
     ],
@@ -217,6 +220,7 @@ async function generatePatientPDF(patient) {
 function ViewPatientProfile({ patient }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedOwnerId, setSelectedOwnerId] = useState(null);
 
   if (!patient) {
     return (
@@ -243,7 +247,7 @@ function ViewPatientProfile({ patient }) {
               {patient.name}
             </h2>
             <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">
-              {patient.species} • {patient.breed} • ID #{patient.id}
+              {patient.species?.name || "N/A"} • {patient.breed?.name || "N/A"} • ID #{patient.id}
             </p>
           </div>
         </div>
@@ -282,39 +286,46 @@ function ViewPatientProfile({ patient }) {
         </nav>
 
         <div className="p-6">
-          {activeTab === "overview" && <OverviewTab patient={patient} />}
+          {activeTab === "overview" && <OverviewTab patient={patient} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
+          {activeTab === "medical" && <MedicalRecordsTab patient={patient} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
           {activeTab === "billing" && <BillingTab invoices={patient.invoices || []} />}
         </div>
       </div>
+
+      <OwnerProfileModal 
+        ownerId={selectedOwnerId} 
+        isOpen={!!selectedOwnerId} 
+        onClose={() => setSelectedOwnerId(null)} 
+      />
     </div>
   );
 }
 
 /* ──────────────── Overview Tab ──────────────── */
 
-function OverviewTab({ patient }) {
+function OverviewTab({ patient, onOpenOwner }) {
   return (
     <div className="space-y-6">
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
         <img
-          src={patient.photo || getPetImageUrl(patient.species, patient.breed)}
+          src={patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name)}
           alt={patient.name}
           className="h-40 w-40 rounded-2xl border-2 border-slate-100 object-cover shadow-sm dark:border-dark-border bg-slate-100"
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Species", value: patient.species },
-            { label: "Breed", value: patient.breed || "—" },
-            { label: "Gender", value: patient.gender || "—" },
-            { label: "Age", value: calculateAge(patient.date_of_birth) || "—" },
-            { label: "Color", value: patient.color || "—" },
-            { label: "Weight", value: patient.weight ? `${patient.weight} kg` : "—" },
+            { label: "Species", value: patient.species?.name || "N/A" },
+            { label: "Breed", value: patient.breed?.name || "N/A" },
+            { label: "Gender", value: patient.gender || "N/A" },
+            { label: "Age", value: calculateAge(patient.date_of_birth) || "N/A" },
+            { label: "Color", value: patient.color || "N/A" },
+            { label: "Weight", value: patient.weight_value ? `${patient.weight_value} ${patient.weight_unit}` : "N/A" },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
-            { label: "Status", value: patient.status || "—" },
-            { label: "Last Visit", value: patient.last_visit },
-            { label: "Next Due", value: patient.next_due },
+            { label: "Status", value: patient.status || "N/A" },
+            { label: "Last Visit", value: patient.last_visit || "N/A" },
+            { label: "Next Due", value: patient.next_due || "N/A" },
           ].map((item) => (
             <div
               key={item.label}
@@ -346,31 +357,41 @@ function OverviewTab({ patient }) {
         </h4>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-xl font-bold text-slate-900 dark:text-zinc-50">
-              {patient.owner_name}
-            </p>
-            {patient.owner_phone && (
+            <div className="flex items-center gap-3">
+              <p className="text-xl font-bold text-slate-900 dark:text-zinc-50">
+                {patient.owner?.name}
+              </p>
+              {patient.owner?.id && (
+                <button
+                  onClick={onOpenOwner}
+                  className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                >
+                  View Profile
+                </button>
+              )}
+            </div>
+            {patient.owner?.phone && (
               <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
                 <FiPhone className="h-4 w-4 text-slate-400" />
-                {patient.owner_phone}
+                {patient.owner.phone}
               </p>
             )}
-            {patient.owner_email && (
+            {patient.owner?.email && (
               <p className="mt-1 flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
                 <FiMail className="h-4 w-4 text-slate-400" />
-                {patient.owner_email}
+                {patient.owner.email}
               </p>
             )}
           </div>
-          {patient.owner_address && (
+          {patient.owner?.address && (
             <div className="flex items-start gap-2">
               <FiMapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
               <div className="text-sm text-slate-600 dark:text-zinc-300">
-                <p>{patient.owner_address}</p>
+                <p>{patient.owner.address}</p>
                 <p>
-                  {patient.owner_city}
-                  {patient.owner_province ? `, ${patient.owner_province}` : ""}{" "}
-                  {patient.owner_zip}
+                  {patient.owner.city}
+                  {patient.owner.province ? `, ${patient.owner.province}` : ""}{" "}
+                  {patient.owner.zip}
                 </p>
               </div>
             </div>
@@ -528,6 +549,162 @@ function BillingTab({ invoices }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ──────────────── Medical Records Tab ──────────────── */
+
+function MedicalRecordsTab({ patient }) {
+  const toast = useToast();
+  const [records, setRecords] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+
+  const fetchRecords = () => {
+    fetch(`/api/medical-records?pet_id=${patient.id}`)
+      .then(res => res.json())
+      .then(data => setRecords(data))
+      .catch(err => console.error("Error fetching medical records", err));
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, [patient.id]);
+
+  const onSave = (record) => {
+    const isEdit = !!editingRecord;
+    const method = isEdit ? "PUT" : "POST";
+    const url = isEdit ? `/api/medical-records/${editingRecord.id}` : "/api/medical-records";
+    
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ ...record, pet_id: patient.id })
+    })
+    .then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to save medical record");
+      }
+      toast.success(`Medical record ${isEdit ? 'updated' : 'added'} successfully`);
+      setIsModalOpen(false);
+      fetchRecords();
+    })
+    .catch(err => toast.error(err.message));
+  };
+
+  const deleteRecord = (id) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+    fetch(`/api/medical-records/${id}`, { method: "DELETE" })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to delete");
+        toast.success("Record deleted");
+        fetchRecords();
+      })
+      .catch(err => toast.error(err.message));
+  };
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+         <h3 className="text-lg font-semibold text-slate-800 dark:text-zinc-100">Patient History</h3>
+         <button 
+           onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}
+           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+         >
+           Add Record
+         </button>
+      </div>
+
+      <div className="space-y-4">
+        {records.length === 0 ? (
+          <div className="text-center py-10 text-slate-500">No medical records found.</div>
+        ) : records.map(record => (
+          <div key={record.id} className="rounded-xl border border-slate-200 bg-white p-5 dark:border-dark-border dark:bg-dark-card shadow-sm">
+             <div className="flex items-start justify-between">
+               <div>
+                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{formatDate(record.created_at)}</p>
+                  {record.vet && <p className="text-xs text-slate-500 dark:text-zinc-400">Attending Vet: Dr. {record.vet.name}</p>}
+               </div>
+               <div className="flex gap-3">
+                 <button onClick={() => { setEditingRecord(record); setIsModalOpen(true); }} className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
+                 <button onClick={() => deleteRecord(record.id)} className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+               </div>
+             </div>
+             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700 dark:text-zinc-300">
+               <div><strong className="text-slate-900 dark:text-zinc-100">Chief Complaint:</strong> {record.chief_complaint || "—"}</div>
+               <div><strong className="text-slate-900 dark:text-zinc-100">Findings:</strong> {record.findings || "—"}</div>
+               <div className="md:col-span-2"><strong className="text-slate-900 dark:text-zinc-100">Diagnosis:</strong> {record.diagnosis || "—"}</div>
+               <div className="md:col-span-2"><strong className="text-slate-900 dark:text-zinc-100">Treatment Plan:</strong> {record.treatment_plan || "—"}</div>
+               {record.notes && <div className="md:col-span-2"><strong className="text-slate-900 dark:text-zinc-100">Notes:</strong> {record.notes}</div>}
+               {record.follow_up_date && <div><strong className="text-slate-900 dark:text-zinc-100">Follow-up Date:</strong> {formatDate(record.follow_up_date)}</div>}
+             </div>
+          </div>
+        ))}
+      </div>
+
+      {isModalOpen && (
+        <MedicalRecordModal 
+          record={editingRecord} 
+          onClose={() => setIsModalOpen(false)} 
+          onSave={onSave} 
+        />
+      )}
+    </div>
+  );
+}
+
+function MedicalRecordModal({ record, onClose, onSave }) {
+  const isEdit = !!record;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    onSave(Object.fromEntries(fd.entries()));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
+        <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">{isEdit ? "Edit Record" : "Add Medical Record"}</h2>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-surface">✕</button>
+        </div>
+        <div className="overflow-y-auto p-6">
+          <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
+             <div>
+               <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Chief Complaint</label>
+               <input name="chief_complaint" defaultValue={record?.chief_complaint || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400" />
+             </div>
+             <div>
+               <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Findings</label>
+               <textarea name="findings" rows={2} defaultValue={record?.findings || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+             </div>
+             <div>
+               <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Diagnosis (Vets Only)</label>
+               <textarea name="diagnosis" rows={2} defaultValue={record?.diagnosis || ""} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+             </div>
+             <div>
+               <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Treatment Plan</label>
+               <textarea name="treatment_plan" rows={2} defaultValue={record?.treatment_plan || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+               <div>
+                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Follow-up Date</label>
+                 <input type="date" name="follow_up_date" defaultValue={record?.follow_up_date?.split('T')[0] || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400" />
+               </div>
+             </div>
+             <div>
+               <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Private Notes</label>
+               <textarea name="notes" rows={2} defaultValue={record?.notes || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+             </div>
+          </form>
+        </div>
+        <div className="border-t bg-slate-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">Cancel</button>
+          <button type="submit" form="med-record-form" className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Record</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -18,17 +18,21 @@ import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 
 const categoryIcons = {
+  Medicines: LuPill,
   Vaccines: FiPackage,
-  Antibiotics: LuPill,
-  Supplies: FiTrendingUp,
-  Diagnostics: FiBarChart2,
+  Consumables: FiTrendingUp,
+  Retail: FiBox,
+  Supplies: FiPackage,
+  "Clinic assets": FiBarChart2,
 };
 
 const categoryIconStyles = {
+  Medicines: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400",
   Vaccines: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-  Antibiotics: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400",
-  Supplies: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
-  Diagnostics: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400",
+  Consumables: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  Retail: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+  Supplies: "bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400",
+  "Clinic assets": "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400",
 };
 
 const statusStyles = {
@@ -210,7 +214,7 @@ function InventoryView() {
             <FiSearch className="h-4 w-4" />
             <input
               type="text"
-              placeholder="Search medicines, supplies, or SKUs..."
+              placeholder="Search items, categories, or SKUs..."
               className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500"
             />
           </label>
@@ -257,9 +261,9 @@ function InventoryView() {
                 <th className="px-5 py-4">Item Name / Category</th>
                 <th className="px-5 py-4">SKU</th>
                 <th className="px-5 py-4">Stock Level</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">AI Forecast</th>
-                <th className="px-5 py-4">Internal Action</th>
+                <th className="px-5 py-4">Pricing (Cost/Sell)</th>
+                <th className="px-5 py-4">Status & Logic</th>
+                <th className="px-5 py-4">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -294,42 +298,59 @@ function InventoryView() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-500 dark:text-zinc-400">{row.sku}</td>
-                      <td className="px-5 py-4 text-lg font-medium text-slate-800 dark:text-zinc-200">{row.stock_level} units</td>
+                      <td className="px-5 py-4 text-lg font-medium text-slate-800 dark:text-zinc-200">
+                        {Number(row.stock_level || 0).toLocaleString()} units
+                      </td>
                       <td className="px-5 py-4">
-                        {(() => {
-                           const isLowStock = Number(row.stock_level) <= Number(row.min_stock_level);
-                           const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
-                           const isExpiring = expDate && (expDate - new Date()) / (1000 * 60 * 60 * 24) <= 30;
-                           
-                           let currentStatus = row.status;
-                           if (isLowStock) currentStatus = "Low Stock";
-                           else if (isExpiring) currentStatus = "Expiring";
-                           else currentStatus = "In Stock";
+                        <div className="flex flex-col">
+                          <p className="text-sm text-slate-500 dark:text-zinc-500 line-through decoration-slate-300 font-medium">
+                            ₱{Number(row.price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-lg font-bold text-slate-900 dark:text-zinc-50">
+                            ₱{Number(row.selling_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                             const isLowStock = Number(row.stock_level) <= Number(row.min_stock_level);
+                             const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
+                             const isExpiring = expDate && (expDate - new Date()) / (1000 * 60 * 60 * 24) <= 30;
+                             
+                             let currentStatus = row.status;
+                             if (isLowStock) currentStatus = "Low Stock";
+                             else if (isExpiring) currentStatus = "Expiring";
+                             else currentStatus = "In Stock";
 
-                           return (
-                             <span
-                               className={clsx(
-                                 "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
-                                 statusStyles[currentStatus] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                               )}
-                             >
-                               {currentStatus}
-                             </span>
-                           );
-                        })()}
+                             return (
+                               <span
+                                 className={clsx(
+                                   "inline-flex rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap",
+                                   statusStyles[currentStatus] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                                 )}
+                               >
+                                 {currentStatus}
+                               </span>
+                             );
+                          })()}
+                          {row.is_billable && (
+                            <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400 whitespace-nowrap">
+                              Billable
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">
+                           <span className={clsx("h-1.5 w-1.5 rounded-full", row.deduct_on_finalize ? "bg-blue-400" : "bg-slate-300")} />
+                           {row.deduct_on_finalize ? "Auto-Deduct" : "Manual Stock Out"}
+                        </div>
                       </td>
-                      <td className="px-5 py-4">
-                        <p className="text-base font-semibold text-slate-500 dark:text-zinc-400">
-                          Pending Initial Load
-                        </p>
-                        <p className="text-sm text-slate-500 dark:text-zinc-500">Awaiting historical data</p>
-                      </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 text-center">
                         <button
                           onClick={() => setViewedProduct(row)}
-                          className="text-base font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none"
+                          className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 focus:outline-none w-full"
                         >
-                          View Data
+                          View Details
                         </button>
                       </td>
                     </tr>

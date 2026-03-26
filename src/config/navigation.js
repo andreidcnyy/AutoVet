@@ -17,7 +17,7 @@ export const primaryNavigation = [
 ];
 
 export const bottomNavigation = [
-  { id: "settings", label: "Settings", path: "/settings", icon: FiSettings },
+  { id: "maintenance", label: "Maintenance", path: "/settings", icon: FiSettings },
 ];
 
 export const clinicInfo = {

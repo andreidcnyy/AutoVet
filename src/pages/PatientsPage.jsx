@@ -1,75 +1,181 @@
 import { useState, useEffect } from "react";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
+import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 
 function PatientsPage() {
   const toast = useToast();
   const [view, setView] = useState("records");
-  const [patients, setPatients] = useState([]);
+  const [owners, setOwners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [selectedOwnerId, setSelectedOwnerId] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [ownerToEdit, setOwnerToEdit] = useState(null);
+
+  const fetchOwners = () => {
+    setIsLoading(true);
+    fetch("/api/owners")
+      .then((res) => res.json())
+      .then((data) => {
+        setOwners(data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load owner data:", err);
+        setIsLoading(false);
+      });
+  };
 
   useEffect(() => {
-    fetch("/api/patients")
-      .then((res) => res.json())
-      .then((data) => setPatients(data))
-      .catch((err) => console.error("Failed to load patients:", err))
-      .finally(() => setIsLoading(false));
+    fetchOwners();
   }, []);
 
-  const handleSaveNewPatient = (newPatient) => {
-    // Prepend new patient so it appears first in the list
-    setPatients((prev) => [newPatient, ...prev]);
-    setSelectedPatientId(newPatient.id);
+  const handleSaveNewOwner = (newOwner) => {
+    setOwners((prev) => [newOwner, ...prev]);
+    setSelectedOwnerId(newOwner.id);
     setView("records");
   };
 
-  const handleDeletePatient = async (patientId) => {
+  const handleDeleteOwner = async (ownerId) => {
     try {
-      await fetch(`/api/patients/${patientId}`, { method: "DELETE" });
-      setPatients((prev) => prev.filter((p) => p.id !== patientId));
-      setSelectedPatientId(null);
-      toast.success("Patient deleted successfully.");
+      await fetch(`/api/owners/${ownerId}`, { method: "DELETE" });
+      setOwners((prev) => prev.filter((o) => o.id !== ownerId));
+      setSelectedOwnerId(null);
+      toast.success("Owner deleted successfully.");
     } catch (err) {
-      console.error("Failed to delete patient:", err);
-      toast.error("Could not delete the patient. Please try again.");
+      console.error("Failed to delete owner:", err);
+      toast.error("Could not delete the owner.");
     }
   };
 
-  const handleEditPatient = (updatedPatient) => {
-    setPatients((prev) =>
-      prev.map((p) => (p.id === updatedPatient.id ? updatedPatient : p))
+  const handleEditOwner = (owner) => {
+    setOwnerToEdit(owner);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateOwnerSuccess = (updatedOwner) => {
+    setOwners((prev) =>
+      prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
     );
-    setSelectedPatientId(updatedPatient.id);
+    setSelectedOwnerId(updatedOwner.id);
+  };
+
+  const handleAddPetToOwner = (ownerId) => {
+    setSelectedOwnerId(ownerId);
+    setView("add-pet");
   };
 
   if (view === "add") {
     return (
-      <AddPatientFormView
-        onCancel={() => setView("records")}
-        onSave={handleSaveNewPatient}
-      />
+      <div className="p-6">
+        <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-50">Register New Owner</h2>
+            <button 
+              onClick={() => setView("records")}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300"
+            >
+              Back to List
+            </button>
+        </div>
+        
+        <div className="card-shell p-8 max-w-2xl mx-auto border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
+           <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const data = Object.fromEntries(formData);
+              try {
+                const res = await fetch("/api/owners", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
+                if (!res.ok) throw new Error("Failed to create owner");
+                const newOwner = await res.json();
+                setOwners((prev) => [...prev, { ...newOwner, pets: [] }]);
+                setView("records");
+                setSelectedOwnerId(newOwner.id);
+                toast.success("Owner registered successfully!");
+              } catch (err) {
+                toast.error(err.message);
+              }
+           }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Full Name</label>
+                  <input name="name" required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="e.g. Maria Clara" />
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Phone</label>
+                  <input name="phone" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="0917..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Email</label>
+                  <input name="email" type="email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="email@example.com" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Address</label>
+                  <input name="address" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="123 Street..." />
+                </div>
+                <div className="col-span-2">
+                  <button type="submit" className="w-full rounded-xl bg-blue-600 py-4 text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-colors">
+                    Register Client
+                  </button>
+                </div>
+              </div>
+           </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "add-pet") {
+    return (
+      <div className="p-6">
+        <AddPatientFormView 
+          ownerId={selectedOwnerId}
+          onCancel={() => setView("records")} 
+          onSave={(newPet) => {
+            setOwners(owners.map(o => o.id === selectedOwnerId ? { ...o, pets: [...(o.pets || []), newPet] } : o));
+            setView("records");
+            toast.success(`${newPet.name} has been registered!`);
+          }} 
+        />
+      </div>
     );
   }
 
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center text-slate-500">
-        Loading patient records...
+        Loading owner records...
       </div>
     );
   }
 
   return (
-    <PatientRecordsView
-      patients={patients}
-      selectedPatientId={selectedPatientId}
-      onSelectPatient={setSelectedPatientId}
-      onOpenAddPatient={() => setView("add")}
-      onDeletePatient={handleDeletePatient}
-      onPatientEdited={handleEditPatient}
-    />
+    <div className="min-h-screen bg-slate-50/50 p-6 dark:bg-dark-surface/30">
+      <PatientRecordsView
+        owners={owners}
+        selectedOwnerId={selectedOwnerId}
+        onSelectOwner={setSelectedOwnerId}
+        onOpenAddPatient={() => setView("add")}
+        onDeleteOwner={handleDeleteOwner}
+        onEditOwner={handleEditOwner}
+        onOwnerEdited={fetchOwners}
+        onAddPet={handleAddPetToOwner}
+      />
+
+      <EditOwnerModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setOwnerToEdit(null);
+        }}
+        owner={ownerToEdit}
+        onSaveSuccess={handleUpdateOwnerSuccess}
+      />
+    </div>
   );
 }
 

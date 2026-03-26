@@ -13,16 +13,36 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const categoryOptions = ["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"];
+  const [transactions, setTransactions] = useState([]);
+  const [isLoadingTx, setIsLoadingTx] = useState(false);
 
   useEffect(() => {
     if (isOpen && product) {
       setFormData(product);
       setIsEditing(false);
+      
+      // Fetch transaction history
+      setIsLoadingTx(true);
+      fetch(`/api/inventory/${product.id}/transactions`)
+        .then(res => res.json())
+        .then(data => {
+            setTransactions(data);
+            setIsLoadingTx(false);
+        })
+        .catch(err => {
+            console.error(err);
+            setIsLoadingTx(false);
+        });
     }
   }, [isOpen, product]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCheckboxChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: !!value }));
   };
 
   const handleSave = async () => {
@@ -117,21 +137,40 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               <div key={field}>
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">{label}</p>
                 {isEditing ? (
-                  <input
-                    type={
-                      field === "price" || field === "stock_level" || field === "min_stock_level" 
-                        ? "number" 
-                        : field === "expiration_date" 
-                          ? "date" 
-                          : "text"
-                    }
-                    className={inputClass}
-                    value={formData[field] ?? ""}
-                    onChange={(e) => handleChange(field, e.target.value)}
-                  />
-                ) : field === "price" ? (
+                  field === "category" ? (
+                    <select
+                      className={inputClass}
+                      value={formData[field] ?? "Consumables"}
+                      onChange={(e) => handleChange(field, e.target.value)}
+                    >
+                      {categoryOptions.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  ) : field === "sku" ? (
+                    <input
+                      type="text"
+                      readOnly
+                      className={clsx(inputClass, "bg-slate-50 dark:bg-dark-surface/50 cursor-not-allowed opacity-70")}
+                      value={formData[field] ?? ""}
+                    />
+                  ) : (
+                    <input
+                      type={
+                        field === "price" || field === "stock_level" || field === "min_stock_level" 
+                          ? "number" 
+                          : field === "expiration_date" 
+                            ? "date" 
+                            : "text"
+                      }
+                      className={inputClass}
+                      value={formData[field] ?? ""}
+                      onChange={(e) => handleChange(field, e.target.value)}
+                    />
+                  )
+                ) : (field === "price" || field === "selling_price") ? (
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">
-                    ₱{Number(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 ) : (field === "stock_level" || field === "min_stock_level") ? (
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} units</p>
@@ -140,6 +179,98 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Billing & Logic Flags */}
+          <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface/50">
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Billing Profile</p>
+              {isEditing ? (
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input 
+                    type="checkbox" 
+                    checked={!!formData.is_billable} 
+                    onChange={(e) => handleCheckboxChange("is_billable", e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                  />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Billable?</span>
+                </label>
+              ) : (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={clsx(
+                    "inline-block h-2 w-2 rounded-full",
+                    product.is_billable ? "bg-emerald-500" : "bg-slate-300"
+                  )} />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                    {product.is_billable ? "Billable Item" : "Non-Billable"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Inventory Logic</p>
+              {isEditing ? (
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input 
+                    type="checkbox" 
+                    checked={!!formData.deduct_on_finalize} 
+                    onChange={(e) => handleCheckboxChange("deduct_on_finalize", e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                  />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Auto-Deduct?</span>
+                </label>
+              ) : (
+                <div className="flex items-center gap-2 mt-1">
+                   <span className={clsx(
+                    "inline-block h-2 w-2 rounded-full",
+                    product.deduct_on_finalize ? "bg-blue-500" : "bg-amber-500"
+                  )} />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                    {product.deduct_on_finalize ? "Deduct on Finalize" : "Manual Stock Out"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Transactions Ledger */}
+          <div className="mt-8 border-t border-slate-100 dark:border-dark-border pt-6">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Transaction Ledger</h4>
+            <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                {isLoadingTx ? (
+                    <p className="text-sm text-slate-400 dark:text-zinc-500">Loading transactions...</p>
+                ) : transactions.length > 0 ? (
+                    <div className="space-y-3">
+                        {transactions.map(tx => (
+                            <div key={tx.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                                        {tx.transaction_type}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-500">
+                                        {new Date(tx.created_at).toLocaleString()} • {tx.creator?.name || 'System'}
+                                    </p>
+                                    {tx.remarks && <p className="mt-1 text-xs italic text-slate-600 dark:text-zinc-400">"{tx.remarks}"</p>}
+                                </div>
+                                <div className="text-right">
+                                    <p className={clsx(
+                                        "text-sm font-bold",
+                                        tx.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                    )}>
+                                        {tx.quantity > 0 ? '+' : ''}{tx.quantity}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-500">
+                                        Stock: {tx.new_stock}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-slate-400 dark:text-zinc-500">No transactions recorded yet.</p>
+                )}
+            </div>
           </div>
 
           {/* Footer Buttons */}

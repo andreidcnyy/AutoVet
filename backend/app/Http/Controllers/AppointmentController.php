@@ -2,50 +2,129 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\Appointment;
+use App\Models\VetSchedule;
+use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
     public function index()
     {
-        return response()->json(Appointment::with('patient')->orderBy('date', 'desc')->get());
+        return response()->json(Appointment::with(['pet', 'service', 'vet'])->orderBy('date', 'desc')->get());
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'tone' => 'nullable|string',
-            'patient_id' => 'nullable|exists:patients,id',
+            'category' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'pet_id' => 'required|exists:pets,id',
+            'service_id' => 'required|exists:services,id',
+            'vet_id' => 'nullable|exists:users,id',
         ]);
 
-        $appointment = Appointment::create($validated);
+        // Default title to service name if not provided
+        if (empty($validated['title'])) {
+            $service = \App\Models\Service::find($validated['service_id']);
+            $validated['title'] = $service ? $service->name : 'General Consultation';
+        }
 
-        return response()->json($appointment->load('patient'), 201);
+        // Validate vet schedule if vet_id is provided
+        if (!empty($validated['vet_id'])) {
+            $dayOfWeek = date('l', strtotime($validated['date']));
+            $schedule = VetSchedule::where('user_id', $validated['vet_id'])
+                            ->where('day_of_week', $dayOfWeek)
+                            ->where('is_available', true)
+                            ->first();
+
+            if (!$schedule) {
+                // Fetch available days to provide a better error message
+                $availableDays = VetSchedule::where('user_id', $validated['vet_id'])
+                                    ->where('is_available', true)
+                                    ->pluck('day_of_week')
+                                    ->toArray();
+                
+                $vetName = \App\Models\User::find($validated['vet_id'])->name ?? 'the vet';
+                $message = "{$vetName} is not available on {$dayOfWeek}s.";
+                if (!empty($availableDays)) {
+                    $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
+                }
+                
+                return response()->json(['message' => $message], 422);
+            }
+
+            $time = date('H:i:s', strtotime($validated['time']));
+            if ($time < $schedule->start_time || $time > $schedule->end_time) {
+                 return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
+            }
+
+            if ($schedule->break_start && $schedule->break_end) {
+                if ($time >= $schedule->break_start && $time <= $schedule->break_end) {
+                    return response()->json(['message' => 'Selected time falls during the vet\'s break period (' . date('g:i A', strtotime($schedule->break_start)) . " - " . date('g:i A', strtotime($schedule->break_end)) . ")."], 422);
+                }
+            }
+        }
+
+        $appointment = Appointment::create($validated);
+        return response()->json($appointment->load(['pet', 'service', 'vet']), 201);
     }
 
     public function show(Appointment $appointment)
     {
-        return response()->json($appointment->load('patient'));
+        return response()->json($appointment->load(['pet', 'service', 'vet']));
     }
 
     public function update(Request $request, Appointment $appointment)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'tone' => 'nullable|string',
-            'patient_id' => 'nullable|exists:patients,id',
+            'category' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'pet_id' => 'required|exists:pets,id',
+            'service_id' => 'required|exists:services,id',
+            'vet_id' => 'nullable|exists:users,id',
         ]);
 
-        $appointment->update($validated);
+        if (!empty($validated['vet_id'])) {
+            $dayOfWeek = date('l', strtotime($validated['date']));
+            $schedule = VetSchedule::where('user_id', $validated['vet_id'])
+                            ->where('day_of_week', $dayOfWeek)
+                            ->where('is_available', true)
+                            ->first();
 
-        return response()->json($appointment->load('patient'));
+            if (!$schedule) {
+                $availableDays = VetSchedule::where('user_id', $validated['vet_id'])
+                                    ->where('is_available', true)
+                                    ->pluck('day_of_week')
+                                    ->toArray();
+                
+                $vetName = \App\Models\User::find($validated['vet_id'])->name ?? 'the vet';
+                $message = "{$vetName} is not available on {$dayOfWeek}s.";
+                if (!empty($availableDays)) {
+                    $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
+                }
+                
+                return response()->json(['message' => $message], 422);
+            }
+
+            $time = date('H:i:s', strtotime($validated['time']));
+            if ($time < $schedule->start_time || $time > $schedule->end_time) {
+                 return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
+            }
+        }
+
+        if (empty($validated['title'])) {
+            $service = \App\Models\Service::find($validated['service_id']);
+            $validated['title'] = $service ? $service->name : 'General Consultation';
+        }
+
+        $appointment->update($validated);
+        return response()->json($appointment->load(['pet', 'service', 'vet']));
     }
 
     public function destroy(Appointment $appointment)
