@@ -21,15 +21,17 @@ function DashboardPage() {
       .then(([status, statsData, notifData]) => {
         setApiStatus(status);
         
+        const safeStats = Array.isArray(statsData) ? statsData : [];
         // Map icon names to components for metrics
-        const mappedMetrics = statsData.map(stat => ({
+        const mappedMetrics = safeStats.map(stat => ({
           ...stat,
           icon: Icons[stat.iconName] || Icons.FiActivity
         }));
         setMetrics(mappedMetrics);
 
+        const safeNotifs = Array.isArray(notifData) ? notifData : [];
         // Map icon names to components for notifications
-        const mappedNotifs = notifData.map(notif => ({
+        const mappedNotifs = safeNotifs.map(notif => ({
           ...notif,
           icon: Icons[notif.iconName] || Icons.FiBell
         }));

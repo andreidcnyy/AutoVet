@@ -12,6 +12,13 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PetSizeCategoryController;
+use App\Http\Controllers\WeightRangeController;
+use App\Http\Controllers\UnitOfMeasureController;
+use App\Http\Controllers\SpeciesController;
+use App\Http\Controllers\BreedController;
+use App\Http\Controllers\VetScheduleController;
+use App\Http\Controllers\OwnerController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -56,6 +63,13 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::apiResource('users', UserController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('service-categories', \App\Http\Controllers\ServiceCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('weight-ranges', WeightRangeController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('units-of-measure', UnitOfMeasureController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('species', SpeciesController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('breeds', BreedController::class)->middleware('role:Admin,Chief Veterinarian');
+    Route::apiResource('vet-schedules', VetScheduleController::class);
+    Route::apiResource('owners', OwnerController::class);
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
