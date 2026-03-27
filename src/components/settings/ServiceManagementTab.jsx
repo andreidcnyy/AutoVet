@@ -29,7 +29,10 @@ export default function ServiceManagementTab() {
     setLoading(true);
     fetch("/api/services")
       .then(res => res.json())
-      .then(data => { setServices(data); setLoading(false); })
+      .then(data => { 
+        setServices(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); 
+        setLoading(false); 
+      })
       .catch(err => { toast.error("Failed to load services"); setLoading(false); });
   };
 
@@ -39,17 +42,17 @@ export default function ServiceManagementTab() {
     // Fetch categories from MDM
     fetch("/api/service-categories")
       .then(res => res.json())
-      .then(data => setServiceCategories(data.data || data)) // handle paginated or flat
+      .then(data => setServiceCategories(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [])) 
       .catch(console.error);
 
     fetch("/api/pet-size-categories")
       .then(res => res.json())
-      .then(data => setPetSizes(data.data || data))
+      .then(data => setPetSizes(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
       .catch(console.error);
 
     fetch("/api/weight-ranges")
       .then(res => res.json())
-      .then(data => setWeightRanges(data.data || data))
+      .then(data => setWeightRanges(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
       .catch(console.error);
   }, []);
 

@@ -13,12 +13,14 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@autovet.com',
-            'password' => Hash::make('password123'),
-            'role' => 'admin',
-            'status' => 'active',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@autovet.com'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('password123'),
+                'role' => 'admin',
+                'status' => 'active',
+            ]
+        );
     }
 }

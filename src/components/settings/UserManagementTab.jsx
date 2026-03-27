@@ -17,7 +17,7 @@ export default function UserManagementTab() {
     setLoading(true);
     fetch("/api/users")
       .then(res => res.json())
-      .then(data => { setUsers(data); setLoading(false); })
+      .then(data => { setUsers(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); setLoading(false); })
       .catch(err => { toast.error("Failed to load users"); setLoading(false); });
   };
 

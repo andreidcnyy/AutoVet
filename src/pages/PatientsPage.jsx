@@ -15,10 +15,12 @@ function PatientsPage() {
 
   const fetchOwners = () => {
     setIsLoading(true);
-    fetch("/api/owners")
+    fetch("/api/owners", {
+      headers: { "Accept": "application/json" }
+    })
       .then((res) => res.json())
       .then((data) => {
-        setOwners(data);
+        setOwners(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -39,7 +41,10 @@ function PatientsPage() {
 
   const handleDeleteOwner = async (ownerId) => {
     try {
-      await fetch(`/api/owners/${ownerId}`, { method: "DELETE" });
+      await fetch(`/api/owners/${ownerId}`, { 
+        method: "DELETE",
+        headers: { "Accept": "application/json" }
+      });
       setOwners((prev) => prev.filter((o) => o.id !== ownerId));
       setSelectedOwnerId(null);
       toast.success("Owner deleted successfully.");
@@ -87,7 +92,10 @@ function PatientsPage() {
               try {
                 const res = await fetch("/api/owners", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: { 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                  },
                   body: JSON.stringify(data),
                 });
                 if (!res.ok) throw new Error("Failed to create owner");
