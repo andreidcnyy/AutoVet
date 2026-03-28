@@ -9,11 +9,7 @@ class WeightRangeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WeightRange::with(['sizeCategory', 'species']);
-
-        if ($request->has('species_id')) {
-            $query->where('species_id', $request->species_id);
-        }
+        $query = WeightRange::with('sizeCategory');
 
         if ($request->has('search')) {
             $query->where('label', 'like', '%' . $request->search . '%');
@@ -30,73 +26,32 @@ class WeightRangeController extends Controller
     {
         $validated = $request->validate([
             'label' => 'required|string',
-            'species_id' => 'required|exists:species,id',
-            'min_weight' => 'required|numeric|min:0',
+            'min_weight' => 'required|numeric',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'required|exists:pet_size_categories,id',
-            'status' => 'required|string'
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'status' => 'nullable|string'
         ]);
 
-        if ($validated['status'] === 'Active') {
-            $overlap = $this->checkOverlap($validated['species_id'], $validated['unit'], $validated['min_weight'], $validated['max_weight']);
-            if ($overlap) {
-                return response()->json(['message' => 'This weight range overlaps with an existing active range for this species.'], 422);
-            }
-        }
+        // Basic overlap check could be added here or as a custom validation rule
         
         $range = WeightRange::create($validated);
-        return response()->json($range->load(['sizeCategory', 'species']), 201);
+        return response()->json($range, 201);
     }
 
     public function update(Request $request, WeightRange $weightRange)
     {
         $validated = $request->validate([
             'label' => 'required|string',
-            'species_id' => 'required|exists:species,id',
-            'min_weight' => 'required|numeric|min:0',
+            'min_weight' => 'required|numeric',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'required|exists:pet_size_categories,id',
-            'status' => 'required|string'
+            'size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'status' => 'nullable|string'
         ]);
 
-        if ($validated['status'] === 'Active') {
-            $overlap = $this->checkOverlap($validated['species_id'], $validated['unit'], $validated['min_weight'], $validated['max_weight'], $weightRange->id);
-            if ($overlap) {
-                return response()->json(['message' => 'This weight range overlaps with an existing active range for this species.'], 422);
-            }
-        }
-
         $weightRange->update($validated);
-        return response()->json($weightRange->load(['sizeCategory', 'species']));
-    }
-
-    private function checkOverlap($speciesId, $unit, $min, $max, $excludeId = null)
-    {
-        return WeightRange::where('species_id', $speciesId)
-            ->where('unit', $unit)
-            ->where('status', 'Active')
-            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
-            ->where(function ($query) use ($min, $max) {
-                // Two ranges [min1, max1] and [min2, max2] overlap if:
-                // min1 < max2 AND max1 > min2 (treating null max as infinity)
-                
-                $query->where(function ($q) use ($max) {
-                    $q->whereNull('max_weight') // max2 is infinity
-                      ->orWhere('min_weight', '<', $max ?: 999999); // max1 is infinity if $max null
-                      // Wait, if $max is null, min_weight < infinity is always true.
-                      if ($max === null) {
-                          $q->whereRaw('1=1');
-                      } else {
-                          $q->where('min_weight', '<', $max);
-                      }
-                })->where(function ($q) use ($min) {
-                    $q->whereNull('max_weight') // max2 is infinity, infinity > min1 always true
-                      ->orWhere('max_weight', '>', $min);
-                });
-            })
-            ->exists();
+        return response()->json($weightRange);
     }
 
     public function destroy(WeightRange $weightRange)

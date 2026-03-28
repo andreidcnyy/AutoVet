@@ -1,37 +1,17 @@
-import { useState, useEffect } from "react";
 import MasterDataTable from "./MasterDataTable";
-import { useAuth } from "../../context/AuthContext";
 
 export default function MasterDataManagementTab() {
-  const { user } = useAuth();
-  const [sizeCategories, setSizeCategories] = useState([]);
-
-  useEffect(() => {
-    if (!user?.token) return;
-    fetch("/api/pet-size-categories", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      }
-    })
-      .then(res => res.json())
-      .then(result => {
-        const data = result.data || result || [];
-        setSizeCategories(Array.isArray(data) ? data : []);
-      })
-      .catch(() => setSizeCategories([]));
-  }, [user?.token]);
-
   const categoryColumns = [
     { key: "name", label: "Category Name" },
-    {
-      key: "status",
+    { 
+      key: "status", 
       label: "Status",
       render: (val) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${val === 'Active'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+          val === 'Active' 
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
             : 'bg-slate-100 text-slate-600 dark:bg-dark-surface dark:text-zinc-400'
-          }`}>
+        }`}>
           {val}
         </span>
       )
@@ -44,8 +24,8 @@ export default function MasterDataManagementTab() {
     { key: "label", label: "Label" },
     { key: "min_weight", label: "Min (kg)" },
     { key: "max_weight", label: "Max (kg)" },
-    {
-      key: "size_category_id",
+    { 
+      key: "size_category_id", 
       label: "Size Category",
       render: (val, item) => (
         <span className="font-medium text-blue-600 dark:text-blue-400">
@@ -53,14 +33,15 @@ export default function MasterDataManagementTab() {
         </span>
       )
     },
-    {
-      key: "status",
+    { 
+      key: "status", 
       label: "Status",
       render: (val) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${val === 'Active'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+          val === 'Active' 
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
             : 'bg-slate-100 text-slate-600 dark:bg-dark-surface dark:text-zinc-400'
-          }`}>
+        }`}>
           {val}
         </span>
       )
@@ -70,14 +51,15 @@ export default function MasterDataManagementTab() {
   const unitColumns = [
     { key: "name", label: "Unit Name" },
     { key: "abbreviation", label: "Abbr." },
-    {
-      key: "status",
+    { 
+      key: "status", 
       label: "Status",
       render: (val) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${val === 'Active'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+          val === 'Active' 
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
             : 'bg-slate-100 text-slate-600 dark:bg-dark-surface dark:text-zinc-400'
-          }`}>
+        }`}>
           {val}
         </span>
       )
@@ -95,17 +77,17 @@ export default function MasterDataManagementTab() {
         </div>
 
         <div className="grid grid-cols-1 gap-12">
-          <MasterDataTable
+          <MasterDataTable 
             title="Inventory Categories"
             description="Categorize items in your stock (e.g., Medications, Consumables)."
             apiUrl="/api/inventory-categories"
             columns={categoryColumns}
             initialForm={initialCategoryForm}
           />
-
+          
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 
-          <MasterDataTable
+          <MasterDataTable 
             title="Service Categories"
             description="Categorize clinical services (e.g., Surgery, Consultations)."
             apiUrl="/api/service-categories"
@@ -115,7 +97,7 @@ export default function MasterDataManagementTab() {
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 
-          <MasterDataTable
+          <MasterDataTable 
             title="Pet Size Categories"
             description="Define standard size groups for pet service pricing."
             apiUrl="/api/pet-size-categories"
@@ -125,7 +107,7 @@ export default function MasterDataManagementTab() {
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 
-          <MasterDataTable
+          <MasterDataTable 
             title="Weight Ranges"
             description="Define weight tiers for weight-based service pricing."
             apiUrl="/api/weight-ranges"
@@ -136,7 +118,7 @@ export default function MasterDataManagementTab() {
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 
-          <MasterDataTable
+          <MasterDataTable 
             title="Units of Measure"
             description="Standard units for products and medications (e.g., ml, tablet)."
             apiUrl="/api/units-of-measure"

@@ -1,31 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
-import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
-export default function MasterDataTable({ 
-  title, 
-  description, 
-  apiUrl, 
-  columns, 
-  initialForm, 
-  defaultSortBy = "name",
-  extraParams = {},
-  fieldConfig = {}
-}) {
+export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
   const toast = useToast();
-  const { user } = useAuth();
-  const userRole = user?.role?.toLowerCase();
-  const canEdit = userRole === "admin" || userRole === "chief veterinarian";
-
-  // Debug role-based controls
-  useEffect(() => {
-    if (user) {
-      console.log(`[MasterDataTable] User Role: "${userRole}", Can Edit: ${canEdit}`);
-    }
-  }, [userRole, canEdit, user]);
-
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
@@ -39,22 +18,7 @@ export default function MasterDataTable({
   const [formData, setFormData] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
 
-  // For dynamic dropdowns
-  const [petSizeCategories, setPetSizeCategories] = useState([]);
-
-  useEffect(() => {
-    if (Object.keys(initialForm).includes('size_category_id')) {
-      fetch("/api/pet-size-categories")
-        .then(res => res.json())
-        .then(data => setPetSizeCategories(data.data || data));
-    }
-  }, [initialForm]);
-
   const fetchData = useCallback(async () => {
-    // If no token, we can't fetch. But we don't set loading to false yet 
-    // to avoid "No data found" flicker before AuthContext hydrates.
-    if (!user?.token) return;
-
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -62,24 +26,9 @@ export default function MasterDataTable({
         sort_by: sortBy,
         sort_direction: sortDir,
         page: page.toString(),
-        per_page: "10",
-        ...extraParams
+        per_page: "10"
       });
-      const url = `${apiUrl}?${query.toString()}`;
-
-      const res = await fetch(url, {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`[MasterDataTable] Error fetching "${title}":`, { status: res.status, body: errorText });
-        throw new Error(`Failed to fetch data (${res.status})`);
-      }
-
+      const res = await fetch(`${apiUrl}?${query.toString()}`);
       const result = await res.json();
       setData(result.data || []);
       setMeta({
@@ -88,7 +37,6 @@ export default function MasterDataTable({
         total: result.total
       });
     } catch (err) {
-      console.error(`[MasterDataTable] Exception in "${title}":`, err);
       toast.error(`Failed to load ${title.toLowerCase()}`);
     } finally {
       setLoading(false);
@@ -103,10 +51,10 @@ export default function MasterDataTable({
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
-      setFormData({ ...item });
+      setFormData(item);
     } else {
       setEditingItem(null);
-      setFormData({ ...initialForm, ...extraParams });
+      setFormData(initialForm);
     }
     setIsModalOpen(true);
   };
@@ -118,32 +66,15 @@ export default function MasterDataTable({
     const url = isEditing ? `${apiUrl}/${editingItem.id}` : apiUrl;
     const method = isEditing ? "PUT" : "POST";
 
-    // Convert numeric fields based on fieldConfig
-    const payload = { ...formData };
-    Object.keys(payload).forEach(key => {
-      const config = fieldConfig?.[key];
-      if (config?.type === "number" && payload[key] !== "" && payload[key] !== null) {
-        payload[key] = Number(payload[key]);
-      }
-      // Also handle select values that are IDs (like size_category_id)
-      if (config?.type === "select" && key.endsWith('_id') && payload[key] !== "" && payload[key] !== null) {
-        payload[key] = Number(payload[key]);
-      }
-    });
-
     try {
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(formData)
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to save item");
+          const err = await res.json();
+          throw new Error(err.message || "Failed to save item");
       }
       toast.success(`${title.slice(0, -1)} ${isEditing ? "updated" : "added"} successfully`);
       fetchData();
@@ -158,13 +89,7 @@ export default function MasterDataTable({
   const handleDelete = async (id) => {
     if (!confirm(`Are you sure you want to delete this ${title.toLowerCase().slice(0, -1)}?`)) return;
     try {
-      const res = await fetch(`${apiUrl}/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
+      const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete item");
       toast.success(`${title.slice(0, -1)} deleted`);
       fetchData();
@@ -180,22 +105,20 @@ export default function MasterDataTable({
           <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">{title}</h3>
           {description && <p className="text-sm text-slate-500 dark:text-zinc-400">{description}</p>}
         </div>
-        {canEdit && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
-          >
-            <FiPlus className="h-4 w-4" />
-            Add New
-          </button>
-        )}
+        <button 
+          onClick={() => handleOpenModal()}
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+        >
+          <FiPlus className="h-4 w-4" />
+          Add New
+        </button>
       </div>
 
       <div className="flex items-center gap-2 max-w-sm">
         <div className="relative w-full">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
+          <input 
+            type="text" 
             placeholder="Search..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -216,14 +139,14 @@ export default function MasterDataTable({
                   {col.label} {sortBy === col.key && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
               ))}
-              {canEdit && <th className="px-4 py-3 text-right">Actions</th>}
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-dark-border text-slate-700 dark:text-zinc-300">
             {loading ? (
-              <tr><td colSpan={columns.length + (canEdit ? 1 : 0)} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+              <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
             ) : data.length === 0 ? (
-              <tr><td colSpan={columns.length + (canEdit ? 1 : 0)} className="px-4 py-8 text-center text-slate-400">No data found</td></tr>
+              <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-slate-400">No data found</td></tr>
             ) : data.map((item) => (
               <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-dark-surface/50 transition">
                 {columns.map(col => (
@@ -231,37 +154,35 @@ export default function MasterDataTable({
                     {col.render ? col.render(item[col.key], item) : item[col.key]}
                   </td>
                 ))}
-                {canEdit && (
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => handleOpenModal(item)} className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
-                        <FiEdit2 size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition">
-                        <FiTrash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                )}
+                <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end gap-1">
+                    <button onClick={() => handleOpenModal(item)} className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                      <FiEdit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition">
+                      <FiTrash2 size={16} />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-
+        
         {meta.last_page > 1 && (
           <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface/30">
             <span className="text-xs text-slate-500 dark:text-zinc-400">
               Page {meta.current_page} of {meta.last_page} ({meta.total} total)
             </span>
             <div className="flex gap-2">
-              <button
+              <button 
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
                 className="rounded border border-slate-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
               >
                 <FiChevronLeft size={16} />
               </button>
-              <button
+              <button 
                 disabled={page === meta.last_page}
                 onClick={() => setPage(page + 1)}
                 className="rounded border border-slate-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
@@ -285,8 +206,8 @@ export default function MasterDataTable({
                 <div key={key}>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1 capitalize">{key.replace('_', ' ')}</label>
                   {key === 'status' ? (
-                    <select
-                      value={formData[key]}
+                    <select 
+                      value={formData[key]} 
                       onChange={e => setFormData({ ...formData, [key]: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     >
@@ -294,10 +215,10 @@ export default function MasterDataTable({
                       <option value="Inactive">Inactive</option>
                     </select>
                   ) : (
-                    <input
+                    <input 
                       required
-                      type="text"
-                      value={formData[key]}
+                      type="text" 
+                      value={formData[key]} 
                       onChange={e => setFormData({ ...formData, [key]: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     />
@@ -317,4 +238,3 @@ export default function MasterDataTable({
     </div>
   );
 }
-
