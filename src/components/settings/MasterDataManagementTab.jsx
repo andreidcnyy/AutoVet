@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import MasterDataTable from "./MasterDataTable";
+import { useAuth } from "../../context/AuthContext";
 
 export default function MasterDataManagementTab() {
   const { user } = useAuth();

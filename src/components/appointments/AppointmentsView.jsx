@@ -55,6 +55,7 @@ function AppointmentsView() {
   // New state for interactivity
   const [activePanel, setActivePanel] = useState("booking"); // 'booking' | 'details'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const {
     register,
@@ -210,12 +211,14 @@ function AppointmentsView() {
     setValue("date", entry.dateString);
     setActivePanel("booking");
     setSelectedAppointment(null);
+    setIsDrawerOpen(true);
   };
 
   const handleAppointmentClick = (event, appointment) => {
     event.stopPropagation();
     setSelectedAppointment(appointment);
     setActivePanel("details");
+    setIsDrawerOpen(true);
   };
 
   const handleStatusUpdate = async (id, status) => {
