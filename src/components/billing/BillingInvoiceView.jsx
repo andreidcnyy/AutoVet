@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -200,6 +201,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 
 function BillingInvoiceView() {
   const toast = useToast();
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [discountVal, setDiscountVal] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
@@ -221,32 +223,63 @@ function BillingInvoiceView() {
   const [weightRanges, setWeightRanges] = useState([]);
 
   useEffect(() => {
+    if (!user?.token) return;
+
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
+
     // Fetch owners, pets, and settings on mount
     Promise.all([
-      fetch("/api/owners").then(res => res.json()),
-      fetch("/api/pets").then(res => res.json()),
-      fetch("/api/settings").then(res => res.json()),
-      fetch("/api/services").then(res => res.json()).catch(() => []),
-      fetch("/api/inventory").then(res => res.json()).catch(() => [])
+      fetch("/api/owners", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
+      fetch("/api/pets", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
+      fetch("/api/settings", { headers }).then(res => res.json()).catch(() => ({})),
+      fetch("/api/services", { headers }).then(res => res.json()).catch(() => []),
+      fetch("/api/inventory", { headers }).then(res => res.json()).catch(() => [])
     ])
       .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
-        setOwners(ownersData);
-        setPets(petsData);
+        // Robustness: Only set array state if data is an array, else log payload
+        if (!Array.isArray(ownersData)) {
+          console.error("Unexpected owners API response:", ownersData);
+          setOwners([]);
+        } else {
+          setOwners(ownersData);
+        }
+
+        if (!Array.isArray(petsData)) {
+          console.error("Unexpected pets API response:", petsData);
+          setPets([]);
+        } else {
+          setPets(petsData);
+        }
+
         setClinicSettings(settingsData);
-        setNotes(settingsData.invoice_notes_template || "");
-        setServices(servicesData || []);
-        setInventory(inventoryData || []);
+        setNotes(settingsData?.invoice_notes_template || "");
+        setServices(Array.isArray(servicesData) ? servicesData : []);
+        setInventory(Array.isArray(inventoryData) ? inventoryData : []);
       })
       .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load initial data.");
+        console.error("Critical fail in Billing initialization:", err);
+        toast.error("Failed to load initial billing data.");
       });
 
-    fetch("/api/weight-ranges")
+    fetch("/api/weight-ranges", { headers })
       .then(res => res.json())
-      .then(data => setWeightRanges(data.data || data))
-      .catch(console.error);
-  }, []);
+      .then(data => {
+        const ranges = data.data || data;
+        if (!Array.isArray(ranges)) {
+          console.error("Unexpected weight-ranges response:", data);
+          setWeightRanges([]);
+        } else {
+          setWeightRanges(ranges);
+        }
+      })
+      .catch(err => {
+        console.error("Weight ranges fetch error:", err);
+        setWeightRanges([]);
+      });
+  }, [user?.token]);
 
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
@@ -255,7 +288,7 @@ function BillingInvoiceView() {
       setPatientDetails(null);
       return;
     }
-    const patientData = pets.find(p => p.id.toString() === pId.toString());
+    const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
     const ownerData = patientData?.owner;
 
     // Simply use the raw patient data, the UI will access nested properties
@@ -300,12 +333,12 @@ function BillingInvoiceView() {
   const groupedItems = useMemo(() => {
     const term = serviceInput.toLowerCase();
     
-    const filteredServices = services.filter(s => 
+    const filteredServices = (Array.isArray(services) ? services : []).filter(s => 
       s.name.toLowerCase().includes(term) || 
       (s.category && s.category.toLowerCase().includes(term))
     ).map(s => ({ ...s, type: 'service' }));
 
-    const filteredInventory = inventory.filter(i => 
+    const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(i => 
       i.is_billable && (
         i.item_name.toLowerCase().includes(term) || 
         i.sku?.toLowerCase().includes(term) ||
@@ -491,7 +524,11 @@ function BillingInvoiceView() {
     try {
       const response = await fetch("/api/invoices", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload)
       });
 
@@ -565,7 +602,7 @@ function BillingInvoiceView() {
                       className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-4 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
                     >
                       <option value="">Select a pet...</option>
-                      {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map(p => (
+                      {(Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map(p => (
                         <option key={p.id} value={p.id}>
                           {p.name} — {p.species?.name || "Unknown"}
                         </option>

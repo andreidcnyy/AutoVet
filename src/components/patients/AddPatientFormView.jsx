@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { useAuth } from "../../context/AuthContext";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -70,6 +71,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const photoInputRef = useRef(null);
   const [speciesList, setSpeciesList] = useState([]);
   const [sizeCategories, setSizeCategories] = useState([]);
+  const [weightRanges, setWeightRanges] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
 
@@ -77,9 +79,9 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
     fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
     if (!initialOwnerId) {
-      fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
+      fetch("/api/owners", { headers }).then(res => res.json()).then(setOwnersList).catch(console.error);
     }
-  }, [initialOwnerId]);
+  }, [initialOwnerId, user?.token]);
 
   const {
     register,
@@ -102,20 +104,53 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const photoValue = watch("photo");
   const speciesIdValue = watch("species_id");
   const weightValue = watch("weight");
-  
+
   const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
   const availableBreeds = selectedSpecies?.breeds || [];
 
-  const calculateSize = (w) => {
-    if (!w || isNaN(w)) return "N/A";
-    const val = parseFloat(w);
-    if (val <= 5) return "Small";
-    if (val <= 10) return "Medium";
-    if (val <= 20) return "Large";
-    return "Giant";
+  const breedIdValue = watch("breed_id");
+
+  useEffect(() => {
+    if (breedIdValue && speciesIdValue) {
+      const selectedBreed = availableBreeds.find(b => b.id.toString() === breedIdValue.toString());
+      if (selectedBreed?.default_size_category_id) {
+        setBreedSuggestedSizeId(selectedBreed.default_size_category_id);
+        // Only auto-fill if weight is not yet entered or size is not set
+        if (!weightValue) {
+          setValue("size_category_id", selectedBreed.default_size_category_id.toString());
+        }
+      } else {
+        setBreedSuggestedSizeId(null);
+      }
+    }
+  }, [breedIdValue, speciesIdValue, availableBreeds, setValue, weightValue]);
+
+  const calculateDynamicSize = (weight, speciesId) => {
+    if (!weight || !speciesId) return null;
+    const w = parseFloat(weight);
+    const ranges = weightRanges.filter(r => r.species_id?.toString() === speciesId.toString() && r.status === "Active");
+
+    if (ranges.length === 0) return null;
+
+    const match = ranges.find(r => {
+      const min = r.min_weight || 0;
+      const max = r.max_weight || Infinity;
+      return w >= min && w <= max;
+    });
+
+    return match ? match.size_category_id : null;
   };
 
-  const calculatedSize = calculateSize(weightValue);
+  const calculatedSizeId = calculateDynamicSize(weightValue, speciesIdValue);
+  const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || "N/A";
+
+  useEffect(() => {
+    if (calculatedSizeId) {
+      setValue("size_category_id", calculatedSizeId.toString());
+    }
+  }, [calculatedSizeId, setValue]);
+
+  const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -136,7 +171,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         if (!data.owner_name) throw new Error("Owner name is required for a new owner.");
         const ownerRes = await fetch("/api/owners", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          },
           body: JSON.stringify({
             name: data.owner_name,
             phone: data.owner_phone,
@@ -179,7 +218,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
       const res = await fetch("/api/pets", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(petPayload),
       });
 
@@ -189,7 +232,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       }
 
       const savedPet = await res.json();
-      
+
       onSave(savedPet);
     } catch (err) {
       setError(err.message);
@@ -284,7 +327,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Sex</label>
@@ -325,9 +368,21 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Category</label>
-                  <div className="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700 dark:border-white/5 dark:bg-zinc-900/50 dark:text-zinc-300">
-                    {calculatedSize}
-                    <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-slate-400">Auto</span>
+                  <div className={clsx(
+                    "flex flex-col justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                    isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-zinc-300")}>
+                        {calculatedSizeName}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Weight-Based</span>
+                    </div>
+                    {isMismatch && (
+                      <p className="mt-1 text-[11px] font-normal text-amber-600 dark:text-amber-500/80 leading-tight">
+                        Note: Breed default is {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name || "different"}.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -344,7 +399,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 <h3 className="flex items-center justify-between text-2xl font-bold text-slate-900 dark:text-zinc-50">
                   <span className="flex items-center gap-2"><FiUser className="h-6 w-6 text-blue-600" /> Owner Details</span>
                 </h3>
-                
+
                 <div className="flex gap-4 border-b border-slate-200 pb-4 dark:border-dark-border">
                   <button type="button" onClick={() => setIsNewOwner(true)} className={`flex items-center gap-2 pb-2 border-b-2 font-medium transition ${isNewOwner ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                     <FiUserPlus /> Register New Owner
@@ -361,22 +416,22 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                       <input {...register("owner_name")} className={getInputClass(errors.owner_name)} placeholder="e.g. Jordan Miller" />
                       {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                     </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number *</label>
-                        <input 
-                          {...register("owner_phone")} 
-                          type="text"
-                          className={getInputClass(errors.owner_phone)} 
-                          placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
-                          onInput={(e) => {
-                            e.target.value = e.target.value.replace(/[^0-9+]/g, '');
-                            if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
-                              e.target.value = e.target.value.replace(/\+/g, '');
-                            }
-                          }}
-                        />
-                        {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
-                      </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number *</label>
+                      <input
+                        {...register("owner_phone")}
+                        type="text"
+                        className={getInputClass(errors.owner_phone)}
+                        placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                        onInput={(e) => {
+                          e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                          if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
+                            e.target.value = e.target.value.replace(/\+/g, '');
+                          }
+                        }}
+                      />
+                      {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
+                    </div>
                     <div className="lg:col-span-2">
                       <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
                       <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
@@ -410,7 +465,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
             <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
               <LuFilePlus2 className="h-6 w-6 text-blue-600" /> Medical Information
             </h3>
-            
+
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Allergies</label>

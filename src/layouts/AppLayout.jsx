@@ -25,8 +25,13 @@ function AppLayout() {
   }, [user, loading, navigate]);
 
   React.useEffect(() => {
-    if (user) {
-      fetch("/api/settings")
+    if (user && user.token) {
+      fetch("/api/settings", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      })
         .then((res) => res.json())
         .then((data) => {
           if (data.clinic_name) {

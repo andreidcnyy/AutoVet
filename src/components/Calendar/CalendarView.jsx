@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import clsx from "clsx";
 import { FiChevronLeft, FiChevronRight, FiX, FiCalendar, FiClock } from "react-icons/fi";
 import { format, addMonths, subMonths, isToday } from "date-fns";
+import { useAuth } from "../../context/AuthContext";
 import { generateCalendarGrid } from "../../utils/calendarUtils";
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -27,16 +26,24 @@ const panelAccentStyles = {
 };
 
 function CalendarView() {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
 
   useEffect(() => {
-    fetch("/api/appointments")
+    if (!user?.token) return;
+    
+    fetch("/api/appointments", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => setAppointments(data))
       .catch((err) => console.error("Error fetching calendar appointments:", err));
-  }, []);
+  }, [user?.token]);
 
   const calendarDays = generateCalendarGrid(currentDate, appointments);
 

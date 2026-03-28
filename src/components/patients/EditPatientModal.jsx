@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 
 const inputBase =
@@ -49,23 +50,34 @@ const patientSchema = z.object({
 
 function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const toast = useToast();
+    const { user } = useAuth();
     const [error, setError] = useState(null);
     const photoInputRef = useRef(null);
     const [speciesList, setSpeciesList] = useState([]);
     const [sizeCategories, setSizeCategories] = useState([]);
+    const [weightRanges, setWeightRanges] = useState([]);
+    const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
 
     useEffect(() => {
-        if (isOpen) {
-            fetch("/api/species")
+        if (isOpen && user?.token) {
+            const headers = { 
+                "Accept": "application/json",
+                "Authorization": `Bearer ${user.token}`
+            };
+            fetch("/api/species", { headers })
                 .then(res => res.json())
                 .then(setSpeciesList)
                 .catch(console.error);
-            fetch("/api/pet-size-categories")
+            fetch("/api/pet-size-categories", { headers })
                 .then(res => res.json())
                 .then(data => setSizeCategories(data.data || data))
                 .catch(console.error);
+            fetch("/api/weight-ranges?per_page=100")
+                .then(res => res.json())
+                .then(data => setWeightRanges(data.data || data))
+                .catch(console.error);
         }
-    }, [isOpen]);
+    }, [isOpen, user?.token]);
 
     const {
         register,
@@ -133,17 +145,45 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     };
 
     const weightValue = watch("weight");
+    const breedIdValue = watch("breed_id");
 
-    const calculateSize = (w) => {
-        if (!w || isNaN(w)) return "N/A";
-        const val = parseFloat(w);
-        if (val <= 5) return "Small";
-        if (val <= 10) return "Medium";
-        if (val <= 20) return "Large";
-        return "Giant";
+    useEffect(() => {
+        if (breedIdValue && speciesIdValue) {
+            const selectedBreed = availableBreeds.find(b => b.id.toString() === breedIdValue.toString());
+            if (selectedBreed?.default_size_category_id) {
+                setBreedSuggestedSizeId(selectedBreed.default_size_category_id);
+            } else {
+                setBreedSuggestedSizeId(null);
+            }
+        }
+    }, [breedIdValue, speciesIdValue, availableBreeds]);
+
+    const calculateDynamicSize = (weight, speciesId) => {
+        if (!weight || !speciesId) return null;
+        const w = parseFloat(weight);
+        const ranges = weightRanges.filter(r => r.species_id?.toString() === speciesId.toString() && r.status === "Active");
+        
+        if (ranges.length === 0) return null;
+
+        const match = ranges.find(r => {
+            const min = r.min_weight || 0;
+            const max = r.max_weight || Infinity;
+            return w >= min && w <= max;
+        });
+
+        return match ? match.size_category_id : null;
     };
 
-    const calculatedSize = calculateSize(weightValue);
+    const calculatedSizeId = calculateDynamicSize(weightValue, speciesIdValue);
+    const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || "N/A";
+
+    useEffect(() => {
+        if (calculatedSizeId) {
+            setValue("size_category_id", calculatedSizeId.toString());
+        }
+    }, [calculatedSizeId, setValue]);
+
+    const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
     const onSubmit = async (data) => {
         setError(null);
@@ -152,7 +192,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
             if (patient.owner_id) {
                 const ownerRes = await fetch(`/api/owners/${patient.owner_id}`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json", Accept: "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Accept": "application/json",
+                        "Authorization": `Bearer ${user?.token}`
+                    },
                     body: JSON.stringify({
                         name: data.owner_name,
                         phone: data.owner_phone,
@@ -188,7 +232,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
             const petRes = await fetch(`/api/pets/${patient.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user?.token}`
+                },
                 body: JSON.stringify(petPayload),
             });
 
@@ -293,10 +341,22 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size Category</label>
-                                        <div className="flex h-[34px] items-center rounded border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 dark:border-white/5 dark:bg-zinc-900/50 dark:text-zinc-300">
-                                            {calculatedSize}
-                                            <span className="ml-2 text-[9px] font-normal uppercase tracking-wider text-slate-400">Auto</span>
+                                        <div className={clsx(
+                                            "flex flex-col justify-center rounded border px-3 py-1 text-xs font-medium transition-colors h-[34px]",
+                                            isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                                        )}>
+                                            <div className="flex items-center justify-between">
+                                                <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-zinc-300")}>
+                                                    {calculatedSizeName}
+                                                </span>
+                                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Auto</span>
+                                            </div>
                                         </div>
+                                        {isMismatch && (
+                                            <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-500/80 leading-tight">
+                                                Breed default: {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 

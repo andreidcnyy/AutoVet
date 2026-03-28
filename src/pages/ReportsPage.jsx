@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
 import * as FiIcons from "react-icons/fi";
 import clsx from "clsx";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Simple SVG-based Line Chart component.
@@ -65,11 +66,11 @@ function SimpleBarChart({ data, width = 600, height = 250, color = "#6366f1" }) 
           return (
             <g key={i}>
               <rect x={x} y={y} width={barWidth} height={barHeight} fill={color} rx="4" />
-              <text 
-                x={x + barWidth / 2} 
-                y={height - 15} 
-                textAnchor="middle" 
-                fontSize="10" 
+              <text
+                x={x + barWidth / 2}
+                y={height - 15}
+                textAnchor="middle"
+                fontSize="10"
                 className="fill-slate-500 dark:fill-zinc-400"
               >
                 {String(d.item_name || d.name || "").substring(0, 10)}
@@ -86,14 +87,19 @@ function ReportsPage() {
   const [activeTab, setActiveTab] = useState("Sales");
   const [salesData, setSalesData] = useState({ revenue: [], topServices: [], volume: [] });
   const [patientData, setPatientData] = useState({ species: [], trends: [], demographics: {} });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user?.token) return;
     let isMounted = true;
     setIsLoading(true);
 
     const fetchData = async () => {
-      const headers = { 'Accept': 'application/json' };
+      const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${user.token}`
+      };
       try {
         if (activeTab === "Sales") {
           const [revenue, topServices, volume] = await Promise.all([
@@ -120,7 +126,7 @@ function ReportsPage() {
     fetchData();
 
     return () => { isMounted = false; };
-  }, [activeTab]);
+  }, [activeTab, user?.token]);
 
   const tabs = [
     { name: "Sales", icon: FiIcons.FiTrendingUp },
@@ -212,8 +218,8 @@ function ReportsPage() {
                 <FiIcons.FiBox className="w-12 h-12 text-slate-300 mb-4" />
                 <h3 className="text-lg font-bold mb-2">Inventory Status Summary</h3>
                 <p className="max-w-md text-slate-500 dark:text-zinc-400">Inventory reporting is integrated with our real-time stock monitoring system.</p>
-                <button 
-                  onClick={() => window.location.href='/inventory'}
+                <button
+                  onClick={() => window.location.href = '/inventory'}
                   className="mt-6 flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
                 >
                   Go to Inventory Management <FiIcons.FiArrowRight />

@@ -9,7 +9,7 @@ class SpeciesController extends Controller
 {
     public function index()
     {
-        return response()->json(Species::with('breeds')->get());
+        return response()->json(Species::with('breeds.defaultSizeCategory')->get());
     }
 
     public function store(Request $request)

@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "../../context/AuthContext";
 
 const clinicSchema = z.object({
   clinic_name: z.string().min(1, "Clinic Name is required").max(255),
@@ -20,6 +21,7 @@ const clinicSchema = z.object({
 export default function ClinicProfileTab() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const {
     register,
@@ -55,7 +57,13 @@ export default function ClinicProfileTab() {
   };
 
   useEffect(() => {
-    fetch("/api/settings")
+    if (!user?.token) return;
+    fetch("/api/settings", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         reset(data);
@@ -66,7 +74,7 @@ export default function ClinicProfileTab() {
         toast.error("Failed to load clinic settings.");
         setLoading(false);
       });
-  }, [reset, toast]);
+  }, [reset, toast, user?.token]);
 
   const onSubmit = async (data) => {
     try {
@@ -74,7 +82,8 @@ export default function ClinicProfileTab() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
         },
         body: JSON.stringify({ settings: data })
       });
