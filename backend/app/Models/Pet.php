@@ -14,8 +14,9 @@ class Pet extends Model
         parent::boot();
 
         static::saving(function ($pet) {
-            if ($pet->weight !== null) {
-                $range = WeightRange::where('status', 'Active')
+            if ($pet->weight !== null && $pet->species_id !== null) {
+                $range = WeightRange::where('species_id', $pet->species_id)
+                    ->where('status', 'Active')
                     ->where('min_weight', '<=', $pet->weight)
                     ->where(function ($query) use ($pet) {
                         $query->where('max_weight', '>=', $pet->weight)

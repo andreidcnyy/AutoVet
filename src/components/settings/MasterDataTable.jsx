@@ -4,7 +4,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
-export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, fieldConfig = {}, defaultSortBy = "name" }) {
+export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
   const toast = useToast();
   const { user } = useAuth();
   const userRole = user?.role?.toLowerCase();
@@ -30,6 +30,17 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [formData, setFormData] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
 
+  // For dynamic dropdowns
+  const [petSizeCategories, setPetSizeCategories] = useState([]);
+
+  useEffect(() => {
+    if (Object.keys(initialForm).includes('size_category_id')) {
+      fetch("/api/pet-size-categories")
+        .then(res => res.json())
+        .then(data => setPetSizeCategories(data.data || data));
+    }
+  }, [initialForm]);
+
   const fetchData = useCallback(async () => {
     // If no token, we can't fetch. But we don't set loading to false yet 
     // to avoid "No data found" flicker before AuthContext hydrates.
@@ -42,17 +53,18 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         sort_by: sortBy,
         sort_direction: sortDir,
         page: page.toString(),
-        per_page: "10"
+        per_page: "10",
+        ...extraParams
       });
       const url = `${apiUrl}?${query.toString()}`;
-      
+
       const res = await fetch(url, {
-        headers: { 
+        headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         }
       });
-      
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error(`[MasterDataTable] Error fetching "${title}":`, { status: res.status, body: errorText });
@@ -72,7 +84,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
     } finally {
       setLoading(false);
     }
-  }, [apiUrl, search, sortBy, sortDir, page, toast, title, user?.token]);
+  }, [apiUrl, search, sortBy, sortDir, page, toast, title]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchData(), 300);
@@ -82,10 +94,10 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
-      setFormData(item);
+      setFormData({ ...item });
     } else {
       setEditingItem(null);
-      setFormData(initialForm);
+      setFormData({ ...initialForm, ...extraParams });
     }
     setIsModalOpen(true);
   };
@@ -260,46 +272,29 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="space-y-4">
-              {Object.keys(initialForm).map(key => {
-                const config = fieldConfig?.[key];
-                const label = config?.label || key.replace('_', ' ');
-                
-                return (
-                  <div key={key}>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1 capitalize">{label}</label>
-                    
-                    {key === 'status' ? (
-                      <select
-                        value={formData[key] || "Active"}
-                        onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    ) : config?.type === 'select' ? (
-                      <select
-                        value={formData[key] || ""}
-                        onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
-                      >
-                        <option value="">— Select {label} —</option>
-                        {config.options?.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        required={config?.required !== false}
-                        type={config?.type || "text"}
-                        value={formData[key] === null || formData[key] === undefined ? "" : formData[key]}
-                        onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {Object.keys(initialForm).map(key => (
+                <div key={key}>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1 capitalize">{key.replace('_', ' ')}</label>
+                  {key === 'status' ? (
+                    <select
+                      value={formData[key]}
+                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  ) : (
+                    <input
+                      required
+                      type="text"
+                      value={formData[key]}
+                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    />
+                  )}
+                </div>
+              ))}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="text-sm font-medium text-slate-500">Cancel</button>
                 <button disabled={isSaving} type="submit" className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
@@ -313,3 +308,4 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
     </div>
   );
 }
+

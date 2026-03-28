@@ -26,8 +26,8 @@ export function generateCalendarGrid(currentDate, events = []) {
         const isCurrentMonth = isSameMonth(date, monthStart);
         const dateString = format(date, 'yyyy-MM-dd');
 
-        // Find events that match this exact date
-        const dayEvents = events.filter(e => e.date === dateString);
+        // Find events that match this exact date - add safe guard for events
+        const dayEvents = Array.isArray(events) ? events.filter(e => e.date === dateString) : [];
 
         return {
             date: date,
