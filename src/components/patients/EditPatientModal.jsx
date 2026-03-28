@@ -72,9 +72,12 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 .then(res => res.json())
                 .then(data => setSizeCategories(data.data || data))
                 .catch(console.error);
-            fetch("/api/weight-ranges?per_page=100")
+            fetch("/api/weight-ranges?per_page=100", { headers })
                 .then(res => res.json())
-                .then(data => setWeightRanges(data.data || data))
+                .then(data => {
+                    const ranges = data.data || data;
+                    if (Array.isArray(ranges)) setWeightRanges(ranges);
+                })
                 .catch(console.error);
         }
     }, [isOpen, user?.token]);

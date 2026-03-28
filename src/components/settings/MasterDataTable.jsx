@@ -4,7 +4,16 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
-export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
+export default function MasterDataTable({ 
+  title, 
+  description, 
+  apiUrl, 
+  columns, 
+  initialForm, 
+  defaultSortBy = "name",
+  extraParams = {},
+  fieldConfig = {}
+}) {
   const toast = useToast();
   const { user } = useAuth();
   const userRole = user?.role?.toLowerCase();

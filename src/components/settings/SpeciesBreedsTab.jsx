@@ -43,10 +43,21 @@ export default function SpeciesBreedsTab() {
   };
 
   const fetchSizeCategories = async () => {
+    if (!user?.token) return;
     try {
-      const res = await fetch("/api/pet-size-categories");
-      const data = await res.json();
-      setSizeCategories(data.data || data);
+      const res = await fetch("/api/pet-size-categories", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const cats = data.data || data;
+        if (Array.isArray(cats)) {
+          setSizeCategories(cats);
+        }
+      }
     } catch (err) {
       console.error("Failed to load size categories", err);
     }
@@ -54,7 +65,8 @@ export default function SpeciesBreedsTab() {
 
   useEffect(() => {
     fetchSpecies();
-  }, []);
+    fetchSizeCategories();
+  }, [user]);
 
   const handleAddSpecies = async (e) => {
     e.preventDefault();
@@ -133,8 +145,17 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/breeds", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ species_id: selectedSpecies.id, name: newBreedName.trim(), status: "Active" })
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ 
+          species_id: selectedSpecies.id, 
+          name: newBreedName.trim(), 
+          default_size_category_id: newBreedDefaultSize || null,
+          status: "Active" 
+        })
       });
       if (res.ok) {
         toast.success("Breed added.");
@@ -174,13 +195,24 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/breeds/${breed.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ species_id: breed.species_id, name: editBreedName.trim() })
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ 
+          species_id: breed.species_id, 
+          name: editBreedName.trim(),
+          default_size_category_id: editBreedDefaultSize || null
+        })
       });
       if (res.ok) {
         toast.success("Breed updated.");
         setEditingBreed(null);
         fetchSpecies();
+      } else {
+        const err = await res.json();
+        toast.error(err.message || "Failed to update breed.");
       }
     } catch {
       toast.error("Failed to update breed.");

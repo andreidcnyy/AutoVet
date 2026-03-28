@@ -74,12 +74,34 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [weightRanges, setWeightRanges] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
+  const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
-    fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
+    if (!user?.token) return;
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
+    fetch("/api/species", { headers }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setSpeciesList(data);
+    }).catch(console.error);
+    fetch("/api/pet-size-categories", { headers }).then(res => res.json()).then(data => {
+      const cats = data.data || data;
+      if (Array.isArray(cats)) setSizeCategories(cats);
+    }).catch(console.error);
+    fetch("/api/weight-ranges?per_page=100", { headers })
+        .then(res => res.json())
+        .then(data => {
+            const ranges = data.data || data;
+            if (Array.isArray(ranges)) setWeightRanges(ranges);
+        })
+        .catch(console.error);
     if (!initialOwnerId) {
-      fetch("/api/owners", { headers }).then(res => res.json()).then(setOwnersList).catch(console.error);
+      fetch("/api/owners", { headers }).then(res => res.json()).then(data => {
+         const owners = data.data || data;
+         if (Array.isArray(owners)) setOwnersList(owners);
+      }).catch(console.error);
     }
   }, [initialOwnerId, user?.token]);
 
