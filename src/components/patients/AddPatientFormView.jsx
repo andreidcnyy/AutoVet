@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { useAuth } from "../../context/AuthContext";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -73,16 +74,14 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [weightRanges, setWeightRanges] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
-  const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
 
   useEffect(() => {
     fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
     fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
-    fetch("/api/weight-ranges?per_page=100").then(res => res.json()).then(data => setWeightRanges(data.data || data)).catch(console.error);
     if (!initialOwnerId) {
-      fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
+      fetch("/api/owners", { headers }).then(res => res.json()).then(setOwnersList).catch(console.error);
     }
-  }, [initialOwnerId]);
+  }, [initialOwnerId, user?.token]);
 
   const {
     register,
@@ -105,7 +104,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const photoValue = watch("photo");
   const speciesIdValue = watch("species_id");
   const weightValue = watch("weight");
-  
+
   const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
   const availableBreeds = selectedSpecies?.breeds || [];
 
@@ -130,7 +129,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     if (!weight || !speciesId) return null;
     const w = parseFloat(weight);
     const ranges = weightRanges.filter(r => r.species_id?.toString() === speciesId.toString() && r.status === "Active");
-    
+
     if (ranges.length === 0) return null;
 
     const match = ranges.find(r => {
@@ -172,7 +171,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         if (!data.owner_name) throw new Error("Owner name is required for a new owner.");
         const ownerRes = await fetch("/api/owners", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          },
           body: JSON.stringify({
             name: data.owner_name,
             phone: data.owner_phone,
@@ -215,7 +218,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
       const res = await fetch("/api/pets", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(petPayload),
       });
 
@@ -225,7 +232,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       }
 
       const savedPet = await res.json();
-      
+
       onSave(savedPet);
     } catch (err) {
       setError(err.message);
@@ -320,7 +327,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Sex</label>
@@ -392,7 +399,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 <h3 className="flex items-center justify-between text-2xl font-bold text-slate-900 dark:text-zinc-50">
                   <span className="flex items-center gap-2"><FiUser className="h-6 w-6 text-blue-600" /> Owner Details</span>
                 </h3>
-                
+
                 <div className="flex gap-4 border-b border-slate-200 pb-4 dark:border-dark-border">
                   <button type="button" onClick={() => setIsNewOwner(true)} className={`flex items-center gap-2 pb-2 border-b-2 font-medium transition ${isNewOwner ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
                     <FiUserPlus /> Register New Owner
@@ -409,22 +416,22 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                       <input {...register("owner_name")} className={getInputClass(errors.owner_name)} placeholder="e.g. Jordan Miller" />
                       {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                     </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number *</label>
-                        <input 
-                          {...register("owner_phone")} 
-                          type="text"
-                          className={getInputClass(errors.owner_phone)} 
-                          placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
-                          onInput={(e) => {
-                            e.target.value = e.target.value.replace(/[^0-9+]/g, '');
-                            if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
-                              e.target.value = e.target.value.replace(/\+/g, '');
-                            }
-                          }}
-                        />
-                        {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
-                      </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number *</label>
+                      <input
+                        {...register("owner_phone")}
+                        type="text"
+                        className={getInputClass(errors.owner_phone)}
+                        placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                        onInput={(e) => {
+                          e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                          if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
+                            e.target.value = e.target.value.replace(/\+/g, '');
+                          }
+                        }}
+                      />
+                      {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
+                    </div>
                     <div className="lg:col-span-2">
                       <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>
                       <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} placeholder="owner@example.com" />
@@ -458,7 +465,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
             <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
               <LuFilePlus2 className="h-6 w-6 text-blue-600" /> Medical Information
             </h3>
-            
+
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Allergies</label>

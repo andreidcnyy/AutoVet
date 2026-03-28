@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 
 const inputBase =
@@ -49,6 +50,7 @@ const patientSchema = z.object({
 
 function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const toast = useToast();
+    const { user } = useAuth();
     const [error, setError] = useState(null);
     const photoInputRef = useRef(null);
     const [speciesList, setSpeciesList] = useState([]);
@@ -57,12 +59,16 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
 
     useEffect(() => {
-        if (isOpen) {
-            fetch("/api/species")
+        if (isOpen && user?.token) {
+            const headers = { 
+                "Accept": "application/json",
+                "Authorization": `Bearer ${user.token}`
+            };
+            fetch("/api/species", { headers })
                 .then(res => res.json())
                 .then(setSpeciesList)
                 .catch(console.error);
-            fetch("/api/pet-size-categories")
+            fetch("/api/pet-size-categories", { headers })
                 .then(res => res.json())
                 .then(data => setSizeCategories(data.data || data))
                 .catch(console.error);
@@ -71,7 +77,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 .then(data => setWeightRanges(data.data || data))
                 .catch(console.error);
         }
-    }, [isOpen]);
+    }, [isOpen, user?.token]);
 
     const {
         register,
@@ -186,7 +192,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
             if (patient.owner_id) {
                 const ownerRes = await fetch(`/api/owners/${patient.owner_id}`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json", Accept: "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Accept": "application/json",
+                        "Authorization": `Bearer ${user?.token}`
+                    },
                     body: JSON.stringify({
                         name: data.owner_name,
                         phone: data.owner_phone,
@@ -222,7 +232,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
             const petRes = await fetch(`/api/pets/${patient.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user?.token}`
+                },
                 body: JSON.stringify(petPayload),
             });
 

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import Toggle from "./Toggle";
 
 export default function SystemPreferencesTab() {
   const toast = useToast();
+  const { user } = useAuth();
   const [aiForecasting, setAiForecasting] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [cloudSync, setCloudSync] = useState(false);
@@ -11,7 +13,13 @@ export default function SystemPreferencesTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/settings")
+    if (!user?.token) return;
+    fetch("/api/settings", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
@@ -20,7 +28,7 @@ export default function SystemPreferencesTab() {
       .catch((err) => {
         setLoading(false);
       });
-  }, []);
+  }, [user?.token]);
 
   const toggleMaintenance = async () => {
     const newValue = !maintenanceMode;
@@ -28,7 +36,11 @@ export default function SystemPreferencesTab() {
     try {
       await fetch("/api/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ settings: { maintenance_mode: newValue ? 'true' : 'false' } })
       });
       toast.success(newValue ? "Maintenance Mode enabled." : "Maintenance Mode disabled.");

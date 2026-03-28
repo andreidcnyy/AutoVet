@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import {
   FiPhone,
@@ -20,6 +21,7 @@ import { LuPawPrint } from "react-icons/lu";
 
 function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddPatient, onDeleteOwner, onEditOwner, onOwnerEdited, onAddPet }) {
   const toast = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchValue, setSearchValue] = useState("");
@@ -41,6 +43,9 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
     try {
       const response = await fetch("/api/owners/import", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: formData,
       });
 

@@ -4,19 +4,26 @@ import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
 import * as Icons from "react-icons/fi";
+import { useAuth } from "../context/AuthContext";
 
 function DashboardPage() {
   const [apiStatus, setApiStatus] = useState(null);
   const [metrics, setMetrics] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user?.token) return;
     setIsLoading(true);
+    const headers = { 
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
     Promise.all([
-      fetch("/api/status").then(res => res.json()),
-      fetch("/api/dashboard/stats").then(res => res.json()),
-      fetch("/api/dashboard/notifications").then(res => res.json())
+      fetch("/api/status", { headers }).then(res => res.json()),
+      fetch("/api/dashboard/stats", { headers }).then(res => res.json()),
+      fetch("/api/dashboard/notifications", { headers }).then(res => res.json())
     ])
       .then(([status, statsData, notifData]) => {
         setApiStatus(status);
@@ -43,7 +50,7 @@ function DashboardPage() {
         console.error("Dashboard Fetch Error:", err);
         setIsLoading(false);
       });
-  }, []);
+  }, [user?.token]);
 
   const handleMarkAllRead = () => {
     setNotifications([]);

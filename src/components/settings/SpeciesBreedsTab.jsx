@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SpeciesBreedsTab() {
   const toast = useToast();
+  const { user } = useAuth();
   const [species, setSpecies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
-  
+
   const [newSpeciesName, setNewSpeciesName] = useState("");
   const [newBreedName, setNewBreedName] = useState("");
   const [newBreedDefaultSize, setNewBreedDefaultSize] = useState("");
-  
+
   const [editingSpecies, setEditingSpecies] = useState(null);
   const [editSpeciesName, setEditSpeciesName] = useState("");
   const [editingBreed, setEditingBreed] = useState(null);
@@ -20,8 +22,14 @@ export default function SpeciesBreedsTab() {
   const [sizeCategories, setSizeCategories] = useState([]);
 
   const fetchSpecies = async () => {
+    if (!user?.token) return;
     try {
-      const res = await fetch("/api/species");
+      const res = await fetch("/api/species", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setSpecies(data);
@@ -46,7 +54,6 @@ export default function SpeciesBreedsTab() {
 
   useEffect(() => {
     fetchSpecies();
-    fetchSizeCategories();
   }, []);
 
   const handleAddSpecies = async (e) => {
@@ -55,7 +62,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/species", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ name: newSpeciesName.trim(), status: "Active" })
       });
       if (res.ok) {
@@ -74,7 +85,13 @@ export default function SpeciesBreedsTab() {
   const handleDeleteSpecies = async (id) => {
     if (!window.confirm("Are you sure? This may affect linked pets.")) return;
     try {
-      const res = await fetch(`/api/species/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/species/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (res.ok) {
         toast.success("Species removed.");
         if (selectedSpecies?.id === id) setSelectedSpecies(null);
@@ -90,7 +107,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/species/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ name: editSpeciesName.trim() })
       });
       if (res.ok) {
@@ -98,7 +119,7 @@ export default function SpeciesBreedsTab() {
         setEditingSpecies(null);
         fetchSpecies();
         if (selectedSpecies?.id === id) {
-          setSelectedSpecies({...selectedSpecies, name: editSpeciesName.trim()});
+          setSelectedSpecies({ ...selectedSpecies, name: editSpeciesName.trim() });
         }
       }
     } catch {
@@ -113,18 +134,13 @@ export default function SpeciesBreedsTab() {
       const res = await fetch("/api/breeds", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ 
-          species_id: selectedSpecies.id, 
-          name: newBreedName.trim(), 
-          default_size_category_id: newBreedDefaultSize || null,
-          status: "Active" 
-        })
+        body: JSON.stringify({ species_id: selectedSpecies.id, name: newBreedName.trim(), status: "Active" })
       });
       if (res.ok) {
         toast.success("Breed added.");
         setNewBreedName("");
         setNewBreedDefaultSize("");
-        fetchSpecies(); 
+        fetchSpecies();
       } else {
         const err = await res.json();
         toast.error(err.message || "Failed to add breed.");
@@ -137,7 +153,13 @@ export default function SpeciesBreedsTab() {
   const handleDeleteBreed = async (id) => {
     if (!window.confirm("Delete this breed?")) return;
     try {
-      const res = await fetch(`/api/breeds/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/breeds/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (res.ok) {
         toast.success("Breed removed.");
         fetchSpecies();
@@ -153,11 +175,7 @@ export default function SpeciesBreedsTab() {
       const res = await fetch(`/api/breeds/${breed.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ 
-          species_id: breed.species_id, 
-          name: editBreedName.trim(),
-          default_size_category_id: editBreedDefaultSize || null
-        })
+        body: JSON.stringify({ species_id: breed.species_id, name: editBreedName.trim() })
       });
       if (res.ok) {
         toast.success("Breed updated.");
@@ -178,7 +196,7 @@ export default function SpeciesBreedsTab() {
       <section className="card-shell p-6">
         <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Species</h3>
         <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage base species (e.g., Canine, Feline).</p>
-        
+
         <form onSubmit={handleAddSpecies} className="mt-6 flex gap-2">
           <input
             type="text"
@@ -194,8 +212,8 @@ export default function SpeciesBreedsTab() {
 
         <ul className="mt-6 space-y-2">
           {species.map((s) => (
-            <li 
-              key={s.id} 
+            <li
+              key={s.id}
               className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${selectedSpecies?.id === s.id ? 'border-blue-500 bg-blue-50 dark:border-blue-500/50 dark:bg-blue-900/20' : 'border-slate-200 bg-white hover:border-blue-300 dark:border-dark-border dark:bg-dark-card'}`}
             >
               {editingSpecies === s.id ? (
@@ -211,23 +229,23 @@ export default function SpeciesBreedsTab() {
                   <button onClick={() => setEditingSpecies(null)} className="text-slate-400 hover:text-slate-600 p-1"><FiX /></button>
                 </div>
               ) : (
-                <div 
+                <div
                   className="cursor-pointer flex-1 font-medium text-slate-700 dark:text-zinc-200"
                   onClick={() => setSelectedSpecies(s)}
                 >
                   {s.name} <span className="text-xs text-slate-400 ml-2">({s.breeds?.length || 0} breeds)</span>
                 </div>
               )}
-              
+
               {editingSpecies !== s.id && (
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => { setEditingSpecies(s.id); setEditSpeciesName(s.name); }}
                     className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-dark-surface"
                   >
                     <FiEdit2 className="h-4 w-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDeleteSpecies(s.id)}
                     className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
                   >
@@ -246,7 +264,7 @@ export default function SpeciesBreedsTab() {
           {selectedSpecies ? `Breeds for ${selectedSpecies.name}` : 'Select a Species'}
         </h3>
         <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage associated breeds.</p>
-        
+
         {selectedSpecies && (
           <>
             <form onSubmit={handleAddBreed} className="mt-6 flex flex-col gap-3">
@@ -311,20 +329,20 @@ export default function SpeciesBreedsTab() {
                       )}
                     </div>
                   )}
-                  
+
                   {editingBreed !== b.id && (
                     <div className="flex gap-1">
-                      <button 
-                        onClick={() => { 
-                          setEditingBreed(b.id); 
-                          setEditBreedName(b.name); 
+                      <button
+                        onClick={() => {
+                          setEditingBreed(b.id);
+                          setEditBreedName(b.name);
                           setEditBreedDefaultSize(b.default_size_category_id || "");
                         }}
                         className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-dark-surface"
                       >
                         <FiEdit2 className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteBreed(b.id)}
                         className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
                       >

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiClock } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function VetScheduleTab() {
   const toast = useToast();
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +22,15 @@ export default function VetScheduleTab() {
   const [isAvailable, setIsAvailable] = useState(true);
 
   const fetchData = async () => {
+    if (!user?.token) return;
     try {
+      const headers = { 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      };
       const [usersRes, schedulesRes] = await Promise.all([
-        fetch("/api/users"),
-        fetch("/api/vet-schedules")
+        fetch("/api/users", { headers }),
+        fetch("/api/vet-schedules", { headers })
       ]);
       if (usersRes.ok && schedulesRes.ok) {
         const usersData = await usersRes.json();
@@ -52,7 +59,7 @@ export default function VetScheduleTab() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user?.token]);
 
   const handleAddSchedule = async (e) => {
     e.preventDefault();
@@ -72,7 +79,11 @@ export default function VetScheduleTab() {
     try {
       const res = await fetch("/api/vet-schedules", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -92,7 +103,13 @@ export default function VetScheduleTab() {
   const handleDeleteSchedule = async (id) => {
     if (!window.confirm("Remove this schedule?")) return;
     try {
-      const res = await fetch(`/api/vet-schedules/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/vet-schedules/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (res.ok) {
         toast.success("Schedule removed.");
         fetchData();

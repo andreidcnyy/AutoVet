@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 const inputBase =
     "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
@@ -30,6 +31,7 @@ const ownerSchema = z.object({
 
 function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
     const toast = useToast();
+    const { user } = useAuth();
     const [error, setError] = useState(null);
 
     const {
@@ -72,7 +74,11 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
         try {
             const response = await fetch(`/api/owners/${owner.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user?.token}`
+                },
                 body: JSON.stringify(data)
             });
 
