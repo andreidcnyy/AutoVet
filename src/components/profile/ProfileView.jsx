@@ -42,8 +42,16 @@ function ProfileView({ user, setUser }) {
     const roleValue = watch("role");
 
     useEffect(() => {
-        fetch("/api/profile")
+        if (!user?.token) return;
+
+        fetch("/api/profile", {
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${user.token}`
+            }
+        })
             .then(res => {
+                if (res.status === 401) throw new Error("Authentication failed. Please log in again.");
                 if (!res.ok) throw new Error("Backend server returned an error.");
                 return res.json();
             })
@@ -62,10 +70,12 @@ function ProfileView({ user, setUser }) {
             })
             .catch(err => {
                 console.error("Error fetching profile", err);
-                setFetchError("Could not connect to the database or backend server. Please ensure MySQL is running.");
+                setFetchError(err.message === "Authentication failed. Please log in again." 
+                    ? err.message 
+                    : "Could not load profile data. Please check your connection or ensure MySQL is running.");
                 setIsLoading(false);
             });
-    }, [reset]);
+    }, [user?.token, reset]);
 
     const handleImageUpload = (event) => {
         const file = event.target.files?.[0];
@@ -82,13 +92,18 @@ function ProfileView({ user, setUser }) {
     const onSubmit = (data) => {
         return fetch("/api/profile", {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": `Bearer ${user?.token}`
+            },
             body: JSON.stringify(data)
         })
             .then(async res => {
+                if (res.status === 401) throw new Error("Unauthorized. Please log in again.");
                 const response = await res.json();
                 if (res.ok && (response.status === "success" || response.message)) {
-                    toast.success("Profile saved successfully to database!");
+                    toast.success("Profile saved successfully!");
                     if (response.user && setUser) {
                         setUser(response.user);
                         // Also update localStorage as AuthContext does on login
@@ -100,7 +115,7 @@ function ProfileView({ user, setUser }) {
                     toast.error(response.error || "Error saving profile");
                 }
             })
-            .catch(err => toast.error("Network error saving profile: " + err.message));
+            .catch(err => toast.error("Error saving profile: " + err.message));
     };
 
     if (isLoading) {

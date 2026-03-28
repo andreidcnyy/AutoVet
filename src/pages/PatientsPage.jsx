@@ -3,10 +3,12 @@ import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 
 function PatientsPage() {
   const toast = useToast();
   const [view, setView] = useState("records");
+  const { user } = useAuth();
   const [owners, setOwners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
@@ -16,7 +18,10 @@ function PatientsPage() {
   const fetchOwners = () => {
     setIsLoading(true);
     fetch("/api/owners", {
-      headers: { "Accept": "application/json" }
+      headers: { 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user?.token}`
+      }
     })
       .then((res) => res.json())
       .then((data) => {
@@ -30,8 +35,10 @@ function PatientsPage() {
   };
 
   useEffect(() => {
-    fetchOwners();
-  }, []);
+    if (user?.token) {
+      fetchOwners();
+    }
+  }, [user?.token]);
 
   const handleSaveNewOwner = (newOwner) => {
     setOwners((prev) => [newOwner, ...prev]);
@@ -43,7 +50,10 @@ function PatientsPage() {
     try {
       await fetch(`/api/owners/${ownerId}`, { 
         method: "DELETE",
-        headers: { "Accept": "application/json" }
+        headers: { 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
       });
       setOwners((prev) => prev.filter((o) => o.id !== ownerId));
       setSelectedOwnerId(null);
@@ -94,7 +104,8 @@ function PatientsPage() {
                   method: "POST",
                   headers: { 
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user?.token}`
                   },
                   body: JSON.stringify(data),
                 });

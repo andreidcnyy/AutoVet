@@ -59,13 +59,24 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::apiResource('invoices', InvoiceController::class);
     Route::apiResource('services', ServiceController::class);
     
-    // Admin only resources
-    Route::apiResource('users', UserController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('service-categories', \App\Http\Controllers\ServiceCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('weight-ranges', WeightRangeController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('units-of-measure', UnitOfMeasureController::class)->middleware('role:Admin,Chief Veterinarian');
+    // Master Data Resources
+    // Read access for all authenticated users
+    Route::get('/inventory-categories', [App\Http\Controllers\InventoryCategoryController::class, 'index']);
+    Route::get('/service-categories', [App\Http\Controllers\ServiceCategoryController::class, 'index']);
+    Route::get('/pet-size-categories', [PetSizeCategoryController::class, 'index']);
+    Route::get('/weight-ranges', [WeightRangeController::class, 'index']);
+    Route::get('/units-of-measure', [UnitOfMeasureController::class, 'index']);
+
+    // Write access for Admin/Chief Veterinarian
+    Route::group(['middleware' => 'role:Admin,Chief Veterinarian'], function() {
+        Route::apiResource('inventory-categories', App\Http\Controllers\InventoryCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('service-categories', App\Http\Controllers\ServiceCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('weight-ranges', WeightRangeController::class)->except(['index', 'show']);
+        Route::apiResource('units-of-measure', UnitOfMeasureController::class)->except(['index', 'show']);
+        Route::apiResource('users', UserController::class);
+    });
+    
     Route::apiResource('species', SpeciesController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('breeds', BreedController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('vet-schedules', VetScheduleController::class);

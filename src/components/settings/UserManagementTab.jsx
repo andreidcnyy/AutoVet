@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
 
 export default function UserManagementTab() {
@@ -10,12 +11,19 @@ export default function UserManagementTab() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({ name: "", email: "", role: "Staff", status: "Active", password: "" });
 
   const fetchUsers = () => {
+    if (!user?.token) return;
     setLoading(true);
-    fetch("/api/users")
+    fetch("/api/users", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then(res => res.json())
       .then(data => { setUsers(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); setLoading(false); })
       .catch(err => { toast.error("Failed to load users"); setLoading(false); });
@@ -23,7 +31,7 @@ export default function UserManagementTab() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [user?.token]);
 
   const handleOpenModal = (user = null) => {
     if (user) {
@@ -55,7 +63,11 @@ export default function UserManagementTab() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to save user");
@@ -70,7 +82,13 @@ export default function UserManagementTab() {
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/users/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (!res.ok) throw new Error("Failed to delete");
       toast.success("User deleted");
       fetchUsers();

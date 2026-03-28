@@ -31,8 +31,9 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // You can generate a token here if using Sanctum or Passport
-        // For now, just return user data (never return password)
+        // Generate Sanctum API token
+        $token = $user->createToken('auth-token')->plainTextToken;
+
         return response()->json([
             'id' => $user->id,
             'name' => $user->name,
@@ -40,6 +41,7 @@ class AuthController extends Controller
             'role' => $user->role,
             'avatar' => $user->avatar,
             'status' => $user->status,
+            'token' => $token,
         ]);
     }
 }

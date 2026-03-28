@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiTrash2, FiPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ServiceManagementTab() {
   const toast = useToast();
@@ -12,6 +13,7 @@ export default function ServiceManagementTab() {
   const [weightRanges, setWeightRanges] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({ 
     name: "", 
@@ -26,8 +28,14 @@ export default function ServiceManagementTab() {
   });
 
   const fetchServices = () => {
+    if (!user?.token) return;
     setLoading(true);
-    fetch("/api/services")
+    fetch("/api/services", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then(res => res.json())
       .then(data => { 
         setServices(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); 
@@ -37,24 +45,30 @@ export default function ServiceManagementTab() {
   };
 
   useEffect(() => {
+    if (!user?.token) return;
     fetchServices();
     
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
+
     // Fetch categories from MDM
-    fetch("/api/service-categories")
+    fetch("/api/service-categories", { headers })
       .then(res => res.json())
       .then(data => setServiceCategories(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [])) 
       .catch(console.error);
 
-    fetch("/api/pet-size-categories")
+    fetch("/api/pet-size-categories", { headers })
       .then(res => res.json())
       .then(data => setPetSizes(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
       .catch(console.error);
 
-    fetch("/api/weight-ranges")
+    fetch("/api/weight-ranges", { headers })
       .then(res => res.json())
       .then(data => setWeightRanges(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
       .catch(console.error);
-  }, []);
+  }, [user?.token]);
 
   const handleOpenModal = (service = null) => {
     if (service) {
@@ -116,7 +130,11 @@ export default function ServiceManagementTab() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to save service");
@@ -131,7 +149,13 @@ export default function ServiceManagementTab() {
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this service?")) return;
     try {
-      const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/services/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (!res.ok) throw new Error("Failed to delete");
       toast.success("Service deleted");
       fetchServices();

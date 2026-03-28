@@ -1,6 +1,27 @@
+import { useState, useEffect } from "react";
 import MasterDataTable from "./MasterDataTable";
+import { useAuth } from "../../context/AuthContext";
 
 export default function MasterDataManagementTab() {
+  const { user } = useAuth();
+  const [sizeCategories, setSizeCategories] = useState([]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    fetch("/api/pet-size-categories", {
+      headers: { 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => res.json())
+      .then(result => {
+        const data = result.data || result || [];
+        setSizeCategories(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setSizeCategories([]));
+  }, [user?.token]);
+
   const categoryColumns = [
     { key: "name", label: "Category Name" },
     { 
@@ -113,6 +134,15 @@ export default function MasterDataManagementTab() {
             apiUrl="/api/weight-ranges"
             columns={weightRangeColumns}
             initialForm={{ label: "", min_weight: 0, max_weight: "", unit: "kg", size_category_id: "", status: "Active" }}
+            fieldConfig={{
+              min_weight: { type: "number", label: "Minimum Weight (kg)" },
+              max_weight: { type: "number", label: "Maximum Weight (kg)", required: false },
+              size_category_id: { 
+                type: "select", 
+                label: "Pet Size Category",
+                options: sizeCategories.map(sc => ({ value: sc.id, label: sc.name }))
+              }
+            }}
             defaultSortBy="min_weight"
           />
 

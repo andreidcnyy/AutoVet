@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SpeciesBreedsTab() {
   const toast = useToast();
+  const { user } = useAuth();
   const [species, setSpecies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
@@ -17,8 +19,14 @@ export default function SpeciesBreedsTab() {
   const [editBreedName, setEditBreedName] = useState("");
 
   const fetchSpecies = async () => {
+    if (!user?.token) return;
     try {
-      const res = await fetch("/api/species");
+      const res = await fetch("/api/species", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setSpecies(data);
@@ -33,7 +41,7 @@ export default function SpeciesBreedsTab() {
 
   useEffect(() => {
     fetchSpecies();
-  }, []);
+  }, [user?.token]);
 
   const handleAddSpecies = async (e) => {
     e.preventDefault();
@@ -41,7 +49,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/species", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ name: newSpeciesName.trim(), status: "Active" })
       });
       if (res.ok) {
@@ -60,7 +72,13 @@ export default function SpeciesBreedsTab() {
   const handleDeleteSpecies = async (id) => {
     if (!window.confirm("Are you sure? This may affect linked pets.")) return;
     try {
-      const res = await fetch(`/api/species/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/species/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (res.ok) {
         toast.success("Species removed.");
         if (selectedSpecies?.id === id) setSelectedSpecies(null);
@@ -76,7 +94,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/species/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ name: editSpeciesName.trim() })
       });
       if (res.ok) {
@@ -98,7 +120,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/breeds", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ species_id: selectedSpecies.id, name: newBreedName.trim(), status: "Active" })
       });
       if (res.ok) {
@@ -117,7 +143,13 @@ export default function SpeciesBreedsTab() {
   const handleDeleteBreed = async (id) => {
     if (!window.confirm("Delete this breed?")) return;
     try {
-      const res = await fetch(`/api/breeds/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/breeds/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (res.ok) {
         toast.success("Breed removed.");
         fetchSpecies();
@@ -132,7 +164,11 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/breeds/${breed.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({ species_id: breed.species_id, name: editBreedName.trim() })
       });
       if (res.ok) {

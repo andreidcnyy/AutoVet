@@ -25,6 +25,7 @@ import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "../../context/AuthContext";
 
 const viewModes = ["Month", "Week", "Day"];
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -49,6 +50,7 @@ function AppointmentsView() {
   const [appointments, setAppointments] = useState([]);
   const [aiForecast, setAiForecast] = useState(null);
   const [categories, setCategories] = useState([]);
+  const { user } = useAuth();
 
   // New state for interactivity
   const [activePanel, setActivePanel] = useState("booking"); // 'booking' | 'details'
@@ -90,36 +92,88 @@ function AppointmentsView() {
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
 
   const fetchAppointments = () => {
-    fetch("/api/appointments")
+    if (!user?.token) return;
+    fetch("/api/appointments", {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => setAppointments(data))
       .catch((err) => console.error("Error fetching appointments:", err));
   };
 
   useEffect(() => {
+    if (!user?.token) return;
     fetchAppointments();
 
-    fetch("/api/owners")
-      .then((res) => res.json())
-      .then((data) => setOwners(data))
-      .catch((err) => console.error("Error fetching owners:", err));
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
 
-    fetch("/api/pets")
+    fetch("/api/owners", { headers })
       .then((res) => res.json())
-      .then((data) => setPets(data))
-      .catch((err) => console.error("Error fetching pets:", err));
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error("Unexpected owners API response shape. Expected array, got:", typeof data, data);
+          setOwners([]);
+        } else {
+          setOwners(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching owners:", err);
+        setOwners([]);
+      });
 
-    fetch("/api/services")
+    fetch("/api/pets", { headers })
       .then((res) => res.json())
-      .then((data) => setServices(data))
-      .catch((err) => console.error("Error fetching services:", err));
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error("Unexpected pets API response shape. Expected array, got:", typeof data, data);
+          setPets([]);
+        } else {
+          setPets(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching pets:", err);
+        setPets([]);
+      });
 
-    fetch("/api/users")
+    fetch("/api/services", { headers })
       .then((res) => res.json())
-      .then((data) => setVets(data))
-      .catch((err) => console.error("Error fetching vets:", err));
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error("Unexpected services API response shape. Expected array, got:", typeof data, data);
+          setServices([]);
+        } else {
+          setServices(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching services:", err);
+        setServices([]);
+      });
 
-    fetch("/api/settings")
+    fetch("/api/users", { headers })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.error("Unexpected vets API response shape. Expected array, got:", typeof data, data);
+          setVets([]);
+        } else {
+          setVets(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching vets:", err);
+        setVets([]);
+      });
+
+    fetch("/api/settings", { headers })
       .then(res => res.json())
       .then(data => {
         const inv = data.inventory_categories ? JSON.parse(data.inventory_categories) : [];
@@ -129,11 +183,11 @@ function AppointmentsView() {
       .catch(() => setCategories([]));
 
     // Fetch initial AI forecast
-    fetch("/api/dashboard/appointment-forecast")
+    fetch("/api/dashboard/appointment-forecast", { headers })
       .then(res => res.json())
       .then(data => setAiForecast(data))
       .catch(() => { });
-  }, []);
+  }, [user?.token]);
 
   const handleReviewHints = () => {
     if (aiForecast) {
@@ -160,7 +214,11 @@ function AppointmentsView() {
 
       const response = await fetch("/api/appointments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload),
       });
 
@@ -196,7 +254,11 @@ function AppointmentsView() {
     try {
       const response = await fetch(`/api/appointments/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify({
           ...selectedAppointment,
           status,
@@ -221,7 +283,13 @@ function AppointmentsView() {
   const handleDeleteAppointment = async (id) => {
     if (!window.confirm("Are you sure you want to cancel/delete this appointment?")) return;
     try {
-      const response = await fetch(`/api/appointments/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/appointments/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (!response.ok) throw new Error("Failed to delete appointment");
       toast.success("Appointment Deleted");
       setActivePanel("booking");
@@ -375,226 +443,222 @@ function AppointmentsView() {
         {/* Dynamic Panel Content */}
         <aside 
           className={clsx(
-            "absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-[-20px_0_50px_-10px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] overflow-y-auto",
+            "absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-[-20px_0_50px_-10px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] flex flex-col h-full overflow-hidden",
             isDrawerOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
           {activePanel === "booking" ? (
-            <section className="p-8">
-              <div className="mb-8 flex items-center justify-between">
-                <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Schedule
-                  </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Add new clinical entry</p>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+              {/* Header & Fields Container */}
+              <div className="flex-1 p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
+                      <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Schedule
+                    </h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New clinical entry</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => reset()} className="h-8 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Clear</button>
+                    <button 
+                      type="button"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="h-8 w-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all"
+                    >
+                      <FiX className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => reset()} className="h-10 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Clear</button>
-                  <button 
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all"
+
+                <div className="space-y-4">
+                  <div className="space-y-4 rounded-xl border-2 border-slate-100 bg-slate-50/30 p-4 dark:border-dark-border dark:bg-dark-surface/30">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Owner Record</label>
+                        <div className="relative">
+                          <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={clsx(getQInputClass(false), "h-10 appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                            <option value="">— Select —</option>
+                            {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                          </select>
+                          <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Patient Identification *</label>
+                        <div className="relative">
+                          <select {...register("pet_id")} disabled={!selectedOwnerId} className={clsx(getQInputClass(errors.pet_id), "h-10 appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                            <option value="">— Select —</option>
+                            {Array.isArray(pets) && pets.filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species?.name})</option>)}
+                          </select>
+                          <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Service *</label>
+                        <div className="relative">
+                          <select {...register("service_id")} className={clsx(getQInputClass(errors.service_id), "h-10 appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                            <option value="">— Select —</option>
+                            {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                          <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Veterinarian</label>
+                        <div className="relative">
+                          <select {...register("vet_id")} className={clsx(getQInputClass(false), "h-10 appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                            <option value="">— Select —</option>
+                            {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
+                          </select>
+                          <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Date</label>
+                      <input type="date" {...register("date")} className={clsx(getQInputClass(errors.date), "h-10 font-bold bg-white dark:bg-dark-card")} />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Time</label>
+                      <input type="time" {...register("time")} className={clsx(getQInputClass(errors.time), "h-10 font-bold bg-white dark:bg-dark-card")} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-slate-400">Notes / Reason for Visit</label>
+                    <textarea {...register("notes")} className={clsx(getQInputClass(false), "bg-white dark:bg-dark-card h-20 py-2")} placeholder="Describe the reason..." rows={2}></textarea>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Footer */}
+              <div className="border-t border-slate-100 p-5 dark:border-dark-border bg-slate-50/30 dark:bg-dark-surface/30">
+                <button type="submit" disabled={isSubmitting} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all">
+                  <FiPlusCircle className="h-5 w-5" />
+                  {isSubmitting ? "Syncing..." : "Finalize Appointment"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Header & Details Container */}
+              <div className="flex-1 p-5">
+                <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-dark-border">
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
+                      <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Clinical Details
+                    </h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Internal record</p>
+                  </div>
+                  <button
+                    onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
+                    className="rounded-lg bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
                   >
                     <FiX className="h-5 w-5" />
                   </button>
                 </div>
-              </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-5 rounded-[2rem] border-2 border-slate-100 bg-slate-50/30 p-8 dark:border-dark-border dark:bg-dark-surface/30">
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Client / Owner Record</label>
-                    <div className="relative">
-                      <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
-                        <option value="">— Select Owner —</option>
-                        {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                      </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Patient / Pet Identification *</label>
-                    <div className="relative">
-                      <select {...register("pet_id")} disabled={!selectedOwnerId} className={clsx(getQInputClass(errors.pet_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
-                        <option value="">— Select Pet —</option>
-                        {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species?.name})</option>)}
-                      </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    </div>
-                    {errors.pet_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.pet_id.message}</p>}
-                  </div>
-
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Clinical Service *</label>
-                    <div className="relative">
-                      <select {...register("service_id")} className={clsx(getQInputClass(errors.service_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
-                        <option value="">— Select Service —</option>
-                        {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    </div>
-                    {errors.service_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.service_id.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Date</label>
-                    <input type="date" {...register("date")} className={clsx(getQInputClass(errors.date), "font-bold bg-white dark:bg-dark-card")} />
-                    {errors.date && <p className="mt-1 text-xs text-red-500 font-bold">{errors.date.message}</p>}
-                  </div>
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Time</label>
-                    <input type="time" {...register("time")} className={clsx(getQInputClass(errors.time), "font-bold bg-white dark:bg-dark-card")} />
-                    {errors.time && <p className="mt-1 text-xs text-red-500 font-bold">{errors.time.message}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Assigned Veterinarian</label>
-                  <div className="relative">
-                    <select {...register("vet_id")} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
-                      <option value="">— Select Vet —</option>
-                      {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-401" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Notes / Clinical Reason</label>
-                  <textarea {...register("notes")} className={clsx(getQInputClass(false), "bg-white dark:bg-dark-card min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea>
-                </div>
-
-                <button type="submit" disabled={isSubmitting} className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-blue-500/40 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all mt-4">
-                  <FiPlusCircle className="h-6 w-6" />
-                  {isSubmitting ? "Syncing..." : "Finalize Appointment"}
-                </button>
-              </form>
-            </section>
-          ) : (
-            <section className="p-0">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 p-8 dark:border-dark-border bg-white/80 dark:bg-dark-card/80 backdrop-blur-lg">
-                <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Clinical Details
-                  </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Internal record view</p>
-                </div>
-                <button
-                  onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
-                  className="rounded-2xl bg-slate-100 p-3 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
-                >
-                  <FiX className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="p-8 space-y-10">
-                <div className="flex items-start gap-6">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shadow-xl shadow-blue-500/10">
-                    <FiInfo className="h-10 w-10" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <h4 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
-                    <div className={clsx(
-                      "mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest shadow-lg",
-                      selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
-                        selectedAppointment?.status === "cancelled" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
-                          "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                    )}>
-                      {selectedAppointment?.status === "completed" && <FiCheckCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status === "cancelled" && <FiXCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status === "pending" && <FiAlertCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status || "pending"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 rounded-[2.5rem] border-2 border-slate-100 bg-slate-50/20 p-8 dark:border-dark-border dark:bg-dark-surface/10">
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiCalendar className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Date Scheduled</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiClock className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Arrival Time</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 italic">{selectedAppointment?.time?.substring(0, 5)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiUser className="h-6 w-6 text-blue-500" />
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shadow-lg shadow-blue-500/10">
+                      <FiInfo className="h-6 w-6" />
                     </div>
                     <div className="overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Patient & Guardian</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 truncate">
-                        {selectedAppointment?.pet?.name} <span className="mx-2 text-slate-300 font-normal">|</span> <span className="text-slate-500 dark:text-zinc-400">ID #{selectedAppointment?.pet?.owner_id}</span>
-                      </p>
+                      <h4 className="text-lg font-black tracking-tight text-slate-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
+                      <div className={clsx(
+                        "mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm",
+                        selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                          selectedAppointment?.status === "cancelled" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
+                            "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      )}>
+                        {selectedAppointment?.status === "completed" && <FiCheckCircle className="h-3 w-3" />}
+                        {selectedAppointment?.status === "cancelled" && <FiXCircle className="h-3 w-3" />}
+                        {selectedAppointment?.status === "pending" && <FiAlertCircle className="h-3 w-3" />}
+                        {selectedAppointment?.status || "pending"}
+                      </div>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4 rounded-xl border-2 border-slate-100 bg-slate-50/20 p-4 dark:border-dark-border dark:bg-dark-surface/10">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-dark-card flex items-center justify-center border border-slate-100 dark:border-dark-border">
+                        <FiCalendar className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                        <p className="text-[11px] font-black text-slate-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMM d, yyyy") : ""}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-dark-card flex items-center justify-center border border-slate-100 dark:border-dark-border">
+                        <FiClock className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Arrival</p>
+                        <p className="text-[11px] font-black text-slate-800 dark:text-zinc-100 italic">{selectedAppointment?.time?.substring(0, 5)}</p>
+                      </div>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-dark-card flex items-center justify-center border border-slate-100 dark:border-dark-border">
+                        <FiUser className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Patient & Guardian</p>
+                        <p className="text-[11px] font-black text-slate-800 dark:text-zinc-100 truncate">
+                          {selectedAppointment?.pet?.name} <span className="mx-1 text-slate-300">|</span> <span className="text-slate-500 dark:text-zinc-400">ID #{selectedAppointment?.pet?.owner_id}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedAppointment?.notes && (
+                    <div>
+                      <div className="rounded-xl bg-slate-50 p-4 text-xs font-medium leading-relaxed text-slate-600 dark:bg-dark-surface dark:text-zinc-400 italic border-l-4 border-blue-500/20">
+                        "{selectedAppointment.notes}"
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {selectedAppointment?.notes && (
-                  <div>
-                    <label className="mb-4 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Case Notes / Context</label>
-                    <div className="rounded-3xl bg-slate-50 p-6 text-md font-medium leading-relaxed text-slate-600 dark:bg-dark-surface dark:text-zinc-400 italic border-l-8 border-blue-500/20 dark:border-blue-400/10">
-                      "{selectedAppointment.notes}"
-                    </div>
-                  </div>
-                )}
-
-                <div className="pt-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 text-center mb-6">Security & Lifecycle Actions</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => handleStatusUpdate(selectedAppointment?.id, "completed")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95"
-                    >
-                      <FiCheckCircle className="h-6 w-6" />
-                      Close Case
-                    </button>
-                    <button
-                      onClick={() => handleStatusUpdate(selectedAppointment?.id, "cancelled")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-slate-100 text-sm font-black uppercase tracking-widest text-slate-700 shadow-xl shadow-slate-200/50 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
-                    >
-                      <FiXCircle className="h-6 w-6" />
-                      Discard
-                    </button>
-                  </div>
+              {/* Action Footer */}
+              <div className="border-t border-slate-100 p-5 dark:border-dark-border bg-slate-50/30 dark:bg-dark-surface/30">
+                <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => handleDeleteAppointment(selectedAppointment?.id)}
-                    className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl border-2 border-rose-100 text-sm font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-900/10 transition-all active:scale-95 mt-4"
+                    onClick={() => handleStatusUpdate(selectedAppointment?.id, "completed")}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95"
                   >
-                    <FiTrash2 className="h-6 w-6" />
-                    Purple heart Wipe
+                    <FiCheckCircle className="h-5 w-5" />
+                    Close
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate(selectedAppointment?.id, "cancelled")}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-100 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
+                  >
+                    <FiXCircle className="h-5 w-5" />
+                    Discard
                   </button>
                 </div>
+                <button
+                  onClick={() => handleDeleteAppointment(selectedAppointment?.id)}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-rose-100 text-xs font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-900/10 transition-all active:scale-95 mt-3"
+                >
+                  <FiTrash2 className="h-5 w-5" />
+                  Wipe Record
+                </button>
               </div>
-            </section>
+            </div>
           )}
 
-          {/* AI Insights in Drawer Footer */}
-          <section className="mt-auto border-t border-slate-100 bg-blue-50/30 p-8 dark:border-dark-border dark:bg-blue-600/5">
-            <div className="mb-4 inline-flex items-center gap-3 text-blue-700 dark:text-blue-400">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xl shadow-blue-500/40">
-                <LuSparkles className="h-5 w-5" />
-              </div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] italic">Forecaster Intelligence</p>
-            </div>
-            <p className="text-sm leading-relaxed text-slate-600 dark:text-blue-300/80 font-bold italic">{aiForecast?.insight || "Analyzing clinic data for scheduling trends..."}</p>
-            <button onClick={handleReviewHints} className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-              <FiBell className="h-4 w-4" />
-              Access planning matrix
-            </button>
-          </section>
+
         </aside>
       </div>
     </div>

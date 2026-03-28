@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
+import { useAuth } from "../../context/AuthContext";
 
 const STATUS_OPTIONS = ["In Stock", "Low Stock", "Expiring"];
 
@@ -30,17 +31,23 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const [categoryOptions, setCategoryOptions] = useState(["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"]);
     const [costPriceDisplay, setCostPriceDisplay] = useState("");
     const [sellingPriceDisplay, setSellingPriceDisplay] = useState("");
+    const { user } = useAuth();
 
     useEffect(() => {
-        if (isOpen) {
-            fetch("/api/settings")
+        if (isOpen && user?.token) {
+            fetch("/api/settings", {
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user.token}`
+                }
+            })
                 .then(res => res.json())
                 .then(data => {
                     if (data.inventory_categories) setCategoryOptions(JSON.parse(data.inventory_categories));
                 })
                 .catch(console.error);
         }
-    }, [isOpen]);
+    }, [isOpen, user?.token]);
 
     const {
         register,
@@ -76,7 +83,8 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Accept: "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${user?.token}`
                 },
                 body: JSON.stringify(data),
             });

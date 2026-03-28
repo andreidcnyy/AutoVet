@@ -11,7 +11,20 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem("user");
     if (stored) {
       try {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Robustness check: Ensure token exists in flattened structure
+        if (parsed && parsed.token) {
+          setUser(parsed);
+        } else if (parsed && parsed.user && parsed.user.token) {
+          // Migration: Flatten nested structure if found
+          const migrated = { ...parsed.user, token: parsed.user.token };
+          setUser(migrated);
+          localStorage.setItem("user", JSON.stringify(migrated));
+        } else {
+          // Invalid session: missing token
+          localStorage.removeItem("user");
+          setUser(null);
+        }
       } catch (e) {
         console.error("Failed to parse stored user", e);
         localStorage.removeItem("user");
@@ -20,9 +33,10 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = (data) => {
+    const userWithToken = { ...data, token: data.token }; 
+    setUser(userWithToken);
+    localStorage.setItem("user", JSON.stringify(userWithToken));
   };
 
   const logout = () => {

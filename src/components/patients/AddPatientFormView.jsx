@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { useAuth } from "../../context/AuthContext";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -72,14 +73,21 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [sizeCategories, setSizeCategories] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
-    fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
+    if (!user?.token) return;
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user.token}`
+    };
+
+    fetch("/api/species", { headers }).then(res => res.json()).then(setSpeciesList).catch(console.error);
+    fetch("/api/pet-size-categories", { headers }).then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
     if (!initialOwnerId) {
-      fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
+      fetch("/api/owners", { headers }).then(res => res.json()).then(setOwnersList).catch(console.error);
     }
-  }, [initialOwnerId]);
+  }, [initialOwnerId, user?.token]);
 
   const {
     register,
@@ -136,7 +144,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         if (!data.owner_name) throw new Error("Owner name is required for a new owner.");
         const ownerRes = await fetch("/api/owners", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          headers: { 
+            "Content-Type": "application/json", 
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          },
           body: JSON.stringify({
             name: data.owner_name,
             phone: data.owner_phone,
@@ -179,7 +191,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
       const res = await fetch("/api/pets", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(petPayload),
       });
 

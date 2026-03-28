@@ -16,6 +16,7 @@ import {
 import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
+import { useAuth } from "../../context/AuthContext";
 
 const categoryIcons = {
   Medicines: LuPill,
@@ -64,11 +65,18 @@ function InventoryView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchInventory = async () => {
+      if (!user?.token) return;
       try {
-        const response = await fetch("/api/inventory");
+        const response = await fetch("/api/inventory", {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user.token}`
+          }
+        });
         if (response.ok) {
           const data = await response.json();
           setInventoryRows(data);
@@ -80,14 +88,19 @@ function InventoryView() {
       }
     };
     fetchInventory();
-  }, []);
+  }, [user?.token]);
 
   const handleRunForecast = async () => {
     setIsSimulating(true);
     setShowAiAside(false);
     
     try {
-      const response = await fetch("/api/dashboard/inventory-forecast");
+      const response = await fetch("/api/dashboard/inventory-forecast", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (!response.ok) throw new Error("Failed to fetch forecast");
       const data = await response.json();
       setAiForecastData(data);
@@ -121,7 +134,13 @@ function InventoryView() {
     if (!window.confirm(`Are you sure you want to delete ${product.item_name}?`)) return;
 
     try {
-      const response = await fetch(`/api/inventory/${product.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/inventory/${product.id}`, { 
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
       if (!response.ok) throw new Error("Failed to delete product.");
 
       setInventoryRows((prev) => prev.filter((item) => item.id !== product.id));
