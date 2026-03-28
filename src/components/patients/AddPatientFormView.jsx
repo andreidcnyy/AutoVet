@@ -70,12 +70,15 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const photoInputRef = useRef(null);
   const [speciesList, setSpeciesList] = useState([]);
   const [sizeCategories, setSizeCategories] = useState([]);
+  const [weightRanges, setWeightRanges] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
   const [isNewOwner, setIsNewOwner] = useState(!initialOwnerId);
+  const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
 
   useEffect(() => {
     fetch("/api/species").then(res => res.json()).then(setSpeciesList).catch(console.error);
     fetch("/api/pet-size-categories").then(res => res.json()).then(data => setSizeCategories(data.data || data)).catch(console.error);
+    fetch("/api/weight-ranges?per_page=100").then(res => res.json()).then(data => setWeightRanges(data.data || data)).catch(console.error);
     if (!initialOwnerId) {
       fetch("/api/owners").then(res => res.json()).then(setOwnersList).catch(console.error);
     }
@@ -106,16 +109,49 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
   const availableBreeds = selectedSpecies?.breeds || [];
 
-  const calculateSize = (w) => {
-    if (!w || isNaN(w)) return "N/A";
-    const val = parseFloat(w);
-    if (val <= 5) return "Small";
-    if (val <= 10) return "Medium";
-    if (val <= 20) return "Large";
-    return "Giant";
+  const breedIdValue = watch("breed_id");
+
+  useEffect(() => {
+    if (breedIdValue && speciesIdValue) {
+      const selectedBreed = availableBreeds.find(b => b.id.toString() === breedIdValue.toString());
+      if (selectedBreed?.default_size_category_id) {
+        setBreedSuggestedSizeId(selectedBreed.default_size_category_id);
+        // Only auto-fill if weight is not yet entered or size is not set
+        if (!weightValue) {
+          setValue("size_category_id", selectedBreed.default_size_category_id.toString());
+        }
+      } else {
+        setBreedSuggestedSizeId(null);
+      }
+    }
+  }, [breedIdValue, speciesIdValue, availableBreeds, setValue, weightValue]);
+
+  const calculateDynamicSize = (weight, speciesId) => {
+    if (!weight || !speciesId) return null;
+    const w = parseFloat(weight);
+    const ranges = weightRanges.filter(r => r.species_id?.toString() === speciesId.toString() && r.status === "Active");
+    
+    if (ranges.length === 0) return null;
+
+    const match = ranges.find(r => {
+      const min = r.min_weight || 0;
+      const max = r.max_weight || Infinity;
+      return w >= min && w <= max;
+    });
+
+    return match ? match.size_category_id : null;
   };
 
-  const calculatedSize = calculateSize(weightValue);
+  const calculatedSizeId = calculateDynamicSize(weightValue, speciesIdValue);
+  const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || "N/A";
+
+  useEffect(() => {
+    if (calculatedSizeId) {
+      setValue("size_category_id", calculatedSizeId.toString());
+    }
+  }, [calculatedSizeId, setValue]);
+
+  const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -325,9 +361,21 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Category</label>
-                  <div className="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700 dark:border-white/5 dark:bg-zinc-900/50 dark:text-zinc-300">
-                    {calculatedSize}
-                    <span className="ml-2 text-[10px] font-normal uppercase tracking-wider text-slate-400">Auto</span>
+                  <div className={clsx(
+                    "flex flex-col justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                    isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-zinc-300")}>
+                        {calculatedSizeName}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Weight-Based</span>
+                    </div>
+                    {isMismatch && (
+                      <p className="mt-1 text-[11px] font-normal text-amber-600 dark:text-amber-500/80 leading-tight">
+                        Note: Breed default is {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name || "different"}.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

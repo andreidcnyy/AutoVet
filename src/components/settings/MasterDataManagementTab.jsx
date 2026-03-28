@@ -1,4 +1,5 @@
 import MasterDataTable from "./MasterDataTable";
+import SpeciesWeightRanges from "./SpeciesWeightRanges";
 
 export default function MasterDataManagementTab() {
   const categoryColumns = [
@@ -107,14 +108,13 @@ export default function MasterDataManagementTab() {
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 
-          <MasterDataTable 
-            title="Weight Ranges"
-            description="Define weight tiers for weight-based service pricing."
-            apiUrl="/api/weight-ranges"
-            columns={weightRangeColumns}
-            initialForm={{ label: "", min_weight: 0, max_weight: "", unit: "kg", size_category_id: "", status: "Active" }}
-            defaultSortBy="min_weight"
-          />
+          <section id="weight-ranges-manager">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Weight-Based Classification</h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400">Configure species-specific weight tiers to automate size categorization for pricing.</p>
+            </div>
+            <SpeciesWeightRanges />
+          </section>
 
           <div className="h-px bg-slate-200 dark:bg-dark-border" />
 

@@ -3,7 +3,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChev
 import { useToast } from "../../context/ToastContext";
 import clsx from "clsx";
 
-export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
+export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name", extraParams = {} }) {
   const toast = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +18,17 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [formData, setFormData] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
 
+  // For dynamic dropdowns
+  const [petSizeCategories, setPetSizeCategories] = useState([]);
+
+  useEffect(() => {
+    if (Object.keys(initialForm).includes('size_category_id')) {
+        fetch("/api/pet-size-categories")
+            .then(res => res.json())
+            .then(data => setPetSizeCategories(data.data || data));
+    }
+  }, [initialForm]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -26,7 +37,8 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         sort_by: sortBy,
         sort_direction: sortDir,
         page: page.toString(),
-        per_page: "10"
+        per_page: "10",
+        ...extraParams
       });
       const res = await fetch(`${apiUrl}?${query.toString()}`);
       const result = await res.json();
@@ -41,7 +53,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
     } finally {
       setLoading(false);
     }
-  }, [apiUrl, search, sortBy, sortDir, page, toast, title]);
+  }, [apiUrl, search, sortBy, sortDir, page, toast, title, JSON.stringify(extraParams)]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchData(), 300);
@@ -51,10 +63,10 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
-      setFormData(item);
+      setFormData({ ...item });
     } else {
       setEditingItem(null);
-      setFormData(initialForm);
+      setFormData({ ...initialForm, ...extraParams });
     }
     setIsModalOpen(true);
   };
@@ -201,30 +213,47 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
               <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-50">{editingItem ? `Edit ${title.slice(0, -1)}` : `Add ${title.slice(0, -1)}`}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><FiX size={20} /></button>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              {Object.keys(initialForm).map(key => (
-                <div key={key}>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1 capitalize">{key.replace('_', ' ')}</label>
-                  {key === 'status' ? (
-                    <select 
-                      value={formData[key]} 
-                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  ) : (
-                    <input 
-                      required
-                      type="text" 
-                      value={formData[key]} 
-                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
-                    />
-                  )}
-                </div>
-              ))}
+            <form onSubmit={handleSave} className="space-y-4 text-left">
+              {Object.keys(initialForm).map(key => {
+                if (key === 'species_id') return null; // Hidden field
+
+                return (
+                  <div key={key}>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1 capitalize">{key.replace('_', ' ')}</label>
+                    {key === 'status' ? (
+                      <select 
+                        value={formData[key]} 
+                        onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    ) : key === 'size_category_id' ? (
+                      <select 
+                        required
+                        value={formData[key]} 
+                        onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      >
+                        <option value="">Select Size...</option>
+                        {petSizeCategories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        required={key !== 'max_weight'}
+                        type={key.includes('weight') ? 'number' : 'text'}
+                        step="0.01"
+                        value={formData[key] === null ? "" : formData[key]} 
+                        onChange={e => setFormData({ ...formData, [key]: e.target.value === "" && key === 'max_weight' ? null : e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      />
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="text-sm font-medium text-slate-500">Cancel</button>
                 <button disabled={isSaving} type="submit" className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
@@ -238,3 +267,4 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
     </div>
   );
 }
+

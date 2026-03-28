@@ -9,7 +9,7 @@ class BreedController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Breed::with('species');
+        $query = Breed::with(['species', 'defaultSizeCategory']);
         if ($request->has('species_id')) {
             $query->where('species_id', $request->species_id);
         }
@@ -20,29 +20,31 @@ class BreedController extends Controller
     {
         $validated = $request->validate([
             'species_id' => 'required|exists:species,id',
+            'default_size_category_id' => 'nullable|exists:pet_size_categories,id',
             'name' => 'required|string',
             'status' => 'nullable|string'
         ]);
 
         $breed = Breed::create($validated);
-        return response()->json($breed->load('species'), 201);
+        return response()->json($breed->load(['species', 'defaultSizeCategory']), 201);
     }
 
     public function show(Breed $breed)
     {
-        return response()->json($breed->load('species'));
+        return response()->json($breed->load(['species', 'defaultSizeCategory']));
     }
 
     public function update(Request $request, Breed $breed)
     {
         $validated = $request->validate([
             'species_id' => 'required|exists:species,id',
+            'default_size_category_id' => 'nullable|exists:pet_size_categories,id',
             'name' => 'required|string',
             'status' => 'nullable|string'
         ]);
 
         $breed->update($validated);
-        return response()->json($breed->load('species'));
+        return response()->json($breed->load(['species', 'defaultSizeCategory']));
     }
 
     public function destroy(Breed $breed)
