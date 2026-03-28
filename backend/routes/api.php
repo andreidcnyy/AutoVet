@@ -70,6 +70,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::apiResource('breeds', BreedController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('vet-schedules', VetScheduleController::class);
     Route::apiResource('owners', OwnerController::class);
+    Route::apiResource('pets', \App\Http\Controllers\PetController::class);
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');

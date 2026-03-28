@@ -53,7 +53,6 @@ function AppointmentsView() {
   // New state for interactivity
   const [activePanel, setActivePanel] = useState("booking"); // 'booking' | 'details'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const {
     register,
@@ -92,8 +91,20 @@ function AppointmentsView() {
   const fetchAppointments = () => {
     fetch("/api/appointments")
       .then((res) => res.json())
-      .then((data) => setAppointments(data))
-      .catch((err) => console.error("Error fetching appointments:", err));
+      .then((data) => {
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setAppointments(data);
+        } else if (data && typeof data === "object" && Array.isArray(data.appointments)) {
+          setAppointments(data.appointments);
+        } else {
+          setAppointments([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching appointments:", err);
+        setAppointments([]);
+      });
   };
 
   useEffect(() => {
@@ -101,23 +112,35 @@ function AppointmentsView() {
 
     fetch("/api/owners")
       .then((res) => res.json())
-      .then((data) => setOwners(data))
-      .catch((err) => console.error("Error fetching owners:", err));
+      .then((data) => setOwners(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Error fetching owners:", err);
+        setOwners([]);
+      });
 
     fetch("/api/pets")
       .then((res) => res.json())
-      .then((data) => setPets(data))
-      .catch((err) => console.error("Error fetching pets:", err));
+      .then((data) => setPets(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Error fetching pets:", err);
+        setPets([]);
+      });
 
     fetch("/api/services")
       .then((res) => res.json())
-      .then((data) => setServices(data))
-      .catch((err) => console.error("Error fetching services:", err));
+      .then((data) => setServices(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Error fetching services:", err);
+        setServices([]);
+      });
 
     fetch("/api/users")
       .then((res) => res.json())
-      .then((data) => setVets(data))
-      .catch((err) => console.error("Error fetching vets:", err));
+      .then((data) => setVets(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Error fetching vets:", err);
+        setVets([]);
+      });
 
     fetch("/api/settings")
       .then(res => res.json())
@@ -171,7 +194,6 @@ function AppointmentsView() {
 
       toast.success("Appointment Scheduled!");
       reset();
-      setIsDrawerOpen(false);
       fetchAppointments();
     } catch (err) {
       toast.error(err.message);
@@ -182,14 +204,12 @@ function AppointmentsView() {
     setValue("date", entry.dateString);
     setActivePanel("booking");
     setSelectedAppointment(null);
-    setIsDrawerOpen(true);
   };
 
   const handleAppointmentClick = (event, appointment) => {
     event.stopPropagation();
     setSelectedAppointment(appointment);
     setActivePanel("details");
-    setIsDrawerOpen(true);
   };
 
   const handleStatusUpdate = async (id, status) => {
@@ -226,7 +246,6 @@ function AppointmentsView() {
       toast.success("Appointment Deleted");
       setActivePanel("booking");
       setSelectedAppointment(null);
-      setIsDrawerOpen(false);
       fetchAppointments();
     } catch (err) {
       toast.error(err.message);
@@ -238,20 +257,20 @@ function AppointmentsView() {
   const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
 
   return (
-    <div className="relative min-h-screen">
-      {/* ── Main Full-Width Calendar ── */}
-      <div className="w-full">
-        <section className="card-shell overflow-hidden border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-5 dark:border-dark-border bg-white/50 dark:bg-dark-card/50 backdrop-blur-md">
-            <div className="inline-flex rounded-2xl bg-slate-100 p-1.5 dark:bg-dark-surface shadow-inner">
+    <div className="flex flex-col gap-6 lg:flex-row">
+      {/* ── Left Column: Calendar ── */}
+      <div className="flex-1 min-w-0">
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-colors duration-300 dark:border-dark-border dark:bg-dark-card">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 p-5 transition-colors duration-300 dark:border-dark-border">
+            <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-dark-surface">
               {viewModes.map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setActiveViewMode(mode)}
                   className={clsx(
-                    "rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest transition-all",
-                    activeViewMode === mode 
-                      ? "bg-white text-blue-600 shadow-lg dark:bg-dark-card dark:text-blue-400 scale-105" 
+                    "rounded-lg px-5 py-2 text-xs font-bold uppercase tracking-tight transition-all",
+                    activeViewMode === mode
+                      ? "bg-white text-blue-600 shadow-sm dark:bg-dark-card dark:text-blue-400"
                       : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                   )}
                 >
@@ -260,37 +279,39 @@ function AppointmentsView() {
               ))}
             </div>
 
-            <div className="inline-flex items-center gap-4">
-              <button
-                onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-                className="rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-md dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface transition-all active:scale-90"
-              >
-                <FiChevronLeft className="h-5 w-5" />
-              </button>
-              <p className="min-w-[200px] text-center text-2xl font-black tracking-tighter text-slate-900 dark:text-zinc-100 uppercase italic">
-                {format(currentDate, "MMMM yyyy")}
-              </p>
-              <button
-                onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-                className="rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-md dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface transition-all active:scale-90"
-              >
-                <FiChevronRight className="h-5 w-5" />
-              </button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
+                >
+                  <FiChevronLeft className="h-4 w-4" />
+                </button>
+                <h2 className="min-w-[140px] text-center text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100 italic">
+                  {format(currentDate, "MMMM yyyy")}
+                </h2>
+                <button
+                  onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
+                >
+                  <FiChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50 dark:border-dark-border dark:bg-dark-surface/30">
+          <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50 dark:border-dark-border/50 dark:bg-dark-surface/30">
             {weekDays.map((day) => (
               <div
                 key={day}
-                className="border-r border-slate-200 px-3 py-4 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 last:border-r-0 dark:border-dark-border"
+                className="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400"
               >
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-dark-border">
+          <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 transition-colors duration-300 dark:divide-dark-border/50">
             {calendarDays.map((entry, index) => {
               const isToday = entry.dateString === format(new Date(), "yyyy-MM-dd");
               return (
@@ -298,7 +319,7 @@ function AppointmentsView() {
                   key={`${entry.day}-${index}`}
                   onClick={() => handleDayClick(entry)}
                   className={clsx(
-                    "group relative min-h-[160px] border-b border-r border-slate-200 p-3 last:border-r-0 transition-all hover:bg-blue-50/30 dark:border-dark-border dark:hover:bg-blue-900/5 cursor-pointer",
+                    "group relative min-h-[140px] p-2 transition-all hover:bg-blue-50/30 dark:hover:bg-blue-500/5 cursor-pointer",
                     !entry.inMonth && "bg-slate-50/20 dark:bg-dark-surface/10 opacity-40",
                     isToday && "bg-blue-50/50 dark:bg-blue-900/10"
                   )}
@@ -306,48 +327,43 @@ function AppointmentsView() {
                   <div className="flex items-center justify-between">
                     <span
                       className={clsx(
-                        "inline-flex h-8 w-8 items-center justify-center rounded-xl text-sm font-black transition-all group-hover:scale-110",
+                        "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
                         isToday
-                          ? "bg-blue-600 text-white shadow-xl shadow-blue-500/40 rotate-12"
-                          : (entry.inMonth ? "text-slate-800 dark:text-zinc-200" : "text-slate-400 dark:text-zinc-600")
+                          ? "bg-blue-600 text-white shadow-lg"
+                          : (entry.inMonth ? "text-slate-700 dark:text-zinc-300" : "text-slate-400 dark:text-zinc-600")
                       )}
                     >
                       {entry.day}
                     </span>
                     {entry.events.length > 0 && (
-                      <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 bg-blue-50 px-2 py-0.5 rounded-lg dark:bg-blue-900/20 italic">
-                        {entry.events.length} Appt{entry.events.length > 1 ? 's' : ''}
+                      <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md dark:bg-blue-900/20 italic">
+                        {entry.events.length}
                       </span>
                     )}
                   </div>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-2 space-y-1.5">
                     {entry.events.map((event) => {
                       const statusColors = {
-                        pending: "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 shadow-amber-200/20",
-                        completed: "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 shadow-emerald-200/20",
-                        cancelled: "border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300 shadow-rose-200/20",
+                        pending: "border-amber-400/50 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
+                        completed: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300",
+                        cancelled: "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300",
                       };
-                      const currentColor = statusColors[event.status] || "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
+                      const currentColor = statusColors[event.status] || "border-blue-400/50 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
 
                       return (
                         <article
                           key={event.id}
                           onClick={(e) => handleAppointmentClick(e, event)}
                           className={clsx(
-                            "rounded-xl border-l-[6px] px-3 py-2 text-[11px] font-black shadow-lg transition-all hover:scale-[1.03] hover:shadow-xl active:scale-95 group/appt",
+                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:translate-x-1 group/appt",
                             currentColor
                           )}
                         >
-                          <div className="flex items-center justify-between gap-1 overflow-hidden">
-                            <span className="truncate opacity-70 italic">{event.time?.substring(0, 5)}</span>
-                            <span className="truncate flex-1 text-right uppercase tracking-tight">{event.title}</span>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="truncate flex-1 uppercase">{event.title}</span>
+                            <span className="opacity-70 whitespace-nowrap">{event.time?.substring(0, 5)}</span>
                           </div>
-                          {event.pet && (
-                            <p className="mt-1 truncate text-[9px] opacity-60 uppercase tracking-widest flex items-center gap-1">
-                              <span className="text-[12px]">🐾</span> {event.pet.name}
-                            </p>
-                          )}
                         </article>
                       );
                     })}
@@ -359,184 +375,199 @@ function AppointmentsView() {
         </section>
       </div>
 
-      {/* ── Slide-Over Drawer ── */}
-      <div 
-        className={clsx(
-          "fixed inset-0 z-[60] transition-opacity duration-500 ease-in-out",
-          isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-      >
-        {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-          onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
-        />
-
-        {/* Dynamic Panel Content */}
-        <aside 
-          className={clsx(
-            "absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-[-20px_0_50px_-10px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] overflow-y-auto",
-            isDrawerOpen ? "translate-x-0" : "translate-x-full"
-          )}
-        >
+      {/* ── Right Column: Side Action Panel ── */}
+      <aside className="w-full shrink-0 lg:w-[420px]">
+        <div className="sticky top-[104px] overflow-hidden rounded-3xl border border-slate-200 bg-white transition-colors duration-300 dark:border-dark-border dark:bg-dark-card shadow-sm">
           {activePanel === "booking" ? (
-            <section className="p-8">
-              <div className="mb-8 flex items-center justify-between">
+            <section className="p-6">
+              <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Schedule
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 uppercase">
+                    Book Appointment
                   </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Add new clinical entry</p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => reset()} className="h-10 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Clear</button>
-                  <button 
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all"
-                  >
-                    <FiX className="h-5 w-5" />
-                  </button>
-                </div>
+                <button 
+                  onClick={() => {
+                    reset();
+                    setSelectedOwnerId("");
+                    setSelectedAppointment(null);
+                  }} 
+                  className="text-[11px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                >
+                  Clear
+                </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-5 rounded-[2rem] border-2 border-slate-100 bg-slate-50/30 p-8 dark:border-dark-border dark:bg-dark-surface/30">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <div className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-dark-border/50 dark:bg-dark-surface/20">
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Client / Owner Record</label>
+                    <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Client / Owner</label>
                     <div className="relative">
-                      <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                      <select 
+                        value={selectedOwnerId} 
+                        onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} 
+                        className={clsx(getQInputClass(false), "appearance-none pr-10 bg-white dark:bg-dark-surface")}
+                      >
                         <option value="">— Select Owner —</option>
                         {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Patient / Pet Identification *</label>
+                    <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Patient / Pet *</label>
                     <div className="relative">
-                      <select {...register("pet_id")} disabled={!selectedOwnerId} className={clsx(getQInputClass(errors.pet_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                      <select 
+                        {...register("pet_id")} 
+                        disabled={!selectedOwnerId} 
+                        className={clsx(getQInputClass(errors.pet_id), "appearance-none pr-10 bg-white dark:bg-dark-surface")}
+                      >
                         <option value="">— Select Pet —</option>
                         {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species?.name})</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     </div>
-                    {errors.pet_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.pet_id.message}</p>}
+                    {errors.pet_id && <p className="mt-1 text-[10px] text-red-500 font-medium italic">{errors.pet_id.message}</p>}
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Clinical Service *</label>
+                    <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Service *</label>
                     <div className="relative">
-                      <select {...register("service_id")} className={clsx(getQInputClass(errors.service_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                      <select 
+                        {...register("service_id")} 
+                        className={clsx(getQInputClass(errors.service_id), "appearance-none pr-10 bg-white dark:bg-dark-surface")}
+                      >
                         <option value="">— Select Service —</option>
                         {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     </div>
-                    {errors.service_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.service_id.message}</p>}
+                    {errors.service_id && <p className="mt-1 text-[10px] text-red-500 font-medium italic">{errors.service_id.message}</p>}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Date</label>
-                    <input type="date" {...register("date")} className={clsx(getQInputClass(errors.date), "font-bold bg-white dark:bg-dark-card")} />
-                    {errors.date && <p className="mt-1 text-xs text-red-500 font-bold">{errors.date.message}</p>}
+                    <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Date</label>
+                    <input type="date" {...register("date")} className={clsx(getQInputClass(errors.date), "bg-white dark:bg-dark-surface")} />
                   </div>
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Time</label>
-                    <input type="time" {...register("time")} className={clsx(getQInputClass(errors.time), "font-bold bg-white dark:bg-dark-card")} />
-                    {errors.time && <p className="mt-1 text-xs text-red-500 font-bold">{errors.time.message}</p>}
+                    <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Time</label>
+                    <input type="time" {...register("time")} className={clsx(getQInputClass(errors.time), "bg-white dark:bg-dark-surface")} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Assigned Veterinarian</label>
+                  <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Assign Vet</label>
                   <div className="relative">
-                    <select {...register("vet_id")} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
+                    <select {...register("vet_id")} className={clsx(getQInputClass(false), "appearance-none pr-10 bg-white dark:bg-dark-surface")}>
                       <option value="">— Select Vet —</option>
                       {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
                     </select>
-                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-401" />
+                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Notes / Clinical Reason</label>
-                  <textarea {...register("notes")} className={clsx(getQInputClass(false), "bg-white dark:bg-dark-card min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea>
+                  <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-slate-400">Notes / Reason</label>
+                  <textarea 
+                    {...register("notes")} 
+                    className={clsx(getQInputClass(false), "bg-white dark:bg-dark-surface min-h-[100px] py-3")} 
+                    placeholder="e.g. Limping on back leg..." 
+                    rows={3}
+                  ></textarea>
                 </div>
 
-                <button type="submit" disabled={isSubmitting} className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-blue-500/40 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all mt-4">
-                  <FiPlusCircle className="h-6 w-6" />
-                  {isSubmitting ? "Syncing..." : "Finalize Appointment"}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-[13px] font-bold uppercase tracking-wider text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all"
+                >
+                  <FiPlusCircle className="h-5 w-5" />
+                  {isSubmitting ? "Syncing..." : "Book Appointment"}
                 </button>
               </form>
+
+              {aiForecast && (
+                <div className="mt-8 rounded-2xl bg-blue-50/50 p-4 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-900/30">
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-2">
+                    <LuSparkles className="h-4 w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Forecaster</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-600 dark:text-blue-300/70 italic">
+                    {aiForecast.insight}
+                  </p>
+                </div>
+              )}
             </section>
           ) : (
-            <section className="p-0">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 p-8 dark:border-dark-border bg-white/80 dark:bg-dark-card/80 backdrop-blur-lg">
-                <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Clinical Details
+            <section className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="border-b border-slate-100 p-6 dark:border-dark-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 uppercase">
+                    Appointment Details
                   </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Internal record view</p>
+                  <button
+                    onClick={() => { setActivePanel("booking"); setSelectedAppointment(null); }}
+                    className="rounded-lg bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400"
+                  >
+                    <FiX className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
-                  className="rounded-2xl bg-slate-100 p-3 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
-                >
-                  <FiX className="h-6 w-6" />
-                </button>
               </div>
 
-              <div className="p-8 space-y-10">
-                <div className="flex items-start gap-6">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shadow-xl shadow-blue-500/10">
-                    <FiInfo className="h-10 w-10" />
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                    <FiInfo className="h-7 w-7" />
                   </div>
-                  <div className="overflow-hidden">
-                    <h4 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
+                  <div>
+                    <h4 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">
+                      {selectedAppointment?.title}
+                    </h4>
                     <div className={clsx(
-                      "mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest shadow-lg",
+                      "mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider",
                       selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
                         selectedAppointment?.status === "cancelled" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
                           "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                     )}>
-                      {selectedAppointment?.status === "completed" && <FiCheckCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status === "cancelled" && <FiXCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status === "pending" && <FiAlertCircle className="h-4 w-4" />}
                       {selectedAppointment?.status || "pending"}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid gap-6 rounded-[2.5rem] border-2 border-slate-100 bg-slate-50/20 p-8 dark:border-dark-border dark:bg-dark-surface/10">
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiCalendar className="h-6 w-6 text-blue-500" />
+                <div className="space-y-4 rounded-3xl border border-slate-100 bg-slate-50/30 p-5 dark:border-dark-border/50 dark:bg-dark-surface/10">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white dark:bg-dark-card border border-slate-100 dark:border-dark-border text-blue-500">
+                      <FiCalendar className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Date Scheduled</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Date</p>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">
+                        {selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiClock className="h-6 w-6 text-blue-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white dark:bg-dark-card border border-slate-100 dark:border-dark-border text-blue-500">
+                      <FiClock className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Arrival Time</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 italic">{selectedAppointment?.time?.substring(0, 5)}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Time</p>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">
+                        {selectedAppointment?.time?.substring(0, 5)}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiUser className="h-6 w-6 text-blue-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white dark:bg-dark-card border border-slate-100 dark:border-dark-border text-blue-500">
+                      <FiUser className="h-5 w-5" />
                     </div>
                     <div className="overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Patient & Guardian</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 truncate">
-                        {selectedAppointment?.pet?.name} <span className="mx-2 text-slate-300 font-normal">|</span> <span className="text-slate-500 dark:text-zinc-400">ID #{selectedAppointment?.pet?.owner_id}</span>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Patient</p>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100 truncate">
+                        {selectedAppointment?.pet?.name} <span className="mx-2 opacity-30">|</span> <span className="opacity-60 text-sm">#{selectedAppointment?.pet?.owner_id}</span>
                       </p>
                     </div>
                   </div>
@@ -544,59 +575,43 @@ function AppointmentsView() {
 
                 {selectedAppointment?.notes && (
                   <div>
-                    <label className="mb-4 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Case Notes / Context</label>
-                    <div className="rounded-3xl bg-slate-50 p-6 text-md font-medium leading-relaxed text-slate-600 dark:bg-dark-surface dark:text-zinc-400 italic border-l-8 border-blue-500/20 dark:border-blue-400/10">
+                    <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">Context</p>
+                    <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-dark-surface dark:text-zinc-400 italic">
                       "{selectedAppointment.notes}"
                     </div>
                   </div>
                 )}
 
-                <div className="pt-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 text-center mb-6">Security & Lifecycle Actions</p>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3 pt-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => handleStatusUpdate(selectedAppointment?.id, "completed")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95"
+                      className="flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
                     >
-                      <FiCheckCircle className="h-6 w-6" />
-                      Close Case
+                      <FiCheckCircle className="h-4 w-4" />
+                      Complete
                     </button>
                     <button
                       onClick={() => handleStatusUpdate(selectedAppointment?.id, "cancelled")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-slate-100 text-sm font-black uppercase tracking-widest text-slate-700 shadow-xl shadow-slate-200/50 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
+                      className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-100 text-xs font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 transition-all"
                     >
-                      <FiXCircle className="h-6 w-6" />
-                      Discard
+                      <FiXCircle className="h-4 w-4" />
+                      Cancel
                     </button>
                   </div>
                   <button
                     onClick={() => handleDeleteAppointment(selectedAppointment?.id)}
-                    className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl border-2 border-rose-100 text-sm font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-900/10 transition-all active:scale-95 mt-4"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-100 text-xs font-bold uppercase tracking-widest text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-900/10 transition-all"
                   >
-                    <FiTrash2 className="h-6 w-6" />
-                    Purple heart Wipe
+                    <FiTrash2 className="h-4 w-4" />
+                    Delete Record
                   </button>
                 </div>
               </div>
             </section>
           )}
-
-          {/* AI Insights in Drawer Footer */}
-          <section className="mt-auto border-t border-slate-100 bg-blue-50/30 p-8 dark:border-dark-border dark:bg-blue-600/5">
-            <div className="mb-4 inline-flex items-center gap-3 text-blue-700 dark:text-blue-400">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xl shadow-blue-500/40">
-                <LuSparkles className="h-5 w-5" />
-              </div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] italic">Forecaster Intelligence</p>
-            </div>
-            <p className="text-sm leading-relaxed text-slate-600 dark:text-blue-300/80 font-bold italic">{aiForecast?.insight || "Analyzing clinic data for scheduling trends..."}</p>
-            <button onClick={handleReviewHints} className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-              <FiBell className="h-4 w-4" />
-              Access planning matrix
-            </button>
-          </section>
-        </aside>
-      </div>
+        </div>
+      </aside>
     </div>
   );
 }
