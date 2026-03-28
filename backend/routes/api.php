@@ -69,6 +69,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::apiResource('species', SpeciesController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('breeds', BreedController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('vet-schedules', VetScheduleController::class);
+    Route::post('owners/import', [OwnerController::class, 'import']);
     Route::apiResource('owners', OwnerController::class);
 });
 

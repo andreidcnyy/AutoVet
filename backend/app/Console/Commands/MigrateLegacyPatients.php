@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Patient;
 use App\Models\Pet;
 use App\Models\Owner;
 use App\Models\Species;
@@ -12,6 +11,7 @@ use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\MedicalRecord;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MigrateLegacyPatients extends Command
 {
@@ -22,7 +22,13 @@ class MigrateLegacyPatients extends Command
     {
         $this->info('Starting legacy patient migration...');
 
-        $patients = Patient::withTrashed()->get();
+        // Use direct DB access for legacy table that has no model anymore
+        if (!Schema::hasTable('patients')) {
+            $this->error('Legacy patients table does not exist.');
+            return 1;
+        }
+
+        $patients = DB::table('patients')->whereNull('deleted_at')->get();
         $count = 0;
         $errors = 0;
 
@@ -71,16 +77,16 @@ class MigrateLegacyPatients extends Command
                         'species_id' => $species?->id,
                         'breed_id' => $breed?->id,
                         'date_of_birth' => $patient->date_of_birth,
-                        'gender' => $patient->gender,
+                        'sex' => $patient->gender,
                         'color' => $patient->color,
-                        'weight_value' => $this->parseWeight($patient->weight),
+                        'weight' => $this->parseWeight($patient->weight),
                         'weight_unit' => 'kg',
                         'status' => $patient->status,
                         'allergies' => $patient->allergies,
                         'medication' => $patient->medication,
                         'notes' => $patient->notes,
                         'photo' => $patient->photo,
-                        'deleted_at' => $patient->deleted_at,
+                        'deleted_at' => $patient->deleted_at ?? null,
                     ]);
                 }
 
@@ -105,6 +111,7 @@ class MigrateLegacyPatients extends Command
         }
 
         $this->info("Migration completed. {$count} patients migrated. {$errors} errors.");
+        return 0;
     }
 
     private function parseWeight($weightStr)
