@@ -7,9 +7,19 @@ use Illuminate\Http\Request;
 
 class SpeciesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Species::with('breeds.defaultSizeCategory')->get());
+        $query = Species::with('breeds.defaultSizeCategory');
+
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDirection = $request->get('sort_direction', 'asc');
+        $query->orderBy($sortBy, $sortDirection);
+
+        return response()->json($query->paginate($request->get('per_page', 10)));
     }
 
     public function store(Request $request)

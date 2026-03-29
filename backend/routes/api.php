@@ -66,19 +66,20 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('/pet-size-categories', [PetSizeCategoryController::class, 'index']);
     Route::get('/weight-ranges', [WeightRangeController::class, 'index']);
     Route::get('/units-of-measure', [UnitOfMeasureController::class, 'index']);
+    Route::get('/species', [SpeciesController::class, 'index']);
+    Route::get('/breeds', [BreedController::class, 'index']);
 
     // Write access for Admin/Chief Veterinarian
     Route::group(['middleware' => 'role:Admin,Chief Veterinarian'], function() {
-        Route::apiResource('inventory-categories', App\Http\Controllers\InventoryCategoryController::class)->except(['index', 'show']);
-        Route::apiResource('service-categories', App\Http\Controllers\ServiceCategoryController::class)->except(['index', 'show']);
-        Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index', 'show']);
-        Route::apiResource('weight-ranges', WeightRangeController::class)->except(['index', 'show']);
-        Route::apiResource('units-of-measure', UnitOfMeasureController::class)->except(['index', 'show']);
+        Route::apiResource('inventory-categories', App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
+        Route::apiResource('service-categories', App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
+        Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index']);
+        Route::apiResource('weight-ranges', WeightRangeController::class)->except(['index']);
+        Route::apiResource('units-of-measure', UnitOfMeasureController::class)->except(['index']);
+        Route::apiResource('species', SpeciesController::class)->except(['index']);
+        Route::apiResource('breeds', BreedController::class)->except(['index']);
         Route::apiResource('users', UserController::class);
     });
-    
-    Route::apiResource('species', SpeciesController::class)->middleware('role:Admin,Chief Veterinarian');
-    Route::apiResource('breeds', BreedController::class)->middleware('role:Admin,Chief Veterinarian');
     Route::apiResource('vet-schedules', VetScheduleController::class);
     Route::post('owners/import', [OwnerController::class, 'import']);
     Route::apiResource('owners', OwnerController::class);

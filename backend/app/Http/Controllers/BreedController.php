@@ -10,10 +10,20 @@ class BreedController extends Controller
     public function index(Request $request)
     {
         $query = Breed::with(['species', 'defaultSizeCategory']);
+        
         if ($request->has('species_id')) {
             $query->where('species_id', $request->species_id);
         }
-        return response()->json($query->get());
+
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDirection = $request->get('sort_direction', 'asc');
+        $query->orderBy($sortBy, $sortDirection);
+
+        return response()->json($query->paginate($request->get('per_page', 10)));
     }
 
     public function store(Request $request)
