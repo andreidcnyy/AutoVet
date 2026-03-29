@@ -268,8 +268,8 @@ export default function WeightRangesManager() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
+              <table className="w-full text-left text-sm min-w-[800px]">
                 <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-dark-surface dark:text-zinc-400">
                   <tr>
                     <th className="px-6 py-4">Label</th>
@@ -277,7 +277,7 @@ export default function WeightRangesManager() {
                     <th className="px-6 py-4">Max (kg)</th>
                     <th className="px-6 py-4">Size Category</th>
                     <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 text-right whitespace-nowrap w-24">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-dark-border text-slate-700 dark:text-zinc-300">
@@ -305,7 +305,7 @@ export default function WeightRangesManager() {
                           {item.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => handleOpenModal(item)} className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition">
                             <FiEdit2 size={16} />

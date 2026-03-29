@@ -20,7 +20,7 @@ return new class extends Migration
         }
 
         // 2. Ensure baseline species and size categories exist
-        $speciesNames = ['Dog', 'Cat', 'Rabbit', 'Hamster', 'Guinea Pig', 'Bird'];
+        $speciesNames = ['Canine', 'Feline', 'Rabbit', 'Hamster', 'Guinea Pig', 'Bird'];
         $speciesMap = [];
         foreach ($speciesNames as $name) {
             $id = DB::table('species')->where('name', $name)->value('id');
@@ -50,9 +50,9 @@ return new class extends Migration
             $sizeMap[$name] = $id;
         }
 
-        // 3. Migrate existing generic rows to Dog
-        $dogId = $speciesMap['Dog'];
-        DB::table('weight_ranges')->whereNull('species_id')->update(['species_id' => $dogId]);
+        // 3. Migrate existing generic rows to Canine
+        $canineId = $speciesMap['Canine'];
+        DB::table('weight_ranges')->whereNull('species_id')->update(['species_id' => $canineId]);
 
         // 4. Seed baseline starter ranges for other species
         $this->seedBaselineRanges($speciesMap, $sizeMap);
@@ -61,13 +61,13 @@ return new class extends Migration
     private function seedBaselineRanges($speciesMap, $sizeMap)
     {
         $ranges = [
-            'Dog' => [
+            'Canine' => [
                 ['label' => 'Small', 'size' => 'Small', 'min' => 0.00, 'max' => 10.00],
                 ['label' => 'Medium', 'size' => 'Medium', 'min' => 10.01, 'max' => 25.00],
                 ['label' => 'Large', 'size' => 'Large', 'min' => 25.01, 'max' => 45.00],
                 ['label' => 'Giant', 'size' => 'Giant', 'min' => 45.01, 'max' => null],
             ],
-            'Cat' => [
+            'Feline' => [
                 ['label' => 'Small', 'size' => 'Small', 'min' => 0.00, 'max' => 4.00],
                 ['label' => 'Medium', 'size' => 'Medium', 'min' => 4.01, 'max' => 6.00],
                 ['label' => 'Large', 'size' => 'Large', 'min' => 6.01, 'max' => 10.00],
