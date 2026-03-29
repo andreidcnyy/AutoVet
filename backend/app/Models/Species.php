@@ -12,4 +12,9 @@ class Species extends Model
     {
         return $this->hasMany(Breed::class);
     }
+
+    public function weightRanges()
+    {
+        return $this->hasMany(WeightRange::class);
+    }
 }

@@ -9,7 +9,11 @@ class WeightRangeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WeightRange::with('sizeCategory');
+        $query = WeightRange::with(['sizeCategory', 'species']);
+
+        if ($request->has('species_id')) {
+            $query->where('species_id', $request->species_id);
+        }
 
         if ($request->has('search')) {
             $query->where('label', 'like', '%' . $request->search . '%');
@@ -26,32 +30,77 @@ class WeightRangeController extends Controller
     {
         $validated = $request->validate([
             'label' => 'required|string',
-            'min_weight' => 'required|numeric',
+            'species_id' => 'required|exists:species,id',
+            'min_weight' => 'required|numeric|min:0',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
-            'status' => 'nullable|string'
+            'size_category_id' => 'required|exists:pet_size_categories,id',
+            'status' => 'required|string'
         ]);
 
-        // Basic overlap check could be added here or as a custom validation rule
+        if ($this->hasOverlap($validated)) {
+            return response()->json([
+                'message' => 'The weight range overlaps with an existing active range for this species and unit.',
+                'errors' => ['min_weight' => ['Range overlap detected.']]
+            ], 422);
+        }
         
         $range = WeightRange::create($validated);
-        return response()->json($range, 201);
+        return response()->json($range->load(['sizeCategory', 'species']), 201);
     }
 
     public function update(Request $request, WeightRange $weightRange)
     {
         $validated = $request->validate([
             'label' => 'required|string',
-            'min_weight' => 'required|numeric',
+            'species_id' => 'required|exists:species,id',
+            'min_weight' => 'required|numeric|min:0',
             'max_weight' => 'nullable|numeric|gte:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
-            'status' => 'nullable|string'
+            'size_category_id' => 'required|exists:pet_size_categories,id',
+            'status' => 'required|string'
         ]);
 
+        if ($this->hasOverlap($validated, $weightRange->id)) {
+            return response()->json([
+                'message' => 'The weight range overlaps with an existing active range for this species and unit.',
+                'errors' => ['min_weight' => ['Range overlap detected.']]
+            ], 422);
+        }
+
         $weightRange->update($validated);
-        return response()->json($weightRange);
+        return response()->json($weightRange->load(['sizeCategory', 'species']));
+    }
+
+    private function hasOverlap($data, $excludeId = null)
+    {
+        if ($data['status'] !== 'Active') {
+            return false;
+        }
+
+        $query = WeightRange::where('species_id', $data['species_id'])
+            ->where('unit', $data['unit'])
+            ->where('status', 'Active');
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $newMin = $data['min_weight'];
+        $newMax = $data['max_weight'];
+
+        return $query->where(function($q) use ($newMin, $newMax) {
+            $q->where(function($sq) use ($newMax) {
+                // (newMax is null OR min <= newMax)
+                if ($newMax !== null) {
+                    $sq->where('min_weight', '<=', $newMax);
+                }
+            })->where(function($sq) use ($newMin) {
+                // (existingMax is null OR existingMax >= newMin)
+                $sq->whereNull('max_weight')
+                   ->orWhere('max_weight', '>=', $newMin);
+            });
+        })->exists();
     }
 
     public function destroy(WeightRange $weightRange)
