@@ -68,16 +68,16 @@ export default function MasterDataManagementTab() {
   ];
 
   return (
-    <div className="space-y-12 pb-10">
-      <section className="card-shell p-6">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Master Data Management</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            Centrally manage categorization and measurement settings used across the clinic.
-          </p>
-        </div>
+    <div className="space-y-8 pb-10">
+      <div className="mb-2">
+        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50">Master Data Management</h2>
+        <p className="mt-2 text-slate-500 dark:text-zinc-400">
+          Centrally manage categorization and measurement settings used across the clinic.
+        </p>
+      </div>
 
-        <div className="grid grid-cols-1 gap-12">
+      <div className="grid grid-cols-1 gap-8">
+        <div className="card-shell p-6 transition-all hover:shadow-md">
           <MasterDataTable 
             title="Inventory Categories"
             description="Categorize items in your stock (e.g., Medications, Consumables)."
@@ -85,9 +85,9 @@ export default function MasterDataManagementTab() {
             columns={categoryColumns}
             initialForm={initialCategoryForm}
           />
-          
-          <div className="h-px bg-slate-200 dark:bg-dark-border" />
-
+        </div>
+        
+        <div className="card-shell p-6 transition-all hover:shadow-md">
           <MasterDataTable 
             title="Service Categories"
             description="Categorize clinical services (e.g., Surgery, Consultations)."
@@ -95,9 +95,9 @@ export default function MasterDataManagementTab() {
             columns={categoryColumns}
             initialForm={initialCategoryForm}
           />
+        </div>
 
-          <div className="h-px bg-slate-200 dark:bg-dark-border" />
-
+        <div className="card-shell p-6 transition-all hover:shadow-md">
           <MasterDataTable 
             title="Pet Size Categories"
             description="Define standard size groups for pet service pricing."
@@ -105,19 +105,19 @@ export default function MasterDataManagementTab() {
             columns={categoryColumns}
             initialForm={{ name: "", description: "", status: "Active" }}
           />
+        </div>
 
-          <div className="h-px bg-slate-200 dark:bg-dark-border" />
-
-          <div className="space-y-4">
-            <div className="mb-4">
+        <div className="card-shell p-6 transition-all hover:shadow-md">
+          <div className="space-y-6">
+            <div className="border-b border-slate-100 dark:border-dark-border pb-4">
               <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Weight Ranges</h3>
               <p className="text-sm text-slate-500 dark:text-zinc-400">Define species-specific weight tiers for service pricing.</p>
             </div>
             <WeightRangesManager />
           </div>
+        </div>
 
-          <div className="h-px bg-slate-200 dark:bg-dark-border" />
-
+        <div className="card-shell p-6 transition-all hover:shadow-md">
           <MasterDataTable 
             title="Units of Measure"
             description="Standard units for products and medications (e.g., ml, tablet)."
@@ -126,7 +126,7 @@ export default function MasterDataManagementTab() {
             initialForm={{ name: "", abbreviation: "", status: "Active" }}
           />
         </div>
-      </section>
+      </div>
     </div>
   );
 }

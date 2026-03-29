@@ -25,30 +25,42 @@ function Settings() {
   const [activeTab, setActiveTab] = useState("data");
 
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[280px_1fr]">
-      <aside className="card-shell h-fit p-3">
-        <nav className="space-y-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={clsx(
-                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
-                  active ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "text-slate-600 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+      <aside className="sticky top-24 h-fit space-y-4">
+        <div className="card-shell p-2">
+          <nav className="space-y-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const active = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={clsx(
+                    "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200",
+                    active 
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-dark-surface dark:hover:text-zinc-100"
+                  )}
+                >
+                  <Icon className={clsx("h-4 w-4 shrink-0 transition-transform duration-200", active && "scale-110")} />
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+        
+        {/* Help/Inspiration Card (Optional but looks premium) */}
+        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-4 text-white shadow-xl shadow-blue-500/10">
+          <p className="text-xs font-bold uppercase tracking-wider opacity-60">Pro Tip</p>
+          <p className="mt-1 text-xs leading-relaxed font-medium">
+            Use Master Data to standardize categories across the entire clinic workflow.
+          </p>
+        </div>
       </aside>
 
-      <main>
+      <main className="min-w-0">
         {activeTab === "clinic" && <ClinicProfileTab />}
         {activeTab === "data" && <MasterDataManagementTab />}
         {activeTab === "services" && <ServiceManagementTab />}

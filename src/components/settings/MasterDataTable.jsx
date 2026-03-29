@@ -135,47 +135,51 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">{title}</h3>
-          {description && <p className="text-sm text-slate-500 dark:text-zinc-400">{description}</p>}
+          {description && <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{description}</p>}
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
-        >
-          <FiPlus className="h-4 w-4" />
-          Add New
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 sm:w-64">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+            />
+          </div>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all hover:-translate-y-0.5"
+          >
+            <FiPlus className="h-4 w-4" />
+            <span>Add New</span>
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 max-w-sm">
-        <div className="relative w-full">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-          />
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-dark-surface dark:text-zinc-400">
+          <thead className="bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:bg-dark-surface/50 dark:text-zinc-400">
             <tr>
               {columns.map(col => (
-                <th key={col.key} className="px-4 py-3 cursor-pointer hover:text-blue-600 transition" onClick={() => {
+                <th key={col.key} className="px-5 py-4 cursor-pointer hover:text-blue-600 transition" onClick={() => {
                   if (sortBy === col.key) setSortDir(sortDir === "asc" ? "desc" : "asc");
                   else { setSortBy(col.key); setSortDir("asc"); }
                 }}>
-                  {col.label} {sortBy === col.key && (sortDir === "asc" ? "↑" : "↓")}
+                  <div className="flex items-center gap-2">
+                    {col.label}
+                    {sortBy === col.key && (
+                      <span className="text-blue-600">{sortDir === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </div>
                 </th>
               ))}
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-5 py-4 text-right w-24">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-dark-border text-slate-700 dark:text-zinc-300">
@@ -190,13 +194,21 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
                     {col.render ? col.render(item[col.key], item) : item[col.key]}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => handleOpenModal(item)} className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
-                      <FiEdit2 size={16} />
+                <td className="px-5 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleOpenModal(item)} 
+                      title="Edit"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                    >
+                      <FiEdit2 size={14} />
                     </button>
-                    <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition">
-                      <FiTrash2 size={16} />
+                    <button 
+                      onClick={() => handleDelete(item.id)} 
+                      title="Delete"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    >
+                      <FiTrash2 size={14} />
                     </button>
                   </div>
                 </td>
