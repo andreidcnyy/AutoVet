@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight, FiCheckCircle, FiCircle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
 export default function WeightRangesManager() {
-  const toast = useToast();
+  const { error, success } = useToast();
+  const { user } = useAuth();
   const [species, setSpecies] = useState([]);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
   const [sizeCategories, setSizeCategories] = useState([]);
@@ -31,43 +33,53 @@ export default function WeightRangesManager() {
 
   // Fetch species and size categories on mount
   useEffect(() => {
+    if (!user?.token) return;
+    
+    let isMounted = true;
     const init = async () => {
-      setLoadingSpecies(true);
+      if (isMounted) setLoadingSpecies(true);
       try {
-        const [specRes, sizeRes] = await Promise.all([
-          fetch("/api/species"),
-          fetch("/api/pet-size-categories")
-        ]);
+        const headers = {
+          "Authorization": `Bearer ${user.token}`,
+          "Accept": "application/json"
+        };
         
-        if (!specRes.ok || !sizeRes.ok) {
-          throw new Error("Failed to load master data. Please check your connection or login status.");
-        }
+        const specPromise = fetch("/api/species", { headers }).then(r => r.ok ? r.json() : null).catch(e => { console.error("Error fetching species:", e); return null; });
+        const sizePromise = fetch("/api/pet-size-categories", { headers }).then(r => r.ok ? r.json() : null).catch(e => { console.error("Error fetching sizes:", e); return null; });
+        
+        const [specData, sizeData] = await Promise.all([specPromise, sizePromise]);
+        
+        if (!isMounted) return;
 
-        const specData = await specRes.json();
-        const sizeData = await sizeRes.json();
+        if (specData) {
+          const speciesList = Array.isArray(specData.data) ? specData.data : (Array.isArray(specData) ? specData : []);
+          setSpecies(speciesList);
+          if (speciesList.length > 0) {
+            setSelectedSpecies(speciesList[0]);
+          }
+        } else {
+          error("Failed to load species data.");
+        }
         
-        // Ensure we handle pagination or direct array responses safely
-        const speciesList = Array.isArray(specData.data) ? specData.data : (Array.isArray(specData) ? specData : []);
-        const sizeList = Array.isArray(sizeData.data) ? sizeData.data : (Array.isArray(sizeData) ? sizeData : []);
-        
-        setSpecies(speciesList);
-        setSizeCategories(sizeList);
-        
-        if (speciesList.length > 0) {
-          setSelectedSpecies(speciesList[0]);
+        if (sizeData) {
+          const sizeList = Array.isArray(sizeData.data) ? sizeData.data : (Array.isArray(sizeData) ? sizeData : []);
+          setSizeCategories(sizeList);
+        } else {
+          error("Failed to load pet size categories.");
         }
       } catch (err) {
         console.error("Initialization error:", err);
-        toast.error(err.message || "Failed to load initial data");
+        if (isMounted) error(err.message || "Failed to load initial data");
       } finally {
-        setLoadingSpecies(false);
+        if (isMounted) setLoadingSpecies(false);
       }
     };
     init();
-  }, [toast]);
+    return () => { isMounted = false; };
+  }, [error, user?.token]);
 
   const fetchRanges = useCallback(async () => {
-    if (!selectedSpecies) return;
+    if (!selectedSpecies || !user?.token) return;
     setLoadingRanges(true);
     try {
       const query = new URLSearchParams({
@@ -75,15 +87,25 @@ export default function WeightRangesManager() {
         search: search,
         per_page: "100" // Load all for this species for now
       });
-      const res = await fetch(`/api/weight-ranges?${query.toString()}`);
+      const res = await fetch(`/api/weight-ranges?${query.toString()}`, {
+        headers: {
+          "Authorization": `Bearer ${user.token}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) {
+        console.error(`[fetchRanges error] Status: ${res.status}`);
+        throw new Error("Failed to load weight ranges");
+      }
       const result = await res.json();
       setRanges(result.data || []);
     } catch (err) {
-      toast.error("Failed to load weight ranges");
+      console.error("[fetchRanges catch]:", err);
+      error("Failed to load weight ranges");
     } finally {
       setLoadingRanges(false);
     }
-  }, [selectedSpecies, search, toast]);
+  }, [selectedSpecies, search, error, user?.token]);
 
   useEffect(() => {
     fetchRanges();
@@ -122,20 +144,26 @@ export default function WeightRangesManager() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+            "Content-Type": "application/json", 
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(payload)
       });
-      const result = await res.json();
       
       if (!res.ok) {
+        const result = await res.json();
+        console.error("[handleSave error]:", result);
         throw new Error(result.message || "Failed to save range");
       }
       
-      toast.success(`Weight range ${isEditing ? "updated" : "added"} successfully`);
+      success(`Weight range ${isEditing ? "updated" : "added"} successfully`);
       fetchRanges();
       setIsModalOpen(false);
     } catch (err) {
-      toast.error(err.message);
+      console.error("[handleSave catch]:", err);
+      error(err.message);
     } finally {
       setIsSaving(false);
     }
@@ -144,12 +172,22 @@ export default function WeightRangesManager() {
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this weight range?")) return;
     try {
-      const res = await fetch(`/api/weight-ranges/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete range");
-      toast.success("Weight range deleted");
+      const res = await fetch(`/api/weight-ranges/${id}`, { 
+          method: "DELETE",
+          headers: {
+              "Authorization": `Bearer ${user?.token}`,
+              "Accept": "application/json"
+          }
+      });
+      if (!res.ok) {
+          console.error(`[handleDelete error] Status: ${res.status}`);
+          throw new Error("Failed to delete range");
+      }
+      success("Weight range deleted");
       fetchRanges();
     } catch (err) {
-      toast.error(err.message);
+      console.error("[handleDelete catch]:", err);
+      error(err.message);
     }
   };
 

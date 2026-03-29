@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
 export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
-  const toast = useToast();
+  const { success, error } = useToast();
+  const { user } = useAuth();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
@@ -19,6 +21,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!user?.token) return;
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -28,7 +31,16 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         page: page.toString(),
         per_page: "10"
       });
-      const res = await fetch(`${apiUrl}?${query.toString()}`);
+      const res = await fetch(`${apiUrl}?${query.toString()}`, {
+        headers: {
+          "Authorization": `Bearer ${user.token}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) {
+        console.error(`[MasterDataTable fetch] Failed URL: ${apiUrl}, Status: ${res.status}`);
+        throw new Error(`Failed to load ${title.toLowerCase()}: ${res.status}`);
+      }
       const result = await res.json();
       setData(result.data || []);
       setMeta({
@@ -37,11 +49,12 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         total: result.total
       });
     } catch (err) {
-      toast.error(`Failed to load ${title.toLowerCase()}`);
+      console.error(`[MasterDataTable fetch catch] URL: ${apiUrl}, Error:`, err);
+      error(`Failed to load ${title.toLowerCase()}`);
     } finally {
       setLoading(false);
     }
-  }, [apiUrl, search, sortBy, sortDir, page, toast, title]);
+  }, [apiUrl, search, sortBy, sortDir, page, error, title, user?.token]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchData(), 300);
@@ -69,18 +82,24 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
         body: JSON.stringify(formData)
       });
       if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to save item");
+          const errData = await res.json();
+          console.error(`[MasterDataTable save] Failed URL: ${url}, Response:`, errData);
+          throw new Error(errData.message || "Failed to save item");
       }
-      toast.success(`${title.slice(0, -1)} ${isEditing ? "updated" : "added"} successfully`);
+      success(`${title.slice(0, -1)} ${isEditing ? "updated" : "added"} successfully`);
       fetchData();
       setIsModalOpen(false);
     } catch (err) {
-      toast.error(err.message);
+      console.error(`[MasterDataTable save catch] URL: ${url}, Error:`, err);
+      error(err.message);
     } finally {
       setIsSaving(false);
     }
@@ -89,12 +108,22 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const handleDelete = async (id) => {
     if (!confirm(`Are you sure you want to delete this ${title.toLowerCase().slice(0, -1)}?`)) return;
     try {
-      const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete item");
-      toast.success(`${title.slice(0, -1)} deleted`);
+      const res = await fetch(`${apiUrl}/${id}`, { 
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${user?.token}`,
+          "Accept": "application/json"
+        }
+      });
+      if (!res.ok) {
+        console.error(`[MasterDataTable delete] Failed URL: ${apiUrl}/${id}, Status: ${res.status}`);
+        throw new Error("Failed to delete item");
+      }
+      success(`${title.slice(0, -1)} deleted`);
       fetchData();
     } catch (err) {
-      toast.error(err.message);
+      console.error(`[MasterDataTable delete catch] Error:`, err);
+      error(err.message);
     }
   };
 
