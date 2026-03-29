@@ -33,7 +33,10 @@ export default function WeightRangesManager() {
 
   // Fetch species and size categories on mount
   useEffect(() => {
-    if (!user?.token) return;
+    if (!user?.token) {
+      setLoadingSpecies(false);
+      return;
+    }
     
     let isMounted = true;
     const init = async () => {
@@ -79,7 +82,10 @@ export default function WeightRangesManager() {
   }, [error, user?.token]);
 
   const fetchRanges = useCallback(async () => {
-    if (!selectedSpecies || !user?.token) return;
+    if (!selectedSpecies || !user?.token) {
+      setLoadingRanges(false);
+      return;
+    }
     setLoadingRanges(true);
     try {
       const query = new URLSearchParams({
@@ -98,7 +104,10 @@ export default function WeightRangesManager() {
         throw new Error("Failed to load weight ranges");
       }
       const result = await res.json();
-      setRanges(result.data || []);
+      
+      // Normalize: Handle both { data: [...] } and direct array [...]
+      const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+      setRanges(normalizedData);
     } catch (err) {
       console.error("[fetchRanges catch]:", err);
       error("Failed to load weight ranges");

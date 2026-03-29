@@ -22,7 +22,10 @@ export default function SpeciesBreedsTab() {
   const [sizeCategories, setSizeCategories] = useState([]);
 
   const fetchSpecies = async () => {
-    if (!user?.token) return;
+    if (!user?.token) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/species", {
         headers: {
@@ -31,8 +34,10 @@ export default function SpeciesBreedsTab() {
         }
       });
       if (res.ok) {
-        const data = await res.json();
-        setSpecies(data);
+        const result = await res.json();
+        // Normalize: Handle both { data: [...] } and direct array [...]
+        const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setSpecies(normalizedData);
       }
     } catch (err) {
       console.error(err);
@@ -52,11 +57,9 @@ export default function SpeciesBreedsTab() {
         }
       });
       if (res.ok) {
-        const data = await res.json();
-        const cats = data.data || data;
-        if (Array.isArray(cats)) {
-          setSizeCategories(cats);
-        }
+        const result = await res.json();
+        const cats = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setSizeCategories(cats);
       }
     } catch (err) {
       console.error("Failed to load size categories", err);
