@@ -21,7 +21,10 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!user?.token) return;
+    if (!user?.token) {
+      setLoading(false); 
+      return;
+    }
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -42,11 +45,15 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         throw new Error(`Failed to load ${title.toLowerCase()}: ${res.status}`);
       }
       const result = await res.json();
-      setData(result.data || []);
+      
+      // Normalize data: handling both { data: [...] } and direct array [...]
+      const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+      setData(normalizedData);
+      
       setMeta({
-        current_page: result.current_page,
-        last_page: result.last_page,
-        total: result.total
+        current_page: result.current_page || 1,
+        last_page: result.last_page || 1,
+        total: result.total || normalizedData.length
       });
     } catch (err) {
       console.error(`[MasterDataTable fetch catch] URL: ${apiUrl}, Error:`, err);

@@ -28,7 +28,10 @@ export default function ServiceManagementTab() {
   });
 
   const fetchServices = () => {
-    if (!user?.token) return;
+    if (!user?.token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     fetch("/api/services", {
       headers: {
@@ -37,8 +40,9 @@ export default function ServiceManagementTab() {
       }
     })
       .then(res => res.json())
-      .then(data => { 
-        setServices(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); 
+      .then(result => { 
+        const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setServices(normalizedData); 
         setLoading(false); 
       })
       .catch(err => { toast.error("Failed to load services"); setLoading(false); });
@@ -56,17 +60,26 @@ export default function ServiceManagementTab() {
     // Fetch categories from MDM
     fetch("/api/service-categories", { headers })
       .then(res => res.json())
-      .then(data => setServiceCategories(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [])) 
+      .then(result => {
+        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setServiceCategories(normalized);
+      }) 
       .catch(console.error);
 
     fetch("/api/pet-size-categories", { headers })
       .then(res => res.json())
-      .then(data => setPetSizes(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
+      .then(result => {
+        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setPetSizes(normalized);
+      })
       .catch(console.error);
 
     fetch("/api/weight-ranges", { headers })
       .then(res => res.json())
-      .then(data => setWeightRanges(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []))
+      .then(result => {
+        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setWeightRanges(normalized);
+      })
       .catch(console.error);
   }, [user?.token]);
 
