@@ -209,31 +209,29 @@ export default function WeightRangesManager() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[500px]">
-      {/* Sidebar: Species List */}
-      <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 px-2">Select Species</h3>
+    <div className="flex flex-col xl:flex-row gap-6 min-h-[500px]">
+      {/* Sidebar: Compact Species List */}
+      <div className="w-full xl:w-56 flex-shrink-0">
+        <div className="mb-4 flex items-center justify-between px-2">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-zinc-500">Species</h3>
         </div>
-        <div className="space-y-1">
+        <div className="flex flex-row xl:flex-col gap-2 overflow-x-auto pb-2 xl:pb-0 scrollbar-hide">
           {species?.map((s) => (
             <button
               key={s.id}
               onClick={() => setSelectedSpecies(s)}
               className={clsx(
-                "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group",
+                "flex min-w-[120px] flex-1 items-center justify-between whitespace-nowrap rounded-xl px-4 py-2.5 transition-all duration-200 group xl:w-full",
                 selectedSpecies?.id === s.id
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                  : "bg-white text-slate-700 hover:bg-slate-50 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border"
               )}
             >
-              <div className="flex items-center gap-3">
-                <span className="font-semibold">{s.name}</span>
-              </div>
+              <span className="text-sm font-bold">{s.name}</span>
               {selectedSpecies?.id === s.id ? (
-                <FiCheckCircle className="text-blue-100" />
+                <FiCheckCircle className="shrink-0 text-blue-100" />
               ) : (
-                <div className="h-4 w-4 rounded-full border border-slate-200 dark:border-zinc-700 group-hover:border-blue-400" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-slate-200 dark:bg-zinc-700 group-hover:bg-blue-400" />
               )}
             </button>
           ))}
@@ -241,86 +239,95 @@ export default function WeightRangesManager() {
       </div>
 
       {/* Main Content: Weight Ranges for Selected Species */}
-      <div className="flex-1 space-y-4 min-w-0">
+      <div className="flex-1 min-w-0">
         {!selectedSpecies ? (
-          <div className="flex h-full items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800 p-12 text-center text-slate-400">
-            Please select a species from the list to manage its weight ranges.
+          <div className="flex aspect-video items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800 p-12 text-center">
+            <div className="max-w-xs">
+               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                 <FiChevronRight size={24} />
+               </div>
+               <p className="text-sm font-medium text-slate-500">Select a species from the left to manage its weight ranges.</p>
+            </div>
           </div>
         ) : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{selectedSpecies.name} Weight Ranges</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400">
-                  Configure weight tiers and size categories for {selectedSpecies.name.toLowerCase()}s.
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{selectedSpecies.name} Ranges</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+                  Configure weight tiers for {selectedSpecies.name.toLowerCase()}s.
                 </p>
               </div>
-              <button 
-                onClick={() => handleOpenModal()}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
-              >
-                <FiPlus className="h-4 w-4" />
-                Add New Range
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 max-w-sm">
-              <div className="relative w-full">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search ranges..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-                />
+              <div className="flex items-center gap-3">
+                 <div className="relative flex-1 sm:w-64">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search ranges..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                  />
+                </div>
+                <button 
+                  onClick={() => handleOpenModal()}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all hover:-translate-y-0.5"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  <span>Add Range</span>
+                </button>
               </div>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
-              <table className="w-full text-left text-sm min-w-[800px]">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-dark-surface dark:text-zinc-400">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:bg-dark-surface/50 dark:text-zinc-400">
                   <tr>
-                    <th className="px-6 py-4">Label</th>
-                    <th className="px-6 py-4">Min (kg)</th>
-                    <th className="px-6 py-4">Max (kg)</th>
-                    <th className="px-6 py-4">Size Category</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right whitespace-nowrap w-24">Actions</th>
+                    <th className="px-5 py-4">Label</th>
+                    <th className="px-5 py-4 text-center">Min (kg)</th>
+                    <th className="px-5 py-4 text-center">Max (kg)</th>
+                    <th className="px-5 py-4">Size Category</th>
+                    <th className="px-5 py-4 text-center">Status</th>
+                    <th className="px-5 py-4 text-right w-24">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-dark-border text-slate-700 dark:text-zinc-300">
                   {loadingRanges ? (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400">Loading ranges...</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-400">Loading ranges...</td></tr>
                   ) : ranges.length === 0 ? (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400">No ranges configured for this species yet.</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-400">No ranges configured yet.</td></tr>
                   ) : ranges.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-dark-surface/50 transition duration-150">
-                      <td className="px-6 py-4 font-semibold text-slate-900 dark:text-zinc-100">{item.label}</td>
-                      <td className="px-6 py-4">{item.min_weight}</td>
-                      <td className="px-6 py-4">{item.max_weight || "Open-ended"}</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                    <tr key={item.id} className="group hover:bg-slate-50/50 dark:hover:bg-dark-surface/50 transition-colors">
+                      <td className="px-5 py-4 font-bold text-slate-900 dark:text-zinc-100">{item.label}</td>
+                      <td className="px-5 py-4 text-center tabular-nums">{item.min_weight}</td>
+                      <td className="px-5 py-4 text-center tabular-nums">{item.max_weight || "∞"}</td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-tight text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                           {item.size_category?.name || "Unlinked"}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-4 text-center">
                         <span className={clsx(
-                          "inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset",
-                          item.status === 'Active' 
-                            ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-400/20' 
-                            : 'bg-slate-100 text-slate-600 ring-slate-600/20 dark:bg-dark-surface dark:text-zinc-400'
-                        )}>
-                          {item.status}
-                        </span>
+                          "inline-flex h-2 w-2 rounded-full ring-4 ring-white dark:ring-dark-card",
+                          item.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-300'
+                        )} />
+                        <span className="ml-2 text-xs font-medium">{item.status}</span>
                       </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => handleOpenModal(item)} className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition">
-                            <FiEdit2 size={16} />
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => handleOpenModal(item)} 
+                            title="Edit"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                          >
+                            <FiEdit2 size={14} />
                           </button>
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition">
-                            <FiTrash2 size={16} />
+                          <button 
+                            onClick={() => handleDelete(item.id)} 
+                            title="Delete"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                          >
+                            <FiTrash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -329,7 +336,7 @@ export default function WeightRangesManager() {
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
       </div>
 
