@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
+    use HasSyncFields;
     protected $fillable = [
         'title',
         'date',
@@ -15,7 +17,14 @@ class Appointment extends Model
         'status',
         'pet_id',
         'service_id',
-        'vet_id'
+        'vet_id',
+        // Sync fields
+        'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
+    ];
+
+    protected $casts = [
+        'synced_at'                => 'datetime',
+        'last_modified_locally_at' => 'datetime',
     ];
 
     public function pet()

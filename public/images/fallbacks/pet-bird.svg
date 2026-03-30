@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Bird">
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="#e8f4fd"/>
+  <!-- Body -->
+  <ellipse cx="50" cy="62" rx="20" ry="16" fill="#4a90d9"/>
+  <!-- Head -->
+  <circle cx="50" cy="38" r="16" fill="#5ba3e8"/>
+  <!-- Wing hints -->
+  <ellipse cx="32" cy="60" rx="10" ry="7" fill="#3a7ac8" transform="rotate(-15 32 60)"/>
+  <ellipse cx="68" cy="60" rx="10" ry="7" fill="#3a7ac8" transform="rotate(15 68 60)"/>
+  <!-- Eye -->
+  <circle cx="55" cy="35" r="5" fill="white"/>
+  <circle cx="56" cy="35" r="3" fill="#1a2a3d"/>
+  <circle cx="57" cy="34" r="1" fill="white"/>
+  <!-- Beak -->
+  <polygon points="58,39 66,41 58,44" fill="#f5a623"/>
+  <!-- Comb/tuft -->
+  <ellipse cx="48" cy="23" rx="4" ry="6" fill="#3a7ac8" transform="rotate(-10 48 23)"/>
+  <ellipse cx="54" cy="22" rx="3" ry="5" fill="#3a7ac8" transform="rotate(5 54 22)"/>
+</svg>

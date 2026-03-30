@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pet extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSyncFields;
     
     protected static function boot()
     {
@@ -34,7 +35,14 @@ class Pet extends Model
     protected $fillable = [
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
-        'allergies', 'medication', 'notes', 'photo'
+        'allergies', 'medication', 'notes', 'photo',
+        // Sync fields
+        'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
+    ];
+
+    protected $casts = [
+        'synced_at'                => 'datetime',
+        'last_modified_locally_at' => 'datetime',
     ];
 
     protected $appends = ['last_visit', 'next_due'];
