@@ -30,6 +30,6 @@ export const clinicInfo = {
 export const currentUser = {
   name: "Dr. Sarah Smith",
   role: "Chief Veterinarian",
-  avatar:
-    "https://images.unsplash.com/photo-1594824475317-17153e2013d9?auto=format&fit=crop&w=120&q=80",
+  // Local fallback avatar — works offline. Real avatar comes from AuthContext (API).
+  avatar: "/images/fallbacks/user-vet.svg",
 };

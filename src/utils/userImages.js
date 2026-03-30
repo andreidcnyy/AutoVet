@@ -1,25 +1,41 @@
+/**
+ * User avatar utilities — offline-safe.
+ *
+ * All external Unsplash photo URLs and ui-avatars.com API calls have been
+ * replaced with local SVG assets served from /public/images/fallbacks/.
+ * These work fully offline without any internet dependency.
+ */
+
+/**
+ * Returns the appropriate local SVG avatar for a user based on their role.
+ * Falls back to user-default.svg if role is unrecognized.
+ *
+ * @param {string} role - The user's role string from the API
+ * @param {string} name - The user's display name (kept for future initials support)
+ */
 export const getUserAvatarUrl = (role, name) => {
   const r = role?.toLowerCase() || "";
-  const n = name?.toLowerCase() || "";
 
   // Admin / Executive
   if (r.includes("admin")) {
-    return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150";
+    return "/images/fallbacks/user-admin.svg";
   }
 
-  // Veterinarians
-  if (r.includes("veterinarian") || r.includes("vet")) {
-    if (n.includes("sarah") || n.includes("jenkins")) {
-        return "https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=150&h=150";
-    }
-    return "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=150&h=150";
+  // Chief Veterinarian or Veterinarian
+  if (r.includes("veterinarian") || r.includes("vet") || r.includes("chief")) {
+    return "/images/fallbacks/user-vet.svg";
   }
 
-  // Staff / Support
-  if (r.includes("staff") || r.includes("nurse") || r.includes("receptionist")) {
-    return "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150";
+  // Staff, Nurse, Receptionist, or any support role
+  if (
+    r.includes("staff") ||
+    r.includes("nurse") ||
+    r.includes("receptionist") ||
+    r.includes("technician")
+  ) {
+    return "/images/fallbacks/user-staff.svg";
   }
 
-  // Default Professional Avatar
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=0D8ABC&color=fff&size=128`;
+  // Default — neutral silhouette for unrecognized roles
+  return "/images/fallbacks/user-default.svg";
 };

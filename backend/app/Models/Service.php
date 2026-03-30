@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Service extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSyncFields;
     protected $fillable = [
         'name',
         'description',
@@ -18,6 +19,13 @@ class Service extends Model
         'base_price',
         'category',
         'status',
+        // Sync fields
+        'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
+    ];
+
+    protected $casts = [
+        'synced_at'                => 'datetime',
+        'last_modified_locally_at' => 'datetime',
     ];
 
     public function sizePrices()
