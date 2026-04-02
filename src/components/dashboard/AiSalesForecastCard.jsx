@@ -34,27 +34,28 @@ function AiSalesForecastCard() {
             });
     }, [activeRange]);
 
-    const allValues = data.flatMap((entry) => [entry.actual, entry.forecast]).filter((value) => value !== null);
-    
+    const safeData = Array.isArray(data) ? data : [];
+    const allValues = safeData.flatMap((entry) => [entry.actual, entry.forecast]).filter((value) => value !== null);
+
     // To avoid NaN when data is empty
     const min = allValues.length ? Math.min(...allValues) * 0.9 : 0;
     const max = allValues.length ? Math.max(...allValues) * 1.1 : 100;
     const span = Math.max(max - min, 1);
 
-    const xStep = data.length > 1 ? (WIDTH - PADDING_X * 2) / (data.length - 1) : 0;
+    const xStep = safeData.length > 1 ? (WIDTH - PADDING_X * 2) / (safeData.length - 1) : 0;
     const toY = (value) => HEIGHT - PADDING_Y - ((value - min) / span) * (HEIGHT - PADDING_Y * 2);
 
-    const forecastPoints = data.map((entry, index) => ({
+    const forecastPoints = safeData.map((entry, index) => ({
         x: PADDING_X + xStep * index,
         y: toY(entry.forecast),
     }));
 
-    const actualPoints = data
+    const actualPoints = safeData
         .map((entry, index) => (entry.actual === null ? null : { x: PADDING_X + xStep * index, y: toY(entry.actual) }))
         .filter(Boolean);
 
     const latestActualPoint = actualPoints.length > 0 ? actualPoints[actualPoints.length - 1] : null;
-    const latestActualValue = data.filter((entry) => entry.actual !== null).at(-1)?.actual;
+    const latestActualValue = safeData.filter((entry) => entry.actual !== null).at(-1)?.actual;
 
     const currency = (val) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(val);
 
@@ -146,11 +147,12 @@ function AiSalesForecastCard() {
                 )}
             </div>
 
-            <div className="mt-4 grid grid-cols-7 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400 relative z-10" style={{ gridTemplateColumns: `repeat(${data.length || 7}, minmax(0, 1fr))` }}>
-                {data.map((entry, i) => (
+            <div className="mt-4 grid grid-cols-7 gap-3 text-center text-sm font-medium text-slate-500 dark:text-zinc-400 relative z-10" style={{ gridTemplateColumns: `repeat(${safeData.length || 7}, minmax(0, 1fr))` }}>
+                {safeData.map((entry, i) => (
                     <span key={i}>{entry.month}</span>
                 ))}
             </div>
+
         </section>
     );
 }
