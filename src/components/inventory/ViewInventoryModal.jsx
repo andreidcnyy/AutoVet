@@ -2,6 +2,8 @@ import { FiX, FiTrash2, FiSave, FiEdit2 } from "react-icons/fi";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
+import { ROLES } from "../../constants/roles";
 
 const statusStyles = {
   "Low Stock": "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
@@ -16,6 +18,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const categoryOptions = ["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"];
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
+
+  const { user } = useAuth();
+  const isStaff = user?.role === ROLES.STAFF;
 
   useEffect(() => {
     if (isOpen && product) {
@@ -181,10 +186,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             ))}
           </div>
 
-          {/* Billing & Logic Flags */}
+          {/* Invoice & Logic Flags */}
           <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface/50">
             <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Billing Profile</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Invoicing Profile</p>
               {isEditing ? (
                 <label className="flex items-center gap-2 cursor-pointer mt-1">
                   <input 
@@ -274,22 +279,26 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           </div>
 
           {/* Footer Buttons */}
-          <div className="mt-8 flex justify-between gap-3 border-t border-slate-100 pt-6 dark:border-dark-border">
-            <button
-              onClick={() => onDeleteRequest(product)}
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
-            >
-              <FiTrash2 className="h-4 w-4" />
-              Delete Product
-            </button>
+          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-dark-border">
+            {!isStaff && (
+              <>
+                <button
+                  onClick={() => onDeleteRequest(product)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
+                >
+                  <FiTrash2 className="h-4 w-4" />
+                  Delete Product
+                </button>
 
-            <button
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30"
-            >
-              {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
-              {isEditing ? "Save" : "Edit"}
-            </button>
+                <button
+                  onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                >
+                  {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
+                  {isEditing ? "Save" : "Edit"}
+                </button>
+              </>
+            )}
 
             <button
               onClick={onClose}

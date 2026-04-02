@@ -286,7 +286,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
                 <span>Selling Price (₱) *</span>
-                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">For Billing</span>
+                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-tight">For Invoice</span>
             </label>
             <input
                 type="text"
@@ -320,7 +320,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Billable?</span>
-                <span className="text-[10px] text-slate-500">Show in billing</span>
+                <span className="text-[10px] text-slate-500">Show in invoices</span>
               </div>
             </label>
 

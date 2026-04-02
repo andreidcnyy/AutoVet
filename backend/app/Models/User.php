@@ -53,11 +53,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has a specific role (case-insensitive).
+     * Check if user has a specific role (exact match).
      */
     public function hasRole(string ...$roles): bool
     {
-        return in_array(strtolower($this->role), array_map('strtolower', $roles));
+        return in_array($this->role, $roles);
     }
 
     /**
@@ -69,7 +69,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Is the user a Chief Veterinarian or Admin (Full permissions)?
+     * Is the user an Admin (Full permissions)?
      */
     public function isFullAdmin(): bool
     {
@@ -77,7 +77,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Is the user clinical staff (Chief Vet or Veterinarian)?
+     * Is the user clinical staff (Veterinarian)?
      */
     public function isClinical(): bool
     {

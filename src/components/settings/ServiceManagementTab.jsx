@@ -184,7 +184,7 @@ export default function ServiceManagementTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Service Management</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage billing services and fixed prices.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage invoice services and fixed prices.</p>
         </div>
         <button onClick={() => handleOpenModal()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
           <FiPlus className="h-4 w-4" />

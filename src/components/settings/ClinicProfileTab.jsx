@@ -111,7 +111,7 @@ export default function ClinicProfileTab() {
   return (
     <section className="card-shell p-6">
       <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Clinic Profile</h3>
-      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and billing defaults.</p>
+      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and invoice defaults.</p>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mt-6">
@@ -173,7 +173,7 @@ export default function ClinicProfileTab() {
         </div>
 
         <div className="mt-8 border-t border-slate-200 pt-6 dark:border-dark-border">
-          <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Billing Settings</h4>
+          <h4 className="text-lg font-bold text-slate-900 dark:text-zinc-50">Invoice Configuration</h4>
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Default Tax Rate (%)</label>

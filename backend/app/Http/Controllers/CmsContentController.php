@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
  *
  * Manages content blocks for the future pet-owner web portal.
  * Read access is available to all authenticated clinic users.
- * Write access is restricted to Admin and Chief Veterinarian.
+ * Write access is restricted to Admin.
  *
  * Content types: announcement | banner | clinic_info | featured_service
  */
@@ -44,7 +44,7 @@ class CmsContentController extends Controller
      * Create a new CMS content block.
      *
      * POST /api/cms-contents
-     * Roles: Admin, Chief Veterinarian
+     * Roles: Admin
      */
     public function store(Request $request)
     {
@@ -75,7 +75,7 @@ class CmsContentController extends Controller
      * Update an existing CMS content block.
      *
      * PUT /api/cms-contents/{cmsContent}
-     * Roles: Admin, Chief Veterinarian
+     * Roles: Admin
      */
     public function update(Request $request, CmsContent $cmsContent)
     {
@@ -96,7 +96,7 @@ class CmsContentController extends Controller
      * Soft-delete a CMS content block.
      *
      * DELETE /api/cms-contents/{cmsContent}
-     * Roles: Admin, Chief Veterinarian
+     * Roles: Admin
      */
     public function destroy(CmsContent $cmsContent)
     {

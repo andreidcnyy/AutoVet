@@ -20,12 +20,14 @@ import { LuStethoscope, LuPawPrint, LuPill } from "react-icons/lu";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import OwnerProfileModal from "./OwnerProfileModal";
+import { useAuth } from "../../context/AuthContext";
+import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
   { key: "medical", label: "Medical Records", icon: LuStethoscope },
   { key: "appointments", label: "Appointments", icon: FiCalendar },
-  { key: "billing", label: "Billing", icon: FiFileText },
+  { key: "invoices", label: "Invoices", icon: FiFileText },
 ];
 
 const statusStyles = {
@@ -223,6 +225,9 @@ function ViewPatientProfile({ patient }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
+  const { user } = useAuth();
+  const isStaff = user?.role === ROLES.STAFF;
+  const isVet = VET_AND_ADMIN.includes(user?.role);
 
   if (!patient) {
     return (
@@ -289,9 +294,9 @@ function ViewPatientProfile({ patient }) {
 
         <div className="p-6">
           {activeTab === "overview" && <OverviewTab patient={patient} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
-          {activeTab === "medical" && <MedicalRecordsTab patient={patient} />}
+          {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
-          {activeTab === "billing" && <BillingTab invoices={patient.invoices || []} />}
+          {activeTab === "invoices" && <InvoiceTab invoices={patient.invoices || []} />}
         </div>
       </div>
 
@@ -493,9 +498,9 @@ function AppointmentsTab({ appointments }) {
   );
 }
 
-/* ──────────────── Billing Tab ──────────────── */
+/* ──────────────── Invoices Tab ──────────────── */
 
-function BillingTab({ invoices }) {
+function InvoiceTab({ invoices }) {
   if (invoices.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -559,7 +564,7 @@ function BillingTab({ invoices }) {
 
 /* ──────────────── Medical Records Tab ──────────────── */
 
-function MedicalRecordsTab({ patient }) {
+function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const toast = useToast();
   const [records, setRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -613,12 +618,14 @@ function MedicalRecordsTab({ patient }) {
     <div>
       <div className="mb-4 flex items-center justify-between">
          <h3 className="text-lg font-semibold text-slate-800 dark:text-zinc-100">Patient History</h3>
-         <button 
-           onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}
-           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
-         >
-           Add Record
-         </button>
+         {!isStaff && (
+           <button 
+             onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}
+             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+           >
+             Add Record
+           </button>
+         )}
       </div>
 
       <div className="space-y-4">
@@ -631,10 +638,12 @@ function MedicalRecordsTab({ patient }) {
                   <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{formatDate(record.created_at)}</p>
                   {record.vet && <p className="text-xs text-slate-500 dark:text-zinc-400">Attending Vet: Dr. {record.vet.name}</p>}
                </div>
-               <div className="flex gap-3">
-                 <button onClick={() => { setEditingRecord(record); setIsModalOpen(true); }} className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
-                 <button onClick={() => deleteRecord(record.id)} className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
-               </div>
+                {!isStaff && (
+                  <div className="flex gap-3">
+                    <button onClick={() => { setEditingRecord(record); setIsModalOpen(true); }} className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
+                    <button onClick={() => deleteRecord(record.id)} className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                  </div>
+                )}
              </div>
              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700 dark:text-zinc-300">
                <div><strong className="text-slate-900 dark:text-zinc-100">Chief Complaint:</strong> {record.chief_complaint || "—"}</div>
@@ -653,13 +662,15 @@ function MedicalRecordsTab({ patient }) {
           record={editingRecord} 
           onClose={() => setIsModalOpen(false)} 
           onSave={onSave} 
+          isStaff={isStaff}
+          isVet={isVet}
         />
       )}
     </div>
   );
 }
 
-function MedicalRecordModal({ record, onClose, onSave }) {
+function MedicalRecordModal({ record, onClose, onSave, isStaff, isVet }) {
   const isEdit = !!record;
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -686,11 +697,29 @@ function MedicalRecordModal({ record, onClose, onSave }) {
              </div>
              <div>
                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Diagnosis (Vets Only)</label>
-               <textarea name="diagnosis" rows={2} defaultValue={record?.diagnosis || ""} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+               <textarea 
+                 name="diagnosis" 
+                 rows={2} 
+                 readOnly={!isVet}
+                 defaultValue={record?.diagnosis || ""} 
+                 className={clsx(
+                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
+                   !isVet ? "bg-slate-50 cursor-not-allowed italic" : "bg-white"
+                 )}
+               ></textarea>
              </div>
              <div>
                <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Treatment Plan</label>
-               <textarea name="treatment_plan" rows={2} defaultValue={record?.treatment_plan || ""} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-blue-400"></textarea>
+               <textarea 
+                 name="treatment_plan" 
+                 rows={2} 
+                 readOnly={!isVet}
+                 defaultValue={record?.treatment_plan || ""} 
+                 className={clsx(
+                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
+                   !isVet ? "bg-slate-50 cursor-not-allowed italic" : "bg-white"
+                 )}
+               ></textarea>
              </div>
              <div className="grid grid-cols-2 gap-4">
                <div>
@@ -706,7 +735,9 @@ function MedicalRecordModal({ record, onClose, onSave }) {
         </div>
         <div className="border-t bg-slate-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">Cancel</button>
-          <button type="submit" form="med-record-form" className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Record</button>
+          {!isStaff && (
+            <button type="submit" form="med-record-form" className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Record</button>
+          )}
         </div>
       </div>
     </div>

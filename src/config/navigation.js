@@ -8,13 +8,14 @@ import {
   FiBarChart2,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
+import { ROLES } from "../constants/roles";
 
 export const primaryNavigation = [
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid },
   { id: "patients", label: "Patients", path: "/patients", icon: LuPawPrint },
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI" },
-  { id: "billing", label: "Billing", path: "/billing", icon: FiCreditCard },
+  { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard },
   { id: "reports", label: "Reports", path: "/reports", icon: FiBarChart2 },
 ];
 
@@ -29,7 +30,7 @@ export const clinicInfo = {
 
 export const currentUser = {
   name: "Dr. Sarah Smith",
-  role: "Chief Veterinarian",
+  role: ROLES.VETERINARIAN,
   // Local fallback avatar — works offline. Real avatar comes from AuthContext (API).
   avatar: "/images/fallbacks/user-vet.svg",
 };

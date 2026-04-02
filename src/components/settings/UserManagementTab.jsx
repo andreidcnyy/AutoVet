@@ -4,6 +4,7 @@ import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import { ROLES } from "../../constants/roles";
 
 export default function UserManagementTab() {
   const toast = useToast();
@@ -13,7 +14,7 @@ export default function UserManagementTab() {
   const [editingUser, setEditingUser] = useState(null);
   const { user } = useAuth();
 
-  const [formData, setFormData] = useState({ name: "", email: "", role: "Staff", status: "Active", password: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", role: ROLES.STAFF, status: "Active", password: "" });
 
   const fetchUsers = () => {
     if (!user?.token) return;
@@ -39,7 +40,7 @@ export default function UserManagementTab() {
       setFormData({ name: user.name, email: user.email, role: user.role, status: user.status, password: "" });
     } else {
       setEditingUser(null);
-      setFormData({ name: "", email: "", role: "Staff", status: "Active", password: "" });
+      setFormData({ name: "", email: "", role: ROLES.STAFF, status: "Active", password: "" });
     }
     setIsModalOpen(true);
   };
@@ -182,10 +183,9 @@ export default function UserManagementTab() {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Role</label>
                   <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
-                    <option value="Admin">Admin</option>
-                    <option value="Chief Veterinarian">Chief Veterinarian</option>
-                    <option value="Veterinarian">Veterinarian</option>
-                    <option value="Staff">Staff</option>
+                    <option value={ROLES.ADMIN}>Admin</option>
+                    <option value={ROLES.VETERINARIAN}>Veterinarian</option>
+                    <option value={ROLES.STAFF}>Staff</option>
                   </select>
                 </div>
                 <div>

@@ -1,3 +1,5 @@
+import { ROLES } from "../constants/roles";
+
 /**
  * User avatar utilities — offline-safe.
  *
@@ -14,25 +16,24 @@
  * @param {string} name - The user's display name (kept for future initials support)
  */
 export const getUserAvatarUrl = (role, name) => {
-  const r = role?.toLowerCase() || "";
-
-  // Admin / Executive
-  if (r.includes("admin")) {
+  // exact matching is now favored over fuzzy includes
+  if (role === ROLES.ADMIN) {
     return "/images/fallbacks/user-admin.svg";
   }
 
-  // Chief Veterinarian or Veterinarian
-  if (r.includes("veterinarian") || r.includes("vet") || r.includes("chief")) {
+  if (role === ROLES.VETERINARIAN) {
     return "/images/fallbacks/user-vet.svg";
   }
 
-  // Staff, Nurse, Receptionist, or any support role
-  if (
-    r.includes("staff") ||
-    r.includes("nurse") ||
-    r.includes("receptionist") ||
-    r.includes("technician")
-  ) {
+  if (role === ROLES.STAFF) {
+    return "/images/fallbacks/user-staff.svg";
+  }
+
+  // Backup fuzzy fallback for legacy or support roles
+  const r = role?.toLowerCase() || "";
+  if (r.includes("admin")) return "/images/fallbacks/user-admin.svg";
+  if (r.includes("vet")) return "/images/fallbacks/user-vet.svg";
+  if (r.includes("staff") || r.includes("nurse") || r.includes("technician")) {
     return "/images/fallbacks/user-staff.svg";
   }
 

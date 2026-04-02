@@ -127,23 +127,32 @@ function AppointmentsView() {
 
     fetch("/api/owners", { headers })
       .then((res) => res.json())
-      .then((data) => setOwners(data))
+      .then((data) => setOwners(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error fetching owners:", err));
 
     fetch("/api/pets", { headers })
       .then((res) => res.json())
-      .then((data) => setPets(data))
+      .then((data) => setPets(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error fetching pets:", err));
 
     fetch("/api/services", { headers })
       .then((res) => res.json())
-      .then((data) => setServices(data))
+      .then((data) => setServices(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error fetching services:", err));
 
-    fetch("/api/users", { headers })
+    fetch("/api/vets", { headers })
       .then((res) => res.json())
-      .then((data) => setVets(data))
-      .catch((err) => console.error("Error fetching vets:", err));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setVets(data);
+        } else {
+          setVets([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching vets:", err);
+        setVets([]);
+      });
 
     fetch("/api/settings", { headers })
       .then(res => res.json())
