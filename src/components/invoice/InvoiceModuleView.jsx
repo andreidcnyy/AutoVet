@@ -68,7 +68,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 
   y = 55;
 
-  // 3. Billing Sections
+  // 3. Invoice Sections
   // Bill To Box
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
@@ -199,7 +199,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.save(`Invoice_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
 
-function BillingInvoiceView() {
+function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
@@ -260,8 +260,8 @@ function BillingInvoiceView() {
         setInventory(Array.isArray(inventoryData) ? inventoryData : []);
       })
       .catch((err) => {
-        console.error("Critical fail in Billing initialization:", err);
-        toast.error("Failed to load initial billing data.");
+        console.error("Critical fail in Invoice initialization:", err);
+        toast.error("Failed to load initial invoice data.");
       });
 
     fetch("/api/weight-ranges", { headers })
@@ -559,7 +559,7 @@ function BillingInvoiceView() {
         {!isPreviewMode && (
           <aside className="flex h-full flex-col overflow-hidden border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-slate-200 dark:border-dark-border">
             <div className="shrink-0 border-b border-slate-200 dark:border-dark-border p-5">
-              <p className="text-sm text-slate-500 dark:text-zinc-400">Billing &gt; New Invoice</p>
+              <p className="text-sm text-slate-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
               <div className="mt-2 flex items-center gap-3">
                 <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">New Invoice</h2>
                 <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
@@ -1055,4 +1055,4 @@ function BillingInvoiceView() {
   );
 }
 
-export default BillingInvoiceView;
+export default InvoiceModuleView;

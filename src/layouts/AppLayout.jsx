@@ -8,6 +8,7 @@ import {
   primaryNavigation,
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
+import { ROLES } from "../constants/roles";
 
 function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -17,12 +18,7 @@ function AppLayout() {
   const { user, loading, login: setUser } = useAuth();
   const [isMaintenance, setIsMaintenance] = useState(false);
 
-  // If not authenticated, redirect to login (useEffect to avoid render loop)
-  React.useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login", { replace: true });
-    }
-  }, [user, loading, navigate]);
+  // Redundant redirect logic removed as it is now handled by ProtectedRoute in router.jsx
 
   React.useEffect(() => {
     if (user && user.token) {
@@ -50,9 +46,9 @@ function AppLayout() {
     return titledMatch?.handle?.title ?? "AutoVet";
   }, [matches]);
 
-  if (loading || !user) return null;
+  // Redundant loading/user check removed as ProtectedRoute guards the entire layout.
 
-  if (isMaintenance && user?.role !== "Admin" && user?.role !== "Chief Veterinarian") {
+  if (isMaintenance && user?.role !== ROLES.ADMIN) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center dark:bg-dark-bg">
         <div className="mb-4 rounded-full bg-amber-100 p-4 dark:bg-amber-900/30">

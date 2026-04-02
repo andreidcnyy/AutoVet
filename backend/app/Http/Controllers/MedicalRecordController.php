@@ -69,7 +69,7 @@ class MedicalRecordController extends Controller
             'follow_up_date'  => 'nullable|date',
         ]);
 
-        // Only clinical staff (Veterinarian, Chief Veterinarian) may edit diagnosis
+        // Only clinical staff (Veterinarian) may edit diagnosis
         if ($request->has('diagnosis') && auth()->check()) {
             $userRole = auth()->user()->role;
             if (!in_array($userRole, Roles::clinicalRoles())) {
@@ -85,7 +85,7 @@ class MedicalRecordController extends Controller
 
     public function destroy(MedicalRecord $medicalRecord)
     {
-        // Deletion restricted to Admin, Chief Veterinarian, or Veterinarian
+        // Deletion restricted to Admin or Veterinarian
         if (auth()->check()) {
             $userRole = auth()->user()->role;
             $allowedRoles = array_merge(Roles::adminRoles(), [Roles::VETERINARIAN->value]);

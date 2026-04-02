@@ -52,6 +52,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/profile',  [ProfileController::class, 'show']);
     Route::put('/profile',  [ProfileController::class, 'update']);
     Route::get('/user',     function (Request $request) { return $request->user(); });
+    Route::get('/vets',     [UserController::class, 'vets']);
 
     // -----------------------------------------------------------------------
     // Inventory
@@ -64,10 +65,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     
     // Inventory Write - Restricted to Clinic Management
     Route::post('/inventory', [InventoryController::class, 'store'])
-         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value . ',' . Roles::STAFF->value);
+         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::STAFF->value);
          
     Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])
-         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value);
+         ->middleware('role:' . Roles::ADMIN->value);
 
 
     // -----------------------------------------------------------------------
@@ -75,12 +76,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     Route::get('/settings', [SettingController::class, 'index']);
     Route::put('/settings', [SettingController::class, 'update'])
-         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value);
+         ->middleware('role:' . Roles::ADMIN->value);
 
 
     // -----------------------------------------------------------------------
     // Core Clinical & Administrative Resources
-    // Restricted to Clinic Staff (Admin, Chief Vet, Vet, Staff)
+    // Restricted to Clinic Staff (Admin, Vet, Staff)
     // -----------------------------------------------------------------------
     Route::group(['middleware' => 'role:' . implode(',', Roles::all())], function () {
         Route::get('/dashboard/stats',                [DashboardController::class, 'getStats']);
@@ -113,7 +114,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/species',              [SpeciesController::class, 'index']);
     Route::get('/breeds',               [BreedController::class, 'index']);
 
-    // Master Data — Write access: Admin and Chief Veterinarian only
+    // Master Data — Write access: Admin only
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
 
         Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
@@ -129,7 +130,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // CMS Content (Website Content Management)
     // Read: all authenticated clinic users
-    // Write: Admin and Chief Veterinarian only
+    // Write: Admin only
     // -----------------------------------------------------------------------
     Route::get('/cms-contents',              [CmsContentController::class, 'index']);
     Route::get('/cms-contents/{cmsContent}', [CmsContentController::class, 'show']);
@@ -141,9 +142,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
 
     // -----------------------------------------------------------------------
-    // Specialized Reports — restricted to clinical and admin roles
+    // Specialized Reports — restricted to Admin only
     // -----------------------------------------------------------------------
-    $reportRoles = array_merge(Roles::adminRoles(), [Roles::VETERINARIAN->value]);
+    $reportRoles = Roles::adminRoles();
     Route::group(['prefix' => 'reports', 'middleware' => 'role:' . implode(',', $reportRoles)], function () {
 
         Route::get('/inventory/low-stock',            [\App\Http\Controllers\LowStockReportController::class, 'generate']);

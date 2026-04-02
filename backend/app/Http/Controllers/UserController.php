@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\User;
+use App\Enums\Roles;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class UserController extends Controller
         ]);
 
         if (empty($validated['role'])) {
-            $validated['role'] = 'Staff';
+            $validated['role'] = Roles::STAFF->value;
         }
         if (empty($validated['status'])) {
             $validated['status'] = 'Active';
@@ -70,5 +71,18 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * Return a minimal list of veterinarians for appointment assignment.
+     * Accessible to all clinic staff.
+     */
+    public function vets()
+    {
+        $vets = User::where('role', Roles::VETERINARIAN->value)
+            ->select('id', 'name')
+            ->get();
+
+        return response()->json($vets);
     }
 }

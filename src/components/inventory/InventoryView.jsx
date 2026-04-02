@@ -17,6 +17,7 @@ import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 import { useAuth } from "../../context/AuthContext";
+import { ROLES } from "../../constants/roles";
 
 const categoryIcons = {
   Medicines: LuPill,
@@ -66,6 +67,7 @@ function InventoryView() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
   const { user } = useAuth();
+  const isStaff = user?.role === ROLES.STAFF;
 
   useEffect(() => {
     const fetchInventory = async () => {
@@ -189,17 +191,19 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        <button
-          onClick={handleRunForecast}
-          disabled={isSimulating}
-          className={clsx(
-            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition",
-            isSimulating ? "bg-blue-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700"
-          )}
-        >
-          <LuSparkles className={clsx("h-4 w-4", isSimulating && "animate-spin")} />
-          {isSimulating ? "Analyzing..." : "Run AI Forecast"}
-        </button>
+        {!isStaff && (
+          <button
+            onClick={handleRunForecast}
+            disabled={isSimulating}
+            className={clsx(
+              "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition",
+              isSimulating ? "bg-blue-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700"
+            )}
+          >
+            <LuSparkles className={clsx("h-4 w-4", isSimulating && "animate-spin")} />
+            {isSimulating ? "Analyzing..." : "Run AI Forecast"}
+          </button>
+        )}
       </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
@@ -263,13 +267,15 @@ function InventoryView() {
               <span className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-500" />
               Expiring
             </button>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="ml-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"
-            >
-              <FiPlus className="h-4 w-4" />
-              Add Item
-            </button>
+            {!isStaff && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="ml-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"
+              >
+                <FiPlus className="h-4 w-4" />
+                Add Item
+              </button>
+            )}
           </div>
         </div>
 

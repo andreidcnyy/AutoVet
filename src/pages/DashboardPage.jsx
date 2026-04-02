@@ -5,6 +5,7 @@ import RecentNotificationsCard from "../components/dashboard/RecentNotifications
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
 import * as Icons from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import { ROLES } from "../constants/roles";
 
 function DashboardPage() {
   const [apiStatus, setApiStatus] = useState(null);
@@ -12,6 +13,7 @@ function DashboardPage() {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const isStaff = user?.role === ROLES.STAFF;
 
   useEffect(() => {
     if (!user?.token) return;
@@ -30,10 +32,12 @@ function DashboardPage() {
         
         const safeStats = Array.isArray(statsData) ? statsData : [];
         // Map icon names to components for metrics
-        const mappedMetrics = safeStats.map(stat => ({
-          ...stat,
-          icon: Icons[stat.iconName] || Icons.FiActivity
-        }));
+        const mappedMetrics = safeStats
+          .filter(stat => !(isStaff && stat.title === "Monthly Revenue"))
+          .map(stat => ({
+            ...stat,
+            icon: Icons[stat.iconName] || Icons.FiActivity
+          }));
         setMetrics(mappedMetrics);
 
         const safeNotifs = Array.isArray(notifData) ? notifData : [];
@@ -84,7 +88,7 @@ function DashboardPage() {
 
       <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          <AiSalesForecastCard />
+          {!isStaff && <AiSalesForecastCard />}
           <InventoryChartCard />
         </div>
         <RecentNotificationsCard 

@@ -10,17 +10,16 @@ namespace App\Enums;
  */
 enum Roles: string
 {
-    case ADMIN        = 'Admin';
-    case CHIEF_VET    = 'Chief Veterinarian';
-    case VETERINARIAN = 'Veterinarian';
-    case STAFF        = 'Staff';
+    case ADMIN        = 'admin';
+    case VETERINARIAN = 'veterinarian';
+    case STAFF        = 'staff';
 
     /**
      * Roles that can perform administrative write operations.
      */
     public static function adminRoles(): array
     {
-        return [self::ADMIN->value, self::CHIEF_VET->value];
+        return [self::ADMIN->value];
     }
 
     /**
@@ -28,7 +27,7 @@ enum Roles: string
      */
     public static function clinicalRoles(): array
     {
-        return [self::CHIEF_VET->value, self::VETERINARIAN->value];
+        return [self::VETERINARIAN->value];
     }
 
     /**
@@ -44,6 +43,6 @@ enum Roles: string
      */
     public function matches(string $role): bool
     {
-        return strtolower($role) === strtolower($this->value);
+        return $role === $this->value;
     }
 }

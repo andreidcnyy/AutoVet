@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import { ROLES } from "../../constants/roles";
 
 const profileSchema = z.object({
     name: z.string().min(1, "Name is required").max(255),
@@ -195,10 +196,9 @@ function ProfileView({ user, setUser }) {
                                     )}
                                 >
                                     <option value="">Select Role</option>
-                                    <option value="admin">Administrator</option>
-                                    <option value="Veterinarian">Veterinarian</option>
-                                    <option value="Clinic Manager">Clinic Manager</option>
-                                    <option value="Assistant">Assistant</option>
+                                    <option value={ROLES.ADMIN}>Administrator</option>
+                                    <option value={ROLES.VETERINARIAN}>Veterinarian</option>
+                                    <option value={ROLES.STAFF}>Staff</option>
                                 </select>
                                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>}
                             </div>
