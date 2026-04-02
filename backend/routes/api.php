@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Enums\Roles;
+
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ProfileController;
@@ -43,15 +45,6 @@ Route::get('/status', function () {
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
-    // -----------------------------------------------------------------------
-    // Dashboard (previously unprotected — now correctly behind auth:sanctum)
-    // -----------------------------------------------------------------------
-    Route::get('/dashboard/stats',                [DashboardController::class, 'getStats']);
-    Route::get('/dashboard/notifications',        [DashboardController::class, 'getNotifications']);
-    Route::get('/dashboard/sales-forecast',       [DashboardController::class, 'getSalesForecast']);
-    Route::get('/dashboard/inventory-consumption',[DashboardController::class, 'getInventoryConsumption']);
-    Route::get('/dashboard/inventory-forecast',   [DashboardController::class, 'getInventoryForecast']);
-    Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
 
     // -----------------------------------------------------------------------
     // User profile
@@ -66,41 +59,48 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/inventory',                            [InventoryController::class, 'index']);
     Route::get('/inventory/low-stock',                  [InventoryController::class, 'lowStock']);
     Route::get('/inventory/{inventory}/transactions',   [InventoryController::class, 'transactions']);
+    Route::get('/inventory/{inventory}/transactions',   [InventoryController::class, 'transactions']);
     Route::put('/inventory/{inventory}',                [InventoryController::class, 'update']);
-    Route::post('/inventory',    [InventoryController::class, 'store'])
-         ->middleware('role:Admin,Chief Veterinarian,Staff');
+    
+    // Inventory Write - Restricted to Clinic Management
+    Route::post('/inventory', [InventoryController::class, 'store'])
+         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value . ',' . Roles::STAFF->value);
+         
     Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])
-         ->middleware('role:Admin,Chief Veterinarian');
+         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value);
+
 
     // -----------------------------------------------------------------------
     // Settings
     // -----------------------------------------------------------------------
     Route::get('/settings', [SettingController::class, 'index']);
     Route::put('/settings', [SettingController::class, 'update'])
-         ->middleware('role:Admin,Chief Veterinarian');
+         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::CHIEF_VET->value);
+
 
     // -----------------------------------------------------------------------
-    // Core clinical resources
+    // Core Clinical & Administrative Resources
+    // Restricted to Clinic Staff (Admin, Chief Vet, Vet, Staff)
     // -----------------------------------------------------------------------
-    Route::apiResource('appointments',    AppointmentController::class);
-    Route::apiResource('invoices',        InvoiceController::class);
-    Route::apiResource('services',        ServiceController::class);
+    Route::group(['middleware' => 'role:' . implode(',', Roles::all())], function () {
+        Route::get('/dashboard/stats',                [DashboardController::class, 'getStats']);
+        Route::get('/dashboard/notifications',        [DashboardController::class, 'getNotifications']);
+        Route::get('/dashboard/sales-forecast',       [DashboardController::class, 'getSalesForecast']);
+        Route::get('/dashboard/inventory-consumption',[DashboardController::class, 'getInventoryConsumption']);
+        Route::get('/dashboard/inventory-forecast',   [DashboardController::class, 'getInventoryForecast']);
+        Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
 
-    // Medical Records — registered here for the first time
-    // Read: all authenticated users | Write: clinical staff via controller-level check
-    Route::apiResource('medical-records', MedicalRecordController::class);
+        Route::apiResource('appointments',    AppointmentController::class);
 
-    // -----------------------------------------------------------------------
-    // Patients, Owners, Pets
-    // -----------------------------------------------------------------------
-    Route::post('owners/import', [OwnerController::class, 'import']);
-    Route::apiResource('owners',  OwnerController::class);
-    Route::apiResource('pets',    \App\Http\Controllers\PetController::class);
+        Route::apiResource('invoices',        InvoiceController::class);
+        Route::apiResource('services',        ServiceController::class);
+        Route::apiResource('medical-records', MedicalRecordController::class);
+        Route::apiResource('owners',          OwnerController::class);
+        Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
+        Route::apiResource('vet-schedules',   VetScheduleController::class);
+        Route::post('owners/import',          [OwnerController::class, 'import']);
+    });
 
-    // -----------------------------------------------------------------------
-    // Vet Schedules
-    // -----------------------------------------------------------------------
-    Route::apiResource('vet-schedules', VetScheduleController::class);
 
     // -----------------------------------------------------------------------
     // Master Data — Read access for all authenticated users
@@ -114,7 +114,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/breeds',               [BreedController::class, 'index']);
 
     // Master Data — Write access: Admin and Chief Veterinarian only
-    Route::group(['middleware' => 'role:Admin,Chief Veterinarian'], function () {
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+
         Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
         Route::apiResource('service-categories',   \App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
         Route::apiResource('pet-size-categories',  PetSizeCategoryController::class)->except(['index']);
@@ -132,7 +133,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     Route::get('/cms-contents',              [CmsContentController::class, 'index']);
     Route::get('/cms-contents/{cmsContent}', [CmsContentController::class, 'show']);
-    Route::group(['middleware' => 'role:Admin,Chief Veterinarian'], function () {
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+
         Route::post('/cms-contents',                   [CmsContentController::class, 'store']);
         Route::put('/cms-contents/{cmsContent}',       [CmsContentController::class, 'update']);
         Route::delete('/cms-contents/{cmsContent}',    [CmsContentController::class, 'destroy']);
@@ -141,7 +143,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // Specialized Reports — restricted to clinical and admin roles
     // -----------------------------------------------------------------------
-    Route::group(['prefix' => 'reports', 'middleware' => 'role:Admin,Chief Veterinarian,Veterinarian'], function () {
+    $reportRoles = array_merge(Roles::adminRoles(), [Roles::VETERINARIAN->value]);
+    Route::group(['prefix' => 'reports', 'middleware' => 'role:' . implode(',', $reportRoles)], function () {
+
         Route::get('/inventory/low-stock',            [\App\Http\Controllers\LowStockReportController::class, 'generate']);
         Route::get('/sales/revenue-summary',          [\App\Http\Controllers\SalesReportController::class, 'getRevenueSummary']);
         Route::get('/sales/top-services',             [\App\Http\Controllers\SalesReportController::class, 'getTopServices']);

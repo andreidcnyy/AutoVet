@@ -8,6 +8,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
+use App\Enums\Roles;
+
 
 class User extends Authenticatable
 {
@@ -49,4 +51,45 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
         ];
     }
+
+    /**
+     * Check if user has a specific role (case-insensitive).
+     */
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array(strtolower($this->role), array_map('strtolower', $roles));
+    }
+
+    /**
+     * Is the user an Admin?
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(Roles::ADMIN->value);
+    }
+
+    /**
+     * Is the user a Chief Veterinarian or Admin (Full permissions)?
+     */
+    public function isFullAdmin(): bool
+    {
+        return $this->hasRole(...Roles::adminRoles());
+    }
+
+    /**
+     * Is the user clinical staff (Chief Vet or Veterinarian)?
+     */
+    public function isClinical(): bool
+    {
+        return $this->hasRole(...Roles::clinicalRoles());
+    }
+
+    /**
+     * Is the user general clinic staff?
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasRole(Roles::STAFF->value);
+    }
 }
+
