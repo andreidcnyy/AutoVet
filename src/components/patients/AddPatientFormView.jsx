@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { useAuth } from "../../context/AuthContext";
+import PhoneInput from "../common/PhoneInput";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -45,13 +46,9 @@ const patientSchema = z.object({
   owner_id: z.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string()
-    .min(1, "Phone number is required")
-    .regex(/^(09|\+639)\d{9,10}$/, "Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX")
-    .refine(val => {
-      if (val.startsWith('09')) return val.length === 11;
-      if (val.startsWith('+639')) return val.length === 13;
-      return false;
-    }, "Phone number must start with 09 (11 digits) or +639 (13 characters)"),
+    .min(5, "Phone number is too short")
+    .max(20, "Phone number is too long")
+    .regex(/^\+?[1-9]\d{1,14}$/, "Please enter a valid international phone number"),
   owner_email: z.string().max(255).optional().or(z.literal("")),
   owner_address: z.string().optional(),
   owner_city: z.string().optional(),
@@ -146,6 +143,8 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       }
     }
   }, [breedIdValue, speciesIdValue, availableBreeds, setValue, weightValue]);
+  
+  const ownerPhoneValue = watch("owner_phone");
 
   const calculateDynamicSize = (weight, speciesId) => {
     if (!weight || !speciesId) return null;
@@ -440,19 +439,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number *</label>
-                      <input
-                        {...register("owner_phone")}
-                        type="text"
-                        className={getInputClass(errors.owner_phone)}
-                        placeholder="09XXXXXXXXX or +639XXXXXXXXX"
-                        onInput={(e) => {
-                          e.target.value = e.target.value.replace(/[^0-9+]/g, '');
-                          if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
-                            e.target.value = e.target.value.replace(/\+/g, '');
-                          }
-                        }}
+                      <PhoneInput
+                        value={ownerPhoneValue}
+                        onChange={(phone) => setValue("owner_phone", phone, { shouldValidate: true })}
+                        error={errors.owner_phone}
                       />
-                      {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
                     </div>
                     <div className="lg:col-span-2">
                       <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Email Address</label>

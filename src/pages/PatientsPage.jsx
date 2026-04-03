@@ -4,6 +4,7 @@ import PatientRecordsView from "../components/patients/PatientRecordsView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import PhoneInput from "../components/common/PhoneInput";
 
 function PatientsPage() {
   const toast = useToast();
@@ -14,6 +15,7 @@ function PatientsPage() {
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
+  const [phoneValue, setPhoneValue] = useState("");
 
   const fetchOwners = () => {
     setIsLoading(true);
@@ -107,9 +109,12 @@ function PatientsPage() {
                     "Accept": "application/json",
                     "Authorization": `Bearer ${user?.token}`
                   },
-                  body: JSON.stringify(data),
+                  body: JSON.stringify({ ...data, phone: phoneValue }),
                 });
-                if (!res.ok) throw new Error("Failed to create owner");
+                if (!res.ok) {
+                  const errData = await res.json().catch(() => ({}));
+                  throw new Error(errData.message || "Failed to create owner");
+                }
                 const newOwner = await res.json();
                 setOwners((prev) => [...prev, { ...newOwner, pets: [] }]);
                 setView("records");
@@ -126,17 +131,9 @@ function PatientsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Phone *</label>
-                  <input 
-                    name="phone" 
-                    required 
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" 
-                    placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
-                    onInput={(e) => {
-                      e.target.value = e.target.value.replace(/[^0-9+]/g, '');
-                      if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
-                        e.target.value = e.target.value.replace(/\+/g, '');
-                      }
-                    }}
+                  <PhoneInput
+                    value={phoneValue}
+                    onChange={setPhoneValue}
                   />
                 </div>
                 <div>
