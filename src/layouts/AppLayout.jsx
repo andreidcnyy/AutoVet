@@ -65,11 +65,21 @@ function AppLayout() {
   }
 
 
+  const filteredPrimaryNav = useMemo(() => {
+    if (!user || !user.role) return [];
+    return primaryNavigation.filter((item) => item.allowedRoles?.includes(user.role));
+  }, [user]);
+
+  const filteredBottomNav = useMemo(() => {
+    if (!user || !user.role) return [];
+    return bottomNavigation.filter((item) => item.allowedRoles?.includes(user.role));
+  }, [user]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg transition-colors duration-300">
       <Sidebar
-        items={primaryNavigation}
-        bottomItems={bottomNavigation}
+        items={filteredPrimaryNav}
+        bottomItems={filteredBottomNav}
         clinic={clinic}
         user={user}
         isOpen={isSidebarOpen}

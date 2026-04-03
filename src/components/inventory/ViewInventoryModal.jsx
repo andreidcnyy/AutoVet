@@ -20,7 +20,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isLoadingTx, setIsLoadingTx] = useState(false);
 
   const { user } = useAuth();
-  const isStaff = user?.role === ROLES.STAFF;
+  const isAdmin = user?.role === ROLES.ADMIN;
 
   useEffect(() => {
     if (isOpen && product) {
@@ -280,7 +280,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
           {/* Footer Buttons */}
           <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-dark-border">
-            {!isStaff && (
+            {isAdmin && (
               <>
                 <button
                   onClick={() => onDeleteRequest(product)}

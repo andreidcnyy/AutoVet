@@ -618,7 +618,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     <div>
       <div className="mb-4 flex items-center justify-between">
          <h3 className="text-lg font-semibold text-slate-800 dark:text-zinc-100">Patient History</h3>
-         {!isStaff && (
+         {isVet && (
            <button 
              onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}
              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
@@ -638,7 +638,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                   <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{formatDate(record.created_at)}</p>
                   {record.vet && <p className="text-xs text-slate-500 dark:text-zinc-400">Attending Vet: Dr. {record.vet.name}</p>}
                </div>
-                {!isStaff && (
+                {isVet && (
                   <div className="flex gap-3">
                     <button onClick={() => { setEditingRecord(record); setIsModalOpen(true); }} className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
                     <button onClick={() => deleteRecord(record.id)} className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
@@ -735,7 +735,7 @@ function MedicalRecordModal({ record, onClose, onSave, isStaff, isVet }) {
         </div>
         <div className="border-t bg-slate-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">Cancel</button>
-          {!isStaff && (
+          {isVet && (
             <button type="submit" form="med-record-form" className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Record</button>
           )}
         </div>
