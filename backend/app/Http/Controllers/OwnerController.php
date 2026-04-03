@@ -5,9 +5,36 @@ namespace App\Http\Controllers;
 use App\Models\Owner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\PhoneNumberFormat;
+use libphonenumber\NumberParseException;
 
 class OwnerController extends Controller
 {
+    /**
+     * Normalize phone number to +639XXXXXXXXX format.
+     */
+    private function normalizePhone(?string $phone): ?string
+    {
+        if (!$phone) return null;
+
+        $phoneUtil = PhoneNumberUtil::getInstance();
+        try {
+            // Parse the number. If no leading +, we'll attempt to parse with PH as default for safety
+            // but the frontend should provide + code.
+            $numberProto = $phoneUtil->parse($phone, "PH");
+            
+            if ($phoneUtil->isValidNumber($numberProto)) {
+                return $phoneUtil->format($numberProto, PhoneNumberFormat::E164);
+            }
+        } catch (NumberParseException $e) {
+            // Fallback to basic cleanup if parsing fails
+        }
+
+        // Basic cleanup if library fails or number is invalid
+        return preg_replace('/(?<!^)\+|[^0-9+]/', '', $phone);
+    }
+
     public function import(Request $request)
     {
         $request->validate([
@@ -49,10 +76,8 @@ class OwnerController extends Controller
                 continue;
             }
 
-            // Normalize phone number: 09XXXXXXXXX -> +639XXXXXXXXX
-            if (str_starts_with($ownerData['phone'], '09')) {
-                $ownerData['phone'] = '+63' . substr($ownerData['phone'], 1);
-            }
+            // Normalize phone number
+            $ownerData['phone'] = $this->normalizePhone($ownerData['phone']);
 
             Owner::updateOrCreate(
                 ['phone' => $ownerData['phone']],
@@ -90,7 +115,17 @@ class OwnerController extends Controller
             'phone' => [
                 'required',
                 'string',
-                'regex:/^09\d{9}$|^\+639\d{9}$/',
+                function ($attribute, $value, $fail) {
+                    $phoneUtil = PhoneNumberUtil::getInstance();
+                    try {
+                        $numberProto = $phoneUtil->parse($value, "PH");
+                        if (!$phoneUtil->isValidNumber($numberProto)) {
+                            $fail('The phone number is not a valid international number.');
+                        }
+                    } catch (NumberParseException $e) {
+                        $fail('The phone number format is invalid.');
+                    }
+                },
             ],
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:255',
@@ -98,13 +133,17 @@ class OwnerController extends Controller
             'province' => 'nullable|string|max:255',
             'zip' => 'nullable|string|max:255',
         ], [
-            'phone.regex' => 'The phone number must be in the format 09XXXXXXXXX or +639XXXXXXXXX.',
             'phone.required' => 'Phone number is required.',
         ]);
 
-        // Normalize phone number: 09XXXXXXXXX -> +639XXXXXXXXX
-        if (str_starts_with($validated['phone'], '09')) {
-            $validated['phone'] = '+63' . substr($validated['phone'], 1);
+        $validated['phone'] = $this->normalizePhone($validated['phone']);
+
+        // Check for duplicate after normalization
+        if (Owner::where('phone', $validated['phone'])->exists()) {
+            return response()->json([
+                'message' => 'An owner with this phone number already exists.',
+                'errors' => ['phone' => ['This phone number is already registered.']]
+            ], 422);
         }
 
         $owner = Owner::create($validated);
@@ -123,7 +162,17 @@ class OwnerController extends Controller
             'phone' => [
                 'required',
                 'string',
-                'regex:/^09\d{9}$|^\+639\d{9}$/',
+                function ($attribute, $value, $fail) {
+                    $phoneUtil = PhoneNumberUtil::getInstance();
+                    try {
+                        $numberProto = $phoneUtil->parse($value, "PH");
+                        if (!$phoneUtil->isValidNumber($numberProto)) {
+                            $fail('The phone number is not a valid international number.');
+                        }
+                    } catch (NumberParseException $e) {
+                        $fail('The phone number format is invalid.');
+                    }
+                },
             ],
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:255',
@@ -131,13 +180,17 @@ class OwnerController extends Controller
             'province' => 'nullable|string|max:255',
             'zip' => 'nullable|string|max:255',
         ], [
-            'phone.regex' => 'The phone number must be in the format 09XXXXXXXXX or +639XXXXXXXXX.',
             'phone.required' => 'Phone number is required.',
         ]);
 
-        // Normalize phone number: 09XXXXXXXXX -> +639XXXXXXXXX
-        if (str_starts_with($validated['phone'], '09')) {
-            $validated['phone'] = '+63' . substr($validated['phone'], 1);
+        $validated['phone'] = $this->normalizePhone($validated['phone']);
+
+        // Check for duplicate after normalization (excluding current owner)
+        if (Owner::where('phone', $validated['phone'])->where('id', '!=', $owner->id)->exists()) {
+            return response()->json([
+                'message' => 'Another owner with this phone number already exists.',
+                'errors' => ['phone' => ['This phone number is already registered to another owner.']]
+            ], 422);
         }
 
         $owner->update($validated);
