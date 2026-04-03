@@ -67,7 +67,7 @@ function InventoryView() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
   const { user } = useAuth();
-  const isStaff = user?.role === ROLES.STAFF;
+  const isAdmin = user?.role === ROLES.ADMIN;
 
   useEffect(() => {
     const fetchInventory = async () => {
@@ -191,7 +191,7 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        {!isStaff && (
+        {isAdmin && (
           <button
             onClick={handleRunForecast}
             disabled={isSimulating}
@@ -267,7 +267,7 @@ function InventoryView() {
               <span className="mr-2 inline-block h-2 w-2 rounded-full bg-rose-500" />
               Expiring
             </button>
-            {!isStaff && (
+            {isAdmin && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 className="ml-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm"

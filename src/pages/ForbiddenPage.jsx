@@ -6,23 +6,10 @@ const ForbiddenPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleGoBack = () => {
-    // Check if there is valid history state to safely return to
-    if (window.history.state && window.history.state.idx > 0) {
-      navigate(-1);
-    } else {
-      // Fallback to a safe allowed route if history is empty or invalid
-      navigate("/", { replace: true });
-    }
-  };
-
-  const handleDashboard = () => {
-    // Dashboard (root) is the safest allowed route across all authenticated roles
-    navigate("/", { replace: true });
-  };
-
+  const handleGoBack = () => navigate("/", { replace: true });
+  const handleDashboard = () => navigate("/", { replace: true });
+  
   const handleSignOut = async () => {
-    // Await logout to guarantee state clears fully before redirecting
     await logout();
     navigate("/login", { replace: true });
   };

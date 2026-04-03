@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -59,15 +61,24 @@ function LoginPage() {
         </div>
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="input-field"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              className="input-field pr-10"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300"
+            >
+              {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         {error && <div className="text-sm text-rose-600 dark:text-rose-400">{error}</div>}
         <button
