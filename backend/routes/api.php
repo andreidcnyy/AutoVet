@@ -53,6 +53,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::put('/profile',  [ProfileController::class, 'update']);
     Route::get('/user',     function (Request $request) { return $request->user(); });
     Route::get('/vets',     [UserController::class, 'vets']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // -----------------------------------------------------------------------
     // Inventory
@@ -125,6 +126,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::apiResource('species',              SpeciesController::class)->except(['index']);
         Route::apiResource('breeds',               BreedController::class)->except(['index']);
         Route::apiResource('users',                UserController::class);
+        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
     });
 
     // -----------------------------------------------------------------------

@@ -34,7 +34,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (data) => {
-    const userWithToken = { ...data, token: data.token }; 
+    // Ensure all data (including must_change_password) is preserved
+    const userWithToken = { ...data }; 
     setUser(userWithToken);
     localStorage.setItem("user", JSON.stringify(userWithToken));
   };

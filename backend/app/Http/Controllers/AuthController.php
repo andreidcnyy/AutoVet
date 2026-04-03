@@ -41,7 +41,23 @@ class AuthController extends Controller
             'role' => $user->role,
             'avatar' => $user->avatar,
             'status' => $user->status,
+            'must_change_password' => $user->must_change_password,
             'token' => $token,
         ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'password' => Hash::make($request->password),
+            'must_change_password' => false,
+        ]);
+
+        return response()->json(['message' => 'Password changed successfully']);
     }
 }

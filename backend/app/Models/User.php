@@ -27,7 +27,8 @@ class User extends Authenticatable
         'password',
         'role',
         'avatar',
-        'status'
+        'status',
+        'must_change_password'
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 
