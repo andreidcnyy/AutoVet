@@ -2,15 +2,16 @@ import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiHome, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/AuthContext";
+import PhoneInput from "../common/PhoneInput";
 
 const clinicSchema = z.object({
   clinic_name: z.string().min(1, "Clinic Name is required").max(255),
   primary_email: z.string().min(1, "Primary Email is required").email("Invalid email address").max(255),
-  phone_number: z.string().regex(/^([0-9\s\-\+\(\)]*)$/, "Invalid phone format").max(50).nullable().optional().or(z.literal("")),
+  phone_number: z.string().max(50).nullable().optional(),
   address: z.string().max(500).nullable().optional(),
   tax_rate: z.coerce.number().min(0, "Tax rate cannot exceed negative").max(100, "Tax rate cannot exceed 100").nullable().optional(),
   currency: z.string().max(50).nullable().optional(),
@@ -29,6 +30,7 @@ export default function ClinicProfileTab() {
     reset,
     watch,
     setValue,
+    control,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(clinicSchema),
@@ -66,7 +68,22 @@ export default function ClinicProfileTab() {
     })
       .then((res) => res.json())
       .then((data) => {
-        reset(data);
+        // Ensure data is an object and not an array
+        const settingsData = (data && !Array.isArray(data)) ? data : {};
+        
+        // Merge with defaults to prevent required fields becoming undefined
+        const merged = {
+          clinic_name: settingsData.clinic_name || "",
+          primary_email: settingsData.primary_email || "",
+          phone_number: settingsData.phone_number || "",
+          address: settingsData.address || "",
+          tax_rate: settingsData.tax_rate ?? 8.0,
+          currency: settingsData.currency || "USD ($)",
+          invoice_notes_template: settingsData.invoice_notes_template || "",
+          clinic_logo: settingsData.clinic_logo || ""
+        };
+        
+        reset(merged);
         setLoading(false);
       })
       .catch((err) => {
@@ -88,17 +105,23 @@ export default function ClinicProfileTab() {
         body: JSON.stringify({ settings: data })
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || "Failed to save settings");
+        throw new Error(result.message || "Failed to save settings");
       }
 
-      const result = await response.json();
-      reset(result.settings);
+      reset(result.settings || {});
       toast.success("Clinic profile changes saved securely.");
     } catch (error) {
+      console.error("Submit Error:", error);
       toast.error(error.message);
     }
+  };
+
+  const onInvalid = (errors) => {
+    console.warn("Form Validation Failed:", errors);
+    toast.error("Please check the form for errors.");
   };
 
   const inputBase = "w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 dark:bg-dark-surface dark:text-zinc-200 focus:outline-none";
@@ -113,7 +136,7 @@ export default function ClinicProfileTab() {
       <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Clinic Profile</h3>
       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage core clinic details and invoice defaults.</p>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
         <div className="mt-6">
           <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Clinic Logo</label>
           <div className="flex items-center gap-4">
@@ -156,9 +179,16 @@ export default function ClinicProfileTab() {
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Phone Number</label>
-            <input
-              {...register("phone_number")}
-              className={getInputClass(errors.phone_number)}
+            <Controller
+              name="phone_number"
+              control={control}
+              render={({ field }) => (
+                <PhoneInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Enter clinic phone..."
+                />
+              )}
             />
             {errors.phone_number && <p className="mt-1 text-sm text-red-500">{errors.phone_number.message}</p>}
           </div>

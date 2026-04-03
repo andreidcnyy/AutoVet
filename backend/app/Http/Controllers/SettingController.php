@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use libphonenumber\PhoneNumberUtil;
+use libphonenumber\PhoneNumberFormat;
 
 class SettingController extends Controller
 {
@@ -13,7 +15,7 @@ class SettingController extends Controller
     public function index()
     {
         $settings = Setting::all()->pluck('value', 'key');
-        return response()->json($settings);
+        return response()->json($settings->isEmpty() ? (object)[] : $settings);
     }
 
     /**
@@ -26,17 +28,33 @@ class SettingController extends Controller
             'settings.*' => 'nullable',
         ]);
 
+        $phoneUtil = PhoneNumberUtil::getInstance();
+
         foreach ($validatedData['settings'] as $key => $value) {
+            $valueToStore = $value;
+
+            // Normalize phone number if key matches
+            if ($key === 'phone_number' && !empty($value)) {
+                try {
+                    $phoneNumberProto = $phoneUtil->parse($value, "PH");
+                    if ($phoneUtil->isValidNumber($phoneNumberProto)) {
+                        $valueToStore = $phoneUtil->format($phoneNumberProto, PhoneNumberFormat::E164);
+                    }
+                } catch (\Exception $e) {
+                    // Fallback to original value if parsing fails
+                }
+            }
+
             Setting::updateOrCreate(
                 ['key' => $key],
-                ['value' => $value]
+                ['value' => $valueToStore]
             );
         }
 
         $allSettings = Setting::all()->pluck('value', 'key');
         return response()->json([
             'message' => 'Settings updated successfully',
-            'settings' => $allSettings,
+            'settings' => $allSettings->isEmpty() ? (object)[] : $allSettings,
         ]);
     }
 }
