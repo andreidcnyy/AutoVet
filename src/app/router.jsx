@@ -12,6 +12,7 @@ import LoginPage from "../pages/LoginPage";
 import ReportsPage from "../pages/ReportsPage";
 import ForbiddenPage from "../pages/ForbiddenPage";
 import CalendarPage from "../pages/CalendarPage";
+import ChangePasswordPage from "../pages/ChangePasswordPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
@@ -28,6 +29,15 @@ export const router = createBrowserRouter([
     path: "/forbidden",
     element: <ForbiddenPage />,
     handle: { title: "Access Denied" },
+  },
+  {
+    path: "/change-password",
+    element: (
+      <ProtectedRoute allowedRoles={ALL_ROLES}>
+        <ChangePasswordPage />
+      </ProtectedRoute>
+    ),
+    handle: { title: "Change Password" },
   },
   {
     path: "/",

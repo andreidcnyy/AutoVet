@@ -29,7 +29,11 @@ function LoginPage() {
       const data = await res.json();
       if (res.ok && !data.error) {
         login(data); // Set user context
-        navigate("/");
+        if (data.must_change_password) {
+          navigate("/change-password");
+        } else {
+          navigate("/");
+        }
       } else {
         setError(data.error || "Invalid credentials");
       }

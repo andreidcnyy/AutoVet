@@ -85,4 +85,18 @@ class UserController extends Controller
 
         return response()->json($vets);
     }
+
+    public function resetPassword(Request $request, User $user)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($request->password),
+            'must_change_password' => true,
+        ]);
+
+        return response()->json(['message' => 'User password has been reset successfully.']);
+    }
 }
