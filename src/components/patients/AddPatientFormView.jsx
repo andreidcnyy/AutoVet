@@ -80,9 +80,12 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       "Accept": "application/json",
       "Authorization": `Bearer ${user.token}`
     };
-    fetch("/api/species", { headers }).then(res => res.json()).then(data => {
-      if (Array.isArray(data)) setSpeciesList(data);
-    }).catch(console.error);
+    fetch("/api/species?per_page=100", { headers })
+      .then(res => res.json())
+      .then(data => {
+        const species = data.data || data;
+        if (Array.isArray(species)) setSpeciesList(species);
+      }).catch(console.error);
     fetch("/api/pet-size-categories", { headers }).then(res => res.json()).then(data => {
       const cats = data.data || data;
       if (Array.isArray(cats)) setSizeCategories(cats);

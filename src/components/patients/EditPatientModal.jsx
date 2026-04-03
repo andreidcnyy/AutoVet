@@ -64,9 +64,12 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 "Accept": "application/json",
                 "Authorization": `Bearer ${user.token}`
             };
-            fetch("/api/species", { headers })
+            fetch("/api/species?per_page=100", { headers })
                 .then(res => res.json())
-                .then(setSpeciesList)
+                .then(data => {
+                    const species = data.data || data;
+                    if (Array.isArray(species)) setSpeciesList(species);
+                })
                 .catch(console.error);
             fetch("/api/pet-size-categories", { headers })
                 .then(res => res.json())
