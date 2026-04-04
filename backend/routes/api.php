@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InventoryForecastController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
@@ -63,6 +64,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/inventory/{inventory}/transactions',   [InventoryController::class, 'transactions']);
     Route::get('/inventory/{inventory}/transactions',   [InventoryController::class, 'transactions']);
     Route::put('/inventory/{inventory}',                [InventoryController::class, 'update']);
+    Route::get('/inventory/{inventory}/forecast',       [InventoryForecastController::class, 'forecast']);
     
     // Inventory Write - Restricted to Clinic Management
     Route::post('/inventory', [InventoryController::class, 'store'])
