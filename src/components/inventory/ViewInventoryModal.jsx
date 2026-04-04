@@ -14,6 +14,7 @@ const statusStyles = {
 export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteRequest, onUpdate }) {
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({});
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -73,19 +74,29 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const res = await fetch(`/api/inventory/${formData.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
         },
         body: JSON.stringify(formData),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to save product");
+        const errorData = await res.json().catch(() => ({}));
+        let errorMsg = errorData.message || "Failed to save product";
+        if (errorData.errors) {
+            const firstKey = Object.keys(errorData.errors)[0];
+            if (errorData.errors[firstKey] && errorData.errors[firstKey][0]) {
+                errorMsg = errorData.errors[firstKey][0];
+            }
+        }
+        throw new Error(errorMsg);
       }
 
       const updated = await res.json();
@@ -94,6 +105,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       onUpdate(updated); 
     } catch (err) {
       toast.error(err.message || "An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -319,11 +332,18 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 </button>
 
                 <button
-                  onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                  onClick={() => {
+                    if (isEditing) {
+                      handleSave();
+                    } else {
+                      setIsEditing(true);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
-                  {isEditing ? "Save" : "Edit"}
+                  {isEditing ? (isSaving ? "Saving..." : "Save") : "Edit"}
                 </button>
               </>
             )}
