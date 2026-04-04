@@ -12,7 +12,7 @@ const STATUS_OPTIONS = ["In Stock", "Low Stock", "Expiring"];
 const inventorySchema = z.object({
     item_name: z.string().min(1, "Item name is required").max(255),
     sub_details: z.string().max(255).optional(),
-    category: z.string().min(1, "Category is required").max(255),
+    inventory_category_id: z.coerce.number().min(1, "Category is required"),
     sku: z.string().max(255).optional(),
     stock_level: z.coerce.number().min(0, "Stock must be 0 or more"),
     min_stock_level: z.coerce.number().min(0, "Alert level must be 0 or more"),
@@ -28,14 +28,14 @@ const inventorySchema = z.object({
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     const toast = useToast();
-    const [categoryOptions, setCategoryOptions] = useState(["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"]);
+    const [categoryOptions, setCategoryOptions] = useState([]);
     const [costPriceDisplay, setCostPriceDisplay] = useState("");
     const [sellingPriceDisplay, setSellingPriceDisplay] = useState("");
     const { user } = useAuth();
 
     useEffect(() => {
         if (isOpen && user?.token) {
-            fetch("/api/settings", {
+            fetch("/api/inventory-categories?per_page=1000", {
                 headers: {
                     "Accept": "application/json",
                     "Authorization": `Bearer ${user.token}`
@@ -43,7 +43,19 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.inventory_categories) setCategoryOptions(JSON.parse(data.inventory_categories));
+                    console.log("AddInventoryModal - API response data:", data);
+                    let categories = [];
+                    if (Array.isArray(data)) {
+                        categories = data;
+                    } else if (data && Array.isArray(data.data)) {
+                        categories = data.data;
+                    }
+                    console.log("AddInventoryModal - Processed category list:", categories);
+                    
+                    const activeCategories = categories.filter(c => 
+                        c.status === 'Active' || c.status === 'active'
+                    );
+                    setCategoryOptions(activeCategories);
                 })
                 .catch(console.error);
         }
@@ -60,7 +72,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         defaultValues: {
             item_name: "",
             sub_details: "",
-            category: "Consumables",
+            inventory_category_id: "",
             sku: "",
             stock_level: 0,
             min_stock_level: 10,
@@ -133,15 +145,17 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
               Category *
             </label>
-            <select {...register("category")} className={getInputClass(errors.category)}>
+            <select {...register("inventory_category_id")} className={getInputClass(errors.inventory_category_id)}>
+              <option value="" disabled>Select category</option>
+              {categoryOptions.length === 0 && <option value="" disabled>No active categories loaded</option>}
               {categoryOptions.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
-            {errors.category && (
-              <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>
+            {errors.inventory_category_id && (
+              <p className="mt-1 text-sm text-red-500">{errors.inventory_category_id.message}</p>
             )}
           </div>
 

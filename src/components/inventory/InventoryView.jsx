@@ -306,8 +306,9 @@ function InventoryView() {
                 </tr>
               ) : (
                 filteredRows.map((row) => {
-                  const Icon = categoryIcons[row.category] || FiBox;
-                  const iconStyle = categoryIconStyles[row.category] || "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400";
+                  const catName = row.inventory_category?.name || "Uncategorized";
+                  const Icon = categoryIcons[catName] || FiBox;
+                  const iconStyle = categoryIconStyles[catName] || "bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400";
                   return (
                     <tr key={row.id} className="border-t border-slate-200 dark:border-dark-border align-top hover:bg-slate-50 dark:hover:bg-dark-surface/50">
                       <td className="px-5 py-4">
@@ -316,7 +317,7 @@ function InventoryView() {
                             <Icon className="h-4 w-4" />
                           </span>
                           <div>
-                            <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">{row.category}</p>
+                            <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">{catName}</p>
                             <p className="text-lg font-semibold text-slate-900 dark:text-zinc-50">{row.item_name}</p>
                             <p className="text-sm text-slate-500 dark:text-zinc-400">{row.sub_details}</p>
                           </div>

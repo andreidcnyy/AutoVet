@@ -17,7 +17,7 @@ class InventoryController extends Controller
 
     public function index()
     {
-        return response()->json(Inventory::all());
+        return response()->json(Inventory::with('inventoryCategory')->get());
     }
 
     public function lowStock(Request $request)
@@ -31,7 +31,7 @@ class InventoryController extends Controller
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
             'sub_details' => 'nullable|string|max:255',
-            'category' => 'required|string|in:Consumables,Medicines,Retail,Supplies,Vaccines,Clinic assets',
+            'inventory_category_id' => 'required|exists:mdm_inventory_categories,id',
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
@@ -44,9 +44,10 @@ class InventoryController extends Controller
             'deduct_on_finalize' => 'boolean',
         ]);
 
-        // Automatically generate SKU
+        // Automatically generate SKU by resolving the category name
+        $categoryRecord = \App\Models\InventoryCategory::find($validatedData['inventory_category_id']);
         $validatedData['sku'] = $this->skuGenerator->generate(
-            $validatedData['category'],
+            $categoryRecord->name ?? 'UNK',
             $validatedData['item_name'],
             $validatedData['sub_details']
         );
@@ -73,7 +74,7 @@ class InventoryController extends Controller
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
             'sub_details' => 'nullable|string|max:255',
-            'category' => 'required|string|in:Consumables,Medicines,Retail,Supplies,Vaccines,Clinic assets',
+            'inventory_category_id' => 'required|exists:mdm_inventory_categories,id',
             'sku' => 'required|string|max:255|unique:inventories,sku,' . $inventory->id,
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
@@ -105,7 +106,7 @@ class InventoryController extends Controller
             ]);
         }
 
-        return response()->json($inventory);
+        return response()->json($inventory->load('inventoryCategory'));
     }
 
     public function destroy(Inventory $inventory)
