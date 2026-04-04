@@ -1,12 +1,13 @@
 import clsx from "clsx";
 import { useState } from "react";
-import { FiHome, FiSettings, FiUsers, FiBriefcase } from "react-icons/fi";
+import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive } from "react-icons/fi";
 
 import ClinicProfileTab from "./ClinicProfileTab";
 import UserManagementTab from "./UserManagementTab";
 import ServiceManagementTab from "./ServiceManagementTab";
 import MasterDataManagementTab from "./MasterDataManagementTab";
 import SystemPreferencesTab from "./SystemPreferencesTab";
+import ArchiveRecoveryTab from "./ArchiveRecoveryTab";
 
 import SpeciesBreedsTab from "./SpeciesBreedsTab";
 import VetScheduleTab from "./VetScheduleTab";
@@ -19,6 +20,7 @@ const tabs = [
   { id: "users", label: "Users / Roles", icon: FiUsers },
   { id: "schedule", label: "Vet Schedule", icon: FiBriefcase },
   { id: "system", label: "System & AI Preferences", icon: FiSettings },
+  { id: "archive", label: "Archive & Recovery", icon: FiArchive },
 ];
 
 function Settings() {
@@ -68,6 +70,7 @@ function Settings() {
         {activeTab === "users" && <UserManagementTab />}
         {activeTab === "schedule" && <VetScheduleTab />}
         {activeTab === "system" && <SystemPreferencesTab />}
+        {activeTab === "archive" && <ArchiveRecoveryTab />}
       </main>
     </div>
   );

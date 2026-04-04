@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Archivable;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pet extends Model
 {
-    use SoftDeletes, HasSyncFields;
+    use SoftDeletes, HasSyncFields, Archivable;
     
     protected static function boot()
     {
@@ -36,6 +37,8 @@ class Pet extends Model
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
         'allergies', 'medication', 'notes', 'photo',
+        // Archive tracking
+        'deleted_by', 'restore_until',
         // Sync fields
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
@@ -96,5 +99,12 @@ class Pet extends Model
             ->where('date', '>=', now())
             ->orderBy('date', 'asc')
             ->value('date') ?? 'None scheduled';
+    }
+
+    public function preventPermanentDeletionIfReferenced()
+    {
+        if ($this->medicalRecords()->exists() || $this->invoices()->exists()) {
+            throw new \Exception("Cannot permanently delete this pet because it is referenced by existing medical records or invoices.");
+        }
     }
 }

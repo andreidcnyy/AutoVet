@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\Archivable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\Roles;
 
@@ -14,7 +15,7 @@ use App\Enums\Roles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable;
 
     /**
      * The attributes that are mass assignable.
@@ -28,7 +29,9 @@ class User extends Authenticatable
         'role',
         'avatar',
         'status',
-        'must_change_password'
+        'must_change_password',
+        'deleted_by', 
+        'restore_until'
     ];
 
     /**

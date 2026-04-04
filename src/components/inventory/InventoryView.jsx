@@ -133,7 +133,7 @@ function InventoryView() {
   };
 
   const handleDeleteProduct = async (product) => {
-    if (!window.confirm(`Are you sure you want to delete ${product.item_name}?`)) return;
+    if (!window.confirm(`Archive: recoverable within 30 days.\nAre you sure you want to archive ${product.item_name}?`)) return;
 
     try {
       const response = await fetch(`/api/inventory/${product.id}`, { 
@@ -147,9 +147,9 @@ function InventoryView() {
 
       setInventoryRows((prev) => prev.filter((item) => item.id !== product.id));
       setViewedProduct(null);
-      toast.success(`${product.item_name} deleted successfully.`);
+      toast.success(`${product.item_name} archived successfully.`);
     } catch (err) {
-      toast.error(err.message || "An error occurred while deleting.");
+      toast.error(err.message || "An error occurred while archiving.");
     }
   };
 

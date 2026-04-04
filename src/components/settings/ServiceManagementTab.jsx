@@ -160,7 +160,7 @@ export default function ServiceManagementTab() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this service?")) return;
+    if (!confirm("Archive: recoverable within 30 days.\nAre you sure you want to archive this service?")) return;
     try {
       const res = await fetch(`/api/services/${id}`, { 
         method: "DELETE",
@@ -169,8 +169,8 @@ export default function ServiceManagementTab() {
           "Authorization": `Bearer ${user?.token}`
         }
       });
-      if (!res.ok) throw new Error("Failed to delete");
-      toast.success("Service deleted");
+      if (!res.ok) throw new Error("Failed to archive");
+      toast.success("Service archived");
       fetchServices();
     } catch (err) {
       toast.error(err.message);

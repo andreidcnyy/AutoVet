@@ -144,6 +144,16 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
 
     // -----------------------------------------------------------------------
+    // Archive & Recovery Management
+    // Restricted to Admin
+    // -----------------------------------------------------------------------
+    Route::group(['prefix' => 'archives', 'middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        Route::get('/{type}', [\App\Http\Controllers\ArchiveController::class, 'index']);
+        Route::post('/{type}/{id}/restore', [\App\Http\Controllers\ArchiveController::class, 'restore']);
+        Route::delete('/{type}/{id}/force', [\App\Http\Controllers\ArchiveController::class, 'forceDelete']);
+    });
+
+    // -----------------------------------------------------------------------
     // Specialized Reports — restricted to Admin only
     // -----------------------------------------------------------------------
     $reportRoles = Roles::adminRoles();
