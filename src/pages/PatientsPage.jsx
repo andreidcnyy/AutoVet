@@ -49,6 +49,7 @@ function PatientsPage() {
   };
 
   const handleDeleteOwner = async (ownerId) => {
+    if (!window.confirm("Archive: recoverable within 30 days.\nAre you sure you want to archive this owner?")) return;
     try {
       await fetch(`/api/owners/${ownerId}`, { 
         method: "DELETE",
@@ -59,7 +60,7 @@ function PatientsPage() {
       });
       setOwners((prev) => prev.filter((o) => o.id !== ownerId));
       setSelectedOwnerId(null);
-      toast.success("Owner deleted successfully.");
+      toast.success("Owner archived successfully.");
     } catch (err) {
       console.error("Failed to delete owner:", err);
       toast.error("Could not delete the owner.");
