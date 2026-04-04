@@ -12,7 +12,7 @@ class Inventory extends Model
     protected $fillable = [
         'item_name',
         'sub_details',
-        'category',
+        'inventory_category_id',
         'sku',
         'stock_level',
         'status',
@@ -42,5 +42,10 @@ class Inventory extends Model
     public function transactions()
     {
         return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function inventoryCategory()
+    {
+        return $this->belongsTo(InventoryCategory::class, 'inventory_category_id');
     }
 }

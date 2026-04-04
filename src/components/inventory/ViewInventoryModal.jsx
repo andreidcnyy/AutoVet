@@ -15,7 +15,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
-  const categoryOptions = ["Consumables", "Medicines", "Retail", "Supplies", "Vaccines", "Clinic assets"];
+  const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
 
@@ -39,8 +39,30 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             console.error(err);
             setIsLoadingTx(false);
         });
+
+      // Fetch category options dynamically
+      fetch("/api/inventory-categories?per_page=1000", {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("ViewInventoryModal - API response data:", data);
+        let categories = [];
+        if (Array.isArray(data)) {
+            categories = data;
+        } else if (data && Array.isArray(data.data)) {
+            categories = data.data;
+        }
+        console.log("ViewInventoryModal - Processed category list:", categories);
+        
+        const activeCategories = categories.filter(c => 
+            c.status === 'Active' || c.status === 'active'
+        );
+        setCategoryOptions(activeCategories);
+      })
+      .catch(console.error);
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, user?.token]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -131,7 +153,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
           <div className="mb-6 grid grid-cols-2 gap-y-4">
             {[
-              ["Category", "category"],
+              ["Category", "inventory_category_id"],
               ["SKU", "sku"],
               ["Stock Level", "stock_level"],
               ["Min Stock (Alert)", "min_stock_level"],
@@ -142,14 +164,16 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               <div key={field}>
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">{label}</p>
                 {isEditing ? (
-                  field === "category" ? (
+                  field === "inventory_category_id" ? (
                     <select
                       className={inputClass}
-                      value={formData[field] ?? "Consumables"}
-                      onChange={(e) => handleChange(field, e.target.value)}
+                      value={formData[field] ?? ""}
+                      onChange={(e) => handleChange(field, parseInt(e.target.value) || "")}
                     >
+                      <option value="" disabled>Select category</option>
+                      {categoryOptions.length === 0 && <option value="" disabled>No active categories loaded</option>}
                       {categoryOptions.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
                   ) : field === "sku" ? (
@@ -173,6 +197,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                       onChange={(e) => handleChange(field, e.target.value)}
                     />
                   )
+                ) : field === "inventory_category_id" ? (
+                  <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                    {product.inventory_category?.name || "N/A"}
+                  </p>
                 ) : (field === "price" || field === "selling_price") ? (
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">
                     ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
