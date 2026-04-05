@@ -1,4 +1,5 @@
-import { FiX, FiTrash2, FiSave, FiEdit2 } from "react-icons/fi";
+import { FiX, FiTrash2, FiSave, FiEdit2, FiClock } from "react-icons/fi";
+import { LuSparkles } from "react-icons/lu";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
@@ -19,6 +20,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
+  const [aiForecastData, setAiForecastData] = useState(null); // New state for AI forecast
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false); // New state for forecast loading
 
   const { user } = useAuth();
   const isAdmin = user?.role === ROLES.ADMIN;
@@ -27,10 +30,13 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     if (isOpen && product) {
       setFormData(product);
       setIsEditing(false);
+      setAiForecastData(null); // Clear previous forecast data when modal opens
       
       // Fetch transaction history
       setIsLoadingTx(true);
-      fetch(`/api/inventory/${product.id}/transactions`)
+      fetch(`/api/inventory/${product.id}/transactions`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      })
         .then(res => res.json())
         .then(data => {
             setTransactions(data);
@@ -47,14 +53,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       })
       .then(res => res.json())
       .then(data => {
-        console.log("ViewInventoryModal - API response data:", data);
         let categories = [];
         if (Array.isArray(data)) {
             categories = data;
         } else if (data && Array.isArray(data.data)) {
             categories = data.data;
         }
-        console.log("ViewInventoryModal - Processed category list:", categories);
         
         const activeCategories = categories.filter(c => 
             c.status === 'Active' || c.status === 'active'
@@ -107,6 +111,35 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       toast.error(err.message || "An error occurred while saving.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRunForecast = async () => {
+    if (!product?.id) {
+      toast.error("Cannot run forecast without a product ID.");
+      return;
+    }
+    setIsLoadingForecast(true);
+    setAiForecastData(null); // Clear previous forecast
+    try {
+      const response = await fetch(`/api/inventory/${product.id}/forecast`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch forecast.");
+      }
+      const data = await response.json();
+      setAiForecastData(data);
+      toast.success("AI Forecast generated successfully!");
+    } catch (err) {
+      toast.error(err.message || "An error occurred during forecasting.");
+      setAiForecastData({ error: err.message || "Could not generate forecast." });
+    } finally {
+      setIsLoadingForecast(false);
     }
   };
 
@@ -279,6 +312,38 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               )}
             </div>
           </div>
+          
+          {/* AI Forecast Display */}
+          {aiForecastData && (
+            <div className="mt-8 border-t border-slate-100 dark:border-dark-border pt-6">
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 flex items-center gap-2">
+                <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
+              </h4>
+              {aiForecastData.error ? (
+                <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-lg font-semibold text-slate-800 dark:text-zinc-50">
+                    {aiForecastData.prediction_status === "Forecast Available" ? (
+                      <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">{aiForecastData.predicted_stockout_date}</span></>
+                    ) : aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (
+                      <span className="text-rose-600 dark:text-rose-400">{aiForecastData.message}</span>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400">{aiForecastData.message}</span>
+                    )}
+                  </p>
+                  {aiForecastData.prediction_status === "Forecast Available" && (
+                    <p className="text-sm text-slate-600 dark:text-zinc-300">
+                      Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Current Stock: {aiForecastData.current_stock} | Min Stock Level: {aiForecastData.min_stock_level} | As of: {aiForecastData.last_recorded_date}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Transactions Ledger */}
           <div className="mt-8 border-t border-slate-100 dark:border-dark-border pt-6">
@@ -324,6 +389,19 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             {isAdmin && (
               <>
                 <button
+                  onClick={handleRunForecast}
+                  disabled={isLoadingForecast}
+                  className={clsx(
+                    "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition",
+                    isLoadingForecast
+                      ? "bg-blue-400 text-white cursor-wait"
+                      : "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20"
+                  )}
+                >
+                  <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
+                  {isLoadingForecast ? "Analyzing..." : "Run AI Forecast"}
+                </button>
+                <button
                   onClick={() => onDeleteRequest(product)}
                   className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
                 >
@@ -340,7 +418,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     }
                   }}
                   disabled={isSaving}
-                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={clsx(
+                    "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold focus:outline-none",
+                    isEditing
+                      ? (isSaving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20")
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  )}
                 >
                   {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
                   {isEditing ? (isSaving ? "Saving..." : "Save") : "Edit"}
