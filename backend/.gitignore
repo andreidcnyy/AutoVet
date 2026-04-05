@@ -22,3 +22,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Python
+ai/venv/
+ai/env/
+__pycache__/
+*.py[cod]
+*$py.class
