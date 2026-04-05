@@ -53,13 +53,27 @@ class Inventory extends Model
         return $this->belongsTo(InventoryCategory::class, 'inventory_category_id');
     }
 
+    /**
+     * Determine if this inventory item has only its auto-created initial stock transaction.
+     */
+    public function hasOnlyInitialStockTransaction(): bool
+    {
+        $count = $this->transactions()->count();
+        if ($count === 0) return true;
+        if ($count > 1) return false;
+        
+        $tx = $this->transactions()->first();
+        return $tx->transaction_type === 'Stock In' && $tx->remarks === 'Initial Stock';
+    }
+
     public function preventPermanentDeletionIfReferenced()
     {
-        if (DB::table('invoice_items')->where('item_type', 'inventory')->where('item_id', $this->id)->exists()) {
+        if (DB::table('invoice_items')->where('inventory_id', $this->id)->exists()) {
             throw new \Exception("Cannot permanently delete this inventory item because it is referenced in past invoices.");
         }
-        if ($this->transactions()->exists()) {
-            throw new \Exception("Cannot permanently delete this inventory item because it has a recorded transaction ledger.");
+        
+        if (!$this->hasOnlyInitialStockTransaction()) {
+            throw new \Exception("This item cannot be permanently deleted because it already has inventory activity beyond its initial stock entry.");
         }
     }
 }

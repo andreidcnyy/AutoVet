@@ -82,6 +82,13 @@ class ArchiveController extends Controller
         try {
             $item->forceDelete();
             return response()->json(['message' => 'Item permanently deleted.']);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Log the actual error for debugging but don't show it to the user
+            \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
+            
+            return response()->json([
+                'message' => 'Cannot permanently delete this item because it is referenced in other database records.'
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage() ?: 'Cannot permanently delete this item due to existing dependencies.'

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Archivable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\Roles;
+use Illuminate\Support\Facades\DB;
 
 
 class User extends Authenticatable
@@ -95,6 +96,19 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->hasRole(Roles::STAFF->value);
+    }
+
+    /**
+     * Prevent permanent deletion if the user is referenced in other records.
+     */
+    public function preventPermanentDeletionIfReferenced()
+    {
+        if (DB::table('appointments')->where('vet_id', $this->id)->exists()) {
+            throw new \Exception("Cannot permanently delete this user because they are assigned to past or upcoming appointments.");
+        }
+        if (DB::table('vet_schedules')->where('user_id', $this->id)->exists()) {
+            throw new \Exception("Cannot permanently delete this user because they have recorded work schedules.");
+        }
     }
 }
 
