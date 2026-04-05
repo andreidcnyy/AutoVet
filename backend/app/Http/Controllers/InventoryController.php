@@ -120,4 +120,31 @@ class InventoryController extends Controller
         $transactions = $inventory->transactions()->with('creator:id,name')->orderBy('created_at', 'desc')->get();
         return response()->json($transactions);
     }
-}
+
+    /**
+     * Accepts an AI forecast recommendation to update the minimum stock level of an inventory item.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Inventory $inventory
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function acceptForecastRecommendation(Request $request, Inventory $inventory)
+    {
+        $validatedData = $request->validate([
+            'new_min_stock_level' => 'required|integer|min:0',
+        ]);
+
+        $oldMinStockLevel = $inventory->min_stock_level;
+        $inventory->min_stock_level = $validatedData['new_min_stock_level'];
+        $inventory->save();
+
+        \Illuminate\Support\Facades\Log::info("Inventory {$inventory->id}: min_stock_level updated from {$oldMinStockLevel} to {$inventory->min_stock_level} based on AI forecast.", [
+            'inventory_id' => $inventory->id,
+            'old_min_stock_level' => $oldMinStockLevel,
+            'new_min_stock_level' => $inventory->min_stock_level,
+            'user_id' => auth()->id(),
+        ]);
+
+        return response()->json($inventory->load('inventoryCategory'));
+    }
+    }

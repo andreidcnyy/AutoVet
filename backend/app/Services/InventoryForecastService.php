@@ -38,7 +38,7 @@ class InventoryForecastService
         }
 
         // 2. Execute Python script
-        $pythonScriptPath = base_path('backend/ai/forecast.py');
+        $pythonScriptPath = base_path('ai/forecast.py');
         $minStockLevel = $inventory->min_stock_level ?? 0; // Use min_stock_level from inventory
 
         if (!file_exists($pythonScriptPath)) {
@@ -47,7 +47,8 @@ class InventoryForecastService
         }
 
         try {
-            $process = Process::run("python3 "{$pythonScriptPath}" "{$csvPath}" "{$minStockLevel}"");
+            $command = "python3 " . escapeshellarg($pythonScriptPath) . " " . escapeshellarg($csvPath) . " " . escapeshellarg($minStockLevel);
+            $process = Process::run($command);
             $output = $process->output();
             $errorOutput = $process->errorOutput();
 

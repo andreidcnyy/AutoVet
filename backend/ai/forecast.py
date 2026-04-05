@@ -5,6 +5,17 @@ import json
 import sys
 from datetime import datetime, timedelta
 
+# Custom JSON encoder to handle NumPy types
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
 def forecast_stockout(csv_filepath, min_stock_level):
     try:
         df = pd.read_csv(csv_filepath, parse_dates=['date'])
@@ -93,4 +104,4 @@ if __name__ == '__main__':
     min_stock_level = int(sys.argv[2])
 
     result = forecast_stockout(csv_filepath, min_stock_level)
-    print(json.dumps(result))
+    print(json.dumps(result, cls=NumpyEncoder))

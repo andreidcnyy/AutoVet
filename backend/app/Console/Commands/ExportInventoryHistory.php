@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Inventory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage; // Added this line
 
 class ExportInventoryHistory extends Command
 {
@@ -39,6 +40,8 @@ class ExportInventoryHistory extends Command
 
         $startDate = now()->subDays($days);
 
+        // Fetch transactions for the inventory item
+        // Assuming 'transactions' is a relationship defined in the Inventory model
         $transactions = $inventory->transactions()
             ->where('created_at', '>=', $startDate)
             ->orderBy('created_at')
@@ -50,30 +53,35 @@ class ExportInventoryHistory extends Command
         }
 
         $headers = ['date', 'stock_level'];
-        $data = [];
-        // Group by day to get the end-of-day stock level
         $dailyStock = [];
+
+        // Group by day to get the end-of-day stock level
         foreach ($transactions as $transaction) {
             $date = $transaction->created_at->format('Y-m-d');
-            $dailyStock[$date] = $transaction->new_stock; // Keep the latest stock for the day
-        }
-
-        foreach ($dailyStock as $date => $stock) {
-            $data[] = [$date, $stock];
+            // Keep the latest stock for the day
+            $dailyStock[$date] = $transaction->new_stock;
         }
 
         $filename = "inventory_{$inventoryId}_history_{$days}_days.csv";
-        $filePath = storage_path('app/' . $filename);
+        $csvPath = Storage::path($filename); // Using Storage::path to get full path
 
-        $file = fopen($filePath, 'w');
-        fputcsv($file, $headers);
-        foreach ($data as $row) {
-            fputcsv($file, $row);
+        // Ensure the directory exists
+        $directory = dirname($csvPath);
+        if (!Storage::exists($directory)) {
+            Storage::makeDirectory($directory);
         }
+
+        $file = fopen($csvPath, 'w');
+        fputcsv($file, $headers);
+
+        foreach ($dailyStock as $date => $stockLevel) {
+            fputcsv($file, [$date, $stockLevel]);
+        }
+
         fclose($file);
 
-        $this->info("Inventory history exported to: {$filePath}");
-        Log::info("Inventory history for item {$inventoryId} exported to {$filePath}");
+        $this->info("Historical inventory data exported to {$csvPath}");
+        Log::info("Historical inventory data for item {$inventoryId} exported to {$csvPath}");
 
         return Command::SUCCESS;
     }

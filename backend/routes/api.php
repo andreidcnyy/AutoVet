@@ -65,6 +65,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/inventory/{inventory}/transactions',   [InventoryController::class, 'transactions']);
     Route::put('/inventory/{inventory}',                [InventoryController::class, 'update']);
     Route::get('/inventory/{inventory}/forecast',       [InventoryForecastController::class, 'forecast']);
+    Route::put('/inventory/{inventory}/accept-forecast-recommendation', [InventoryController::class, 'acceptForecastRecommendation'])
+         ->middleware('role:' . Roles::ADMIN->value . ',' . Roles::VETERINARIAN->value . ',' . Roles::STAFF->value);
     
     // Inventory Write - Restricted to Clinic Management
     Route::post('/inventory', [InventoryController::class, 'store'])
