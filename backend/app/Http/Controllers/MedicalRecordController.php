@@ -30,6 +30,7 @@ class MedicalRecordController extends Controller
     {
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
+            'appointment_id'  => 'required|exists:appointments,id',
             'vet_id'          => 'nullable|exists:users,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
@@ -60,6 +61,7 @@ class MedicalRecordController extends Controller
     {
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
+            'appointment_id'  => 'required|exists:appointments,id',
             'vet_id'          => 'nullable|exists:users,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',

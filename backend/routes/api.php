@@ -58,6 +58,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // -----------------------------------------------------------------------
+    // Notifications
+    // -----------------------------------------------------------------------
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::post('/notifications/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+
+    // -----------------------------------------------------------------------
     // Inventory
     // -----------------------------------------------------------------------
     Route::get('/inventory',                            [InventoryController::class, 'index']);

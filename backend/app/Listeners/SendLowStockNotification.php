@@ -23,6 +23,15 @@ class SendLowStockNotification
     public function handle(LowStockDetected $event): void
     {
         $item = $event->inventoryItem;
-        Log::warning("Low Stock Alert: {$item->item_name} (SKU: {$item->sku}) has reached {$item->stock_level} (Threshold: {$item->min_stock_level})");
+        \App\Models\Notification::create([
+            'type' => 'LowStockAlert',
+            'title' => 'Low Stock Alert',
+            'message' => "{$item->item_name} (SKU: {$item->sku}) has reached {$item->stock_level} (Threshold: {$item->min_stock_level})",
+            'data' => [
+                'inventory_id' => $item->id,
+                'stock_level' => $item->stock_level,
+                'min_stock_level' => $item->min_stock_level,
+            ]
+        ]);
     }
 }
