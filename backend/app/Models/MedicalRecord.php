@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\Archivable;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MedicalRecord extends Model
 {
-    use HasSyncFields;
+    use SoftDeletes, HasSyncFields, Archivable;
 
     protected $fillable = [
         'pet_id', 'vet_id', 'chief_complaint', 'findings',
         'diagnosis', 'treatment_plan', 'notes', 'follow_up_date',
+        // Archive tracking
+        'deleted_by', 'restore_until',
         // Sync fields
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
