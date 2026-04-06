@@ -20,14 +20,12 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['error' => 'User not found', 'email' => $request->email], 401);
+            return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
-                'error' => 'Password mismatch',
-                'input_password' => $request->password,
-                'db_hash' => $user->password,
+                'error' => 'Invalid credentials',
             ], 401);
         }
 
@@ -59,5 +57,11 @@ class AuthController extends Controller
         ]);
 
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }

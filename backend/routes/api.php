@@ -29,7 +29,7 @@ use App\Http\Controllers\CmsContentController;
 // Public routes (no authentication required)
 // ---------------------------------------------------------------------------
 
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login');
 
 /** Health-check endpoint — intentionally public for monitoring tools. */
 Route::get('/status', function () {
@@ -55,6 +55,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/user',     function (Request $request) { return $request->user(); });
     Route::get('/vets',     [UserController::class, 'vets']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 
     // -----------------------------------------------------------------------
     // Inventory
