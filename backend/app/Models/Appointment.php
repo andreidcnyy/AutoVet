@@ -45,4 +45,14 @@ class Appointment extends Model
     {
         return $this->belongsTo(User::class, 'vet_id');
     }
+
+    public function medicalRecords()
+    {
+        return $this->hasMany(MedicalRecord::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

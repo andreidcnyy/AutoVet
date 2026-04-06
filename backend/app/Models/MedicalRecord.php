@@ -12,7 +12,7 @@ class MedicalRecord extends Model
     use SoftDeletes, HasSyncFields, Archivable;
 
     protected $fillable = [
-        'pet_id', 'vet_id', 'chief_complaint', 'findings',
+        'pet_id', 'vet_id', 'appointment_id', 'chief_complaint', 'findings',
         'diagnosis', 'treatment_plan', 'notes', 'follow_up_date',
         // Archive tracking
         'deleted_by', 'restore_until',
@@ -34,5 +34,10 @@ class MedicalRecord extends Model
     public function vet()
     {
         return $this->belongsTo(User::class, 'vet_id');
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(Appointment::class);
     }
 }

@@ -38,6 +38,7 @@ class InvoiceController extends Controller
     {
         $validated = $request->validate([
             'pet_id' => 'required|exists:pets,id',
+            'appointment_id' => 'required|exists:appointments,id',
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
@@ -111,6 +112,7 @@ class InvoiceController extends Controller
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
                 'pet_id' => $validated['pet_id'],
+                'appointment_id' => $validated['appointment_id'],
                 'status' => $validated['status'],
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
