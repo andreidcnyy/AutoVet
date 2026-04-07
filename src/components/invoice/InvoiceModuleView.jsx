@@ -140,10 +140,10 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
       3: { halign: 'right', cellWidth: 35 },
     },
     head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
-    body: invoiceData.items.map(item => [
+    body: invoiceData.items.filter(item => !item.is_hidden).map(item => [
       item.name.toUpperCase() + (item.notes ? "\n" + item.notes : ""),
       item.qty,
-      (item.unitPrice || 0).toFixed(2),
+      (item.unitPrice || item.unit_price || 0).toFixed(2),
       (item.amount || 0).toFixed(2)
     ]),
   });
@@ -223,6 +223,8 @@ function InvoiceModuleView() {
   const [status, setStatus] = useState("Draft");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+  const [currentWeight, setCurrentWeight] = useState("");
+
   const [services, setServices] = useState([]);
 
   const [inventory, setInventory] = useState([]);
@@ -297,7 +299,10 @@ function InvoiceModuleView() {
       return;
     }
     const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
+    
+    // Simply use the raw patient data, the UI will access nested properties
     setPatientDetails(patientData);
+    setCurrentWeight(patientData?.weight || "");
 
     // Fetch appointments for this patient
     const headers = {
@@ -327,7 +332,7 @@ function InvoiceModuleView() {
     }
   };
 
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + (item.is_hidden ? 0 : item.amount), 0), [items]);
 
   // Real-time discount calculations safely capping out at subtotal
   const discountAmount = useMemo(() => {
@@ -385,14 +390,19 @@ function InvoiceModuleView() {
       if (rule) return Number(rule.price);
     }
     
-    if (service.pricing_type === "weight_based" && patientDetails?.weight !== null) {
-      const petWeight = Number(patientDetails.weight);
+    if (service.pricing_type === "weight_based" && currentWeight !== "") {
+      const petWeight = Number(currentWeight);
+      const petSpeciesId = patientDetails?.species_id;
+      
       const range = weightRanges.find(r => 
+        (Number(r.species_id) === Number(petSpeciesId)) &&
         Number(r.min_weight) <= petWeight && 
         (r.max_weight === null || Number(r.max_weight) >= petWeight)
       );
-      if (range) {
-        const rule = service.pricing_rules?.find(r => r.basis_type === 'weight' && r.reference_id === range.id);
+      
+      if (range && range.size_category_id) {
+        // NEW mapping: weight_based rules now use basis_type 'size' and the size_category_id from the range
+        const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === range.size_category_id);
         if (rule) return Number(rule.price);
       }
     }
@@ -448,8 +458,8 @@ function InvoiceModuleView() {
 
     if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
        itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
-    } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && patientDetails?.weight !== null) {
-       itemName = `${serviceInput} (${patientDetails.weight}kg)`;
+    } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && currentWeight !== "") {
+       itemName = `${serviceInput} (${currentWeight}kg)`;
     }
       
     const newItem = {
@@ -524,6 +534,7 @@ function InvoiceModuleView() {
     const payload = {
       pet_id: selectedPatientId,
       appointment_id: selectedAppointmentId || null,
+      pet_weight: currentWeight || null,
       status: actualStatus,
       subtotal: subtotal,
       discount_type: discountType,
@@ -541,7 +552,8 @@ function InvoiceModuleView() {
         notes: item.notes,
         qty: item.qty,
         unit_price: item.unitPrice,
-        amount: item.amount
+        amount: item.amount,
+        is_hidden: !!item.is_hidden
       }))
     };
     if (!selectedAppointmentId) {
@@ -608,43 +620,6 @@ function InvoiceModuleView() {
               <section>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
                 <div className="space-y-3">
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Patient / Pet Name</label>
-                    <select
-                      value={selectedPatientId}
-                      onChange={handlePatientSelect}
-                      className={clsx(
-                        "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-card focus:outline-none focus:border-blue-400 dark:text-zinc-200",
-                        getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border"
-                      )}
-                    >
-                      <option value="">Select a pet...</option>
-                      {pets.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
-                      ))}
-                    </select>
-                    {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Linked Appointment</label>
-                    <select
-                      value={selectedAppointmentId}
-                      onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                      className={clsx(
-                        "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-card focus:outline-none focus:border-blue-400 dark:text-zinc-200",
-                        getError("appointment_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border"
-                      )}
-                    >
-                      <option value="">Select an appointment...</option>
-                      {appointments.map(apt => (
-                        <option key={apt.id} value={apt.id}>
-                          {formatDate(apt.date)} - {apt.title}
-                        </option>
-                      ))}
-                    </select>
-                    {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
-                  </div>
                   <div className="relative">
                     <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                     <select
@@ -653,6 +628,7 @@ function InvoiceModuleView() {
                         setSelectedOwnerId(e.target.value);
                         setSelectedPatientId(""); // reset pet
                         setPatientDetails(null);
+                        setAppointments([]);
                       }}
                       className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none"
                       disabled={status === "Finalized"}
@@ -672,7 +648,10 @@ function InvoiceModuleView() {
                       value={selectedPatientId}
                       onChange={handlePatientSelect}
                       disabled={!selectedOwnerId || status === "Finalized"}
-                      className="h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-4 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
+                      className={clsx(
+                        "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                        getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border bg-slate-50"
+                      )}
                     >
                       <option value="">Select a pet...</option>
                       {(Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map(p => (
@@ -681,27 +660,47 @@ function InvoiceModuleView() {
                         </option>
                       ))}
                     </select>
-                    {/* Appointment selector */}
-                    {selectedPatientId && (
-                      <select
-                        value={selectedAppointmentId}
-                        onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                        disabled={status === "Finalized"}
-                        className="mt-2 h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-4 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
-                      >
-                        <option value="">Select an appointment (optional)...</option>
-                        {appointments.map(appt => (
-                          <option key={appt.id} value={appt.id}>
-                            {formatDate(appt.date)} {appt.time ? `@ ${appt.time}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    )}
                     <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                    {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
                   </div>
 
-                  {patientDetails && (
+                  <div className="relative">
+                    <select
+                      value={selectedAppointmentId}
+                      onChange={(e) => setSelectedAppointmentId(e.target.value)}
+                      disabled={!selectedPatientId || status === "Finalized"}
+                      className={clsx(
+                        "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                        getError("appointment_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border bg-slate-50"
+                      )}
+                    >
+                      <option value="">Select an appointment...</option>
+                      {appointments.map(appt => (
+                        <option key={appt.id} value={appt.id}>
+                          {formatDate(appt.date)} {appt.time ? `@ ${appt.time}` : ""} - {appt.title}
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                    {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
+                  </div>
+
+                   {patientDetails && (
                     <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                         <strong className="text-slate-700 dark:text-zinc-300">Weight Override (kg)</strong>
+                         <input 
+                            type="number" 
+                            step="0.01" 
+                            value={currentWeight} 
+                            onChange={(e) => {
+                               setCurrentWeight(e.target.value);
+                               // Force price recalculation for items in the list?
+                               // For simplicity, we just update the state and newly added items will use it.
+                            }}
+                            className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-center font-bold text-blue-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
+                         />
+                      </div>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
@@ -1039,7 +1038,7 @@ function InvoiceModuleView() {
                 </div>
 
                 <div className="mt-3 space-y-3">
-                  {items.map((item) => (
+                  {items.filter(item => !item.is_hidden).map((item) => (
                     <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-slate-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
                       <div>
                         <div className="flex items-center gap-2">

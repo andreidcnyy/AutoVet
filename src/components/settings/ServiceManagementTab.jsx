@@ -70,7 +70,9 @@ export default function ServiceManagementTab() {
       .then(res => res.json())
       .then(result => {
         const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        setPetSizes(normalized);
+        // Sort by sort_order if available, otherwise keep alphabetical or natural
+        const sorted = [...normalized].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        setPetSizes(sorted);
       })
       .catch(console.error);
 
@@ -126,11 +128,10 @@ export default function ServiceManagementTab() {
     const method = isEditing ? "PUT" : "POST";
 
     // Clean up pricing rules based on pricing_type
+    // NEW: Both size_based and weight_based now use 'size' basis categories
     let cleanedRules = [];
-    if (formData.pricing_type === 'size_based') {
+    if (formData.pricing_type === 'size_based' || formData.pricing_type === 'weight_based') {
       cleanedRules = formData.pricing_rules.filter(r => r.basis_type === 'size');
-    } else if (formData.pricing_type === 'weight_based') {
-      cleanedRules = formData.pricing_rules.filter(r => r.basis_type === 'weight');
     }
 
     const payload = { 
@@ -331,15 +332,16 @@ export default function ServiceManagementTab() {
 
               {formData.pricing_type === 'weight_based' && (
                 <div className="mt-4 border-t pt-4 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface/50 p-3 rounded-xl">
-                  <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-3">Weight-based Pricing</p>
-                  <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
-                    {weightRanges.map(range => {
-                      const rule = formData.pricing_rules.find(r => r.basis_type === 'weight' && r.reference_id === range.id);
+                  <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Weight-based Pricing</p>
+                  <p className="text-[10px] text-slate-500 mb-3 italic">Prices are set per size category. Weights are auto-mapped based on species.</p>
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                    {petSizes.map(size => {
+                      const rule = formData.pricing_rules.find(r => r.basis_type === 'size' && r.reference_id === size.id);
                       return (
-                        <div key={range.id} className="flex items-center justify-between gap-4">
-                          <span className="text-sm text-slate-600 dark:text-zinc-400">{range.label} ({range.min_weight}-{range.max_weight || '∞'} {range.unit})</span>
+                        <div key={size.id} className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-slate-600 dark:text-zinc-400">{size.name}</span>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs text-sm">₱</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₱</span>
                             <input 
                               type="number" 
                               required 
@@ -347,10 +349,10 @@ export default function ServiceManagementTab() {
                               value={rule?.price || ""} 
                               onChange={e => {
                                 const newPrice = e.target.value;
-                                const otherRules = formData.pricing_rules.filter(r => !(r.basis_type === 'weight' && r.reference_id === range.id));
+                                const otherRules = formData.pricing_rules.filter(r => !(r.basis_type === 'size' && r.reference_id === size.id));
                                 setFormData({
                                   ...formData, 
-                                  pricing_rules: [...otherRules, { basis_type: 'weight', reference_id: range.id, price: newPrice }]
+                                  pricing_rules: [...otherRules, { basis_type: 'size', reference_id: size.id, price: newPrice }]
                                 });
                               }}
                               className="w-32 rounded-xl border border-slate-200 py-2 pl-7 pr-3 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
@@ -359,7 +361,7 @@ export default function ServiceManagementTab() {
                         </div>
                       )
                     })}
-                    {weightRanges.length === 0 && <p className="text-xs text-rose-500">No weight ranges defined. Please add them in MDM first.</p>}
+                    {petSizes.length === 0 && <p className="text-xs text-rose-500 text-center py-2">No size categories defined.</p>}
                   </div>
                 </div>
               )}

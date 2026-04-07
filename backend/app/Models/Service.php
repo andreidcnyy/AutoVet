@@ -42,6 +42,11 @@ class Service extends Model
         return $this->hasMany(ServicePricingRule::class);
     }
 
+    public function consumables()
+    {
+        return $this->hasMany(ServiceConsumable::class);
+    }
+
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('invoice_items')->where('service_id', $this->id)->exists()) {

@@ -39,6 +39,7 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'pet_id' => 'required|exists:pets,id',
             'appointment_id' => 'required|exists:appointments,id',
+            'pet_weight' => 'nullable|numeric|min:0.01',
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
@@ -76,6 +77,12 @@ class InvoiceController extends Controller
             $invoiceNumber = "VB-{$monthYear}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
             $pet = \App\Models\Pet::findOrFail($validated['pet_id']);
+            
+            // Update pet weight if provided
+            if (isset($validated['pet_weight'])) {
+                $pet->update(['weight' => $validated['pet_weight']]);
+            }
+
             $calculatedSubtotal = 0;
             $itemsToCreate = [];
 
@@ -83,7 +90,11 @@ class InvoiceController extends Controller
                 if ($itemData['item_type'] === 'service') {
                     $service = \App\Models\Service::find($itemData['service_id']);
                     if ($service && $service->pricing_mode !== 'manual') {
-                        $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet);
+                        try {
+                            $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
+                        } catch (\Exception $e) {
+                             throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                        }
                     }
                 } else if ($itemData['item_type'] === 'inventory') {
                     $inventory = \App\Models\Inventory::find($itemData['inventory_id']);
@@ -95,7 +106,24 @@ class InvoiceController extends Controller
 
                 $itemAmount = $itemData['unit_price'] * $itemData['qty'];
                 $calculatedSubtotal += $itemAmount;
-                $itemsToCreate[] = array_merge($itemData, ['amount' => $itemAmount]);
+                $itemsToCreate[] = array_merge($itemData, ['amount' => $itemAmount, 'is_hidden' => false]);
+
+                // Auto-add consumables
+                if ($itemData['item_type'] === 'service' && $service) {
+                    $service->load('consumables');
+                    foreach ($service->consumables as $consumable) {
+                        $itemsToCreate[] = [
+                            'item_type' => 'inventory',
+                            'inventory_id' => $consumable->inventory_id,
+                            'name' => $consumable->inventory->item_name ?? "Consumable",
+                            'qty' => $consumable->quantity * $itemData['qty'],
+                            'unit_price' => 0,
+                            'amount' => 0,
+                            'is_hidden' => true,
+                            'notes' => "Linked consumable for {$service->name}"
+                        ];
+                    }
+                }
             }
 
             // Recalculate total based on backend rules
@@ -158,6 +186,8 @@ class InvoiceController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
+            'pet_weight' => 'nullable|numeric|min:0.01',
+            'appointment_id' => 'nullable|exists:appointments,id',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -183,6 +213,7 @@ class InvoiceController extends Controller
              $invoice->update([
                  'amount_paid' => $validated['amount_paid'],
                  'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
+                 'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
                  'status' => $validated['status']
              ]);
              return response()->json($invoice->load('pet', 'items'));
@@ -195,12 +226,23 @@ class InvoiceController extends Controller
             $calculatedSubtotal = 0;
             $itemsToUpdate = [];
 
+            if (isset($validated['pet_weight'])) {
+                $pet->update(['weight' => $validated['pet_weight']]);
+            }
+
             if (isset($validated['items'])) {
+                // Delete existing hidden items first to re-add them based on updated services
+                $invoice->items()->where('is_hidden', true)->delete();
+
                 foreach ($validated['items'] as $itemData) {
                     if ($itemData['item_type'] === 'service') {
                         $service = \App\Models\Service::find($itemData['service_id']);
                         if ($service && $service->pricing_mode !== 'manual') {
-                            $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet);
+                            try {
+                                $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
+                            } catch (\Exception $e) {
+                                 throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                            }
                         }
                     } else if ($itemData['item_type'] === 'inventory') {
                         $inventory = \App\Models\Inventory::find($itemData['inventory_id']);
@@ -211,7 +253,24 @@ class InvoiceController extends Controller
 
                     $itemAmount = $itemData['unit_price'] * $itemData['qty'];
                     $calculatedSubtotal += $itemAmount;
-                    $itemsToUpdate[] = array_merge($itemData, ['amount' => $itemAmount]);
+                    $itemsToUpdate[] = array_merge($itemData, ['amount' => $itemAmount, 'is_hidden' => false]);
+
+                    // Auto-add consumables
+                    if ($itemData['item_type'] === 'service' && $service) {
+                        $service->load('consumables');
+                        foreach ($service->consumables as $consumable) {
+                            $itemsToUpdate[] = [
+                                'item_type' => 'inventory',
+                                'inventory_id' => $consumable->inventory_id,
+                                'name' => $consumable->inventory->item_name ?? "Consumable",
+                                'qty' => $consumable->quantity * $itemData['qty'],
+                                'unit_price' => 0,
+                                'amount' => 0,
+                                'is_hidden' => true,
+                                'notes' => "Linked consumable for {$service->name}"
+                            ];
+                        }
+                    }
                 }
             } else {
                 $calculatedSubtotal = $invoice->subtotal;
@@ -240,6 +299,7 @@ class InvoiceController extends Controller
 
             $invoice->update([
                 'status' => $status,
+                'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
