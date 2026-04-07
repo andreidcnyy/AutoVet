@@ -1,6 +1,7 @@
 import { FiBell, FiX } from "react-icons/fi";
 import clsx from "clsx";
 import { useToast } from "../../context/ToastContext";
+import { useNavigate } from "react-router-dom";
 
 const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
@@ -11,6 +12,7 @@ const iconToneStyles = {
 
 function RecentNotificationsCard({ items, onMarkAllRead, onDismiss }) {
   const toast = useToast();
+  const navigate = useNavigate();
 
   const handleMarkAll = () => {
     if (onMarkAllRead) {
@@ -19,12 +21,19 @@ function RecentNotificationsCard({ items, onMarkAllRead, onDismiss }) {
     }
   };
 
+  const unreadCount = items?.filter(item => !item.read_at).length || 0;
+
   return (
     <aside className="card-shell overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-dark-border">
         <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-2">
           <FiBell className="text-blue-500" />
           Recent Notifications
+          {unreadCount > 0 && (
+            <span className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-500/30">
+              {unreadCount}
+            </span>
+          )}
         </h3>
         {items?.length > 0 && (
           <button
@@ -80,7 +89,7 @@ function RecentNotificationsCard({ items, onMarkAllRead, onDismiss }) {
 
       <button
         type="button"
-        onClick={() => toast.info("Full notification history is being implemented.")}
+        onClick={() => navigate("/notifications")}
         className="w-full border-t border-slate-200 dark:border-dark-border px-6 py-4 text-center text-lg font-semibold text-slate-700 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-dark-surface transition-colors"
       >
         View all history

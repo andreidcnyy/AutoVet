@@ -18,7 +18,15 @@ class InventoryForecastService
             return ['error' => 'Inventory item not found.'];
         }
 
-        // 1. Export historical data using the Artisan command
+        // 1. Check if sufficient transaction data exists before calling Python
+        $transactionCount = \App\Models\InventoryTransaction::where('inventory_id', $inventoryId)->count();
+        $invoiceItemCount = \App\Models\InvoiceItem::where('inventory_id', $inventoryId)->count();
+
+        if ($transactionCount + $invoiceItemCount < 3) {
+            return ['error' => 'Insufficient transaction data to generate a meaningful forecast.'];
+        }
+
+        // 2. Export historical data using the Artisan command
         $csvFilename = "inventory_{$inventoryId}_history_{$historyDays}_days.csv";
         $csvPath = Storage::path($csvFilename);
 

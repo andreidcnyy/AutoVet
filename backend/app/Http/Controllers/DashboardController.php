@@ -18,24 +18,99 @@ class DashboardController extends Controller
      */
     public function getInventoryForecast()
     {
-        // For this demo, let's pick the item with the lowest stock relative to its min level
         $item = Inventory::orderByRaw('(stock_level - min_stock_level) ASC')->first();
 
         if (!$item) {
             return response()->json(['message' => 'No inventory items found.'], 404);
         }
 
-        // usage for the chart (last 5 months + current + 1 forecast)
-        $months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $usage = [0, 0, 0, 0, 0, 0]; // Removed mock usage
-        $forecast = 0; // Removed mock forecast
+        $monthsToFetch = 6;
+        $timeline = [];
+        $now = Carbon::now()->startOfMonth();
+        $startMonth = $now->copy()->subMonths($monthsToFetch - 1);
+        
+        for ($i = 0; $i < $monthsToFetch; $i++) {
+            $timeline[] = ['date' => $startMonth->copy()->addMonths($i)];
+        }
+
+        $usageRecords = InvoiceItem::whereHas('invoice', function($q) {
+                $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
+            })
+            ->where('inventory_id', $item->id)
+            ->where('created_at', '>=', $startMonth)
+            ->select(
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('SUM(qty) as total_qty')
+            )
+            ->groupBy('year', 'month')
+            ->get();
+
+        $actualData = [];
+        foreach ($usageRecords as $u) {
+            $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
+            $actualData[$key] = (float) $u->total_qty;
+        }
+
+        $months = [];
+        $usage = [];
+        
+        $xValues = [];
+        $yValues = [];
+
+        foreach ($timeline as $index => $t) {
+            $key = $t['date']->format('Y-m');
+            $months[] = $t['date']->format('M');
+            
+            $val = $actualData[$key] ?? 0;
+            $usage[] = $val;
+            
+            $xValues[] = $index;
+            $yValues[] = $val;
+        }
+
+        // Simple Linear Regression
+        $n = count($xValues);
+        $sumX = array_sum($xValues);
+        $sumY = array_sum($yValues);
+        $sumXY = 0;
+        $sumX2 = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $sumXY += ($xValues[$i] * $yValues[$i]);
+            $sumX2 += ($xValues[$i] * $xValues[$i]);
+        }
+        $denominator = ($n * $sumX2) - ($sumX * $sumX);
+        $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
+        $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
+
+        $forecast = max(0, round(($m * $n) + $b, 1));
+        $months[] = $now->copy()->addMonths(1)->format('M');
+
+        $growth = 0;
+        if (count($usage) >= 2) {
+            $lastIndex = count($usage) - 1;
+            $prev = $usage[$lastIndex - 1];
+            $curr = $usage[$lastIndex];
+            if ($prev > 0) {
+                $growth = (($curr - $prev) / $prev) * 100;
+            }
+        }
+        $growthLabel = ($growth >= 0 ? '+' : '') . round($growth, 1) . '% vs last month';
+
+        $stockoutWarning = '';
+        if ($item->stock_level < $forecast && $forecast > 0) {
+            $daysLeft = max(1, round(($item->stock_level / $forecast) * 30));
+            $stockoutWarning = " Based on the next month's forecasted usage of {$forecast} units, {$item->item_name} is projected to run out in approximately {$daysLeft} days.";
+        } else {
+            $stockoutWarning = " Current stock level is sufficient to meet the forecasted usage of {$forecast} units for next month.";
+        }
 
         return response()->json([
             'item_name' => $item->item_name,
             'recommended_stock' => $item->min_stock_level * 2,
             'current_stock' => $item->stock_level,
-            'growth_label' => '+12% vs last year',
-            'analysis' => "Based on the last 6 months of usage and expected seasonal demand, {$item->item_name} stock is projected to run below safety level by " . now()->addDays(15)->format('M d') . ".",
+            'growth_label' => $growthLabel,
+            'analysis' => "Analyzed the last 6 months of sales data." . $stockoutWarning,
             'chart_data' => [
                 'months' => $months,
                 'usage' => $usage,
@@ -49,21 +124,44 @@ class DashboardController extends Controller
      */
     public function getAppointmentForecast()
     {
-        // Simple logic: if many dermatology or vaccine appointments in past, predict more
+        $lastWeekCount = Appointment::whereBetween('date', [now()->subDays(7)->toDateString(), now()->toDateString()])->count();
+        $nextWeekCount = Appointment::whereBetween('date', [now()->addDay()->toDateString(), now()->addDays(8)->toDateString()])->count();
         $totalApps = Appointment::count();
-        $insight = "Clinic activity is stable. Standard staffing recommended for the coming week.";
-        
-        if ($totalApps > 10) {
-            $insight = "Increased dermatology and wellness visits are expected next week based on seasonal patterns. Consider blocking additional triage slots.";
+
+        $insight = "Clinic appointment volume is stable. Standard operations recommended for the coming week.";
+        $hints = [];
+
+        if ($nextWeekCount > $lastWeekCount * 1.2) {
+            $insight = "A " . round((($nextWeekCount - $lastWeekCount) / max(1, $lastWeekCount)) * 100) . "% increase in appointments is expected next week compared to the last 7 days.";
+            $hints[] = "Consider scheduling additional staff or extending hours.";
+        } elseif ($nextWeekCount < $lastWeekCount * 0.8) {
+            $insight = "Upcoming scheduled appointments are lower than usual. Consider sending reminder campaigns to clients.";
+            $hints[] = "Great time to perform facility maintenance or staff training.";
+        } else {
+            $hints[] = "Maintain standard staffing levels.";
+        }
+
+        // Check if there are many overdue followups
+        $overdueFollowups = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
+            ->where('follow_up_date', '<', now()->toDateString())
+            ->count();
+        if ($overdueFollowups > 5) {
+            $hints[] = "There are {$overdueFollowups} overdue patient follow-ups. Assign staff to call owners.";
+        }
+
+        // Low inventory check again for hints
+        $lowStock = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
+        if ($lowStock > 0) {
+            $hints[] = "Ensure to refill {$lowStock} low-stock items before the busy periods.";
+        }
+
+        if (empty($hints)) {
+            $hints[] = "No specific warnings. Great job!";
         }
 
         return response()->json([
             'insight' => $insight,
-            'hints' => [
-                'Ensure vaccine stock is above 50 units.',
-                'Block 2 extra slots on Monday morning.',
-                'Prepare flea & tick preventative displays.'
-            ]
+            'hints' => $hints
         ]);
     }
 
@@ -73,7 +171,7 @@ class DashboardController extends Controller
     public function getStats()
     {
         $totalPatients = Pet::count();
-        $monthlyRevenue = Invoice::where('status', '!=', 'Cancelled')
+        $monthlyRevenue = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
@@ -84,7 +182,7 @@ class DashboardController extends Controller
         $lowStockItems = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
 
         // Calculate revenue growth
-        $lastMonthRevenue = Invoice::where('status', '!=', 'Cancelled')
+        $lastMonthRevenue = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->sum('total');
@@ -164,7 +262,7 @@ class DashboardController extends Controller
 
         // Fetch actual inventory usage (quantity from invoice items)
         $usage = InvoiceItem::whereHas('invoice', function($q) {
-                $q->where('status', '!=', 'Cancelled');
+                $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
             })
             ->select(
                 DB::raw('YEAR(created_at) as year'),
@@ -242,56 +340,46 @@ class DashboardController extends Controller
     /**
      * Get recent notifications.
      */
-    public function getNotifications()
+    public function getNotifications(Request $request)
     {
+        $query = \App\Models\Notification::whereNull('read_at')->orderBy('created_at', 'desc');
+        
+        if ($request->user()) {
+            $query->where(function ($q) use ($request) {
+                $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
+            });
+        }
+
+        $dbNotifications = $query->limit(8)->get();
         $notifications = [];
 
-        // 1. Low stock notifications
-        $lowStock = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->limit(3)->get();
-        foreach ($lowStock as $item) {
+        foreach ($dbNotifications as $notif) {
+            $iconName = 'FiBell';
+            $tone = 'info';
+
+            if ($notif->type === 'LowStockAlert') {
+                $iconName = 'FiAlertTriangle';
+                $tone = 'danger';
+            } elseif (str_contains($notif->type, 'Patient')) {
+                $iconName = 'FiPlusCircle';
+                $tone = 'success';
+            } elseif (str_contains($notif->type, 'Appointment')) {
+                $iconName = 'FiCalendar';
+                $tone = 'info';
+            }
+
             $notifications[] = [
-                'id' => 'notif-inv-' . $item->id,
-                'iconName' => 'FiAlertTriangle',
-                'tone' => 'danger',
-                'title' => 'Low Stock Alert',
-                'message' => "{$item->item_name} is running low ({$item->stock_level} remaining).",
-                'time' => 'Action Required'
+                'id' => 'notif-' . $notif->id,
+                'db_id' => $notif->id,
+                'iconName' => $iconName,
+                'tone' => $tone,
+                'title' => $notif->title,
+                'message' => $notif->message,
+                'time' => $notif->created_at->diffForHumans()
             ];
         }
 
-        // 2. Recent Appointments
-        $recentAppointments = Appointment::with('pet')
-            ->whereDate('date', '>=', now()->toDateString())
-            ->orderBy('date')
-            ->orderBy('time')
-            ->limit(3)
-            ->get();
-        
-        foreach ($recentAppointments as $app) {
-            $notifications[] = [
-                'id' => 'notif-app-' . $app->id,
-                'iconName' => 'FiCalendar',
-                'tone' => 'info',
-                'title' => 'Upcoming Appointment',
-                'message' => "{$app->title} for " . ($app->pet->name ?? 'Unknown Pet'),
-                'time' => Carbon::parse($app->date . ' ' . $app->time)->diffForHumans()
-            ];
-        }
-
-        // 3. New Patients
-        $newPatients = Pet::with('breed')->orderBy('created_at', 'desc')->limit(2)->get();
-        foreach ($newPatients as $p) {
-            $notifications[] = [
-                'id' => 'notif-pat-' . $p->id,
-                'iconName' => 'FiPlusCircle',
-                'tone' => 'success',
-                'title' => 'New Patient Registered',
-                'message' => "{$p->name} (" . ($p->breed->name ?? 'Unknown') . ") has been added to the system.",
-                'time' => $p->created_at->diffForHumans()
-            ];
-        }
-
-        return response()->json(array_slice($notifications, 0, 8));
+        return response()->json($notifications);
     }
 
     /**
@@ -323,7 +411,7 @@ class DashboardController extends Controller
         }
 
         // Fetch actual revenue data grouped by month
-        $invoices = Invoice::where('status', '!=', 'Cancelled')
+        $invoices = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
             ->where('created_at', '>=', $startMonth)
             ->select(
                 DB::raw('YEAR(created_at) as year'),

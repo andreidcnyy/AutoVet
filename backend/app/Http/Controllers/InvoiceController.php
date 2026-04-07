@@ -140,6 +140,7 @@ class InvoiceController extends Controller
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
                 'pet_id' => $validated['pet_id'],
+                'appointment_id' => $validated['appointment_id'],
                 'status' => $validated['status'],
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
@@ -186,6 +187,7 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'pet_weight' => 'nullable|numeric|min:0.01',
+            'appointment_id' => 'nullable|exists:appointments,id',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -211,6 +213,7 @@ class InvoiceController extends Controller
              $invoice->update([
                  'amount_paid' => $validated['amount_paid'],
                  'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
+                 'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
                  'status' => $validated['status']
              ]);
              return response()->json($invoice->load('pet', 'items'));
@@ -296,6 +299,7 @@ class InvoiceController extends Controller
 
             $invoice->update([
                 'status' => $status,
+                'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
