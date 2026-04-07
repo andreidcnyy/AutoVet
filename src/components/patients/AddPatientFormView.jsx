@@ -45,10 +45,7 @@ const patientSchema = z.object({
   status: z.string().max(50).optional(),
   owner_id: z.string().optional(),
   owner_name: z.string().optional(),
-  owner_phone: z.string()
-    .min(5, "Phone number is too short")
-    .max(20, "Phone number is too long")
-    .regex(/^\+?[1-9]\d{1,14}$/, "Please enter a valid international phone number"),
+  owner_phone: z.string().max(20, "Phone number is too long").optional().or(z.literal("")),
   owner_email: z.string().max(255).optional().or(z.literal("")),
   owner_address: z.string().optional(),
   owner_city: z.string().optional(),
@@ -58,10 +55,31 @@ const patientSchema = z.object({
   medication: z.string().max(255).optional(),
   notes: z.string().optional(),
   photo: z.string().optional()
-}).refine(data => {
-  if (!data.owner_id && !data.owner_name?.trim()) return false;
-  return true;
-}, { message: "Either select an existing owner or provide a new owner name", path: ["owner_name"] });
+}).superRefine((data, ctx) => {
+  // If no existing owner is selected, require owner_name and owner_phone
+  if (!data.owner_id) {
+    if (!data.owner_name?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Owner name is required for new owners",
+        path: ["owner_name"]
+      });
+    }
+    if (!data.owner_phone?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Owner phone is required for new owners",
+        path: ["owner_phone"]
+      });
+    } else if (!/^\+?[1-9]\d{1,14}$/.test(data.owner_phone)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid phone number format",
+        path: ["owner_phone"]
+      });
+    }
+  }
+});
 
 function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [error, setError] = useState(null);
@@ -188,11 +206,25 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
   const onSubmit = async (data) => {
     setError(null);
+    console.log("Submitting form data:", data);
     try {
       let finalOwnerId = initialOwnerId || data.owner_id;
 
       if (!initialOwnerId && isNewOwner) {
         if (!data.owner_name) throw new Error("Owner name is required for a new owner.");
+        
+        const ownerPayload = {
+          name: data.owner_name,
+          phone: data.owner_phone,
+          email: data.owner_email || null,
+          address: data.owner_address || null,
+          city: data.owner_city || null,
+          province: data.owner_province || null,
+          zip: data.owner_zip || null
+        };
+        
+        console.log("Creating new owner with payload:", ownerPayload);
+        
         const ownerRes = await fetch("/api/owners", {
           method: "POST",
           headers: {
@@ -200,22 +232,21 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
             "Accept": "application/json",
             "Authorization": `Bearer ${user?.token}`
           },
-          body: JSON.stringify({
-            name: data.owner_name,
-            phone: data.owner_phone,
-            email: data.owner_email,
-            address: data.owner_address,
-            city: data.owner_city,
-            province: data.owner_province,
-            zip: data.owner_zip
-          }),
+          body: JSON.stringify(ownerPayload),
         });
+
         if (!ownerRes.ok) {
-          const err = await ownerRes.json();
-          throw new Error(err.message || "Failed to create new owner.");
+          const errData = await ownerRes.json().catch(() => ({}));
+          console.error("Owner creation failed:", errData);
+          if (ownerRes.status === 422 && errData.errors) {
+            const messages = Object.values(errData.errors).flat().join(" ");
+            throw new Error(messages || "Validation failed for owner details.");
+          }
+          throw new Error(errData.message || "Failed to create new owner.");
         }
         const newOwner = await ownerRes.json();
         finalOwnerId = newOwner.id;
+        console.log("New owner created successfully, ID:", finalOwnerId);
       }
 
       if (!finalOwnerId) throw new Error("No owner selected or created.");
@@ -226,19 +257,21 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         name: data.name,
         species_id: data.species_id || null,
         breed_id: data.breed_id || null,
-        date_of_birth: data.date_of_birth,
-        sex: data.sex,
-        age_group: data.age_group,
-        color: data.color,
+        date_of_birth: data.date_of_birth || null,
+        sex: data.sex || null,
+        age_group: data.age_group || null,
+        color: data.color || null,
         weight: data.weight,
-        weight_unit: data.weight_unit,
+        weight_unit: data.weight_unit || "kg",
         size_category_id: data.size_category_id || null,
-        status: data.status,
-        allergies: data.allergies,
-        medication: data.medication,
-        notes: data.notes,
-        photo: data.photo
+        status: data.status || "Healthy",
+        allergies: data.allergies || null,
+        medication: data.medication || null,
+        notes: data.notes || null,
+        photo: data.photo || null
       };
+
+      console.log("Sending pet payload:", petPayload);
 
       const res = await fetch("/api/pets", {
         method: "POST",
@@ -250,15 +283,24 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         body: JSON.stringify(petPayload),
       });
 
+      console.log("Pet API Response Status:", res.status);
+
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to save pet details.");
+        const errData = await res.json().catch(() => ({}));
+        console.error("Pet creation failed:", errData);
+        if (res.status === 422 && errData.errors) {
+          const messages = Object.values(errData.errors).flat().join(" ");
+          throw new Error(messages || "Validation failed for pet details.");
+        }
+        throw new Error(errData.message || "Failed to save pet details.");
       }
 
       const savedPet = await res.json();
+      console.log("Pet saved successfully:", savedPet);
 
       onSave(savedPet);
     } catch (err) {
+      console.error("Form submission error:", err);
       setError(err.message);
     }
   };
@@ -299,7 +341,10 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
           </div>
         )}
 
-        <form id="add-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
+        <form id="add-patient-form" onSubmit={handleSubmit(onSubmit, (err) => {
+          console.log("Form Validation Errors:", err);
+          setError("Please check the form for errors. " + Object.values(err).map(e => e.message).join(", "));
+        })} className="space-y-8 p-6">
           {/* Pet Profile */}
           <section className="space-y-4">
             <h3 className="flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-zinc-50">
