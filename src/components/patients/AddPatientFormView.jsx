@@ -33,17 +33,17 @@ function StepPill({ label, index, active }) {
 
 const patientSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
-  species_id: z.string().min(1, "Species is required"),
-  breed_id: z.string().optional(),
+  species_id: z.coerce.string().min(1, "Species is required"),
+  breed_id: z.coerce.string().optional().or(z.literal("")),
   date_of_birth: z.string().optional().or(z.literal("")),
   sex: z.string().max(50).optional(),
   age_group: z.string().optional().or(z.literal("")),
   color: z.string().max(255).optional(),
   weight: z.coerce.number().min(0.01, "Weight is required to determine pet size").max(500, "Weight exceeds valid range"),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
-  size_category_id: z.string().optional().or(z.literal("")),
+  size_category_id: z.coerce.string().optional().or(z.literal("")),
   status: z.string().max(50).optional(),
-  owner_id: z.string().optional(),
+  owner_id: z.coerce.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string().max(20, "Phone number is too long").optional().or(z.literal("")),
   owner_email: z.string().max(255).optional().or(z.literal("")),
@@ -57,7 +57,7 @@ const patientSchema = z.object({
   photo: z.string().optional()
 }).superRefine((data, ctx) => {
   // If no existing owner is selected, require owner_name and owner_phone
-  if (!data.owner_id) {
+  if (!data.owner_id || data.owner_id === "") {
     if (!data.owner_name?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -512,7 +512,8 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                       </select>
                       <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
+                    {errors.owner_id && <p className="mt-1 text-xs text-red-500 font-medium">{errors.owner_id.message}</p>}
+                    {errors.owner_name && !isNewOwner && <p className="mt-1 text-xs text-red-500 font-medium">{errors.owner_name.message}</p>}
                   </div>
                 )}
               </section>

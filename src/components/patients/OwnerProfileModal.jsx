@@ -3,26 +3,36 @@ import { FiX, FiUser, FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
   const [owner, setOwner] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (isOpen && ownerId) {
+    if (isOpen && ownerId && user?.token) {
       setLoading(true);
-      fetch(`/api/owners/${ownerId}`)
-        .then((res) => res.json())
+      fetch(`/api/owners/${ownerId}`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load owner");
+          return res.json();
+        })
         .then((data) => {
           setOwner(data);
           setLoading(false);
         })
         .catch((err) => {
-          console.error("Failed to load owner profile", err);
+          console.error("Failed to load owner profile:", err);
           setLoading(false);
         });
     }
-  }, [isOpen, ownerId]);
+  }, [isOpen, ownerId, user?.token]);
 
   if (!isOpen) return null;
 

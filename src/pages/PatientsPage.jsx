@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
@@ -8,6 +9,7 @@ import PhoneInput from "../components/common/PhoneInput";
 
 function PatientsPage() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [view, setView] = useState("records");
   const { user } = useAuth();
   const [owners, setOwners] = useState([]);
@@ -165,8 +167,12 @@ function PatientsPage() {
           onCancel={() => setView("records")} 
           onSave={(newPet) => {
             setOwners(owners.map(o => o.id === selectedOwnerId ? { ...o, pets: [...(o.pets || []), newPet] } : o));
-            setView("records");
             toast.success(`${newPet.name} has been registered!`);
+            if (newPet?.id) {
+              navigate(`/patients/${newPet.id}`);
+            } else {
+              setView("records");
+            }
           }} 
         />
       </div>
