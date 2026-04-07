@@ -148,7 +148,7 @@ async function generatePatientPDF(patient) {
       ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
       ["Color", patient.color || "—"],
       ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit}` : "—"],
-      ["Size Category", patient.size_category?.name || "—"],
+      ["Size Category", patient.size_category?.name || patient.size_category_id || "—"],
       ["Status", patient.status || "—"],
     ],
     margin: { left: 14, right: 14 },
@@ -706,6 +706,7 @@ function InvoiceTab({ invoices }) {
 
 function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const toast = useToast();
+  const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -715,20 +716,42 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
 
   const fetchRecords = () => {
-    fetch(`/api/medical-records?pet_id=${patient.id}`)
-      .then(res => res.json())
+    if (!user?.token) return;
+    fetch(`/api/medical-records?pet_id=${patient.id}`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch medical records");
+        return res.json();
+      })
       .then(data => setRecords(data))
-      .catch(err => console.error("Error fetching medical records", err));
+      .catch(err => {
+        console.error("Error fetching medical records:", err);
+        toast.error("Failed to load medical history.");
+      });
   };
 
   const fetchAppointments = () => {
-    fetch(`/api/appointments?pet_id=${patient.id}`)
-      .then(res => res.json())
+    if (!user?.token) return;
+    fetch(`/api/appointments?pet_id=${patient.id}`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch appointments");
+        return res.json();
+      })
       .then(data => {
-        // Only show 10 most recent + future for cleaner dropdown
         setAppointments(data.slice(0, 10));
       })
-      .catch(err => console.error("Error fetching appointments", err));
+      .catch(err => {
+        console.error("Error fetching appointments:", err);
+      });
   };
 
   useEffect(() => {
@@ -747,7 +770,11 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     
     fetch(url, {
       method,
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: { 
+        "Content-Type": "application/json", 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user?.token}`
+      },
       body: JSON.stringify({ ...record, pet_id: patient.id })
     })
     .then(async (res) => {
@@ -770,7 +797,13 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
   const deleteRecord = (id) => {
     if (!confirm("Are you sure you want to delete this record?")) return;
-    fetch(`/api/medical-records/${id}`, { method: "DELETE" })
+    fetch(`/api/medical-records/${id}`, { 
+      method: "DELETE",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user?.token}`
+      }
+    })
       .then(res => {
         if (!res.ok) throw new Error("Failed to delete");
         toast.success("Record deleted");
