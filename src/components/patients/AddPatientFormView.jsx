@@ -421,6 +421,10 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Date of Birth</label>
                   <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
                 </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Color</label>
+                  <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brown, White, Bi-color" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
