@@ -383,6 +383,10 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </select>
                                 </div>
                                 <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Color</label>
+                                    <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />
+                                </div>
+                                <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Status</label>
                                     <select {...register("status")} className={getSelectClass(errors.status)}>
                                         <option>Healthy</option><option>Treatment</option><option>Overdue</option>
