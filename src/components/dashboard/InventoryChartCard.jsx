@@ -41,15 +41,21 @@ function InventoryChartCard() {
     );
   }
 
-  if (!data || data.length === 0) {
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
     return (
-      <section className="card-shell flex min-h-[460px] items-center justify-center p-6 border-dashed border-2 dark:border-dark-border">
-        <span className="text-slate-400 dark:text-zinc-500">Awaiting Inventory Data from API...</span>
+      <section className="card-shell flex min-h-[460px] flex-col items-center justify-center p-6 text-center border-dashed border-2 border-slate-200 dark:border-dark-border">
+        <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center mb-4 dark:bg-dark-surface">
+          <FiCircle className="h-8 w-8 text-slate-300 animate-pulse" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-100 italic">No Consumption Trends Yet</h3>
+        <p className="mt-2 max-w-xs text-sm text-slate-500 dark:text-zinc-400">
+          We need at least two months of inventory transactional history to generate consumption trends and AI forecasts.
+        </p>
       </section>
     );
   }
-
-  const safeData = Array.isArray(data) ? data : [];
   const allValues = safeData.flatMap((entry) => [entry.actual, entry.forecast]).filter((value) => value !== null);
 
   const min = allValues.length ? Math.min(...allValues) * 0.9 : 0;

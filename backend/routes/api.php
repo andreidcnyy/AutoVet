@@ -155,13 +155,24 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
 
     // -----------------------------------------------------------------------
-    // Archive & Recovery Management
+    // Archive & Recovery Management & Audit Log
     // Restricted to Admin
     // -----------------------------------------------------------------------
     Route::group(['prefix' => 'archives', 'middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
         Route::get('/{type}', [\App\Http\Controllers\ArchiveController::class, 'index']);
         Route::post('/{type}/{id}/restore', [\App\Http\Controllers\ArchiveController::class, 'restore']);
         Route::delete('/{type}/{id}/force', [\App\Http\Controllers\ArchiveController::class, 'forceDelete']);
+    });
+
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index']);
+        
+        // Database Backup & Restore
+        Route::get('/backups', [\App\Http\Controllers\BackupController::class, 'index']);
+        Route::post('/backups', [\App\Http\Controllers\BackupController::class, 'create']);
+        Route::post('/backups/restore', [\App\Http\Controllers\BackupController::class, 'restore']);
+        Route::delete('/backups/{filename}', [\App\Http\Controllers\BackupController::class, 'destroy']);
+        Route::get('/backups/download/{filename}', [\App\Http\Controllers\BackupController::class, 'download']);
     });
 
     // -----------------------------------------------------------------------

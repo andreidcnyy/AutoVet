@@ -115,6 +115,14 @@ function AiSalesForecastCard() {
                     <div className="h-[330px] w-full flex items-center justify-center">
                         <div className="text-slate-500 dark:text-zinc-400 font-medium">Loading AI Forecast...</div>
                     </div>
+                ) : safeData.length === 0 ? (
+                    <div className="h-[330px] w-full flex flex-col items-center justify-center text-center px-6">
+                        <LuSparkles className="w-12 h-12 text-emerald-300 mb-4 opacity-50" />
+                        <h4 className="text-slate-700 dark:text-zinc-200 font-bold italic">Insufficient Data for AI Forecasting</h4>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-zinc-500 max-w-[200px]">
+                            Once you have recorded sales over several weeks, our algorithm will begin projecting your future revenue.
+                        </p>
+                    </div>
                 ) : (
                     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[330px] w-full">
                         {[0.2, 0.4, 0.6, 0.8].map((ratio) => (

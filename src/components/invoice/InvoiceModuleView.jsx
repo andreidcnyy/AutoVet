@@ -13,6 +13,7 @@ import {
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useFormErrors } from "../../hooks/useFormErrors";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -202,6 +203,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
+  const { setLaravelErrors, clearErrors, getError } = useFormErrors();
   const [items, setItems] = useState([]);
   const [discountVal, setDiscountVal] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
@@ -211,6 +213,10 @@ function InvoiceModuleView() {
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
 
   const [selectedPatientId, setSelectedPatientId] = useState("");
+
+  // New state for appointments and selected appointment
+  const [appointments, setAppointments] = useState([]);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [patientDetails, setPatientDetails] = useState(null);
   const [clinicSettings, setClinicSettings] = useState(null);
   const [notes, setNotes] = useState("");
@@ -284,15 +290,32 @@ function InvoiceModuleView() {
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
     setSelectedPatientId(pId);
+    setSelectedAppointmentId(""); // reset appointment selection
     if (!pId) {
       setPatientDetails(null);
+      setAppointments([]);
       return;
     }
     const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
-    const ownerData = patientData?.owner;
-
-    // Simply use the raw patient data, the UI will access nested properties
     setPatientDetails(patientData);
+
+    // Fetch appointments for this patient
+    const headers = {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${user?.token}`
+    };
+    fetch(`/api/appointments?pet_id=${pId}`, { headers })
+      .then(res => res.json())
+      .then(data => {
+        const appts = Array.isArray(data) ? data : [];
+        // Sort by date descending, take recent 5 + future
+        const sorted = appts.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setAppointments(sorted);
+      })
+      .catch(err => {
+        console.error("Failed to load appointments", err);
+        setAppointments([]);
+      });
 
     // Auto replace placeholders in the notes if clinic template is present
     if (clinicSettings && clinicSettings.invoice_notes_template) {
@@ -500,6 +523,7 @@ function InvoiceModuleView() {
 
     const payload = {
       pet_id: selectedPatientId,
+      appointment_id: selectedAppointmentId || null,
       status: actualStatus,
       subtotal: subtotal,
       discount_type: discountType,
@@ -520,6 +544,10 @@ function InvoiceModuleView() {
         amount: item.amount
       }))
     };
+    if (!selectedAppointmentId) {
+      toast.error("Please select an appointment for this invoice.");
+      return;
+    }
 
     try {
       const response = await fetch("/api/invoices", {
@@ -532,9 +560,17 @@ function InvoiceModuleView() {
         body: JSON.stringify(payload)
       });
 
+      clearErrors();
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to save invoice");
+        if (response.status === 422) {
+          setLaravelErrors(errorData);
+          toast.error("Validation error. Please check specified fields.");
+        } else {
+          throw new Error(errorData.message || "Failed to save invoice");
+        }
+        return;
       }
 
       toast.success(`Invoice ${finalStatus === "Draft" ? "saved as draft" : "finalized"} successfully.`);
@@ -572,6 +608,43 @@ function InvoiceModuleView() {
               <section>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">Patient Details</h3>
                 <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Patient / Pet Name</label>
+                    <select
+                      value={selectedPatientId}
+                      onChange={handlePatientSelect}
+                      className={clsx(
+                        "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-card focus:outline-none focus:border-blue-400 dark:text-zinc-200",
+                        getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border"
+                      )}
+                    >
+                      <option value="">Select a pet...</option>
+                      {pets.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
+                      ))}
+                    </select>
+                    {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Linked Appointment</label>
+                    <select
+                      value={selectedAppointmentId}
+                      onChange={(e) => setSelectedAppointmentId(e.target.value)}
+                      className={clsx(
+                        "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-card focus:outline-none focus:border-blue-400 dark:text-zinc-200",
+                        getError("appointment_id") ? "border-rose-500 bg-rose-50/10" : "border-slate-200 dark:border-dark-border"
+                      )}
+                    >
+                      <option value="">Select an appointment...</option>
+                      {appointments.map(apt => (
+                        <option key={apt.id} value={apt.id}>
+                          {formatDate(apt.date)} - {apt.title}
+                        </option>
+                      ))}
+                    </select>
+                    {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
+                  </div>
                   <div className="relative">
                     <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                     <select
@@ -608,6 +681,22 @@ function InvoiceModuleView() {
                         </option>
                       ))}
                     </select>
+                    {/* Appointment selector */}
+                    {selectedPatientId && (
+                      <select
+                        value={selectedAppointmentId}
+                        onChange={(e) => setSelectedAppointmentId(e.target.value)}
+                        disabled={status === "Finalized"}
+                        className="mt-2 h-11 w-full appearance-none rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface pl-4 pr-8 text-sm text-slate-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
+                      >
+                        <option value="">Select an appointment (optional)...</option>
+                        {appointments.map(appt => (
+                          <option key={appt.id} value={appt.id}>
+                            {formatDate(appt.date)} {appt.time ? `@ ${appt.time}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   </div>
 
