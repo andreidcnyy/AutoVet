@@ -176,16 +176,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ) : (
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{product.item_name}</h2>
               )}
-              {isEditing ? (
-                <input
-                  type="text"
-                  className={inputClass + " text-sm mt-1"}
-                  value={formData.sub_details || ""}
-                  onChange={(e) => handleChange("sub_details", e.target.value)}
-                />
-              ) : (
-                <p className="text-sm text-slate-500 dark:text-zinc-400">{product.sub_details || "No sub details provided."}</p>
-              )}
             </div>
             <span
               className={clsx(
@@ -200,11 +190,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           <div className="mb-6 grid grid-cols-2 gap-y-4">
             {[
               ["Category", "inventory_category_id"],
-              ["SKU", "sku"],
-              ["Stock Level", "stock_level"],
+              ["Quantity", "stock_level"],
               ["Min Stock (Alert)", "min_stock_level"],
-              ["Price", "price"],
-              ["Supplier", "supplier"],
+              ["Selling Price", "selling_price"],
+              ["Cost Price", "price"],
               ["Expiration Date", "expiration_date"],
             ].map(([label, field]) => (
               <div key={field}>
@@ -222,17 +211,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
-                  ) : field === "sku" ? (
-                    <input
-                      type="text"
-                      readOnly
-                      className={clsx(inputClass, "bg-slate-50 dark:bg-dark-surface/50 cursor-not-allowed opacity-70")}
-                      value={formData[field] ?? ""}
-                    />
                   ) : (
                     <input
                       type={
-                        field === "price" || field === "stock_level" || field === "min_stock_level" 
+                        field === "price" || field === "selling_price" || field === "stock_level" || field === "min_stock_level" 
                           ? "number" 
                           : field === "expiration_date" 
                             ? "date" 
@@ -252,7 +234,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 ) : (field === "stock_level" || field === "min_stock_level") ? (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} units</p>
+                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
                 ) : (
                   <p className="font-semibold text-slate-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
                 )}
