@@ -139,10 +139,10 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
       3: { halign: 'right', cellWidth: 35 },
     },
     head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
-    body: invoiceData.items.map(item => [
+    body: invoiceData.items.filter(item => !item.is_hidden).map(item => [
       item.name.toUpperCase() + (item.notes ? "\n" + item.notes : ""),
       item.qty,
-      (item.unitPrice || 0).toFixed(2),
+      (item.unitPrice || item.unit_price || 0).toFixed(2),
       (item.amount || 0).toFixed(2)
     ]),
   });
@@ -217,6 +217,8 @@ function InvoiceModuleView() {
   const [status, setStatus] = useState("Draft");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+  const [currentWeight, setCurrentWeight] = useState("");
+
   const [services, setServices] = useState([]);
 
   const [inventory, setInventory] = useState([]);
@@ -289,10 +291,10 @@ function InvoiceModuleView() {
       return;
     }
     const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
-    const ownerData = patientData?.owner;
-
+    
     // Simply use the raw patient data, the UI will access nested properties
     setPatientDetails(patientData);
+    setCurrentWeight(patientData?.weight || "");
 
     // Auto replace placeholders in the notes if clinic template is present
     if (clinicSettings && clinicSettings.invoice_notes_template) {
@@ -304,7 +306,7 @@ function InvoiceModuleView() {
     }
   };
 
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.amount, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + (item.is_hidden ? 0 : item.amount), 0), [items]);
 
   // Real-time discount calculations safely capping out at subtotal
   const discountAmount = useMemo(() => {
@@ -362,14 +364,19 @@ function InvoiceModuleView() {
       if (rule) return Number(rule.price);
     }
     
-    if (service.pricing_type === "weight_based" && patientDetails?.weight !== null) {
-      const petWeight = Number(patientDetails.weight);
+    if (service.pricing_type === "weight_based" && currentWeight !== "") {
+      const petWeight = Number(currentWeight);
+      const petSpeciesId = patientDetails?.species_id;
+      
       const range = weightRanges.find(r => 
+        (Number(r.species_id) === Number(petSpeciesId)) &&
         Number(r.min_weight) <= petWeight && 
         (r.max_weight === null || Number(r.max_weight) >= petWeight)
       );
-      if (range) {
-        const rule = service.pricing_rules?.find(r => r.basis_type === 'weight' && r.reference_id === range.id);
+      
+      if (range && range.size_category_id) {
+        // NEW mapping: weight_based rules now use basis_type 'size' and the size_category_id from the range
+        const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === range.size_category_id);
         if (rule) return Number(rule.price);
       }
     }
@@ -425,8 +432,8 @@ function InvoiceModuleView() {
 
     if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
        itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
-    } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && patientDetails?.weight !== null) {
-       itemName = `${serviceInput} (${patientDetails.weight}kg)`;
+    } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && currentWeight !== "") {
+       itemName = `${serviceInput} (${currentWeight}kg)`;
     }
       
     const newItem = {
@@ -500,6 +507,8 @@ function InvoiceModuleView() {
 
     const payload = {
       pet_id: selectedPatientId,
+      appointment_id: selectedAppointmentId || null,
+      pet_weight: currentWeight || null,
       status: actualStatus,
       subtotal: subtotal,
       discount_type: discountType,
@@ -517,7 +526,8 @@ function InvoiceModuleView() {
         notes: item.notes,
         qty: item.qty,
         unit_price: item.unitPrice,
-        amount: item.amount
+        amount: item.amount,
+        is_hidden: !!item.is_hidden
       }))
     };
 
@@ -611,8 +621,22 @@ function InvoiceModuleView() {
                     <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   </div>
 
-                  {patientDetails && (
+                   {patientDetails && (
                     <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-surface p-3 text-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                         <strong className="text-slate-700 dark:text-zinc-300">Weight Override (kg)</strong>
+                         <input 
+                            type="number" 
+                            step="0.01" 
+                            value={currentWeight} 
+                            onChange={(e) => {
+                               setCurrentWeight(e.target.value);
+                               // Force price recalculation for items in the list?
+                               // For simplicity, we just update the state and newly added items will use it.
+                            }}
+                            className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-center font-bold text-blue-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
+                         />
+                      </div>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
                       <p className="text-slate-500 dark:text-zinc-400"><strong className="text-slate-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
@@ -950,7 +974,7 @@ function InvoiceModuleView() {
                 </div>
 
                 <div className="mt-3 space-y-3">
-                  {items.map((item) => (
+                  {items.filter(item => !item.is_hidden).map((item) => (
                     <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-slate-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
                       <div>
                         <div className="flex items-center gap-2">

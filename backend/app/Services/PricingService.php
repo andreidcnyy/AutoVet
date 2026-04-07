@@ -11,7 +11,7 @@ class PricingService
     /**
      * Calculate the price for a service given a pet.
      */
-    public function calculatePrice(Service $service, ?Pet $pet = null, float $quantity = 1, ?float $manualPrice = null): float
+    public function calculatePrice(Service $service, ?Pet $pet = null, float $quantity = 1, ?float $manualPrice = null, ?float $weight = null): float
     {
         if ($service->pricing_mode === 'manual' && $manualPrice !== null) { // Legacy check
             return $manualPrice * $quantity;
@@ -44,12 +44,19 @@ class PricingService
                     return (float) $priceRecord->price * $quantity;
                 }
             }
+
+            throw new \Exception("No pricing rule configured for service '{$service->name}' for pet size.");
         }
 
-        if ($service->pricing_type === 'weight_based' && isset($pet) && $pet->weight !== null) {
-            $petWeight = (float) $pet->weight;
+        if ($service->pricing_type === 'weight_based' && isset($pet)) {
+            $petWeight = $weight ?? (float) $pet->weight;
+            
+            if ($petWeight === null || $petWeight <= 0) {
+                throw new \Exception("Pet weight is required for weight-based service '{$service->name}'.");
+            }
             
             $range = \App\Models\WeightRange::where('status', 'Active')
+                ->where('species_id', $pet->species_id)
                 ->where('min_weight', '<=', $petWeight)
                 ->where(function ($query) use ($petWeight) {
                     $query->where('max_weight', '>=', $petWeight)
@@ -57,20 +64,23 @@ class PricingService
                 })
                 ->first();
 
-            if ($range) {
+            if ($range && $range->size_category_id) {
                 $rule = $service->pricingRules()
-                    ->where('basis_type', 'weight')
-                    ->where('reference_id', $range->id)
+                    ->where('basis_type', 'size')
+                    ->where('reference_id', $range->size_category_id)
                     ->first();
                 
                 if ($rule) {
                     return (float) $rule->price * $quantity;
                 }
             }
+
+            throw new \Exception("No pricing rule configured for weight '{$petWeight}kg' (Species: {$pet->species_id}) for service '{$service->name}'.");
         }
 
         // Final fallback: Use base_price or legacy price
-        return ($service->base_price ?? $service->price ?? 0) * $quantity;
+        $finalPrice = ($service->base_price ?? $service->price ?? 0);
+        return (float) $finalPrice * $quantity;
     }
 
     /**
