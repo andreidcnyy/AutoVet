@@ -179,7 +179,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     };
 
     const calculatedSizeId = calculateDynamicSize(weightValue, speciesIdValue);
-    const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || "N/A";
+    const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || (weightValue && speciesIdValue ? "Unclassified" : "N/A");
 
     useEffect(() => {
         if (calculatedSizeId) {
@@ -347,17 +347,29 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size Category</label>
-                                        <div className={clsx(
-                                            "flex flex-col justify-center rounded border px-3 py-1 text-xs font-medium transition-colors h-[34px]",
-                                            isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
-                                        )}>
-                                            <div className="flex items-center justify-between">
-                                                <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-zinc-300")}>
-                                                    {calculatedSizeName}
-                                                </span>
-                                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Auto</span>
+                                        {weightValue ? (
+                                            <div className={clsx(
+                                                "flex flex-col justify-center rounded border px-3 py-1 text-xs font-medium transition-colors min-h-[34px]",
+                                                isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                                            )}>
+                                                <div className="flex items-center justify-between">
+                                                    <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400 font-bold" : "text-slate-700 dark:text-zinc-300 font-bold")}>
+                                                        {calculatedSizeName}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Auto</span>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="relative">
+                                                <select {...register("size_category_id")} className="h-[34px] w-full rounded border bg-slate-50 px-2 text-[11px] text-slate-700 focus:bg-white focus:outline-none appearance-none pr-6 dark:bg-dark-surface dark:text-zinc-200">
+                                                    <option value="">Manual Fallback...</option>
+                                                    {sizeCategories.map(cat => (
+                                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                    ))}
+                                                </select>
+                                                <FiChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                                            </div>
+                                        )}
                                         {isMismatch && (
                                             <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-500/80 leading-tight">
                                                 Breed default: {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name}

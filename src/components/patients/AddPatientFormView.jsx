@@ -184,7 +184,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   };
 
   const calculatedSizeId = calculateDynamicSize(weightValue, speciesIdValue);
-  const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || "N/A";
+  const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || (weightValue && speciesIdValue ? "Unclassified (Check Ranges)" : "N/A");
 
   useEffect(() => {
     if (calculatedSizeId) {
@@ -441,22 +441,35 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Size Category</label>
-                  <div className={clsx(
-                    "flex flex-col justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
-                    isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
-                  )}>
-                    <div className="flex items-center justify-between">
-                      <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400" : "text-slate-700 dark:text-zinc-300")}>
-                        {calculatedSizeName}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Weight-Based</span>
+                  {weightValue ? (
+                    <div className={clsx(
+                      "flex flex-col justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors min-h-[48px]",
+                      isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400 font-bold" : "text-slate-700 dark:text-zinc-300 font-bold")}>
+                          {calculatedSizeName}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Auto-Computed</span>
+                      </div>
+                      {isMismatch && (
+                        <p className="mt-1 text-[11px] font-normal text-amber-600 dark:text-amber-500/80 leading-tight">
+                          Note: Breed default is {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name || "different"}.
+                        </p>
+                      )}
                     </div>
-                    {isMismatch && (
-                      <p className="mt-1 text-[11px] font-normal text-amber-600 dark:text-amber-500/80 leading-tight">
-                        Note: Breed default is {sizeCategories.find(c => c.id.toString() === breedSuggestedSizeId.toString())?.name || "different"}.
-                      </p>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="relative">
+                      <select {...register("size_category_id")} className={getSelectClass(errors.size_category_id)}>
+                        <option value="">Manual Fallback...</option>
+                        {sizeCategories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <p className="mt-1 text-[10px] text-slate-400 italic">Enter weight to auto-classify</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

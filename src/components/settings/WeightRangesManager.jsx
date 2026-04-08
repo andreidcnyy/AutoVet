@@ -439,6 +439,22 @@ export default function WeightRangesManager() {
                     </select>
                   </div>
                 </div>
+                
+                {/* Preview Classification */}
+                {(formData.min_weight || formData.max_weight) && formData.size_category_id && (
+                  <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-dark-surface dark:border-dark-border">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Classification Preview</p>
+                    <div className="text-sm text-slate-600 dark:text-zinc-400">
+                      A <span className="font-bold text-slate-900 dark:text-zinc-200">{selectedSpecies?.name}</span> weighing between 
+                      <span className="font-bold text-blue-600 dark:text-blue-400"> {formData.min_weight || "0"} </span> 
+                      and 
+                      <span className="font-bold text-blue-600 dark:text-blue-400"> {formData.max_weight || "∞"} </span> {formData.unit} 
+                      will be classified as <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        {sizeCategories.find(c => c.id.toString() === formData.size_category_id.toString())?.name || "???"}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-6">
