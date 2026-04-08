@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WeightRange extends Model
 {
-    protected $fillable = ['label', 'species_id', 'min_weight', 'max_weight', 'unit', 'size_category_id', 'status', 'pet_size_category_id'];
+    protected $fillable = ['label', 'species_id', 'min_weight', 'max_weight', 'unit', 'size_category_id', 'status'];
 
     public function sizeCategory()
     {

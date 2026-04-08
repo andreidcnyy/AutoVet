@@ -32,7 +32,7 @@ class WeightRangeController extends Controller
             'label' => 'required|string',
             'species_id' => 'required|exists:species,id',
             'min_weight' => 'required|numeric|min:0',
-            'max_weight' => 'nullable|numeric|gte:min_weight',
+            'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
             'size_category_id' => 'required|exists:pet_size_categories,id',
             'status' => 'required|string'
@@ -55,7 +55,7 @@ class WeightRangeController extends Controller
             'label' => 'required|string',
             'species_id' => 'required|exists:species,id',
             'min_weight' => 'required|numeric|min:0',
-            'max_weight' => 'nullable|numeric|gte:min_weight',
+            'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
             'size_category_id' => 'required|exists:pet_size_categories,id',
             'status' => 'required|string'
@@ -91,14 +91,12 @@ class WeightRangeController extends Controller
 
         return $query->where(function($q) use ($newMin, $newMax) {
             $q->where(function($sq) use ($newMax) {
-                // (newMax is null OR min <= newMax)
                 if ($newMax !== null) {
-                    $sq->where('min_weight', '<=', $newMax);
+                    $sq->where('min_weight', '<', $newMax);
                 }
             })->where(function($sq) use ($newMin) {
-                // (existingMax is null OR existingMax >= newMin)
                 $sq->whereNull('max_weight')
-                   ->orWhere('max_weight', '>=', $newMin);
+                   ->orWhere('max_weight', '>', $newMin);
             });
         })->exists();
     }

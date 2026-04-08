@@ -16,6 +16,7 @@ class Pet extends Model
         parent::boot();
 
         static::saving(function ($pet) {
+            // When weight and species are both present, weight range MUST be the source of truth
             if ($pet->weight !== null && $pet->species_id !== null) {
                 $range = WeightRange::where('status', 'Active')
                     ->where('species_id', $pet->species_id)
@@ -26,8 +27,12 @@ class Pet extends Model
                     })
                     ->first();
 
-                if ($range) {
+                if ($range && $range->size_category_id) {
                     $pet->size_category_id = $range->size_category_id;
+                } else {
+                    // If no active range matches this weight, we should probably clear the size category
+                    // to prevent contradictory data from manual entry.
+                    $pet->size_category_id = null;
                 }
             }
         });
