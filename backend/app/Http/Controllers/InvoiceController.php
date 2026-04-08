@@ -13,13 +13,16 @@ class InvoiceController extends Controller
 {
     protected $pricingService;
     protected $finalizationService;
+    protected $clientNotificationService;
 
     public function __construct(
         \App\Services\PricingService $pricingService,
-        \App\Services\InvoiceFinalizationService $finalizationService
+        \App\Services\InvoiceFinalizationService $finalizationService,
+        \App\Services\ClientNotificationService $clientNotificationService
     ) {
         $this->pricingService = $pricingService;
         $this->finalizationService = $finalizationService;
+        $this->clientNotificationService = $clientNotificationService;
     }
 
     /**
@@ -134,8 +137,8 @@ class InvoiceController extends Controller
             $taxable = $calculatedSubtotal - $discount;
             // Enforce fixed 12% VAT
             $validated['tax_rate'] = 12.00;
-            $tax = $taxable * 0.12; 
-            $calculatedTotal = $taxable + $tax;
+            $tax = round($taxable * 0.12, 2); 
+            $calculatedTotal = round($taxable + $tax, 2);
 
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
@@ -159,11 +162,36 @@ class InvoiceController extends Controller
             $invoice->load('items');
             $this->finalizationService->finalizeInvoice($invoice);
 
+            if ($invoice->status === 'Finalized') {
+                try {
+                    $owner = $invoice->pet->owner;
+                    if ($owner) {
+                        $this->clientNotificationService->sendFromTemplate(
+                            $owner,
+                            'invoice_finalized',
+                            'email',
+                            ['invoice_number' => $invoice->invoice_number, 'total' => $invoice->total],
+                            'automated',
+                            $invoice
+                        );
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
+                }
+            }
+
             DB::commit();
             return response()->json($invoice->load('pet', 'items'), 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Failed to create invoice.', 'errors' => [$e->getMessage()]], 500);
+            \Illuminate\Support\Facades\Log::error("Invoice creation failed: " . $e->getMessage(), [
+                'stack' => $e->getTraceAsString(),
+                'payload' => $request->all()
+            ]);
+            return response()->json([
+                'message' => 'Failed to create invoice.', 
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -326,6 +354,24 @@ class InvoiceController extends Controller
 
             $invoice->load('items');
             $this->finalizationService->finalizeInvoice($invoice);
+
+            if ($invoice->wasChanged('status') && $invoice->status === 'Finalized') {
+                try {
+                    $owner = $invoice->pet->owner;
+                    if ($owner) {
+                        $this->clientNotificationService->sendFromTemplate(
+                            $owner,
+                            'invoice_finalized',
+                            'email',
+                            ['invoice_number' => $invoice->invoice_number, 'total' => $invoice->total],
+                            'automated',
+                            $invoice
+                        );
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
+                }
+            }
 
             DB::commit();
             return response()->json($invoice->load('pet', 'items'));

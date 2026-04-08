@@ -9,6 +9,7 @@ import {
   FiPrinter,
   FiSearch,
   FiSend,
+  FiBell,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
@@ -17,9 +18,19 @@ import { useFormErrors } from "../../hooks/useFormErrors";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import ManualSendModal from "../notifications/ManualSendModal";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const formatDate = (date) => {
+  if (!date) return "N/A";
+  try {
+     return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  } catch (e) {
+     return "N/A";
+  }
+};
 
 /* ───────────────────────────────────────── PDF Generation ── */
 async function generateInvoicePDF(invoiceData, patient, clinic) {
@@ -226,6 +237,7 @@ function InvoiceModuleView() {
   const [currentWeight, setCurrentWeight] = useState("");
 
   const [services, setServices] = useState([]);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
   const [inventory, setInventory] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
@@ -580,7 +592,9 @@ function InvoiceModuleView() {
           setLaravelErrors(errorData);
           toast.error("Validation error. Please check specified fields.");
         } else {
-          throw new Error(errorData.message || "Failed to save invoice");
+          // Extract specific error if backend provided it
+          const detail = errorData.error || errorData.message || "Failed to save invoice";
+          throw new Error(detail);
         }
         return;
       }
@@ -946,6 +960,14 @@ function InvoiceModuleView() {
                 <FiSend className="h-4 w-4" />
                 Finalize &amp; Send
               </button>
+              <button
+                onClick={() => setIsSendModalOpen(true)}
+                disabled={status === "Draft"}
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-dark-surface px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200 disabled:opacity-50"
+              >
+                <FiBell className="h-4 w-4" />
+                Notify Client
+              </button>
             </div>
           </div>
 
@@ -1139,6 +1161,13 @@ function InvoiceModuleView() {
           </div>
         </section>
       </div>
+      <ManualSendModal 
+        isOpen={isSendModalOpen} 
+        onClose={() => setIsSendModalOpen(false)} 
+        owner={patientDetails?.owner}
+        relatedObject={null}
+        relatedType="App\Models\Invoice"
+      />
     </div>
   );
 }

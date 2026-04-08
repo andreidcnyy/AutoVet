@@ -14,6 +14,7 @@ import {
   FiHeart,
   FiAlertCircle,
   FiClipboard,
+  FiBell,
 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
@@ -23,6 +24,7 @@ import autoTable from "jspdf-autotable";
 import OwnerProfileModal from "./OwnerProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
+import ManualSendModal from "../notifications/ManualSendModal";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
@@ -711,9 +713,9 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
-  // New state for appointments
-  const [appointments, setAppointments] = useState([]);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [sendingRecord, setSendingRecord] = useState(null);
 
   const fetchRecords = () => {
     if (!user?.token) return;
@@ -856,6 +858,16 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                   >
                     <FiDownload className="h-4 w-4" />
                   </button>
+                  <button
+                    onClick={() => {
+                      setSendingRecord(record);
+                      setIsSendModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
+                    title="Notify Client"
+                  >
+                    <FiBell className="h-4 w-4" />
+                  </button>
                   {isVet && (
                     <>
                       <button onClick={() => { setEditingRecord(record); setSelectedAppointmentId(record.appointment_id || ""); setIsModalOpen(true); }} className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
@@ -888,6 +900,14 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           setSelectedAppointmentId={setSelectedAppointmentId}
         />
       )}
+
+      <ManualSendModal 
+        isOpen={isSendModalOpen} 
+        onClose={() => setIsSendModalOpen(false)} 
+        owner={patient?.owner}
+        relatedObject={sendingRecord}
+        relatedType="App\Models\MedicalRecord"
+      />
     </div>
   );
 }

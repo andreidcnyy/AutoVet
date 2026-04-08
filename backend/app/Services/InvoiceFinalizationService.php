@@ -49,7 +49,7 @@ class InvoiceFinalizationService
                     // if it's explicitly billed as a product OR if it's a linked consumable.
 
                     if ($inventoryItem->stock_level < $item->qty) {
-                        throw new Exception("Insufficient stock for item: {$inventoryItem->item_name}. Needed: {$item->qty}, Available: {$inventoryItem->stock_level}");
+                        throw new Exception("Insufficient stock for item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}");
                     }
 
                     $oldStock = $inventoryItem->stock_level;

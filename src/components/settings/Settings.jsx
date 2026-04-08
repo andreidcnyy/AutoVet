@@ -13,6 +13,7 @@ import BackupRestoreTab from "./BackupRestoreTab";
 
 import SpeciesBreedsTab from "./SpeciesBreedsTab";
 import VetScheduleTab from "./VetScheduleTab";
+import NotificationTemplatesManager from "../notifications/NotificationTemplatesManager";
 
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome },
@@ -25,6 +26,7 @@ const tabs = [
   { id: "audit", label: "System Audit Logs", icon: FiActivity },
   { id: "backup", label: "Backup & Restore", icon: FiDatabase },
   { id: "archive", label: "Archive & Recovery", icon: FiArchive },
+  { id: "client_notifications", label: "Notification Templates", icon: FiSettings },
 ];
 
 function Settings() {
@@ -77,6 +79,7 @@ function Settings() {
         { activeTab === "audit" && <AuditLogTab /> }
         { activeTab === "backup" && <BackupRestoreTab /> }
         { activeTab === "archive" && <ArchiveRecoveryTab /> }
+        { activeTab === "client_notifications" && <NotificationTemplatesManager /> }
       </main>
     </div>
   );

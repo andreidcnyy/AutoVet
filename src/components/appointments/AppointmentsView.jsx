@@ -26,6 +26,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/AuthContext";
+import ManualSendModal from "../notifications/ManualSendModal";
 
 const viewModes = ["Month", "Week", "Day"];
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -56,6 +57,7 @@ function AppointmentsView() {
   const [activePanel, setActivePanel] = useState("booking"); // 'booking' | 'details'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
   const {
     register,
@@ -597,6 +599,15 @@ function AppointmentsView() {
 
                 <div className="pt-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 text-center mb-6">Security & Lifecycle Actions</p>
+
+                  <button
+                    onClick={() => setIsSendModalOpen(true)}
+                    className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl bg-blue-100 text-sm font-black uppercase tracking-widest text-blue-700 shadow-xl shadow-blue-200/50 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50 transition-all active:scale-95"
+                  >
+                    <FiBell className="h-5 w-5" />
+                    Send Reminder
+                  </button>
+
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => handleStatusUpdate(selectedAppointment?.id, "completed")}
@@ -641,6 +652,14 @@ function AppointmentsView() {
           </section>
         </aside>
       </div>
+
+      <ManualSendModal 
+        isOpen={isSendModalOpen} 
+        onClose={() => setIsSendModalOpen(false)} 
+        owner={owners.find(o => o.id === selectedAppointment?.pet?.owner_id)}
+        relatedObject={selectedAppointment}
+        relatedType="App\Models\Appointment"
+      />
     </div>
   );
 }
