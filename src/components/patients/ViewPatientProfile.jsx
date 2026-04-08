@@ -25,6 +25,8 @@ import OwnerProfileModal from "./OwnerProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import ManualSendModal from "../notifications/ManualSendModal";
+import EditPatientModal from "./EditPatientModal";
+import { FiEdit3, FiTrash2 } from "react-icons/fi";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
@@ -363,13 +365,44 @@ async function generateAllMedicalRecordsPDF(records, patient) {
 
 /* ───────────────────────────────────────── Component ── */
 
-function ViewPatientProfile({ patient }) {
+function ViewPatientProfile({ patient, onRefresh }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const { user } = useAuth();
   const isStaff = user?.role === ROLES.STAFF;
   const isVet = VET_AND_ADMIN.includes(user?.role);
+
+  const handleArchive = async () => {
+    if (!user?.token) return;
+    setIsArchiving(true);
+    try {
+      const res = await fetch(`/api/pets/${patient.id}`, {
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to archive patient.");
+      }
+
+      toast.success("Patient record archived successfully.");
+      navigate("/patients");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsArchiving(false);
+      setIsArchiveModalOpen(false);
+    }
+  };
 
   if (!patient) {
     return (
@@ -400,15 +433,35 @@ function ViewPatientProfile({ patient }) {
             </p>
           </div>
         </div>
-        <span
-          className={clsx(
-            "inline-flex rounded-full border px-4 py-1.5 text-sm font-semibold",
-            statusStyles[patient.status] ||
-              "border-slate-200 bg-slate-50 text-slate-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+        <div className="flex items-center gap-3">
+          {(isVet || isStaff) && (
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-blue-600 shadow-sm hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 transition"
+            >
+              <FiEdit3 className="h-4 w-4" />
+              Edit Profile
+            </button>
           )}
-        >
-          {patient.status || "Unknown"}
-        </span>
+          {isVet && (
+            <button
+              onClick={() => setIsArchiveModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-600 shadow-sm hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/30 transition"
+            >
+              <FiTrash2 className="h-4 w-4" />
+              Archive
+            </button>
+          )}
+          <span
+            className={clsx(
+              "inline-flex rounded-full border px-4 py-1.5 text-sm font-semibold",
+              statusStyles[patient.status] ||
+                "border-slate-200 bg-slate-50 text-slate-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+            )}
+          >
+            {patient.status || "Unknown"}
+          </span>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -447,6 +500,47 @@ function ViewPatientProfile({ patient }) {
         isOpen={!!selectedOwnerId} 
         onClose={() => setSelectedOwnerId(null)} 
       />
+
+      <EditPatientModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        patient={patient}
+        onSaveSuccess={() => {
+          toast.success("Patient profile updated successfully.");
+          onRefresh?.();
+        }}
+      />
+
+      {/* Archive Confirmation Modal */}
+      {isArchiveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-card border dark:border-dark-border">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+              <FiTrash2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Archive Patient Record</h3>
+            <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+              Are you sure you want to archive this patient? This action will hide the patient from active records 
+              but will preserve medical history, appointments, invoices, and related data for audit and recovery purposes.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setIsArchiveModalOpen(false)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-dark-border dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isArchiving}
+                onClick={handleArchive}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                {isArchiving ? "Archiving..." : "Archive Patient"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

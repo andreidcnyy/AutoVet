@@ -9,7 +9,7 @@ function ViewPatientProfilePage() {
   const [patient, setPatient] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchPatient = () => {
     if (!user?.token || !id) return;
 
     fetch(`/api/pets/${id}`, {
@@ -32,6 +32,10 @@ function ViewPatientProfilePage() {
         console.error("Error loading patient:", err);
         setError(err.message);
       });
+  };
+
+  useEffect(() => {
+    fetchPatient();
   }, [id, user?.token]);
 
   if (error) {
@@ -42,7 +46,7 @@ function ViewPatientProfilePage() {
     );
   }
 
-  return <ViewPatientProfile patient={patient} />;
+  return <ViewPatientProfile patient={patient} onRefresh={fetchPatient} />;
 }
 
 export default ViewPatientProfilePage;
