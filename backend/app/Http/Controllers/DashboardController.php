@@ -170,7 +170,8 @@ class DashboardController extends Controller
      */
     public function getStats()
     {
-        $totalPatients = Pet::count();
+        $totalPets = Pet::count();
+        $totalOwners = \App\Models\Owner::count();
         $monthlyRevenue = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
@@ -195,13 +196,24 @@ class DashboardController extends Controller
         return response()->json([
             [
                 'id' => 'stat-1',
-                'title' => 'Total Patients',
-                'value' => number_format($totalPatients),
-                'detail' => 'Registered pets in system',
-                'iconName' => 'FiUsers',
+                'title' => 'Total Pets',
+                'value' => number_format($totalPets),
+                'detail' => 'Active patients in care',
+                'iconName' => 'FiHeart',
                 'iconBg' => 'bg-blue-100 dark:bg-blue-900/30',
                 'iconColor' => 'text-blue-600 dark:text-blue-400',
                 'badge' => '+' . Pet::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
+                'badgeTone' => 'success',
+            ],
+            [
+                'id' => 'stat-owners',
+                'title' => 'Total Clients',
+                'value' => number_format($totalOwners),
+                'detail' => 'Registered pet owners',
+                'iconName' => 'FiUsers',
+                'iconBg' => 'bg-purple-100 dark:bg-purple-900/30',
+                'iconColor' => 'text-purple-600 dark:text-purple-400',
+                'badge' => '+' . \App\Models\Owner::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
                 'badgeTone' => 'success',
             ],
             [

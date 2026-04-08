@@ -105,7 +105,9 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Pet Owners</h2>
-          <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">Manage clients and their associated pets.</p>
+          <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">
+            Manage {owners.length} clients and {owners.reduce((sum, owner) => sum + (owner.pets?.length || 0), 0)} pets.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <input

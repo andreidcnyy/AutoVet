@@ -80,7 +80,7 @@ function DashboardPage() {
           {apiStatus.message}
         </div>
       )}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">
         {metrics.map((card) => (
           <MetricCard key={card.id} card={card} />
         ))}
