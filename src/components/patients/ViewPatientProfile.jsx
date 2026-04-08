@@ -89,6 +89,13 @@ function formatCurrency(value) {
   })}`;
 }
 
+function formatAgeGroup(group) {
+  if (!group) return "—";
+  if (group === "Puppy/Kitten") return "Baby";
+  if (group === "Junior") return "Young";
+  return group;
+}
+
 function calculateAge(dob) {
   if (!dob) return null;
   const birth = new Date(dob);
@@ -148,7 +155,7 @@ async function generatePatientPDF(patient) {
       ["Species", patient.species?.name || "—"],
       ["Breed", patient.breed?.name || "—"],
       ["Sex", patient.sex || "—"],
-      ["Age Group", patient.age_group || "—"],
+      ["Age Group", formatAgeGroup(patient.age_group)],
       ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
       ["Color", patient.color || "—"],
       ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit}` : "—"],
@@ -562,7 +569,7 @@ function OverviewTab({ patient, onOpenOwner }) {
             { label: "Species", value: patient.species?.name || "N/A" },
             { label: "Breed", value: patient.breed?.name || "N/A" },
             { label: "Sex", value: patient.sex || "N/A" },
-            { label: "Age Group", value: patient.age_group || "N/A" },
+            { label: "Age Group", value: formatAgeGroup(patient.age_group) },
             { label: "Age", value: calculateAge(patient.date_of_birth) || "N/A" },
             { label: "Color", value: patient.color || "N/A" },
             { label: "Weight", value: patient.weight ? `${patient.weight} ${patient.weight_unit}` : "N/A" },
