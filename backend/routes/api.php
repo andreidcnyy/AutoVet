@@ -63,6 +63,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::post('/notifications/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
 
+    // Client Notifications
+    Route::get('/client-notifications', [\App\Http\Controllers\ClientNotificationController::class, 'index']);
+    Route::post('/client-notifications/send', [\App\Http\Controllers\ClientNotificationController::class, 'send']);
+    Route::apiResource('client-notifications/templates', \App\Http\Controllers\NotificationTemplateController::class)->names('client-notifications.templates');
+
+
     // -----------------------------------------------------------------------
     // Inventory
     // -----------------------------------------------------------------------
