@@ -1,5 +1,7 @@
 import MasterDataTable from "./MasterDataTable";
 import WeightRangesManager from "./WeightRangesManager";
+import { FiCheckCircle } from "react-icons/fi";
+import clsx from "clsx";
 
 export default function MasterDataManagementTab() {
   const categoryColumns = [
@@ -97,21 +99,44 @@ export default function MasterDataManagementTab() {
           />
         </div>
 
-        <div className="card-shell p-6 transition-all hover:shadow-md">
-          <MasterDataTable 
-            title="Pet Size Categories"
-            description="Define standard size groups for pet service pricing."
-            apiUrl="/api/pet-size-categories"
-            columns={categoryColumns}
-            initialForm={{ name: "", description: "", status: "Active" }}
-          />
+        {/* Standard Size Labels Placeholder/Helper */}
+        <div className="card-shell p-8 border-2 border-blue-50/50 bg-gradient-to-br from-white to-blue-50/30 dark:from-dark-card dark:to-blue-900/5 transition-all">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Standard Size Labels</h3>
+              <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Standardized system-wide classification categories used for pricing and reporting.</p>
+            </div>
+            <div className="hidden md:block">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                System Master Data
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+             {['Extra Small', 'Small', 'Medium', 'Large', 'Giant'].map((size, idx) => (
+               <div key={size} className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-slate-100 dark:bg-dark-surface dark:border-dark-border shadow-sm group hover:border-blue-400 hover:shadow-md transition-all duration-300">
+                  <div className={clsx(
+                    "h-2 w-12 rounded-full mb-4 group-hover:scale-x-125 transition-all duration-300",
+                    idx === 0 ? "bg-slate-200" : idx === 1 ? "bg-slate-300" : idx === 2 ? "bg-slate-400" : idx === 3 ? "bg-slate-500" : "bg-slate-600"
+                  )} />
+                  <span className="text-sm font-black text-slate-800 dark:text-zinc-200 uppercase tracking-tight">{size}</span>
+               </div>
+             ))}
+          </div>
         </div>
 
-        <div className="card-shell p-6 transition-all hover:shadow-md">
-          <div className="space-y-6">
-            <div className="border-b border-slate-100 dark:border-dark-border pb-4">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Weight Ranges</h3>
-              <p className="text-sm text-slate-500 dark:text-zinc-400">Define species-specific weight tiers for service pricing.</p>
+        <div className="card-shell p-8 transition-all hover:shadow-lg border-2 border-transparent hover:border-blue-100 dark:hover:border-blue-900/20">
+          <div className="space-y-8">
+            <div className="border-b border-slate-100 dark:border-dark-border pb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Weight-Based Classification</h3>
+                  <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Define species-specific weight tiers that map to standard size labels.</p>
+                </div>
+                <div className="bg-blue-600 rounded-2xl p-3 text-white shadow-xl shadow-blue-500/20">
+                  <FiCheckCircle size={24} />
+                </div>
+              </div>
             </div>
             <WeightRangesManager />
           </div>

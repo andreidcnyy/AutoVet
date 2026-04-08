@@ -182,10 +182,16 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || (weightValue && speciesIdValue ? "Unclassified" : "N/A");
 
     useEffect(() => {
-        if (calculatedSizeId) {
-            setValue("size_category_id", calculatedSizeId.toString());
+        // If weight and species are present, strictly prioritize the computed size
+        if (weightValue && speciesIdValue) {
+            if (calculatedSizeId) {
+                setValue("size_category_id", calculatedSizeId.toString());
+            } else {
+                // If weight exists but no range matches, clear it to avoid contradicting manual data
+                setValue("size_category_id", "");
+            }
         }
-    }, [calculatedSizeId, setValue]);
+    }, [calculatedSizeId, weightValue, speciesIdValue, setValue]);
 
     const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 

@@ -38,9 +38,9 @@ class WeightRangeController extends Controller
             'status' => 'required|string'
         ]);
 
-        if ($this->hasOverlap($validated)) {
+        if ($conflict = $this->findConflict($validated)) {
             return response()->json([
-                'message' => 'The weight range overlaps with an existing active range for this species and unit.',
+                'message' => $this->formatConflictMessage($conflict),
                 'errors' => ['min_weight' => ['Range overlap detected.']]
             ], 422);
         }
@@ -49,8 +49,16 @@ class WeightRangeController extends Controller
         return response()->json($range->load(['sizeCategory', 'species']), 201);
     }
 
-    public function update(Request $request, WeightRange $weightRange)
+    public function update(Request $request, $id)
     {
+        $weightRange = WeightRange::findOrFail($id);
+
+        \Log::info('WeightRangeController@update', [
+            'id' => $id,
+            'model_id' => $weightRange->id,
+            'request_data' => $request->all()
+        ]);
+
         $validated = $request->validate([
             'label' => 'required|string',
             'species_id' => 'required|exists:species,id',
@@ -61,9 +69,22 @@ class WeightRangeController extends Controller
             'status' => 'required|string'
         ]);
 
-        if ($this->hasOverlap($validated, $weightRange->id)) {
+        if ($conflict = $this->findConflict($validated, $weightRange->id)) {
+            \Log::warning('Conflict detected during update', [
+                'exclude_id' => $weightRange->id,
+                'conflict_id' => $conflict->id,
+                'conflict_label' => $conflict->label
+            ]);
+            
+            // Final safety check: if for some reason the query still returned the same record
+            if ($conflict->id == $weightRange->id) {
+                \Log::error('CRITICAL: findConflict returned the excluded ID despite where clause.');
+                $weightRange->update($validated);
+                return response()->json($weightRange->load(['sizeCategory', 'species']));
+            }
+
             return response()->json([
-                'message' => 'The weight range overlaps with an existing active range for this species and unit.',
+                'message' => $this->formatConflictMessage($conflict),
                 'errors' => ['min_weight' => ['Range overlap detected.']]
             ], 422);
         }
@@ -72,17 +93,24 @@ class WeightRangeController extends Controller
         return response()->json($weightRange->load(['sizeCategory', 'species']));
     }
 
-    private function hasOverlap($data, $excludeId = null)
+    private function findConflict($data, $excludeId = null)
     {
+        \Log::debug('WeightRangeController@findConflict', [
+            'exclude_id' => $excludeId,
+            'species_id' => $data['species_id'] ?? null,
+            'unit' => $data['unit'] ?? null
+        ]);
+
         if ($data['status'] !== 'Active') {
-            return false;
+            return null;
         }
 
-        $query = WeightRange::where('species_id', $data['species_id'])
+        $query = WeightRange::with(['sizeCategory', 'species'])
+            ->where('species_id', $data['species_id'])
             ->where('unit', $data['unit'])
             ->where('status', 'Active');
 
-        if ($excludeId) {
+        if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
 
@@ -98,7 +126,17 @@ class WeightRangeController extends Controller
                 $sq->whereNull('max_weight')
                    ->orWhere('max_weight', '>', $newMin);
             });
-        })->exists();
+        })->first();
+    }
+
+    private function formatConflictMessage($conflict)
+    {
+        $min = number_format($conflict->min_weight, 2);
+        $max = $conflict->max_weight === null ? '∞' : number_format($conflict->max_weight, 2);
+        $size = $conflict->sizeCategory?->name ?? 'Unlinked';
+        $species = $conflict->species?->name ?? 'Unknown';
+        
+        return "Conflicts with existing {$species} range: {$min} - {$max} ({$size})";
     }
 
     public function destroy(WeightRange $weightRange)
