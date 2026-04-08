@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { useAuth } from "../../context/AuthContext";
 import PhoneInput from "../common/PhoneInput";
+import { getAgeGroup } from "../../utils/petAgeGroups";
 
 const steps = ["Pet Information", "Owner Details", "Medical History"];
 
@@ -143,6 +144,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
   const photoValue = watch("photo");
   const speciesIdValue = watch("species_id");
+  const dobValue = watch("date_of_birth");
   const weightValue = watch("weight");
 
   const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
@@ -197,6 +199,16 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       }
     }
   }, [calculatedSizeId, weightValue, speciesIdValue, setValue]);
+
+  useEffect(() => {
+    if (speciesIdValue && dobValue) {
+      const speciesName = speciesList.find(s => s.id.toString() === speciesIdValue)?.name;
+      const computedAgeGroup = getAgeGroup(speciesName, dobValue);
+      setValue("age_group", computedAgeGroup, { shouldValidate: true });
+    } else if (!dobValue || !speciesIdValue) {
+      setValue("age_group", "Not yet determined");
+    }
+  }, [speciesIdValue, dobValue, speciesList, setValue]);
 
   const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
@@ -415,13 +427,11 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Age Group</label>
-                  <select {...register("age_group")} className={getSelectClass(errors.age_group)}>
-                    <option value="">Select Age Group...</option>
-                    <option>Puppy/Kitten</option>
-                    <option>Junior</option>
-                    <option>Adult</option>
-                    <option>Senior</option>
-                  </select>
+                  <div className="flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200">
+                    <span>{watch("age_group") || "Not yet determined"}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Auto</span>
+                  </div>
+                  <input type="hidden" {...register("age_group")} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-zinc-300">Date of Birth</label>

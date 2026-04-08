@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getAgeGroup } from "../../utils/petAgeGroups";
 
 const inputBase =
     "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
@@ -111,7 +112,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 breed_id: patient.breed_id ? patient.breed_id.toString() : "",
                 date_of_birth: patient.date_of_birth ? patient.date_of_birth.substring(0, 10) : "",
                 sex: patient.sex || "Male",
-                age_group: patient.age_group || "Adult",
+                age_group: patient.age_group === "Puppy/Kitten" ? "Baby" : (patient.age_group === "Junior" ? "Young" : (patient.age_group || "Adult")),
                 color: patient.color || "",
                 weight: patient.weight || "",
                 weight_unit: patient.weight_unit || "kg",
@@ -150,6 +151,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
     const weightValue = watch("weight");
     const breedIdValue = watch("breed_id");
+    const dobValue = watch("date_of_birth");
 
     useEffect(() => {
         if (breedIdValue && speciesIdValue) {
@@ -192,6 +194,16 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
             }
         }
     }, [calculatedSizeId, weightValue, speciesIdValue, setValue]);
+
+    useEffect(() => {
+        if (speciesIdValue && dobValue) {
+            const speciesName = speciesList.find(s => s.id.toString() === speciesIdValue)?.name;
+            const computedAgeGroup = getAgeGroup(speciesName, dobValue);
+            setValue("age_group", computedAgeGroup, { shouldValidate: true });
+        } else if (!dobValue || !speciesIdValue) {
+            setValue("age_group", "Not yet determined");
+        }
+    }, [speciesIdValue, dobValue, speciesList, setValue]);
 
     const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
@@ -392,13 +404,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Age Group</label>
-                                    <select {...register("age_group")} className={getSelectClass(errors.age_group)}>
-                                        <option value="">Select Age Group...</option>
-                                        <option>Puppy/Kitten</option>
-                                        <option>Junior</option>
-                                        <option>Adult</option>
-                                        <option>Senior</option>
-                                    </select>
+                                    <div className="flex h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-[13px] font-bold text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200">
+                                        <span>{watch("age_group") || "Not yet determined"}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Auto</span>
+                                    </div>
+                                    <input type="hidden" {...register("age_group")} />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Color</label>

@@ -16,7 +16,7 @@ class Pet extends Model
         parent::boot();
 
         static::saving(function ($pet) {
-            // When weight and species are both present, weight range MUST be the source of truth
+            // 1. Auto-compute Size Category from Weight
             if ($pet->weight !== null && $pet->species_id !== null) {
                 $range = WeightRange::where('status', 'Active')
                     ->where('species_id', $pet->species_id)
@@ -30,9 +30,38 @@ class Pet extends Model
                 if ($range && $range->size_category_id) {
                     $pet->size_category_id = $range->size_category_id;
                 } else {
-                    // If no active range matches this weight, we should probably clear the size category
-                    // to prevent contradictory data from manual entry.
                     $pet->size_category_id = null;
+                }
+            }
+
+            // 2. Auto-compute Age Group from species and DOB
+            if ($pet->date_of_birth !== null && $pet->species_id !== null) {
+                $dob = \Carbon\Carbon::parse($pet->date_of_birth);
+                $now = now();
+                $ageInMonths = $dob->diffInMonths($now);
+                
+                $species = Species::find($pet->species_id);
+                $speciesName = $species ? $species->name : 'Default';
+                
+                // Define thresholds (in months)
+                $thresholds = [
+                    'Canine' => ['Baby' => 5, 'Young' => 11, 'Adult' => 72],
+                    'Feline' => ['Baby' => 5, 'Young' => 11, 'Adult' => 108],
+                    'Rabbit' => ['Baby' => 3, 'Young' => 11, 'Adult' => 48],
+                    'Bird'   => ['Baby' => 3, 'Young' => 11, 'Adult' => 84],
+                    'Default'=> ['Baby' => 6, 'Young' => 12, 'Adult' => 84],
+                ];
+                
+                $t = $thresholds[$speciesName] ?? $thresholds['Default'];
+                
+                if ($ageInMonths <= $t['Baby']) {
+                    $pet->age_group = 'Baby';
+                } elseif ($ageInMonths <= $t['Young']) {
+                    $pet->age_group = 'Young';
+                } elseif ($ageInMonths <= $t['Adult']) {
+                    $pet->age_group = 'Adult';
+                } else {
+                    $pet->age_group = 'Senior';
                 }
             }
         });
