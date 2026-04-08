@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiClock } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -13,13 +14,13 @@ export default function VetScheduleTab() {
   const [loading, setLoading] = useState(true);
   
   const [selectedVetId, setSelectedVetId] = useState("");
-  
-  const [dayOfWeek, setDayOfWeek] = useState("Monday");
+  const [selectedDays, setSelectedDays] = useState(["Monday"]);
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [breakStart, setBreakStart] = useState("");
   const [breakEnd, setBreakEnd] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [isOverwriting, setIsOverwriting] = useState(false);
 
   const fetchData = async () => {
     if (!user?.token) return;
@@ -61,23 +62,34 @@ export default function VetScheduleTab() {
     fetchData();
   }, [user?.token]);
 
-  const handleAddSchedule = async (e) => {
-    e.preventDefault();
+  const toggleDay = (day) => {
+    setSelectedDays(prev => 
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  const selectWeekdays = () => setSelectedDays(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+  const selectAll = () => setSelectedDays([...DAYS_OF_WEEK]);
+  const clearSelection = () => setSelectedDays([]);
+
+  const handleSaveSchedule = async (e, forceOverwrite = false) => {
+    if (e) e.preventDefault();
     if (!selectedVetId) return toast.error("Select a vet first.");
+    if (selectedDays.length === 0) return toast.error("Select at least one day.");
     
     const payload = {
       user_id: selectedVetId,
-      day_of_week: dayOfWeek,
+      days: selectedDays,
       start_time: startTime,
       end_time: endTime,
       break_start: breakStart || null,
       break_end: breakEnd || null,
       is_available: isAvailable,
-      max_appointments: null
+      overwrite_existing: forceOverwrite
     };
 
     try {
-      const res = await fetch("/api/vet-schedules", {
+      const res = await fetch("/api/vet-schedules/bulk", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json", 
@@ -86,16 +98,27 @@ export default function VetScheduleTab() {
         },
         body: JSON.stringify(payload)
       });
+      
+      const data = await res.json();
+
       if (res.ok) {
-        toast.success("Schedule added.");
+        toast.success(data.message || "Schedules saved.");
         setBreakStart("");
         setBreakEnd("");
         fetchData();
+        setIsOverwriting(false);
+      } else if (res.status === 409) {
+        const confirmOverwrite = window.confirm(
+          `Schedule conflict detected for: ${data.conflicting_days.join(", ")}. \n\nDo you want to overwrite existing schedules for these days?`
+        );
+        if (confirmOverwrite) {
+          handleSaveSchedule(null, true);
+        }
       } else {
-        const err = await res.json();
-        toast.error(err.message || "Failed to save schedule.");
+        toast.error(data.message || "Failed to save schedule.");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Network error.");
     }
   };
@@ -150,42 +173,90 @@ export default function VetScheduleTab() {
 
         {selectedVetId ? (
           <>
-            <form onSubmit={handleAddSchedule} className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200 dark:bg-dark-surface dark:border-dark-border">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Day of Week</label>
-                <select value={dayOfWeek} onChange={e => setDayOfWeek(e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
-                  {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Start Time</label>
-                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+            <form onSubmit={handleSaveSchedule} className="mt-6 space-y-6 bg-slate-50 p-6 rounded-xl border border-slate-200 dark:bg-dark-surface dark:border-dark-border">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Select Days</label>
+                    <div className="flex gap-3">
+                      <button type="button" onClick={selectWeekdays} className="text-[10px] font-bold text-blue-600 hover:underline dark:text-blue-400">Weekdays</button>
+                      <button type="button" onClick={selectAll} className="text-[10px] font-bold text-blue-600 hover:underline dark:text-blue-400">All</button>
+                      <button type="button" onClick={clearSelection} className="text-[10px] font-bold text-rose-600 hover:underline">Clear</button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS_OF_WEEK.map(day => {
+                      const isSelected = selectedDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleDay(day)}
+                          className={clsx(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                            isSelected 
+                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20" 
+                              : "bg-white border-slate-200 text-slate-500 hover:border-blue-300 dark:bg-dark-card dark:border-dark-border dark:text-zinc-400"
+                          )}
+                        >
+                          {day.substring(0,3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Start Time</label>
+                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">End Time</label>
+                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">End Time</label>
-                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-end">
+                <div className="grid grid-cols-2 gap-4 md:col-span-1">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Break Start (Opt)</label>
+                    <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Break End (Opt)</label>
+                    <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  </div>
+                </div>
+
+                <div className="flex items-center h-10 gap-2 mb-0.5">
+                  <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                  <label htmlFor="isAvail" className="text-sm font-medium text-slate-700 dark:text-zinc-300">Available</label>
+                </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Break Start (Opt)</label>
-                <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-zinc-300">Break End (Opt)</label>
-                <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
-              </div>
-
-              <div className="flex items-center h-10 gap-2 px-2">
-                <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                <label htmlFor="isAvail" className="text-sm font-medium text-slate-700 dark:text-zinc-300">Available</label>
-              </div>
-
-              <div className="col-span-1 md:col-span-2 flex justify-end">
-                <button type="submit" className="h-10 w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 transition">
-                  <FiPlus /> Save Schedule
+              <div className="pt-2 border-t border-slate-200 dark:border-dark-border">
+                <div className="mb-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 dark:bg-blue-900/10 dark:border-blue-800/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-2">Schedule Preview</p>
+                  <div className="text-xs text-slate-600 dark:text-zinc-400">
+                    {selectedDays.length > 0 ? (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {selectedDays.map(d => (
+                          <span key={d} className="inline-flex items-center gap-1">
+                            <span className="font-bold text-slate-700 dark:text-zinc-300">{d}:</span> {startTime} - {endTime}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="italic text-slate-400">No days selected. Choose days above to generate schedules.</span>
+                    )}
+                  </div>
+                </div>
+                
+                <button type="submit" className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95">
+                  Apply to Selected Days ({selectedDays.length})
                 </button>
               </div>
             </form>

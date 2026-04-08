@@ -1,34 +1,44 @@
 <?php
-
-require __DIR__.'/vendor/autoload.php';
-$app = require_once __DIR__.'/bootstrap/app.php';
-
-use App\Models\Species;
-use DB;
-
+require_once __DIR__ . '/vendor/autoload.php';
+$app = require_once __DIR__ . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-$species = Species::all(['id', 'name']);
-echo "Current Species list:\n";
-foreach ($species as $s) {
-    echo "- {$s->name} (ID: {$s->id})\n";
-}
+use App\Models\Appointment;
+use App\Models\Pet;
+use App\Models\Service;
+use App\Models\User;
 
-$dogCount = DB::table('species')->where('name', 'Dog')->count();
-$catCount = DB::table('species')->where('name', 'Cat')->count();
+try {
+    // Try to find a valid pet, service, and vet to create a real test appointment
+    $pet = Pet::first();
+    $service = Service::first();
+    $vet = User::where('role', 'like', '%vet%')->orWhere('role', 'like', '%doctor%')->first();
 
-echo "\nCounts:\n";
-echo "Dog: $dogCount\n";
-echo "Cat: $catCount\n";
+    if (!$pet || !$service) {
+        die("Need at least one pet and one service to test.\n");
+    }
 
-$petCounts = DB::table('pets')
-    ->join('species', 'pets.species_id', '=', 'species.id')
-    ->select('species.name', DB::raw('count(*) as count'))
-    ->groupBy('species.name')
-    ->get();
+    echo "Attempting to create test appointment for Pet ID: {$pet->id}...\n";
 
-echo "\nPet counts per species:\n";
-foreach ($petCounts as $pc) {
-    echo "- {$pc->name}: {$pc->count}\n";
+    $appointment = Appointment::create([
+        'pet_id' => $pet->id,
+        'service_id' => $service->id,
+        'vet_id' => $vet ? $vet->id : null,
+        'date' => date('Y-m-d'),
+        'time' => '10:00',
+        'title' => 'Test Repair Fix',
+        'notes' => 'This is a test appointment to verify the schema fix.',
+        'status' => 'pending',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]);
+
+    echo "Success! Appointment created with ID: {$appointment->id}\n";
+    
+    // Clean up
+    $appointment->delete();
+    echo "Test appointment deleted.\n";
+
+} catch (\Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
 }
