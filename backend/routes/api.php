@@ -110,6 +110,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::apiResource('medical-records', MedicalRecordController::class);
         Route::apiResource('owners',          OwnerController::class);
         Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
+        Route::post('vet-schedules/bulk',    [VetScheduleController::class, 'bulkStore']);
         Route::apiResource('vet-schedules',   VetScheduleController::class);
         Route::post('owners/import',          [OwnerController::class, 'import']);
     });
