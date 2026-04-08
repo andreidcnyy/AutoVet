@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight, FiCheckCircle, FiCircle } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight, FiCheckCircle, FiCircle, FiAlertTriangle, FiArrowRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
@@ -119,6 +119,24 @@ export default function WeightRangesManager() {
   useEffect(() => {
     fetchRanges();
   }, [fetchRanges]);
+
+  const gaps = useCallback(() => {
+    if (!ranges || ranges.length < 2) return [];
+    const activeSorted = [...ranges]
+      .filter(r => r.status === 'Active')
+      .sort((a, b) => parseFloat(a.min_weight) - parseFloat(b.min_weight));
+    
+    if (activeSorted.length < 2) return [];
+    const foundGaps = [];
+    for (let i = 0; i < activeSorted.length - 1; i++) {
+        const currentMax = activeSorted[i].max_weight === null ? Infinity : parseFloat(activeSorted[i].max_weight);
+        const nextMin = parseFloat(activeSorted[i+1].min_weight);
+        if (currentMax < nextMin) {
+            foundGaps.push({ from: activeSorted[i].max_weight, to: nextMin });
+        }
+    }
+    return foundGaps;
+  }, [ranges])();
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -253,9 +271,9 @@ export default function WeightRangesManager() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{selectedSpecies.name} Ranges</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                  Configure weight tiers for {selectedSpecies.name.toLowerCase()}s.
+                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">{selectedSpecies.name} Weight Brackets</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                  Define how {selectedSpecies.name.toLowerCase()}s are classified based on weight.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -266,18 +284,32 @@ export default function WeightRangesManager() {
                     placeholder="Search ranges..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                   />
                 </div>
                 <button 
                   onClick={() => handleOpenModal()}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all hover:-translate-y-0.5"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:-translate-y-0.5"
                 >
-                  <FiPlus className="h-4 w-4" />
+                  <FiPlus className="h-5 w-5" />
                   <span>Add Range</span>
                 </button>
               </div>
             </div>
+
+            {gaps.length > 0 && (
+              <div className="flex items-center gap-3 rounded-2xl bg-amber-50 p-4 border border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/20">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                  <FiAlertTriangle size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-amber-800 dark:text-amber-400">Weight Gaps Detected</h4>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/60 font-medium">
+                    The following weights are currently unclassified: {gaps.map(g => `${g.from}kg to ${g.to}kg`).join(", ")}.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
               <table className="w-full text-left text-sm">
