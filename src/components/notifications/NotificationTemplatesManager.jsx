@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useToast } from '../../context/ToastContext';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -167,9 +168,16 @@ function TemplateFormModal({ template, onClose, onSave }) {
         onSave(formData);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#1e1e2d] rounded-xl p-6 w-full max-w-lg shadow-2xl border border-gray-700 transform transition-all">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            {/* Backdrop */}
+            <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                onClick={onClose}
+            />
+
+            {/* Modal Content */}
+            <div className="relative bg-[#1e1e2d] rounded-xl p-6 w-full max-w-lg shadow-2xl border border-gray-700 transform transition-all animate-in fade-in zoom-in duration-200">
                 <h2 className="text-xl font-bold mb-6 text-gray-100">{template ? 'Edit Template' : 'Add Template'}</h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -238,7 +246,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                             onChange={e => setFormData({...formData, is_active: e.target.checked})}
                             className="rounded border-gray-700 bg-[#151521] text-blue-500 focus:ring-blue-500 focus:ring-offset-[#1e1e2d] w-4 h-4 cursor-pointer"
                         />
-                        <label htmlFor="is_active" className="text-sm text-gray-300 cursor-pointer text-gray-400">Template is active</label>
+                        <label htmlFor="is_active" className="text-sm text-gray-400 cursor-pointer">Template is active</label>
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t border-gray-700">
@@ -247,6 +255,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
