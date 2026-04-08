@@ -103,6 +103,10 @@ class PetController extends Controller
 
     public function destroy(Pet $pet)
     {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isClinical()) {
+            return response()->json(['message' => 'Unauthorized. Only Admins and Veterinarians can archive patient records.'], 403);
+        }
+
         $pet->delete();
         return response()->json(null, 204);
     }

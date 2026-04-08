@@ -133,8 +133,6 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         }
     }, [patient, isOpen, reset]);
 
-    if (!isOpen || !patient) return null;
-
     const photoValue = watch("photo");
     const speciesIdValue = watch("species_id");
     const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
@@ -259,6 +257,8 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
             setError(err.message);
         }
     };
+
+    if (!isOpen || !patient) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
