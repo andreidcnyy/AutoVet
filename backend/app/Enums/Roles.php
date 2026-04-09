@@ -13,6 +13,7 @@ enum Roles: string
     case ADMIN        = 'admin';
     case VETERINARIAN = 'veterinarian';
     case STAFF        = 'staff';
+    case OWNER        = 'owner';
 
     /**
      * Roles that can perform administrative write operations.
@@ -27,7 +28,7 @@ enum Roles: string
      */
     public static function clinicalRoles(): array
     {
-        return [self::VETERINARIAN->value];
+        return [self::VETERINARIAN->value, self::ADMIN->value];
     }
 
     /**
@@ -36,6 +37,14 @@ enum Roles: string
     public static function all(): array
     {
         return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * Roles representing clinic employees.
+     */
+    public static function employeeRoles(): array
+    {
+        return [self::ADMIN->value, self::VETERINARIAN->value, self::STAFF->value];
     }
 
     /**

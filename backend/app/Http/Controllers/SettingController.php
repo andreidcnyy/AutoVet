@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
-use libphonenumber\PhoneNumberUtil;
-use libphonenumber\PhoneNumberFormat;
 
 class SettingController extends Controller
 {
@@ -28,20 +26,16 @@ class SettingController extends Controller
             'settings.*' => 'nullable',
         ]);
 
-        $phoneUtil = PhoneNumberUtil::getInstance();
-
         foreach ($validatedData['settings'] as $key => $value) {
             $valueToStore = $value;
 
-            // Normalize phone number if key matches
+            // Basic phone normalization if key matches
             if ($key === 'phone_number' && !empty($value)) {
-                try {
-                    $phoneNumberProto = $phoneUtil->parse($value, "PH");
-                    if ($phoneUtil->isValidNumber($phoneNumberProto)) {
-                        $valueToStore = $phoneUtil->format($phoneNumberProto, PhoneNumberFormat::E164);
-                    }
-                } catch (\Exception $e) {
-                    // Fallback to original value if parsing fails
+                $cleaned = preg_replace('/(?<!^)\+|[^0-9+]/', '', $value);
+                if (str_starts_with($cleaned, '09') && strlen($cleaned) === 11) {
+                    $valueToStore = '+63' . substr($cleaned, 1);
+                } else {
+                    $valueToStore = $cleaned;
                 }
             }
 

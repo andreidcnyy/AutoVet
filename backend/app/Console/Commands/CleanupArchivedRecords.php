@@ -30,7 +30,8 @@ class CleanupArchivedRecords extends Command
             \App\Models\Owner::class,
             \App\Models\Service::class,
             \App\Models\Inventory::class,
-            \App\Models\User::class,
+            \App\Models\Admin::class,
+            \App\Models\PortalUser::class,
             \App\Models\CmsContent::class,
         ];
 

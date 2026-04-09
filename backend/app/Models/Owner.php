@@ -24,6 +24,11 @@ class Owner extends Model
         'last_modified_locally_at' => 'datetime',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(PortalUser::class, 'user_id');
+    }
+
     public function pets()
     {
         return $this->hasMany(Pet::class);

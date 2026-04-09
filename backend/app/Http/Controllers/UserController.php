@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use App\Models\User;
+use App\Models\Admin;
 use App\Enums\Roles;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -13,14 +13,14 @@ class UserController extends Controller
 {
     public function index()
     {
-        return response()->json(User::all());
+        return response()->json(Admin::all());
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:admins',
             'role' => ['nullable', 'string', 'max:255', Rule::in(Roles::all())],
             'status' => 'nullable|string|max:255',
             'password' => 'required|string|min:8',
@@ -34,23 +34,23 @@ class UserController extends Controller
         }
         $validated['password'] = Hash::make($validated['password']);
 
-        $user = User::create($validated);
+        $user = Admin::create($validated);
         return response()->json($user, 201);
     }
 
     public function show(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = Admin::findOrFail($id);
         return response()->json($user);
     }
 
     public function update(Request $request, string $id)
     {
-        $user = User::findOrFail($id);
+        $user = Admin::findOrFail($id);
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('admins')->ignore($user->id)],
             'role' => ['nullable', 'string', 'max:255', Rule::in(Roles::all())],
             'status' => 'nullable|string|max:255',
             'password' => 'nullable|string|min:8',
@@ -68,7 +68,7 @@ class UserController extends Controller
 
     public function destroy(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = Admin::findOrFail($id);
         $user->delete();
         return response()->json(null, 204);
     }
@@ -79,14 +79,14 @@ class UserController extends Controller
      */
     public function vets()
     {
-        $vets = User::where('role', Roles::VETERINARIAN->value)
+        $vets = Admin::where('role', Roles::VETERINARIAN->value)
             ->select('id', 'name')
             ->get();
 
         return response()->json($vets);
     }
 
-    public function resetPassword(Request $request, User $user)
+    public function resetPassword(Request $request, Admin $user)
     {
         $request->validate([
             'password' => 'required|string|min:8',

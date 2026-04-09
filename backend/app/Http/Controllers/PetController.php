@@ -7,11 +7,19 @@ use Illuminate\Http\Request;
 
 class PetController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Pet::class, 'pet');
+    }
+
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory']);
         
-        if ($request->has('owner_id')) {
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $query->where('owner_id', $user->owner?->id);
+        } elseif ($request->has('owner_id')) {
             $query->where('owner_id', $request->owner_id);
         }
         
@@ -20,6 +28,11 @@ class PetController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $request->merge(['owner_id' => $user->owner?->id]);
+        }
+
         $validated = $request->validate([
             'owner_id' => 'required|exists:owners,id',
             'name' => 'required|string|max:255',
@@ -61,6 +74,11 @@ class PetController extends Controller
 
     public function update(Request $request, Pet $pet)
     {
+        $user = auth()->user();
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $request->merge(['owner_id' => $user->owner?->id]);
+        }
+
         $validated = $request->validate([
             'owner_id' => 'required|exists:owners,id',
             'name' => 'required|string|max:255',
@@ -103,7 +121,11 @@ class PetController extends Controller
 
     public function destroy(Pet $pet)
     {
-        if (!auth()->user()->isAdmin() && !auth()->user()->isClinical()) {
+        $user = auth()->user();
+        if (
+            (method_exists($user, 'isAdmin') && !$user->isAdmin()) && 
+            (method_exists($user, 'isClinical') && !$user->isClinical())
+        ) {
             return response()->json(['message' => 'Unauthorized. Only Admins and Veterinarians can archive patient records.'], 403);
         }
 

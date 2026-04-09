@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\VetSchedule;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -15,13 +16,25 @@ class AppointmentController extends Controller
     ) {
         $this->clientNotificationService = $clientNotificationService;
     }
+
     public function index()
     {
-        return response()->json(Appointment::with(['pet', 'service', 'vet'])->orderBy('date', 'desc')->get());
+        $user = auth()->user();
+        $query = Appointment::with(['pet', 'service', 'vet']);
+
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $query->whereHas('pet', function ($q) use ($user) {
+                $q->where('owner_id', $user->owner?->id);
+            });
+        }
+
+        return response()->json($query->orderBy('date', 'desc')->get());
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Appointment::class);
+
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'date' => 'required|date',
@@ -31,7 +44,7 @@ class AppointmentController extends Controller
             'status' => 'nullable|string|in:pending,completed,cancelled',
             'pet_id' => 'required|exists:pets,id',
             'service_id' => 'required|exists:services,id',
-            'vet_id' => 'nullable|exists:users,id',
+            'vet_id' => 'nullable|exists:admins,id',
         ]);
 
         // Default title to service name if not provided
@@ -55,7 +68,7 @@ class AppointmentController extends Controller
                                     ->pluck('day_of_week')
                                     ->toArray();
                 
-                $vetName = \App\Models\User::find($validated['vet_id'])->name ?? 'the vet';
+                $vetName = Admin::find($validated['vet_id'])->name ?? 'the vet';
                 $message = "{$vetName} is not available on {$dayOfWeek}s.";
                 if (!empty($availableDays)) {
                     $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
@@ -122,11 +135,14 @@ class AppointmentController extends Controller
 
     public function show(Appointment $appointment)
     {
+        $this->authorize('view', $appointment);
         return response()->json($appointment->load(['pet', 'service', 'vet']));
     }
 
     public function update(Request $request, Appointment $appointment)
     {
+        $this->authorize('update', $appointment);
+
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'date' => 'required|date',
@@ -136,7 +152,7 @@ class AppointmentController extends Controller
             'status' => 'nullable|string|in:pending,completed,cancelled',
             'pet_id' => 'required|exists:pets,id',
             'service_id' => 'required|exists:services,id',
-            'vet_id' => 'nullable|exists:users,id',
+            'vet_id' => 'nullable|exists:admins,id',
         ]);
 
         if (!empty($validated['vet_id'])) {
@@ -152,7 +168,7 @@ class AppointmentController extends Controller
                                     ->pluck('day_of_week')
                                     ->toArray();
                 
-                $vetName = \App\Models\User::find($validated['vet_id'])->name ?? 'the vet';
+                $vetName = Admin::find($validated['vet_id'])->name ?? 'the vet';
                 $message = "{$vetName} is not available on {$dayOfWeek}s.";
                 if (!empty($availableDays)) {
                     $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
@@ -204,6 +220,7 @@ class AppointmentController extends Controller
 
     public function destroy(Appointment $appointment)
     {
+        $this->authorize('delete', $appointment);
         $appointment->delete();
         return response()->json(null, 204);
     }

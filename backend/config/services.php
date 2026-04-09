@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'sync' => [
+        'is_clinic' => env('SYNC_IS_CLINIC', false),
+        'portal_url' => env('SYNC_PORTAL_URL', 'http://localhost:8001'),
+        'secret' => env('SYNC_SECRET', 'autovet-sync-secret'),
+    ],
+
 ];

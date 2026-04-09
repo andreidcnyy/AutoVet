@@ -17,7 +17,8 @@ class ArchiveController extends Controller
             'owners' => \App\Models\Owner::class,
             'services' => \App\Models\Service::class,
             'inventories' => \App\Models\Inventory::class,
-            'users' => \App\Models\User::class,
+            'admins' => \App\Models\Admin::class,
+            'portal_users' => \App\Models\PortalUser::class,
             'cms' => \App\Models\CmsContent::class,
         ];
 

@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use App\Models\Admin;
 use App\Enums\Roles;
 
 
@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::updateOrCreate(
+        Admin::updateOrCreate(
             ['email' => 'admin@autovet.com'],
             [
                 'name' => 'Administrator',

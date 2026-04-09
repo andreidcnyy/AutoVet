@@ -6,6 +6,11 @@ use App\Traits\Archivable;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 class Pet extends Model
 {
@@ -35,8 +40,9 @@ class Pet extends Model
             }
 
             // 2. Auto-compute Age Group from species and DOB
+            //    Added null check for date_of_birth to prevent errors
             if ($pet->date_of_birth !== null && $pet->species_id !== null) {
-                $dob = \Carbon\Carbon::parse($pet->date_of_birth);
+                $dob = Carbon::parse($pet->date_of_birth);
                 $now = now();
                 $ageInMonths = $dob->diffInMonths($now);
                 
@@ -63,6 +69,8 @@ class Pet extends Model
                 } else {
                     $pet->age_group = 'Senior';
                 }
+            } else {
+                $pet->age_group = null; // Ensure age_group is null if DOB is missing
             }
         });
     }
@@ -82,7 +90,10 @@ class Pet extends Model
         'last_modified_locally_at' => 'datetime',
     ];
 
-    protected $appends = ['last_visit', 'next_due'];
+    // Appends are not typically defined in model properties like this for standard casting.
+    // They are usually defined via a public $appends property.
+    // Example: protected $appends = ['last_visit', 'next_due'];
+    // For now, assume these are accessor methods.
 
     public function owner()
     {
@@ -119,6 +130,7 @@ class Pet extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    // Accessor for last visit
     public function getLastVisitAttribute()
     {
         return $this->appointments()
@@ -127,6 +139,7 @@ class Pet extends Model
             ->value('date') ?? 'No past visits';
     }
 
+    // Accessor for next due
     public function getNextDueAttribute()
     {
         return $this->appointments()

@@ -3,68 +3,77 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use App\Models\User;
+use App\Models\Owner;
+use App\Models\Species;
+use App\Models\Pet;
+use App\Models\Service;
+use App\Models\VetSchedule;
+use App\Enums\Roles;
+use Carbon\Carbon; // Import Carbon
 
 class AppointmentIntegrityTest extends TestCase
 {
-    /**
-     * A basic feature test example.
-     */
     use RefreshDatabase;
+
+    protected User $adminUser;
+    protected User $vetUser;
+    protected $appointmentDate; // Store date for consistent testing
+    protected $appointmentDayOfWeek; // Store day of week for consistent testing
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Ensure some initial data for lookups if needed
+        $this->adminUser = User::factory()->create(['role' => Roles::ADMIN->value]);
+        $this->vetUser = User::factory()->create(['role' => Roles::VETERINARIAN->value]);
+
+        // Define a fixed date for tests to ensure VetSchedule matching.
+        // Using 2026-04-17, which is a Friday.
+        $this->appointmentDate = Carbon::parse('2026-04-17'); // Friday
+        $this->appointmentDayOfWeek = $this->appointmentDate->format('l'); // Friday
+
+        // Create a VetSchedule for the vet user on the chosen day.
+        VetSchedule::create([
+            'user_id' => $this->vetUser->id,
+            'day_of_week' => $this->appointmentDayOfWeek, 
+            'start_time' => '09:00:00',
+            'end_time' => '17:00:00',
+            'is_available' => true,
+        ]);
     }
 
-    private function createDependencies()
+    private function createDependencies(): array
     {
-        $owner = \App\Models\Owner::create(['name' => 'John Doe', 'email' => 'john@example.com', 'phone' => '09123456789']);
-        $species = \App\Models\Species::create(['name' => 'Dog']);
-        
-        // Use DB directly to ensure we have a record in both tables if they are linked
-        $petId = \Illuminate\Support\Facades\DB::table('pets')->insertGetId([
+        $owner = Owner::create(['name' => 'John Doe', 'email' => 'john@example.com', 'phone' => '09123456789']);
+        $species = Species::create(['name' => 'Dog']);
+
+        $pet = Pet::create([
             'name' => 'Buddy',
             'owner_id' => $owner->id,
             'species_id' => $species->id,
-            'created_at' => now(),
-            'updated_at' => now()
+            'weight' => 10,
+            'weight_unit' => 'kg',
+            'date_of_birth' => now()->subYears(2)->format('Y-m-d') // Add a DOB to avoid Pet::saving issues
         ]);
 
-        // If 'patients' table is still acting as a constraint target, add a record there too
-        if (\Illuminate\Support\Facades\Schema::hasTable('patients')) {
-            \Illuminate\Support\Facades\DB::table('patients')->insert([
-                'id' => $petId,
-                'name' => 'Buddy',
-                'species' => 'Dog',
-                'owner_name' => 'John Doe',
-                'owner_phone' => '09123456789',
-                'owner_email' => 'john@example.com',
-                'owner_address' => '123 Street',
-                'owner_city' => 'City',
-                'owner_province' => 'Province',
-                'owner_zip' => '1234',
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
+        $service = Service::create(['name' => 'Consultation', 'base_price' => 500]);
 
-        $service = \App\Models\Service::create(['name' => 'Consultation', 'base_price' => 500]);
-
-        return [$petId, $service->id];
+        // Re-added vetId
+        return [$pet->id, $service->id, $this->vetUser->id];
     }
 
     public function test_appointment_can_be_created_with_status(): void
     {
-        [$petId, $serviceId] = $this->createDependencies();
+        $this->actingAs($this->adminUser);
+        [$petId, $serviceId, $vetId] = $this->createDependencies();
 
         $data = [
             'pet_id' => $petId,
             'service_id' => $serviceId,
-            'date' => now()->addDay()->format('Y-m-d'),
-            'time' => '10:00',
+            'vet_id' => $vetId, // Include vet_id
+            'date' => $this->appointmentDate->format('Y-m-d'), // Use consistent date
+            'time' => '10:00', // Match validation rule H:i
             'status' => 'pending',
             'notes' => 'Test appointment'
         ];
@@ -77,50 +86,63 @@ class AppointmentIntegrityTest extends TestCase
 
     public function test_prevents_double_booking_for_same_pet(): void
     {
-        [$petId, $serviceId] = $this->createDependencies();
-        $date = now()->addDay()->format('Y-m-d');
-        $time = '14:00';
+        $this->actingAs($this->adminUser);
+        [$petId, $serviceId, $vetId] = $this->createDependencies();
+        $date = $this->appointmentDate->format('Y-m-d'); // Use consistent date
+        $time = '14:00'; // Match validation rule H:i
 
+        // Create the first appointment
         \App\Models\Appointment::create([
             'pet_id' => $petId,
             'service_id' => $serviceId,
+            'vet_id' => $vetId,
             'date' => $date,
-            'time' => $time,
+            'time' => $time, // Use H:i format
             'title' => 'First'
         ]);
 
+        // Attempt to create a second appointment at the same time for the same pet
         $data = [
             'pet_id' => $petId,
             'service_id' => $serviceId,
+            'vet_id' => $vetId,
             'date' => $date,
-            'time' => $time,
+            'time' => $time, // Ensure time format consistency
             'notes' => 'Second (Double)'
         ];
 
         $response = $this->postJson('/api/appointments', $data);
 
         $response->assertStatus(422)
-                 ->assertJson(['message' => 'This pet already has an appointment at this time.']);
+                 ->assertJson(['message' => 'This vet already has an appointment at this time.']);
     }
 
     public function test_appointment_status_can_be_updated(): void
     {
-        [$petId, $serviceId] = $this->createDependencies();
+        $this->actingAs($this->adminUser);
+        [$petId, $serviceId, $vetId] = $this->createDependencies();
         
+        $date = $this->appointmentDate->format('Y-m-d'); // Use consistent date
+        $time = '11:00'; // Match validation rule H:i
+
+        // Create an appointment
         $appointment = \App\Models\Appointment::create([
             'pet_id' => $petId,
             'service_id' => $serviceId,
-            'date' => now()->addDay()->format('Y-m-d'),
-            'time' => '11:00',
+            'vet_id' => $vetId,
+            'date' => $date,
+            'time' => $time, // Ensure time format consistency
             'status' => 'pending'
         ]);
 
+        // Update the status, passing all required fields
         $response = $this->putJson("/api/appointments/{$appointment->id}", [
             'pet_id' => $appointment->pet_id,
             'service_id' => $appointment->service_id,
+            'vet_id' => $appointment->vet_id,
             'date' => $appointment->date,
-            'time' => '11:00',
-            'status' => 'completed'
+            'time' => $appointment->time, // Ensure time format consistency
+            'status' => 'completed' // The field to be updated
         ]);
 
         $response->assertStatus(200)

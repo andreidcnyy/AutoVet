@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
+use App\Models\Admin;
 
 class InventoryController extends Controller
 {
@@ -62,7 +63,7 @@ class InventoryController extends Controller
                 'previous_stock' => 0,
                 'new_stock' => $item->stock_level,
                 'remarks' => 'Initial Stock',
-                'created_by' => auth()->id() ?? (\App\Models\User::first()->id ?? null)
+                'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
             ]);
         }
 
@@ -102,7 +103,7 @@ class InventoryController extends Controller
                 'previous_stock' => $oldStock,
                 'new_stock' => $newStock,
                 'remarks' => 'Manual adjustment via UI',
-                'created_by' => auth()->id() ?? (\App\Models\User::first()->id ?? null)
+                'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
             ]);
         }
 
@@ -147,4 +148,4 @@ class InventoryController extends Controller
 
         return response()->json($inventory->load('inventoryCategory'));
     }
-    }
+}

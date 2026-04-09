@@ -21,12 +21,19 @@ class MedicalRecordController extends Controller
         \App\Services\ClientNotificationService $clientNotificationService
     ) {
         $this->clientNotificationService = $clientNotificationService;
+        $this->authorizeResource(MedicalRecord::class, 'medical_record');
     }
+
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = MedicalRecord::with(['pet', 'vet']);
 
-        if ($request->has('pet_id')) {
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $query->whereHas('pet', function ($q) use ($user) {
+                $q->where('owner_id', $user->owner?->id);
+            });
+        } elseif ($request->has('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }
 
@@ -38,7 +45,7 @@ class MedicalRecordController extends Controller
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
             'appointment_id'  => 'required|exists:appointments,id',
-            'vet_id'          => 'nullable|exists:users,id',
+            'vet_id'          => 'nullable|exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
             'diagnosis'       => 'nullable|string',
@@ -49,8 +56,9 @@ class MedicalRecordController extends Controller
 
         // Auto-assign the logged-in user as vet if they are a clinical role
         if (empty($validated['vet_id']) && auth()->check()) {
-            $userRole = auth()->user()->role;
-            if (in_array($userRole, Roles::clinicalRoles())) {
+            $user = auth()->user();
+            $userRole = property_exists($user, 'role') ? $user->role : null;
+            if ($userRole && in_array($userRole, Roles::clinicalRoles())) {
                 $validated['vet_id'] = auth()->id();
             }
         }
@@ -90,7 +98,7 @@ class MedicalRecordController extends Controller
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
             'appointment_id'  => 'required|exists:appointments,id',
-            'vet_id'          => 'nullable|exists:users,id',
+            'vet_id'          => 'nullable|exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
             'diagnosis'       => 'nullable|string',
@@ -101,8 +109,9 @@ class MedicalRecordController extends Controller
 
         // Only clinical staff (Veterinarian) may edit diagnosis
         if ($request->has('diagnosis') && auth()->check()) {
-            $userRole = auth()->user()->role;
-            if (!in_array($userRole, Roles::clinicalRoles())) {
+            $user = auth()->user();
+            $userRole = property_exists($user, 'role') ? $user->role : null;
+            if (!$userRole || !in_array($userRole, Roles::clinicalRoles())) {
                 return response()->json([
                     'message' => 'Unauthorized. Only veterinarians may edit the diagnosis field.',
                 ], 403);
@@ -117,9 +126,10 @@ class MedicalRecordController extends Controller
     {
         // Deletion restricted to Admin or Veterinarian
         if (auth()->check()) {
-            $userRole = auth()->user()->role;
+            $user = auth()->user();
+            $userRole = property_exists($user, 'role') ? $user->role : null;
             $allowedRoles = array_merge(Roles::adminRoles(), [Roles::VETERINARIAN->value]);
-            if (!in_array($userRole, $allowedRoles)) {
+            if (!$userRole || !in_array($userRole, $allowedRoles)) {
                 return response()->json(['message' => 'Unauthorized.'], 403);
             }
         }

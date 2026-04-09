@@ -5,34 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Owner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use libphonenumber\PhoneNumberUtil;
-use libphonenumber\PhoneNumberFormat;
-use libphonenumber\NumberParseException;
 
 class OwnerController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Owner::class, 'owner');
+    }
+
     /**
-     * Normalize phone number to +639XXXXXXXXX format.
+     * Normalize phone number to +639XXXXXXXXX format or clean string.
      */
     private function normalizePhone(?string $phone): ?string
     {
         if (!$phone) return null;
 
-        $phoneUtil = PhoneNumberUtil::getInstance();
-        try {
-            // Parse the number. If no leading +, we'll attempt to parse with PH as default for safety
-            // but the frontend should provide + code.
-            $numberProto = $phoneUtil->parse($phone, "PH");
-            
-            if ($phoneUtil->isValidNumber($numberProto)) {
-                return $phoneUtil->format($numberProto, PhoneNumberFormat::E164);
-            }
-        } catch (NumberParseException $e) {
-            // Fallback to basic cleanup if parsing fails
+        // Basic normalization: remove non-numeric except leading plus
+        $cleaned = preg_replace('/(?<!^)\+|[^0-9+]/', '', $phone);
+        
+        // Example logic for PH numbers if they start with 09
+        if (str_starts_with($cleaned, '09') && strlen($cleaned) === 11) {
+            return '+63' . substr($cleaned, 1);
         }
 
-        // Basic cleanup if library fails or number is invalid
-        return preg_replace('/(?<!^)\+|[^0-9+]/', '', $phone);
+        return $cleaned;
     }
 
     public function import(Request $request)
@@ -44,7 +40,6 @@ class OwnerController extends Controller
         $file = $request->file('file');
         $handle = fopen($file->getRealPath(), 'r');
         
-        // Skip header
         $header = fgetcsv($handle);
         
         $count = 0;
@@ -53,9 +48,8 @@ class OwnerController extends Controller
 
         while (($data = fgetcsv($handle)) !== FALSE) {
             $row++;
-            if (count($data) < 2) continue; // Skip empty rows
+            if (count($data) < 2) continue;
 
-            // Expected format: name,phone,email,address,city,province,zip
             $ownerData = [
                 'name' => $data[0] ?? null,
                 'phone' => $data[1] ?? null,
@@ -76,7 +70,6 @@ class OwnerController extends Controller
                 continue;
             }
 
-            // Normalize phone number
             $ownerData['phone'] = $this->normalizePhone($ownerData['phone']);
 
             Owner::updateOrCreate(
@@ -105,7 +98,14 @@ class OwnerController extends Controller
 
     public function index()
     {
-        return response()->json(Owner::with('pets')->orderBy('created_at', 'desc')->get());
+        $user = auth()->user();
+        $query = Owner::with('pets');
+
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $query->where('id', $user->owner?->id);
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     public function store(Request $request)
@@ -115,17 +115,7 @@ class OwnerController extends Controller
             'phone' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) {
-                    $phoneUtil = PhoneNumberUtil::getInstance();
-                    try {
-                        $numberProto = $phoneUtil->parse($value, "PH");
-                        if (!$phoneUtil->isValidNumber($numberProto)) {
-                            $fail('The phone number is not a valid international number.');
-                        }
-                    } catch (NumberParseException $e) {
-                        $fail('The phone number format is invalid.');
-                    }
-                },
+                'regex:/^\+?[0-9]{10,15}$/'
             ],
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:255',
@@ -134,11 +124,11 @@ class OwnerController extends Controller
             'zip' => 'nullable|string|max:255',
         ], [
             'phone.required' => 'Phone number is required.',
+            'phone.regex' => 'The phone number format is invalid. Use international format (e.g. +639123456789).',
         ]);
 
         $validated['phone'] = $this->normalizePhone($validated['phone']);
 
-        // Check for duplicate after normalization
         if (Owner::where('phone', $validated['phone'])->exists()) {
             return response()->json([
                 'message' => 'An owner with this phone number already exists.',
@@ -162,17 +152,7 @@ class OwnerController extends Controller
             'phone' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) {
-                    $phoneUtil = PhoneNumberUtil::getInstance();
-                    try {
-                        $numberProto = $phoneUtil->parse($value, "PH");
-                        if (!$phoneUtil->isValidNumber($numberProto)) {
-                            $fail('The phone number is not a valid international number.');
-                        }
-                    } catch (NumberParseException $e) {
-                        $fail('The phone number format is invalid.');
-                    }
-                },
+                'regex:/^\+?[0-9]{10,15}$/'
             ],
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:255',
@@ -181,11 +161,11 @@ class OwnerController extends Controller
             'zip' => 'nullable|string|max:255',
         ], [
             'phone.required' => 'Phone number is required.',
+            'phone.regex' => 'The phone number format is invalid.',
         ]);
 
         $validated['phone'] = $this->normalizePhone($validated['phone']);
 
-        // Check for duplicate after normalization (excluding current owner)
         if (Owner::where('phone', $validated['phone'])->where('id', '!=', $owner->id)->exists()) {
             return response()->json([
                 'message' => 'Another owner with this phone number already exists.',

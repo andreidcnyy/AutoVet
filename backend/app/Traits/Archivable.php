@@ -33,6 +33,7 @@ trait Archivable
 
     public function deleter()
     {
-        return $this->belongsTo(\App\Models\User::class, 'deleted_by');
+        // Deletions are performed by clinic staff (admins)
+        return $this->belongsTo(\App\Models\Admin::class, 'deleted_by');
     }
 }

@@ -43,7 +43,7 @@ class Appointment extends Model
 
     public function vet()
     {
-        return $this->belongsTo(User::class, 'vet_id');
+        return $this->belongsTo(Admin::class, 'vet_id');
     }
 
     public function medicalRecords()

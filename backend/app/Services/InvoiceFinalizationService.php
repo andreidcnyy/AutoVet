@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
+use App\Models\Admin;
 use App\Events\LowStockDetected;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -64,7 +65,7 @@ class InvoiceFinalizationService
                         'previous_stock' => $oldStock,
                         'new_stock' => $inventoryItem->stock_level,
                         'remarks' => "Deducted from Invoice #{$invoice->invoice_number} (" . ucfirst($item->item_type) . " item)",
-                        'created_by' => auth()->id() ?? (\App\Models\User::first()->id ?? null)
+                        'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
                     ]);
 
                     // Trigger low stock event if necessary

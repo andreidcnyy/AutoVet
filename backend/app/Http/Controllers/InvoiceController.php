@@ -23,6 +23,7 @@ class InvoiceController extends Controller
         $this->pricingService = $pricingService;
         $this->finalizationService = $finalizationService;
         $this->clientNotificationService = $clientNotificationService;
+        $this->authorizeResource(Invoice::class, 'invoice');
     }
 
     /**
@@ -30,7 +31,16 @@ class InvoiceController extends Controller
      */
     public function index()
     {
-        $invoices = Invoice::with('pet', 'items')->orderBy('created_at', 'desc')->get();
+        $user = auth()->user();
+        $query = Invoice::with('pet', 'items');
+
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            $query->whereHas('pet', function ($q) use ($user) {
+                $q->where('owner_id', $user->owner?->id);
+            });
+        }
+
+        $invoices = $query->orderBy('created_at', 'desc')->get();
         return response()->json($invoices);
     }
 
@@ -39,6 +49,8 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Invoice::class);
+
         $validated = $request->validate([
             'pet_id' => 'required|exists:pets,id',
             'appointment_id' => 'required|exists:appointments,id',

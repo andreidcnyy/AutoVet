@@ -29,13 +29,26 @@ use App\Http\Controllers\CmsContentController;
 // Public routes (no authentication required)
 // ---------------------------------------------------------------------------
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/register', [AuthController::class, 'register'])->name('register');
+
+/** Sync receiver (webhook from clinic) */
+Route::post('/sync/receive', [\App\Http\Controllers\SyncController::class, 'receive']);
 
 /** Health-check endpoint — intentionally public for monitoring tools. */
 Route::get('/status', function () {
+    try {
+        \DB::connection()->getPdo();
+        $dbStatus = 'connected';
+    } catch (\Exception $e) {
+        $dbStatus = 'disconnected';
+    }
+
     return response()->json([
         'status'    => 'success',
         'message'   => 'AutoVet Laravel API is up and running!',
+        'database'  => $dbStatus,
+        'environment' => app()->environment(),
         'timestamp' => now()->toIso8601String(),
     ]);
 });

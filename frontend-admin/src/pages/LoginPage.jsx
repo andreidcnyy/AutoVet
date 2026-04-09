@@ -17,7 +17,9 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
+      // Direct login - CSRF cookie is no longer needed as we are using Token-only auth
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { 
@@ -26,9 +28,11 @@ function LoginPage() {
         },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
+
       if (res.ok && !data.error) {
-        login(data); // Set user context
+        login(data); // Stores user and TOKEN in AuthContext/LocalStorage
         if (data.must_change_password) {
           navigate("/change-password");
         } else {
@@ -38,7 +42,7 @@ function LoginPage() {
         setError(data.error || "Invalid credentials");
       }
     } catch (err) {
-      setError("Network error");
+      setError("Network error. Please ensure the backend is running.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +68,7 @@ function LoginPage() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Password</label>
+          <label htmlFor="password" name="password" className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Password</label>
           <div className="relative">
             <input
               id="password"
