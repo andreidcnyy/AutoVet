@@ -13,7 +13,7 @@ class PatientOwnerController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = auth('admin_api')->user() ?? auth('portal_api')->user();
         \Log::info('Owners index accessed', [
             'user_id' => $user?->id,
             'user_type' => $user ? get_class($user) : 'null',
@@ -33,7 +33,7 @@ class PatientOwnerController extends Controller
      */
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $user = auth('admin_api')->user() ?? auth('portal_api')->user();
         if ($user instanceof \App\Models\PortalUser) {
              return response()->json(['message' => 'Unauthorized'], 403);
         }

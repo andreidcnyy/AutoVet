@@ -57,7 +57,7 @@ Route::get('/status', function () {
 // Authenticated routes — all require a valid Sanctum token
 // ---------------------------------------------------------------------------
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
+Route::group(['middleware' => ['auth:admin_api,portal_api']], function () {
 
 
     // -----------------------------------------------------------------------
