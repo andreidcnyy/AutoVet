@@ -19,20 +19,24 @@ function LoginPage() {
     setError("");
 
     try {
-      // Direct login - CSRF cookie is no longer needed as we are using Token-only auth
+      // 1. Fetch CSRF cookie before login
+      await fetch("/sanctum/csrf-cookie", { credentials: "include" });
+
+      // 2. Attempt login
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (res.ok && !data.error) {
-        login(data); // Stores user and TOKEN in AuthContext/LocalStorage
+        login(data); 
         if (data.must_change_password) {
           navigate("/change-password");
         } else {
@@ -49,26 +53,33 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-dark-bg">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-dark-bg transition-colors duration-300">
       <form
         onSubmit={handleSubmit}
-        className="card-shell w-full max-w-md p-8 space-y-6"
+        className="card-shell w-full max-w-md p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500"
       >
-        <h1 className="text-3xl font-bold text-center text-brand-600 dark:text-brand-500 mb-4">AutoVet Login</h1>
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-white font-bold text-2xl mx-auto shadow-lg shadow-brand-500/20">A</div>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-zinc-100 font-sans tracking-tight">AutoVet Login</h1>
+          <p className="text-slate-500 dark:text-zinc-400">Welcome back, Administrator!</p>
+        </div>
+
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Email</label>
+          <label htmlFor="email" className="block text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-1">Email</label>
           <input
             id="email"
             type="email"
             autoComplete="email"
             required
             className="input-field"
+            placeholder="admin@autovet.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
           />
         </div>
+
         <div>
-          <label htmlFor="password" name="password" className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Password</label>
+          <label htmlFor="password" name="password" className="block text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-1">Password</label>
           <div className="relative">
             <input
               id="password"
@@ -76,28 +87,35 @@ function LoginPage() {
               autoComplete="current-password"
               required
               className="input-field pr-10"
+              placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300 transition-colors"
             >
               {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
             </button>
           </div>
         </div>
-        {error && <div className="text-sm text-rose-600 dark:text-rose-400">{error}</div>}
+
+        {error && (
+          <div className="p-3 rounded-lg bg-rose-50 border border-rose-100 text-sm text-rose-600 dark:bg-rose-900/10 dark:border-rose-900/20 dark:text-rose-400 animate-shake">
+            {error}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={loading}
           className={clsx(
-            "w-full h-12 rounded-xl bg-brand-500 text-white font-semibold text-lg transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2",
+            "w-full h-12 rounded-xl bg-brand-500 text-white font-bold text-lg transition-all hover:bg-brand-600 shadow-lg shadow-brand-500/20 active:scale-[0.98]",
             loading && "opacity-60 cursor-not-allowed"
           )}
         >
-          {loading ? "Logging in..." : "Log In"}
+          {loading ? "Signing in..." : "Log In"}
         </button>
       </form>
     </div>

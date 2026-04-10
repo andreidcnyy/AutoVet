@@ -5,23 +5,29 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Enums\Roles;
 
 class RoleMiddleware
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string  $roles
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!$request->user()) {
+        $user = $request->user();
+        
+        if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        $userRole = strtolower($request->user()->role);
+        // Determine user role - check property or default to OWNER for PortalUser
+        $userRole = property_exists($user, 'role') ? $user->role : (method_exists($user, 'isOwner') && $user->isOwner() ? Roles::OWNER->value : null);
+        
+        if (!$userRole) {
+            return response()->json(['message' => 'Unauthorized. Role not defined.'], 403);
+        }
+
+        $userRole = strtolower($userRole);
         $lowercasedRoles = array_map('strtolower', $roles);
 
         if (!in_array($userRole, $lowercasedRoles)) {

@@ -11,53 +11,37 @@ trait HasAuditTrail
     public static function bootHasAuditTrail()
     {
         static::created(function ($model) {
-            self::logAudit($model, 'created');
+            $model->logAudit('created', null, $model->getAttributes());
         });
 
         static::updated(function ($model) {
-            self::logAudit($model, 'updated');
+            $model->logAudit('updated', $model->getOriginal(), $model->getAttributes());
         });
 
         static::deleted(function ($model) {
-            self::logAudit($model, 'deleted');
+            $model->logAudit('deleted', $model->getOriginal(), null);
         });
-
-        if (method_exists(static::class, 'restored')) {
-            static::restored(function ($model) {
-                self::logAudit($model, 'restored');
-            });
-        }
     }
 
-    protected static function logAudit($model, $action)
+    protected function logAudit($action, $old, $new)
     {
         try {
-            $oldValues = [];
-            $newValues = [];
+            $user = Auth::user();
+            $userId = null;
 
-            if ($action === 'updated') {
-                $oldValues = array_intersect_key($model->getOriginal(), $model->getDirty());
-                $newValues = $model->getDirty();
-            } elseif ($action === 'created') {
-                $newValues = $model->getAttributes();
-            } elseif ($action === 'deleted') {
-                $oldValues = $model->getAttributes();
-            }
-
-            // Exclude hidden fields from logs like passwords
-            $hidden = $model->getHidden();
-            if (!empty($hidden)) {
-                $oldValues = array_diff_key($oldValues, array_flip($hidden));
-                $newValues = array_diff_key($newValues, array_flip($hidden));
+            // Only log user_id if the authenticated user is an Admin
+            // because audit_logs.user_id points to the admins table.
+            if ($user instanceof \App\Models\Admin) {
+                $userId = $user->id;
             }
 
             AuditLog::create([
-                'user_id' => Auth::id(),
+                'user_id' => $userId,
                 'action' => $action,
-                'model_type' => get_class($model),
-                'model_id' => $model->getKey(),
-                'old_values' => empty($oldValues) ? null : json_encode($oldValues),
-                'new_values' => empty($newValues) ? null : json_encode($newValues),
+                'model_type' => get_class($this),
+                'model_id' => $this->id,
+                'old_values' => $old,
+                'new_values' => $new,
                 'ip_address' => Request::ip(),
                 'user_agent' => Request::userAgent(),
             ]);

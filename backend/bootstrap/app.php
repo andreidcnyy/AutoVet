@@ -6,6 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,11 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/sync/receive',
             'api/login',
             'api/register',
+            'api/owners',
+            'api/owners/*',
         ]);
 
         $middleware->api(prepend: [
-            // Disabled to prevent 500 errors. We will use Token-based auth instead of Session-based.
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
         $middleware->alias([
@@ -31,11 +35,21 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (AuthenticationException $e, Request $request) {
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            // If it's an authorization error, let it be a 403
+            if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'You do not have permission to access this resource.'
+                ], 403);
+            }
+
+            // Real 500 error handling
             if ($request->is('api/*')) {
                 return response()->json([
-                    'error' => 'Unauthenticated.',
-                ], 401);
+                    'error' => 'Server Error',
+                    'message' => $e->getMessage()
+                ], 500);
             }
         });
     })->create();

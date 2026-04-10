@@ -6,14 +6,26 @@ use App\Models\Owner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class OwnerController extends Controller
+class PatientOwnerController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return response()->json(Owner::with('pets')->orderBy('created_at', 'desc')->get());
+        $user = auth()->user();
+        \Log::info('Owners index accessed', [
+            'user_id' => $user?->id,
+            'user_type' => $user ? get_class($user) : 'null',
+        ]);
+
+        $query = Owner::with('pets');
+
+        if ($user instanceof \App\Models\PortalUser) {
+            $query->where('id', $user->owner?->id);
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     /**
@@ -21,6 +33,11 @@ class OwnerController extends Controller
      */
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if ($user instanceof \App\Models\PortalUser) {
+             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => [

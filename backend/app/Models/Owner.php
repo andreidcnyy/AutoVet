@@ -6,13 +6,15 @@ use App\Traits\Archivable;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Pet;
+use App\Models\PortalUser;
 
 class Owner extends Model
 {
     use SoftDeletes, HasSyncFields, Archivable;
     
     protected $fillable = [
-        'name', 'phone', 'email', 'address', 'city', 'province', 'zip',
+        'name', 'phone', 'email', 'address', 'city', 'province', 'zip', 'user_id',
         // Archive tracking
         'deleted_by', 'restore_until',
         // Sync fields

@@ -15,22 +15,13 @@ class SecurityHeadersMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        \Log::info('SecurityHeadersMiddleware: Before next', ['method' => $request->method(), 'url' => $request->fullUrl()]);
-        
-        try {
-            $response = $next($request);
-        } catch (\Exception $e) {
-            \Log::error('SecurityHeadersMiddleware: Exception during next', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            throw $e;
-        }
-
-        \Log::info('SecurityHeadersMiddleware: After next', ['status' => $response->getStatusCode()]);
+        $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:*; frame-ancestors 'none'; upgrade-insecure-requests;");
+        $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost http://127.0.0.1 http://localhost:5173 http://localhost:5174; frame-ancestors 'none'; upgrade-insecure-requests;");
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
         return $response;

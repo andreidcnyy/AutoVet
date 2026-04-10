@@ -9,21 +9,6 @@ use Illuminate\Support\Str;
 
 /**
  * HasSyncFields — Offline-First Sync Infrastructure Trait
- *
- * Attach this trait to any Eloquent model that participates
- * in local-to-cloud synchronization. It automatically:
- *
- *  - Generates a UUID on creation (used as the cloud sync identity)
- *  - Sets sync_status = 'local_only' on creation
- *  - Updates sync_status = 'pending_sync' on modification (if previously synced)
- *  - Stamps last_modified_locally_at on every create/update
- *  - Logs every create, update, and delete to the sync_outbox table
- *
- * Requires these columns on the model's table (added via migration):
- *   uuid                     VARCHAR(36) UNIQUE NULL
- *   sync_status              VARCHAR(30)  DEFAULT 'local_only'
- *   synced_at                TIMESTAMP NULL
- *   last_modified_locally_at TIMESTAMP NULL
  */
 trait HasSyncFields
 {
@@ -87,13 +72,8 @@ trait HasSyncFields
                 'queued_at'       => now(),
             ]);
         } catch (\Throwable $e) {
-            // Log a warning but NEVER block the main DB operation.
-            Log::warning('[SyncOutbox] Failed to log outbox entry.', [
-                'entity'  => class_basename($model),
-                'id'      => $model->getKey(),
-                'action'  => $action,
-                'error'   => $e->getMessage(),
-            ]);
+            // Log warning removed to prevent potential logger-related crashes
+            // \Log::warning('[SyncOutbox] Failed to log outbox entry.', ...);
         }
     }
 
@@ -101,36 +81,24 @@ trait HasSyncFields
     // Convenience accessors for sync state
     // -------------------------------------------------------------------------
 
-    /**
-     * Returns true if this record has never been synced to cloud.
-     */
     public function isLocalOnly(): bool
     {
         return $this->sync_status === SyncStatus::LOCAL_ONLY->value;
     }
 
-    /**
-     * Returns true if this record is waiting to be uploaded.
-     */
     public function isPendingSync(): bool
     {
         return $this->sync_status === SyncStatus::PENDING->value;
     }
 
-    /**
-     * Returns true if this record is up to date with the cloud.
-     */
     public function isSynced(): bool
     {
         return $this->sync_status === SyncStatus::SYNCED->value;
     }
 
-    /**
-     * Mark the record as successfully synced. Call this from the sync engine.
-     */
     public function markAsSynced(): void
     {
-        $this->timestamps = false; // Don't update updated_at during a sync confirmation
+        $this->timestamps = false;
         $this->update([
             'sync_status' => SyncStatus::SYNCED->value,
             'synced_at'   => now(),

@@ -10,7 +10,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-
+use App\Models\WeightRange;
+use App\Models\Species;
+use App\Models\PetSizeCategory;
+use App\Models\Breed;
+use App\Models\Appointment;
+use App\Models\MedicalRecord;
+use App\Models\Invoice;
 
 class Pet extends Model
 {
@@ -40,37 +46,40 @@ class Pet extends Model
             }
 
             // 2. Auto-compute Age Group from species and DOB
-            //    Added null check for date_of_birth to prevent errors
             if ($pet->date_of_birth !== null && $pet->species_id !== null) {
-                $dob = Carbon::parse($pet->date_of_birth);
-                $now = now();
-                $ageInMonths = $dob->diffInMonths($now);
-                
-                $species = Species::find($pet->species_id);
-                $speciesName = $species ? $species->name : 'Default';
-                
-                // Define thresholds (in months)
-                $thresholds = [
-                    'Canine' => ['Baby' => 5, 'Young' => 11, 'Adult' => 72],
-                    'Feline' => ['Baby' => 5, 'Young' => 11, 'Adult' => 108],
-                    'Rabbit' => ['Baby' => 3, 'Young' => 11, 'Adult' => 48],
-                    'Bird'   => ['Baby' => 3, 'Young' => 11, 'Adult' => 84],
-                    'Default'=> ['Baby' => 6, 'Young' => 12, 'Adult' => 84],
-                ];
-                
-                $t = $thresholds[$speciesName] ?? $thresholds['Default'];
-                
-                if ($ageInMonths <= $t['Baby']) {
-                    $pet->age_group = 'Baby';
-                } elseif ($ageInMonths <= $t['Young']) {
-                    $pet->age_group = 'Young';
-                } elseif ($ageInMonths <= $t['Adult']) {
-                    $pet->age_group = 'Adult';
-                } else {
-                    $pet->age_group = 'Senior';
+                try {
+                    $dob = Carbon::parse($pet->date_of_birth);
+                    $now = now();
+                    $ageInMonths = $dob->diffInMonths($now);
+                    
+                    $species = Species::find($pet->species_id);
+                    $speciesName = $species ? $species->name : 'Default';
+                    
+                    // Define thresholds (in months)
+                    $thresholds = [
+                        'Canine' => ['Baby' => 5, 'Young' => 11, 'Adult' => 72],
+                        'Feline' => ['Baby' => 5, 'Young' => 11, 'Adult' => 108],
+                        'Rabbit' => ['Baby' => 3, 'Young' => 11, 'Adult' => 48],
+                        'Bird'   => ['Baby' => 3, 'Young' => 11, 'Adult' => 84],
+                        'Default'=> ['Baby' => 6, 'Young' => 12, 'Adult' => 84],
+                    ];
+                    
+                    $t = $thresholds[$speciesName] ?? $thresholds['Default'];
+                    
+                    if ($ageInMonths <= $t['Baby']) {
+                        $pet->age_group = 'Baby';
+                    } elseif ($ageInMonths <= $t['Young']) {
+                        $pet->age_group = 'Young';
+                    } elseif ($ageInMonths <= $t['Adult']) {
+                        $pet->age_group = 'Adult';
+                    } else {
+                        $pet->age_group = 'Senior';
+                    }
+                } catch (\Exception $e) {
+                    $pet->age_group = null;
                 }
             } else {
-                $pet->age_group = null; // Ensure age_group is null if DOB is missing
+                $pet->age_group = null;
             }
         });
     }
@@ -89,11 +98,6 @@ class Pet extends Model
         'synced_at'                => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
-
-    // Appends are not typically defined in model properties like this for standard casting.
-    // They are usually defined via a public $appends property.
-    // Example: protected $appends = ['last_visit', 'next_due'];
-    // For now, assume these are accessor methods.
 
     public function owner()
     {
