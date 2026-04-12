@@ -13,7 +13,7 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   // 1. Loading State - Prevent false redirects while the context is hydrating
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen w-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
       </div>
     );

@@ -64,9 +64,9 @@ class VetScheduleController extends Controller
                     'day_of_week'  => $day,
                     'start_time'   => $validated['start_time'],
                     'end_time'     => $validated['end_time'],
-                    'break_start'  => $validated['break_start'],
-                    'break_end'    => $validated['break_end'],
-                    'max_appointments' => $validated['max_appointments'],
+                    'break_start'  => $validated['break_start'] ?? null,
+                    'break_end'    => $validated['break_end'] ?? null,
+                    'max_appointments' => $validated['max_appointments'] ?? null,
                     'is_available' => true,
                 ]);
             }

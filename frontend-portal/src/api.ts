@@ -28,6 +28,7 @@ export const logout = () => api.post('/logout');
 // Pets
 export const getPets = () => api.get('/pets');
 export const createPet = (data: any) => api.post('/pets', data);
+export const updatePet = (id: number, data: any) => api.put(`/pets/${id}`, data);
 export const getSpecies = () => api.get('/species?per_page=100');
 export const getBreeds = (speciesId?: number) => api.get('/breeds?per_page=200' + (speciesId ? `&species_id=${speciesId}` : ''));
 export const getPetSizeCategories = () => api.get('/pet-size-categories?per_page=100');
@@ -35,11 +36,28 @@ export const getWeightRanges = () => api.get('/weight-ranges?per_page=100');
 
 // Appointments
 export const getAppointments = () => api.get('/appointments');
+export const getAppointment = (id: number) => api.get(`/appointments/${id}`);
 export const createAppointment = (data: any) => api.post('/appointments', data);
+export const cancelAppointment = (id: number) => api.put(`/appointments/${id}`, { status: 'cancelled' });
 export const getServices = () => api.get('/services');
 export const getVets = () => api.get('/vets');
 
+// Medical Records
+export const getMedicalRecords = (petId?: number) => api.get('/medical-records' + (petId ? `?pet_id=${petId}` : ''));
+export const getMedicalRecord = (id: number) => api.get(`/medical-records/${id}`);
+
+// Invoices
+export const getInvoices = (petId?: number) => api.get('/invoices' + (petId ? `?pet_id=${petId}` : ''));
+export const getInvoice = (id: number) => api.get(`/invoices/${id}`);
+
 // Notifications
 export const getNotifications = () => api.get('/notifications');
+export const markNotificationAsRead = (id: number) => api.put(`/notifications/${id}`, { is_read: true });
+
+// Pet Details
+export const getPet = (id: number) => api.get(`/pets/${id}`);
+
+// Settings
+export const getSettings = () => api.get('/settings');
 
 export default api;

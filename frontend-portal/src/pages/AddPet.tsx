@@ -169,7 +169,7 @@ export default function AddPet() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
           <FiArrowLeft /> Back
         </button>
         <button 
@@ -183,7 +183,7 @@ export default function AddPet() {
       </div>
 
       <div className="card-shell p-8 bg-white dark:bg-dark-card">
-        <h3 className="flex items-center gap-3 text-2xl font-bold text-slate-800 dark:text-zinc-100 mb-8 italic uppercase tracking-tight">
+        <h3 className="flex items-center gap-3 text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-8 italic uppercase tracking-tight">
           <span className="text-brand-500">/</span> Register Pet
         </h3>
 
@@ -196,18 +196,18 @@ export default function AddPet() {
 
         <form className="space-y-8">
           {/* Photo Upload Section */}
-          <div className="flex flex-col items-center gap-4 py-4 border-b border-slate-100 dark:border-dark-border">
+          <div className="flex flex-col items-center gap-4 py-4 border-b border-zinc-100 dark:border-dark-border">
             <button 
               type="button" 
               onClick={() => photoInputRef.current?.click()}
-              className="group relative w-32 h-32 rounded-[2.5rem] bg-slate-50 dark:bg-dark-surface border-2 border-dashed border-slate-200 dark:border-dark-border flex items-center justify-center overflow-hidden hover:border-brand-500 transition-all"
+              className="group relative w-32 h-32 rounded-[2.5rem] bg-zinc-50 dark:bg-dark-surface border-2 border-dashed border-zinc-200 dark:border-dark-border flex items-center justify-center overflow-hidden hover:border-brand-500 transition-all"
             >
               {photoValue ? (
                 <img src={getActualPetImageUrl(photoValue)} className="w-full h-full object-cover" alt="Preview" />
               ) : (
                 <div className="text-center">
-                  <FiCamera className="w-10 h-10 text-slate-300 mx-auto mb-1 group-hover:text-brand-500 transition-colors" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Add Photo</span>
+                  <FiCamera className="w-10 h-10 text-zinc-300 mx-auto mb-1 group-hover:text-brand-500 transition-colors" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Add Photo</span>
                 </div>
               )}
             </button>
@@ -216,7 +216,7 @@ export default function AddPet() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-full">
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Pet Name *</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Pet Name *</label>
               <input 
                 {...register("name")}
                 className={clsx("input-field font-bold text-lg", errors.name && "border-rose-500")}
@@ -226,7 +226,7 @@ export default function AddPet() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Species *</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Species *</label>
               <div className="relative">
                 <select 
                   {...register("species_id")}
@@ -235,12 +235,12 @@ export default function AddPet() {
                   <option value="">— Select Species ({speciesList.length} available) —</option>
                   {speciesList.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
                 </select>
-                <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Breed</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Breed</label>
               <div className="relative">
                 <select 
                   {...register("breed_id")}
@@ -250,12 +250,12 @@ export default function AddPet() {
                   <option value="">{availableBreeds.length > 0 ? "— Select Breed —" : "No breeds found"}</option>
                   {availableBreeds.map((b: any) => <option key={b.id} value={String(b.id)}>{b.name}</option>)}
                 </select>
-                <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Gender</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Gender</label>
               <select {...register("sex")} className="input-field font-bold">
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -265,25 +265,25 @@ export default function AddPet() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Birth Date</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Birth Date</label>
               <input type="date" {...register("date_of_birth")} className="input-field font-bold" />
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Weight (kg) *</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
               <input type="number" step="0.01" {...register("weight")} className="input-field font-bold" placeholder="0.00" />
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Age Classification</label>
-              <div className="input-field font-bold bg-slate-50 dark:bg-dark-surface/50 flex items-center text-slate-500 px-4">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Age Classification</label>
+              <div className="input-field font-bold bg-zinc-50 dark:bg-dark-surface/50 flex items-center text-zinc-500 px-4">
                 {watch("age_group") || "Enter birth date to calculate"}
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 ml-1">Medical Notes</label>
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Medical Notes</label>
             <textarea 
               {...register("notes")}
               className="input-field h-32 py-4 resize-none font-medium text-base"

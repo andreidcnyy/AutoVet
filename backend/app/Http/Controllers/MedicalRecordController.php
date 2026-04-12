@@ -27,7 +27,7 @@ class MedicalRecordController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = MedicalRecord::with(['pet', 'vet']);
+        $query = MedicalRecord::with(['pet', 'vet', 'appointment.service']);
 
         if (method_exists($user, 'isOwner') && $user->isOwner()) {
             $query->whereHas('pet', function ($q) use ($user) {
@@ -52,6 +52,7 @@ class MedicalRecordController extends Controller
             'treatment_plan'  => 'nullable|string',
             'notes'           => 'nullable|string',
             'follow_up_date'  => 'nullable|date',
+            'follow_up_time'  => 'nullable',
         ]);
 
         // Auto-assign the logged-in user as vet if they are a clinical role
@@ -85,12 +86,12 @@ class MedicalRecordController extends Controller
             \Illuminate\Support\Facades\Log::warning("Failed to send automated medical record notification: " . $e->getMessage());
         }
 
-        return response()->json($record->load(['pet', 'vet']), 201);
+        return response()->json($record->load(['pet', 'vet', 'appointment.service']), 201);
     }
 
     public function show(MedicalRecord $medicalRecord)
     {
-        return response()->json($medicalRecord->load(['pet', 'vet']));
+        return response()->json($medicalRecord->load(['pet', 'vet', 'appointment.service']));
     }
 
     public function update(Request $request, MedicalRecord $medicalRecord)
@@ -105,6 +106,7 @@ class MedicalRecordController extends Controller
             'treatment_plan'  => 'nullable|string',
             'notes'           => 'nullable|string',
             'follow_up_date'  => 'nullable|date',
+            'follow_up_time'  => 'nullable',
         ]);
 
         // Only clinical staff (Veterinarian) may edit diagnosis
@@ -119,7 +121,7 @@ class MedicalRecordController extends Controller
         }
 
         $medicalRecord->update($validated);
-        return response()->json($medicalRecord->load(['pet', 'vet']));
+        return response()->json($medicalRecord->load(['pet', 'vet', 'appointment.service']));
     }
 
     public function destroy(MedicalRecord $medicalRecord)

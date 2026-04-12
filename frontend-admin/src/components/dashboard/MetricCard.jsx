@@ -22,9 +22,9 @@ function MetricCard({ card }) {
         ) : null}
       </div>
 
-      <p className="text-5xl font-bold leading-tight text-slate-900 dark:text-zinc-50">{card.value}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-700 dark:text-zinc-200">{card.title}</p>
-      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{card.detail}</p>
+      <p className="text-5xl font-bold leading-tight text-zinc-900 dark:text-zinc-50">{card.value}</p>
+      <p className="mt-2 text-2xl font-semibold text-zinc-700 dark:text-zinc-200">{card.title}</p>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{card.detail}</p>
     </article>
   );
 }

@@ -221,7 +221,7 @@ export default function WeightRangesManager() {
   if (loadingSpecies) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-slate-500 animate-pulse font-medium">Loading species master data...</div>
+        <div className="text-zinc-500 animate-pulse font-medium">Loading species master data...</div>
       </div>
     );
   }
@@ -231,7 +231,7 @@ export default function WeightRangesManager() {
       {/* Sidebar: Compact Species List */}
       <div className="w-full xl:w-56 flex-shrink-0">
         <div className="mb-4 flex items-center justify-between px-2">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-zinc-500">Species</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Species</h3>
         </div>
         <div className="flex flex-row xl:flex-col gap-2 overflow-x-auto pb-2 xl:pb-0 scrollbar-hide">
           {species?.map((s) => (
@@ -241,15 +241,15 @@ export default function WeightRangesManager() {
               className={clsx(
                 "flex min-w-[120px] flex-1 items-center justify-between whitespace-nowrap rounded-xl px-4 py-2.5 transition-all duration-200 group xl:w-full",
                 selectedSpecies?.id === s.id
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border"
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border"
               )}
             >
               <span className="text-sm font-bold">{s.name}</span>
               {selectedSpecies?.id === s.id ? (
-                <FiCheckCircle className="shrink-0 text-blue-100" />
+                <FiCheckCircle className="shrink-0 text-emerald-100" />
               ) : (
-                <div className="h-2 w-2 shrink-0 rounded-full bg-slate-200 dark:bg-zinc-700 group-hover:bg-blue-400" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-zinc-200 dark:bg-zinc-700 group-hover:bg-emerald-400" />
               )}
             </button>
           ))}
@@ -259,37 +259,37 @@ export default function WeightRangesManager() {
       {/* Main Content: Weight Ranges for Selected Species */}
       <div className="flex-1 min-w-0">
         {!selectedSpecies ? (
-          <div className="flex aspect-video items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800 p-12 text-center">
+          <div className="flex aspect-video items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 p-12 text-center">
             <div className="max-w-xs">
-               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-50 text-zinc-400">
                  <FiChevronRight size={24} />
                </div>
-               <p className="text-sm font-medium text-slate-500">Select a species from the left to manage its weight ranges.</p>
+               <p className="text-sm font-medium text-zinc-500">Select a species from the left to manage its weight ranges.</p>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">{selectedSpecies.name} Weight Brackets</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{selectedSpecies.name} Weight Brackets</h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
                   Define how {selectedSpecies.name.toLowerCase()}s are classified based on weight.
                 </p>
               </div>
               <div className="flex items-center gap-3">
                  <div className="relative flex-1 sm:w-64">
-                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <input 
                     type="text" 
                     placeholder="Search ranges..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                    className="w-full rounded-2xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                   />
                 </div>
                 <button 
                   onClick={() => handleOpenModal()}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all hover:-translate-y-0.5"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5"
                 >
                   <FiPlus className="h-5 w-5" />
                   <span>Add Range</span>
@@ -311,9 +311,9 @@ export default function WeightRangesManager() {
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
+            <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:bg-dark-surface/50 dark:text-zinc-400">
+                <thead className="bg-zinc-50/50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-dark-surface/50 dark:text-zinc-400">
                   <tr>
                     <th className="px-5 py-4">Label</th>
                     <th className="px-5 py-4 text-center">Min (kg)</th>
@@ -323,25 +323,25 @@ export default function WeightRangesManager() {
                     <th className="px-5 py-4 text-right w-24">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-dark-border text-slate-700 dark:text-zinc-300">
+                <tbody className="divide-y divide-zinc-100 dark:divide-dark-border text-zinc-700 dark:text-zinc-300">
                   {loadingRanges ? (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-400">Loading ranges...</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-12 text-center text-zinc-400">Loading ranges...</td></tr>
                   ) : ranges.length === 0 ? (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-400">No ranges configured yet.</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-12 text-center text-zinc-400">No ranges configured yet.</td></tr>
                   ) : ranges.map((item) => (
-                    <tr key={item.id} className="group hover:bg-slate-50/50 dark:hover:bg-dark-surface/50 transition-colors">
-                      <td className="px-5 py-4 font-bold text-slate-900 dark:text-zinc-100">{item.label}</td>
+                    <tr key={item.id} className="group hover:bg-zinc-50/50 dark:hover:bg-dark-surface/50 transition-colors">
+                      <td className="px-5 py-4 font-bold text-zinc-900 dark:text-zinc-100">{item.label}</td>
                       <td className="px-5 py-4 text-center tabular-nums">{item.min_weight}</td>
                       <td className="px-5 py-4 text-center tabular-nums">{item.max_weight || "∞"}</td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-tight text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-tight text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                           {item.size_category?.name || "Unlinked"}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">
                         <span className={clsx(
                           "inline-flex h-2 w-2 rounded-full ring-4 ring-white dark:ring-dark-card",
-                          item.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-300'
+                          item.status === 'Active' ? 'bg-emerald-500' : 'bg-zinc-300'
                         )} />
                         <span className="ml-2 text-xs font-medium">{item.status}</span>
                       </td>
@@ -350,14 +350,14 @@ export default function WeightRangesManager() {
                           <button 
                             onClick={() => handleOpenModal(item)} 
                             title="Edit"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-emerald-50 hover:text-emerald-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
                           >
                             <FiEdit2 size={14} />
                           </button>
                           <button 
                             onClick={() => handleDelete(item.id)} 
                             title="Delete"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                           >
                             <FiTrash2 size={14} />
                           </button>
@@ -374,18 +374,18 @@ export default function WeightRangesManager() {
 
       {/* Modal - Customized for Weight Range */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-8 dark:bg-dark-card border border-slate-200 dark:border-dark-border shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
                   {editingItem ? 'Edit' : 'Add'} {selectedSpecies?.name} Range
                 </h3>
-                <p className="text-sm text-slate-500">Fine-tune weight bracket and size association.</p>
+                <p className="text-sm text-zinc-500">Fine-tune weight bracket and size association.</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-dark-surface transition"
+                className="p-2 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-dark-surface transition"
               >
                 <FiX size={20} />
               </button>
@@ -394,20 +394,20 @@ export default function WeightRangesManager() {
             <form onSubmit={handleSave} className="space-y-5">
               <div className="grid grid-cols-1 gap-5">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Label</label>
+                  <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Label</label>
                   <input 
                     required
                     type="text" 
                     placeholder="e.g. Small, Medium"
                     value={formData.label} 
                     onChange={e => setFormData({ ...formData, label: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Min Weight (kg)</label>
+                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Min Weight (kg)</label>
                     <input 
                       required
                       type="number" 
@@ -415,30 +415,30 @@ export default function WeightRangesManager() {
                       min="0"
                       value={formData.min_weight} 
                       onChange={e => setFormData({ ...formData, min_weight: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Max Weight (kg)</label>
+                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Max Weight (kg)</label>
                     <input 
                       type="number" 
                       step="0.01"
                       placeholder="Leave blank for NuLL"
                       value={formData.max_weight} 
                       onChange={e => setFormData({ ...formData, max_weight: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     />
-                    <p className="mt-1 text-[10px] text-slate-400 text-right">Leave empty for open-ended</p>
+                    <p className="mt-1 text-[10px] text-zinc-400 text-right">Leave empty for open-ended</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Size Category</label>
+                  <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Size Category</label>
                   <select 
                     required
                     value={formData.size_category_id} 
                     onChange={e => setFormData({ ...formData, size_category_id: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white appearance-none"
+                    className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white appearance-none"
                   >
                     <option value="">Select a size...</option>
                     {sizeCategories?.map(cat => (
@@ -449,22 +449,22 @@ export default function WeightRangesManager() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Unit</label>
+                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Unit</label>
                     <select 
                       value={formData.unit} 
                       onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     >
                       <option value="kg">kilogram (kg)</option>
                       <option value="lb">pound (lb)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300 mb-2">Status</label>
+                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Status</label>
                     <select 
                       value={formData.status} 
                       onChange={e => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
@@ -474,14 +474,14 @@ export default function WeightRangesManager() {
                 
                 {/* Preview Classification */}
                 {(formData.min_weight || formData.max_weight) && formData.size_category_id && (
-                  <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-dark-surface dark:border-dark-border">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Classification Preview</p>
-                    <div className="text-sm text-slate-600 dark:text-zinc-400">
-                      A <span className="font-bold text-slate-900 dark:text-zinc-200">{selectedSpecies?.name}</span> weighing between 
-                      <span className="font-bold text-blue-600 dark:text-blue-400"> {formData.min_weight || "0"} </span> 
+                  <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100 dark:bg-dark-surface dark:border-dark-border">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Classification Preview</p>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      A <span className="font-bold text-zinc-900 dark:text-zinc-200">{selectedSpecies?.name}</span> weighing between 
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400"> {formData.min_weight || "0"} </span> 
                       and 
-                      <span className="font-bold text-blue-600 dark:text-blue-400"> {formData.max_weight || "∞"} </span> {formData.unit} 
-                      will be classified as <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400"> {formData.max_weight || "∞"} </span> {formData.unit} 
+                      will be classified as <span className="inline-flex items-center rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         {sizeCategories.find(c => c.id.toString() === formData.size_category_id.toString())?.name || "???"}
                       </span>
                     </div>
@@ -493,14 +493,14 @@ export default function WeightRangesManager() {
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-dark-surface transition"
+                  className="flex-1 rounded-2xl border border-zinc-200 py-3 text-sm font-bold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-dark-surface transition"
                 >
                   Cancel
                 </button>
                 <button 
                   disabled={isSaving} 
                   type="submit" 
-                  className="flex-2 flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-8 py-3 text-sm font-bold text-white hover:bg-blue-700 shadow-xl shadow-blue-500/25 disabled:opacity-50 transition"
+                  className="flex-2 flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white hover:bg-emerald-700 shadow-xl shadow-emerald-500/25 disabled:opacity-50 transition"
                 >
                   <FiSave size={18} /> {isSaving ? "Saving..." : editingItem ? "Update Range" : "Create Range"}
                 </button>

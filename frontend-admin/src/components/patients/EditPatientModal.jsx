@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import clsx from "clsx";
-import { FiX, FiCamera, FiAlertCircle, FiChevronDown } from "react-icons/fi";
+import { FiX, FiCamera, FiAlertCircle, FiChevronDown, FiMapPin, FiMap } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,19 +8,20 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { getAgeGroup } from "../../utils/petAgeGroups";
+import { PH_LOCATION_DATA } from "../../utils/phLocationData";
 
 const inputBase =
-    "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
 const selectBase =
-    "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
-const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
-const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-300 dark:border-dark-border");
+const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
+const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 
 const patientSchema = z.object({
     name: z.string().min(1, "Pet name is required").max(255),
     species_id: z.string().min(1, "Species is required"),
-    breed_id: z.string().optional(),
+    breed_id: z.string().optional().or(z.literal("")),
     date_of_birth: z.string().optional().or(z.literal("")),
     sex: z.string().max(50).optional().or(z.literal("")),
     age_group: z.string().optional().or(z.literal("")),
@@ -32,17 +33,12 @@ const patientSchema = z.object({
     owner_name: z.string().min(1, "Owner name is required").max(255),
     owner_phone: z.string()
         .min(1, "Phone number is required")
-        .regex(/^(09|\+639)\d{9,10}$/, "Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX")
-        .refine(val => {
-            if (val.startsWith('09')) return val.length === 11;
-            if (val.startsWith('+639')) return val.length === 13;
-            return false;
-        }, "Phone number must start with 09 (11 digits) or +639 (13 characters)"),
+        .length(11, "Contact number must be exactly 11 digits"),
     owner_email: z.string().email("Invalid email address").max(255).optional().or(z.literal("")),
     owner_address: z.string().min(1, "Street address is required").max(255),
     owner_city: z.string().min(1, "City is required").max(255),
     owner_province: z.string().min(1, "Province is required").max(255),
-    owner_zip: z.string().min(1, "Zip Code is required").max(20),
+    owner_zip: z.string().optional().or(z.literal("")),
     allergies: z.string().max(255).optional().or(z.literal("")),
     medication: z.string().max(255).optional().or(z.literal("")),
     notes: z.string().optional().or(z.literal("")),
@@ -58,6 +54,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const [sizeCategories, setSizeCategories] = useState([]);
     const [weightRanges, setWeightRanges] = useState([]);
     const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
+    const [availableCities, setAvailableCities] = useState([]);
 
     useEffect(() => {
         if (isOpen && user?.token) {
@@ -138,6 +135,25 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const speciesIdValue = watch("species_id");
     const selectedSpecies = speciesList.find(s => s.id.toString() === speciesIdValue);
     const availableBreeds = selectedSpecies?.breeds || [];
+
+    const ownerProvince = watch("owner_province");
+    const ownerCity = watch("owner_city");
+
+    useEffect(() => {
+        const provinceData = PH_LOCATION_DATA.find(p => p.name === ownerProvince);
+        if (provinceData) {
+            setAvailableCities(provinceData.cities);
+        } else {
+            setAvailableCities([]);
+        }
+    }, [ownerProvince]);
+
+    useEffect(() => {
+        const cityData = availableCities.find(c => c.name === ownerCity);
+        if (cityData) {
+            setValue("owner_zip", cityData.zip);
+        }
+    }, [ownerCity, availableCities, setValue]);
 
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -282,8 +298,8 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
             <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
                 <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Edit Profile</h2>
-                    <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-surface">
+                    <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Edit Profile</h2>
+                    <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">
                         <FiX className="h-5 w-5" />
                     </button>
                 </div>
@@ -298,17 +314,17 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                     <form id="edit-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <section>
-                            <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-zinc-100">Pet Details</h3>
+                            <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Pet Details</h3>
                             <div className="flex items-center gap-4 mb-4">
                                 <button
                                     type="button"
                                     onClick={() => photoInputRef.current?.click()}
-                                    className="group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-blue-400 dark:border-dark-border dark:bg-dark-surface"
+                                    className="group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 hover:border-emerald-400 dark:border-dark-border dark:bg-dark-surface"
                                 >
                                     {photoValue ? (
                                         <img src={getActualPetImageUrl(photoValue)} alt="Pet" className="h-full w-full object-cover" />
                                     ) : (
-                                        <div className="flex h-full items-center justify-center text-slate-400"><FiCamera className="h-6 w-6"/></div>
+                                        <div className="flex h-full items-center justify-center text-zinc-400"><FiCamera className="h-6 w-6"/></div>
                                     )}
                                     <div className={clsx(
                                         "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
@@ -322,12 +338,12 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Pet Name *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Pet Name *</label>
                                     <input {...register("name")} className={getInputClass(errors.name)} />
                                     {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Species *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Species *</label>
                                     <div className="relative">
                                         <select {...register("species_id")} className={getSelectClass(errors.species_id)}>
                                             <option value="">Select Species...</option>
@@ -337,7 +353,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Breed</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Breed</label>
                                     <div className="relative">
                                         <select {...register("breed_id")} className={getSelectClass(errors.breed_id)} disabled={!speciesIdValue}>
                                             <option value="">Select Breed...</option>
@@ -347,16 +363,16 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Date of Birth</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Date of Birth</label>
                                     <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
                                 </div>
                                 
                                 <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Weight ({watch("weight_unit") || "kg"})</label>
+                                        <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Weight ({watch("weight_unit") || "kg"})</label>
                                         <div className="flex gap-2">
                                             <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
-                                            <select {...register("weight_unit")} className="w-16 rounded border border-slate-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
+                                            <select {...register("weight_unit")} className="w-16 rounded border border-zinc-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
                                                 <option value="kg">kg</option>
                                                 <option value="lbs">lbs</option>
                                             </select>
@@ -364,28 +380,28 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         {errors.weight && <p className="mt-1 text-[10px] text-rose-500 font-medium">{errors.weight.message}</p>}
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Size Category</label>
+                                        <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Size Category</label>
                                         {weightValue ? (
                                             <div className={clsx(
                                                 "flex flex-col justify-center rounded border px-3 py-1 text-xs font-medium transition-colors min-h-[34px]",
-                                                isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-slate-200 bg-slate-50 dark:border-dark-border dark:bg-dark-surface"
+                                                isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface"
                                             )}>
                                                 <div className="flex items-center justify-between">
-                                                    <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400 font-bold" : "text-slate-700 dark:text-zinc-300 font-bold")}>
+                                                    <span className={clsx(isMismatch ? "text-amber-700 dark:text-amber-400 font-bold" : "text-zinc-700 dark:text-zinc-300 font-bold")}>
                                                         {calculatedSizeName}
                                                     </span>
-                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Auto</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Auto</span>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="relative">
-                                                <select {...register("size_category_id")} className="h-[34px] w-full rounded border bg-slate-50 px-2 text-[11px] text-slate-700 focus:bg-white focus:outline-none appearance-none pr-6 dark:bg-dark-surface dark:text-zinc-200">
+                                                <select {...register("size_category_id")} className="h-[34px] w-full rounded border bg-zinc-50 px-2 text-[11px] text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-6 dark:bg-dark-surface dark:text-zinc-200">
                                                     <option value="">Manual Fallback...</option>
                                                     {sizeCategories.map(cat => (
                                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                                                     ))}
                                                 </select>
-                                                <FiChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                                                <FiChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
                                             </div>
                                         )}
                                         {isMismatch && (
@@ -397,25 +413,25 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Sex</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Sex</label>
                                     <select {...register("sex")} className={getSelectClass(errors.sex)}>
                                         <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Age Group</label>
-                                    <div className="flex h-11 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 text-[13px] font-bold text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200">
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Age Group</label>
+                                    <div className="flex h-11 w-full items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[13px] font-bold text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200">
                                         <span>{watch("age_group") || "Not yet determined"}</span>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Auto</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Auto</span>
                                     </div>
                                     <input type="hidden" {...register("age_group")} />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Color</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Color</label>
                                     <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Status</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Status</label>
                                     <select {...register("status")} className={getSelectClass(errors.status)}>
                                         <option>Healthy</option><option>Treatment</option><option>Overdue</option>
                                     </select>
@@ -423,84 +439,104 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                             </div>
                         </section>
 
-                        <div className="h-px bg-slate-200 dark:bg-dark-border" />
+                        <div className="h-px bg-zinc-200 dark:bg-dark-border" />
 
                         <section>
-                            <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-zinc-100">Owner Details</h3>
+                            <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Owner Details</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Full Name *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Full Name *</label>
                                     <input {...register("owner_name")} className={getInputClass(errors.owner_name)} />
                                     {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Phone *</label>
-                                    <input 
-                                        {...register("owner_phone")} 
-                                        type="text"
-                                        className={getInputClass(errors.owner_phone)} 
-                                        placeholder="09XXXXXXXXX or +639XXXXXXXXX" 
-                                        onInput={(e) => {
-                                            e.target.value = e.target.value.replace(/[^0-9+]/g, '');
-                                            if (e.target.value.includes('+') && e.target.value.indexOf('+') !== 0) {
-                                                e.target.value = e.target.value.replace(/\+/g, '');
-                                            }
-                                        }}
-                                    />
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone *</label>
+                                    <div className="flex gap-2">
+                                        <div className="flex h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
+                                            🇵🇭 +63
+                                        </div>
+                                        <input 
+                                            {...register("owner_phone")} 
+                                            type="text"
+                                            className={getInputClass(errors.owner_phone)} 
+                                            placeholder="09123456789" 
+                                            onChange={(e) => setValue("owner_phone", e.target.value.replace(/\D/g, "").slice(0, 11), { shouldValidate: true })}
+                                            maxLength={11}
+                                        />
+                                    </div>
                                     {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Email Address</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Email Address</label>
                                     <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} />
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Street Address *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address *</label>
                                     <input {...register("owner_address")} className={getInputClass(errors.owner_address)} />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">City *</label>
-                                    <input {...register("owner_city")} className={getInputClass(errors.owner_city)} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Province *</label>
-                                        <input {...register("owner_province")} className={getInputClass(errors.owner_province)} />
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Province *</label>
+                                    <div className="relative">
+                                        <select {...register("owner_province")} className={getSelectClass(errors.owner_province)}>
+                                            <option value="">Select Province...</option>
+                                            {PH_LOCATION_DATA.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Zip *</label>
-                                        <input {...register("owner_zip")} className={getInputClass(errors.owner_zip)} />
+                                    {errors.owner_province && <p className="mt-1 text-xs text-red-500">{errors.owner_province.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">City *</label>
+                                    <div className="relative">
+                                        <select {...register("owner_city")} className={getSelectClass(errors.owner_city)} disabled={!ownerProvince}>
+                                            <option value="">Select City...</option>
+                                            {availableCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
+                                    </div>
+                                    {errors.owner_city && <p className="mt-1 text-xs text-red-500">{errors.owner_city.message}</p>}
+                                </div>
+                                <div className="w-1/2">
+                                    <label className="mb-1 block text-xs font-semibold text-emerald-600 dark:text-emerald-400">Zip (Auto)</label>
+                                    <div className="relative">
+                                        <FiMap className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                        <input 
+                                            {...register("owner_zip")} 
+                                            readOnly 
+                                            className="h-11 w-full rounded-xl border border-emerald-100 bg-emerald-50/50 pl-10 pr-3 text-sm font-bold text-emerald-700 cursor-not-allowed dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400" 
+                                        />
                                     </div>
                                 </div>
                             </div>
                         </section>
 
-                        <div className="h-px bg-slate-200 dark:bg-dark-border" />
+                        <div className="h-px bg-zinc-200 dark:bg-dark-border" />
 
                         <section>
-                            <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-zinc-100">Medical History</h3>
+                            <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Medical History</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Allergies</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Allergies</label>
                                     <input {...register("allergies")} className={getInputClass(errors.allergies)} />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Current Medication</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Current Medication</label>
                                     <input {...register("medication")} className={getInputClass(errors.medication)} />
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-zinc-400">Additional Notes / Status</label>
-                                    <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Additional Notes / Status</label>
+                                    <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
                                 </div>
                             </div>
                         </section>
                     </form>
                 </div>
 
-                <div className="border-t bg-slate-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3">
-                    <button type="button" onClick={onClose} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
+                <div className="border-t bg-zinc-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3">
+                    <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
                         Cancel
                     </button>
-                    <button type="submit" form="edit-patient-form" disabled={isSubmitting} className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                    <button type="submit" form="edit-patient-form" disabled={isSubmitting} className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
                         {isSubmitting ? "Saving..." : "Save Changes"}
                     </button>
                 </div>

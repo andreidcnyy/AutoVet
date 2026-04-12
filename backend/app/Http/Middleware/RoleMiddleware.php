@@ -20,9 +20,14 @@ class RoleMiddleware
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // Determine user role - check property or default to OWNER for PortalUser
-        $userRole = property_exists($user, 'role') ? $user->role : (method_exists($user, 'isOwner') && $user->isOwner() ? Roles::OWNER->value : null);
-        
+        // Determine user role
+        $userRole = null;
+        if ($user instanceof \App\Models\Admin) {
+            $userRole = $user->role;
+        } elseif ($user instanceof \App\Models\PortalUser || (method_exists($user, 'isOwner') && $user->isOwner())) {
+            $userRole = Roles::OWNER->value;
+        }
+
         if (!$userRole) {
             return response()->json(['message' => 'Unauthorized. Role not defined.'], 403);
         }

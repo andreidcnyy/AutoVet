@@ -67,7 +67,7 @@ function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-slate-500 dark:text-zinc-400 font-medium">Loading Dashboard Data...</div>
+        <div className="text-zinc-500 dark:text-zinc-400 font-medium">Loading Dashboard Data...</div>
       </div>
     );
   }

@@ -11,7 +11,7 @@ function ClientNotificationHistoryPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 pt-6">
         <button
           onClick={() => navigate(-1)}
-          className="group flex w-fit items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+          className="group flex w-fit items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
         >
           <FiArrowLeft className="transition-transform group-hover:-translate-x-1" />
           Back

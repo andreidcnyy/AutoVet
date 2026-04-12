@@ -91,22 +91,22 @@ export default function BookAppointment() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 transition">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition">
           <FiArrowLeft /> Dashboard
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-            className="p-2 rounded-xl bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border text-slate-500 hover:bg-slate-50 transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
             <FiChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100 min-w-[160px] text-center uppercase tracking-tight">
+          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 min-w-[160px] text-center uppercase tracking-tight">
             {format(currentDate, "MMMM yyyy")}
           </h2>
           <button
             onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-            className="p-2 rounded-xl bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border text-slate-500 hover:bg-slate-50 transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
             <FiChevronRight className="w-5 h-5" />
           </button>
@@ -115,15 +115,15 @@ export default function BookAppointment() {
 
       {/* Calendar Grid */}
       <div className="card-shell overflow-hidden bg-white dark:bg-dark-card">
-        <div className="grid grid-cols-7 border-b border-slate-100 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface/30">
+        <div className="grid grid-cols-7 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
           {weekDays.map(day => (
-            <div key={day} className="py-4 text-center text-xs font-bold uppercase tracking-widest text-slate-400">
+            <div key={day} className="py-4 text-center text-xs font-bold uppercase tracking-widest text-zinc-400">
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 dark:divide-dark-border/50">
+        <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100 dark:divide-dark-border/50">
           {calendarDays.map((entry, idx) => {
             const isToday = entry.dateString === format(new Date(), "yyyy-MM-dd");
             const hasEvents = entry.events.length > 0;
@@ -134,14 +134,14 @@ export default function BookAppointment() {
                 onClick={() => handleDayClick(entry)}
                 className={clsx(
                   "group relative min-h-[120px] p-2 transition-all hover:bg-brand-50/30 dark:hover:bg-brand-500/5 cursor-pointer",
-                  !entry.inMonth && "bg-slate-50/20 dark:bg-dark-surface/10 opacity-30 pointer-events-none",
+                  !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-30 pointer-events-none",
                   isToday && "bg-brand-50/50 dark:bg-brand-900/10"
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span className={clsx(
                     "inline-flex h-8 w-8 items-center justify-center rounded-xl text-sm font-bold transition-all",
-                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" : "text-slate-700 dark:text-zinc-300"
+                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" : "text-zinc-700 dark:text-zinc-300"
                   )}>
                     {entry.day}
                   </span>
@@ -159,7 +159,7 @@ export default function BookAppointment() {
 
                 <div className="mt-2 space-y-1">
                   {entry.events.map((event: any) => (
-                    <div key={event.id} className="px-2 py-1 rounded-md bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-dark-border text-[10px] font-bold text-slate-600 dark:text-zinc-400 truncate uppercase">
+                    <div key={event.id} className="px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-dark-border text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate uppercase">
                       {event.pet?.name} - {event.status}
                     </div>
                   ))}
@@ -175,7 +175,7 @@ export default function BookAppointment() {
         "fixed inset-0 z-[60] transition-opacity duration-500",
         isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
+        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
         
         <aside className={clsx(
           "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
@@ -183,23 +183,23 @@ export default function BookAppointment() {
         )}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-2xl font-bold text-slate-800 dark:text-zinc-100 italic tracking-tight uppercase">
+              <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
                 <span className="text-brand-500 mr-2">/</span>Book Visit
               </h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
                 {selectedDay ? format(new Date(selectedDay.dateString), "MMMM d, yyyy") : ""}
               </p>
             </div>
-            <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-slate-50 dark:bg-dark-surface text-slate-400 hover:text-slate-800 transition-all">
+            <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
               <FiX className="w-6 h-6" />
             </button>
           </div>
 
           <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-6">
-            <div className="space-y-5 rounded-[2rem] bg-slate-50/50 dark:bg-dark-surface/30 p-6 border-2 border-slate-50 dark:border-dark-border">
+            <div className="space-y-5 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 p-6 border-2 border-zinc-50 dark:border-dark-border">
               {/* Pet Selection */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 ml-1">Select Pet</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 ml-1">Select Pet</label>
                 <div className="grid grid-cols-2 gap-2">
                   {pets.map(pet => (
                     <button
@@ -210,10 +210,10 @@ export default function BookAppointment() {
                         "p-3 rounded-2xl border-2 transition-all text-left",
                         register("pet_id").value === pet.id.toString() || String(pet.id) === String(z.string().parse(register("pet_id").name)) // This is a bit tricky with react-hook-form
                         ? "border-brand-500 bg-brand-50 dark:bg-brand-900/10"
-                        : "border-transparent bg-white dark:bg-dark-card hover:border-slate-200"
+                        : "border-transparent bg-white dark:bg-dark-card hover:border-zinc-200"
                       )}
                     >
-                      <div className="font-bold text-sm text-slate-800 dark:text-zinc-100">{pet.name}</div>
+                      <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100">{pet.name}</div>
                     </button>
                   ))}
                 </div>
@@ -226,7 +226,7 @@ export default function BookAppointment() {
 
               {/* Service Selection */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Service Required</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Service Required</label>
                 <select {...register("service_id")} className="input-field bg-white dark:bg-dark-card font-bold">
                   <option value="">— Select Service —</option>
                   {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -236,14 +236,14 @@ export default function BookAppointment() {
 
               {/* Time Selection */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Arrival Time</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Arrival Time</label>
                 <input type="time" {...register("time")} className="input-field bg-white dark:bg-dark-card font-bold" />
                 {errors.time && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Assigned Doctor (Optional)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Assigned Doctor (Optional)</label>
               <select {...register("vet_id")} className="input-field font-bold">
                 <option value="">Any Available Vet</option>
                 {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
@@ -251,7 +251,7 @@ export default function BookAppointment() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Additional Notes</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Additional Notes</label>
               <textarea {...register("notes")} className="input-field h-24 py-3 resize-none font-medium" placeholder="Tell us what's happening..." />
             </div>
 

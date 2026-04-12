@@ -94,7 +94,7 @@ export default function NotificationTemplatesManager() {
                 </div>
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                 >
                     <FiPlus size={18} /> Add Template
                 </button>
@@ -127,7 +127,7 @@ export default function NotificationTemplatesManager() {
                                 </td>
                                 <td className="p-4 text-right">
                                     <div className="flex justify-end gap-2">
-                                        <button onClick={() => openModal(t)} className="p-2 text-gray-400 hover:text-blue-400 bg-[#2b2b40] rounded hover:bg-[#32324a] transition-colors"><FiEdit2 size={16} /></button>
+                                        <button onClick={() => openModal(t)} className="p-2 text-gray-400 hover:text-emerald-400 bg-[#2b2b40] rounded hover:bg-[#32324a] transition-colors"><FiEdit2 size={16} /></button>
                                         <button onClick={() => handleDelete(t.id)} className="p-2 text-gray-400 hover:text-red-400 bg-[#2b2b40] rounded hover:bg-[#32324a] transition-colors"><FiTrash2 size={16} /></button>
                                     </div>
                                 </td>
@@ -188,7 +188,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                                 type="text" required
                                 value={formData.name} 
                                 onChange={e => setFormData({...formData, name: e.target.value})}
-                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                             />
                         </div>
                         <div>
@@ -196,7 +196,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                             <select 
                                 value={formData.channel} 
                                 onChange={e => setFormData({...formData, channel: e.target.value})}
-                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                             >
                                 <option value="email">Email</option>
                                 <option value="sms">SMS</option>
@@ -211,7 +211,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                             value={formData.event_key} 
                             onChange={e => setFormData({...formData, event_key: e.target.value})}
                             placeholder="e.g. appointment_confirmed"
-                            className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                         />
                     </div>
 
@@ -222,19 +222,21 @@ function TemplateFormModal({ template, onClose, onSave }) {
                                 type="text" required
                                 value={formData.subject} 
                                 onChange={e => setFormData({...formData, subject: e.target.value})}
-                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-2.5 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                             />
                         </div>
                     )}
 
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-1">Body</label>
-                        <div className="text-xs text-gray-500 mb-2">Available variables: {'{owner_name}, {clinic_name}'}</div>
+                        <div className="text-xs text-gray-500 mb-2 font-bold italic uppercase tracking-tighter">
+                            Available: {'{owner_name}, {date_scheduled}, {arrival_time}, {patient}, {findings}, {diagnosis}'}
+                        </div>
                         <textarea 
                             required rows="4"
                             value={formData.body} 
                             onChange={e => setFormData({...formData, body: e.target.value})}
-                            className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="w-full bg-[#151521] border border-gray-700 text-gray-200 rounded-lg p-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                         />
                     </div>
 
@@ -244,14 +246,14 @@ function TemplateFormModal({ template, onClose, onSave }) {
                             id="is_active"
                             checked={formData.is_active} 
                             onChange={e => setFormData({...formData, is_active: e.target.checked})}
-                            className="rounded border-gray-700 bg-[#151521] text-blue-500 focus:ring-blue-500 focus:ring-offset-[#1e1e2d] w-4 h-4 cursor-pointer"
+                            className="rounded border-gray-700 bg-[#151521] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#1e1e2d] w-4 h-4 cursor-pointer"
                         />
                         <label htmlFor="is_active" className="text-sm text-gray-400 cursor-pointer">Template is active</label>
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t border-gray-700">
                         <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 bg-[#2b2b40] hover:bg-[#32324a] text-gray-300 rounded-lg transition-colors font-medium">Cancel</button>
-                        <button type="submit" className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">Save</button>
+                        <button type="submit" className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium">Save</button>
                     </div>
                 </form>
             </div>

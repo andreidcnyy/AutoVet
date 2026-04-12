@@ -56,21 +56,21 @@ function ChangePasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-dark-bg p-4">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg p-4">
       <div className="card-shell w-full max-w-md p-8 space-y-6">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 mb-4">
-            <FiLock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 mb-4">
+            <FiLock className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">Change Your Password</h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Change Your Password</h1>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             Your administrator has reset your password. Please choose a new one to continue.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">New Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -83,7 +83,7 @@ function ChangePasswordPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600"
               >
                 {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
               </button>
@@ -91,7 +91,7 @@ function ChangePasswordPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-200 mb-1">Confirm New Password</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Confirm New Password</label>
             <input
               type={showPassword ? "text" : "password"}
               required
@@ -105,7 +105,7 @@ function ChangePasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-xl bg-blue-600 text-white font-semibold text-lg transition hover:bg-blue-700 focus:outline-none disabled:opacity-60"
+            className="w-full h-12 rounded-xl bg-emerald-600 text-white font-semibold text-lg transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
           >
             {loading ? "Updating..." : "Update Password"}
           </button>

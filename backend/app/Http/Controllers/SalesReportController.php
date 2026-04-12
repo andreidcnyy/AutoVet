@@ -42,8 +42,8 @@ class SalesReportController extends Controller
                 $query->where('status', '!=', 'Cancelled');
             })
             ->whereNotNull('service_id')
-            ->select('item_name', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(subtotal) as total_revenue'))
-            ->groupBy('item_name')
+            ->select('name', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_revenue'))
+            ->groupBy('name')
             ->orderBy('total_revenue', 'desc')
             ->limit($limit)
             ->get();

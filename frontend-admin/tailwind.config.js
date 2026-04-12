@@ -9,9 +9,9 @@ export default {
       },
       colors: {
         brand: {
-          50: "#eff6ff",
-          500: "#3b82f6",
-          600: "#2563eb",
+          50: "#f0fdf4",
+          500: "#059669",
+          600: "#047857",
         },
         // Dark palette — zinc is crisper/cleaner than gray
         dark: {

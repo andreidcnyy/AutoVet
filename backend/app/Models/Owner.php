@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Archivable;
+use App\Traits\HasAuditTrail;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +12,7 @@ use App\Models\PortalUser;
 
 class Owner extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable;
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
     
     protected $fillable = [
         'name', 'phone', 'email', 'address', 'city', 'province', 'zip', 'user_id',

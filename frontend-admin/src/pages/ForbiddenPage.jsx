@@ -15,7 +15,7 @@ const ForbiddenPage = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center dark:bg-dark-bg transition-colors duration-300">
+    <div className="flex h-screen flex-col items-center justify-center bg-zinc-50 p-6 text-center dark:bg-dark-bg transition-colors duration-300">
       <div className="mb-6 rounded-full bg-red-100 p-4 dark:bg-red-900/30">
         <svg
           className="h-10 w-10 text-red-600 dark:text-red-400"
@@ -32,24 +32,24 @@ const ForbiddenPage = () => {
         </svg>
       </div>
 
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 sm:text-5xl">
+      <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">
         Access Denied
       </h1>
-      <p className="mt-4 max-w-sm text-lg text-slate-500 dark:text-zinc-400">
-        You are currently logged in as <span className="font-bold text-slate-900 dark:text-zinc-200">"{user?.role || "Guest"}"</span>. 
+      <p className="mt-4 max-w-sm text-lg text-zinc-500 dark:text-zinc-400">
+        You are currently logged in as <span className="font-bold text-zinc-900 dark:text-zinc-200">"{user?.role || "Guest"}"</span>. 
         Your role does not have the required permissions to access this page.
       </p>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button
           onClick={handleGoBack}
-          className="inline-flex min-w-[12rem] items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-zinc-700 transition-all duration-200"
+          className="inline-flex min-w-[12rem] items-center justify-center rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-zinc-700 transition-all duration-200"
         >
           Go Back
         </button>
         <button
           onClick={handleDashboard}
-          className="inline-flex min-w-[12rem] items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800 transition-all duration-200"
+          className="inline-flex min-w-[12rem] items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-800 transition-all duration-200"
         >
           Dashboard
         </button>

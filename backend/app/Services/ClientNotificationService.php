@@ -90,10 +90,22 @@ class ClientNotificationService
     /**
      * Interpolate variables in a string.
      */
-    public function interpolateVariables(string $text, array $variables, ?Owner $owner = null): string
+    public function interpolateVariables(string $text, array $variables, ?Owner $owner = null, $relatedModel = null): string
     {
         if ($owner) {
             $variables['owner_name'] = $owner->name;
+        }
+
+        if ($relatedModel instanceof \App\Models\Appointment) {
+            $variables['date_scheduled'] = $relatedModel->date;
+            $variables['arrival_time'] = $relatedModel->time;
+            $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
+        }
+
+        if ($relatedModel instanceof \App\Models\MedicalRecord) {
+            $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
+            $variables['findings'] = $relatedModel->findings;
+            $variables['diagnosis'] = $relatedModel->diagnosis;
         }
 
         foreach ($variables as $key => $value) {

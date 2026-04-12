@@ -24,6 +24,8 @@ use App\Http\Controllers\VetScheduleController;
 use App\Http\Controllers\PatientOwnerController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\CmsContentController;
+use App\Http\Controllers\ClientNotificationController;
+use App\Http\Controllers\NotificationTemplateController;
 
 // ---------------------------------------------------------------------------
 // Public routes (no authentication required)
@@ -31,6 +33,9 @@ use App\Http\Controllers\CmsContentController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+Route::get('/services/public', [ServiceController::class, 'index']);
 
 /** Sync receiver (webhook from clinic) */
 Route::post('/sync/receive', [\App\Http\Controllers\SyncController::class, 'receive']);
@@ -85,6 +90,13 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     Route::apiResource('appointments',    AppointmentController::class);
 
+    // Inventory and Specialized Forecast
+    Route::get('inventory/low-stock',     [InventoryController::class, 'lowStock']);
+    Route::get('inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
+    Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
+    Route::get('inventory/{inventory}/forecast', [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
+    Route::apiResource('inventory',       InventoryController::class);
+
     Route::apiResource('invoices',        InvoiceController::class);
     Route::apiResource('services',        ServiceController::class);
     Route::apiResource('medical-records', MedicalRecordController::class);
@@ -96,13 +108,29 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('owners/import',          [PatientOwnerController::class, 'import']);
 
     // -----------------------------------------------------------------------
+    // Client Notifications
+    // -----------------------------------------------------------------------
+    Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
+    Route::get('/client-notifications',           [ClientNotificationController::class, 'index']);
+    Route::post('/client-notifications/send',      [ClientNotificationController::class, 'send']);
+
+    // -----------------------------------------------------------------------
     // Master Data Management
     // -----------------------------------------------------------------------
+    Route::get('/inventory-categories', [\App\Http\Controllers\InventoryCategoryController::class, 'index']);
+    Route::get('/service-categories',    [\App\Http\Controllers\ServiceCategoryController::class, 'index']);
+
     Route::apiResource('pet-size-categories', PetSizeCategoryController::class);
     Route::apiResource('units-of-measure',    UnitOfMeasureController::class);
     Route::apiResource('species',             SpeciesController::class);
     Route::apiResource('breeds',              BreedController::class);
     Route::apiResource('weight-ranges',       WeightRangeController::class);
+
+    // Master Data Write Access - Admin only
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
+        Route::apiResource('service-categories',    \App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
+    });
 
     // Settings
     Route::get('/settings',  [SettingController::class, 'index']);

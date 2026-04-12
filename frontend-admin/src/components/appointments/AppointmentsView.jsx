@@ -120,6 +120,7 @@ function AppointmentsView() {
 
   useEffect(() => {
     if (!user?.token) return;
+
     fetchAppointments();
 
     const headers = {
@@ -176,7 +177,7 @@ function AppointmentsView() {
     if (aiForecast) {
       toast.info(
         <div className="text-left">
-          <p className="font-bold border-b border-blue-200 dark:border-blue-800 pb-1 mb-2">AI Planning Hints:</p>
+          <p className="font-bold border-b border-emerald-200 dark:border-emerald-800 pb-1 mb-2">AI Planning Hints:</p>
           <ul className="list-disc pl-4 space-y-1 text-sm">
             {aiForecast.hints.map((hint, i) => <li key={i}>{hint}</li>)}
           </ul>
@@ -195,8 +196,14 @@ function AppointmentsView() {
       if (payload.service_id) payload.service_id = Number(payload.service_id);
       if (payload.vet_id) payload.vet_id = Number(payload.vet_id);
 
-      const response = await fetch("/api/appointments", {
-        method: "POST",
+      const url = selectedAppointment 
+        ? `/api/appointments/${selectedAppointment.id}`
+        : "/api/appointments";
+      
+      const method = selectedAppointment ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
@@ -207,21 +214,50 @@ function AppointmentsView() {
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || "Failed to schedule appointment.");
+        throw new Error(err.message || "Failed to save appointment.");
       }
 
-      toast.success("Appointment Scheduled!");
+      toast.success(selectedAppointment ? "Appointment Updated!" : "Appointment Scheduled!");
       reset();
+      setSelectedAppointment(null);
+      setIsDrawerOpen(false);
       fetchAppointments();
     } catch (err) {
       toast.error(err.message);
     }
   };
 
-  const handleDayClick = (entry) => {
-    setValue("date", entry.dateString);
+  const handleEditClick = () => {
+    if (!selectedAppointment) return;
+    
+    // Set form values
+    setValue("date", selectedAppointment.date);
+    setValue("time", selectedAppointment.time?.substring(0, 5));
+    setValue("pet_id", String(selectedAppointment.pet_id));
+    setValue("service_id", String(selectedAppointment.service_id));
+    setValue("vet_id", selectedAppointment.vet_id ? String(selectedAppointment.vet_id) : "");
+    setValue("notes", selectedAppointment.notes || "");
+    
+    // Set selected owner so pet list populates
+    if (selectedAppointment.pet?.owner_id) {
+      setSelectedOwnerId(String(selectedAppointment.pet.owner_id));
+    }
+    
     setActivePanel("booking");
+  };
+
+  const handleDayClick = (entry) => {
+    reset({
+      date: entry.dateString,
+      time: "",
+      pet_id: preSelectedPetId || "",
+      service_id: "",
+      vet_id: "",
+      notes: ""
+    });
     setSelectedAppointment(null);
+    setSelectedOwnerId("");
+    setActivePanel("booking");
     setIsDrawerOpen(true);
   };
 
@@ -283,16 +319,16 @@ function AppointmentsView() {
   };
 
   const calendarDays = generateCalendarGrid(currentDate, appointments);
-  const qInputBase = "h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
-  const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-slate-200 focus:border-blue-500 dark:border-dark-border");
+  const qInputBase = "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
+  const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-500 dark:border-dark-border");
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       {/* ── Left Column: Calendar ── */}
       <div className="flex-1 min-w-0">
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-colors duration-300 dark:border-dark-border dark:bg-dark-card">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 p-5 transition-colors duration-300 dark:border-dark-border">
-            <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-dark-surface">
+        <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-colors duration-300 dark:border-dark-border dark:bg-dark-card">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 p-5 transition-colors duration-300 dark:border-dark-border">
+            <div className="flex items-center gap-1.5 rounded-xl bg-zinc-100 p-1 dark:bg-dark-surface">
               {viewModes.map((mode) => (
                 <button
                   key={mode}
@@ -300,8 +336,8 @@ function AppointmentsView() {
                   className={clsx(
                     "rounded-lg px-5 py-2 text-xs font-bold uppercase tracking-tight transition-all",
                     activeViewMode === mode
-                      ? "bg-white text-blue-600 shadow-sm dark:bg-dark-card dark:text-blue-400"
-                      : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                      ? "bg-white text-emerald-600 shadow-sm dark:bg-dark-card dark:text-emerald-400"
+                      : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                   )}
                 >
                   {mode}
@@ -309,20 +345,36 @@ function AppointmentsView() {
               ))}
             </div>
 
+            {/* Legend */}
+            <div className="flex flex-wrap items-center gap-4 px-4 py-2 bg-zinc-50/50 dark:bg-dark-surface/30 rounded-2xl border border-zinc-100 dark:border-dark-border">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-zinc-400"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pending</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Approved</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Past / No Show</span>
+              </div>
+            </div>
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
+                  className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
                 >
                   <FiChevronLeft className="h-4 w-4" />
                 </button>
-                <h2 className="min-w-[140px] text-center text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100 italic">
+                <h2 className="min-w-[140px] text-center text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 italic">
                   {format(currentDate, "MMMM yyyy")}
                 </h2>
                 <button
                   onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
+                  className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
                 >
                   <FiChevronRight className="h-4 w-4" />
                 </button>
@@ -330,18 +382,18 @@ function AppointmentsView() {
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50 dark:border-dark-border/50 dark:bg-dark-surface/30">
+          <div className="grid grid-cols-7 border-b border-zinc-100 bg-zinc-50/50 dark:border-dark-border/50 dark:bg-dark-surface/30">
             {weekDays.map((day) => (
               <div
                 key={day}
-                className="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400"
+                className="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400"
               >
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 transition-colors duration-300 dark:divide-dark-border/50">
+          <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100 transition-colors duration-300 dark:divide-dark-border/50">
             {calendarDays.map((entry, index) => {
               const isToday = entry.dateString === format(new Date(), "yyyy-MM-dd");
               return (
@@ -349,9 +401,9 @@ function AppointmentsView() {
                   key={`${entry.day}-${index}`}
                   onClick={() => handleDayClick(entry)}
                   className={clsx(
-                    "group relative min-h-[140px] p-2 transition-all hover:bg-blue-50/30 dark:hover:bg-blue-500/5 cursor-pointer",
-                    !entry.inMonth && "bg-slate-50/20 dark:bg-dark-surface/10 opacity-40",
-                    isToday && "bg-blue-50/50 dark:bg-blue-900/10"
+                    "group relative min-h-[140px] p-2 transition-all hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 cursor-pointer",
+                    !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-40",
+                    isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -359,14 +411,14 @@ function AppointmentsView() {
                       className={clsx(
                         "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
                         isToday
-                          ? "bg-blue-600 text-white shadow-lg"
-                          : (entry.inMonth ? "text-slate-700 dark:text-zinc-300" : "text-slate-400 dark:text-zinc-600")
+                          ? "bg-emerald-600 text-white shadow-lg"
+                          : (entry.inMonth ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-600")
                       )}
                     >
                       {entry.day}
                     </span>
                     {entry.events.length > 0 && (
-                      <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md dark:bg-blue-900/20 italic">
+                      <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md dark:bg-emerald-900/20 italic">
                         {entry.events.length}
                       </span>
                     )}
@@ -374,20 +426,29 @@ function AppointmentsView() {
 
                   <div className="mt-2 space-y-1.5">
                     {entry.events.map((event) => {
-                      const statusColors = {
-                        pending: "border-amber-400/50 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
-                        completed: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300",
-                        cancelled: "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300",
-                      };
-                      const currentColor = statusColors[event.status] || "border-blue-400/50 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
+                      // Status logic:
+                      // Grey: Pending
+                      // Green: Completed (Approved)
+                      // Red: Cancelled / No Show / Past its time if still pending
+                      const isPast = new Date(`${event.date}T${event.time}`) < new Date();
+                      
+                      let statusColorClass = "";
+                      if (event.status === 'completed') {
+                        statusColorClass = "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300";
+                      } else if (event.status === 'cancelled' || (event.status === 'pending' && isPast)) {
+                        statusColorClass = "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300";
+                      } else {
+                        // Default pending or other
+                        statusColorClass = "border-zinc-400/50 bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+                      }
 
                       return (
                         <article
                           key={event.id}
                           onClick={(e) => handleAppointmentClick(e, event)}
                           className={clsx(
-                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:translate-x-1 group/appt",
-                            currentColor
+                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:tranzinc-x-1 group/appt",
+                            statusColorClass
                           )}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -414,7 +475,7 @@ function AppointmentsView() {
       >
         {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm"
           onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
         />
 
@@ -422,23 +483,23 @@ function AppointmentsView() {
         <aside
           className={clsx(
             "absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-[-20px_0_50px_-10px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] overflow-y-auto",
-            isDrawerOpen ? "translate-x-0" : "translate-x-full"
+            isDrawerOpen ? "tranzinc-x-0" : "tranzinc-x-full"
           )}
         >
           {activePanel === "booking" ? (
             <section className="p-8">
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Schedule
+                  <h3 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase italic">
+                    <span className="text-emerald-600 dark:text-emerald-400 mr-2">/</span>Schedule
                   </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Add new clinical entry</p>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Add new clinical entry</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => reset()} className="h-10 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Clear</button>
+                  <button onClick={() => reset()} className="h-10 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-emerald-600 transition-colors">Clear</button>
                   <button
                     onClick={() => setIsDrawerOpen(false)}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all"
+                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all"
                   >
                     <FiX className="h-5 w-5" />
                   </button>
@@ -446,38 +507,38 @@ function AppointmentsView() {
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-5 rounded-[2rem] border-2 border-slate-100 bg-slate-50/30 p-8 dark:border-dark-border dark:bg-dark-surface/30">
+                <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border dark:bg-dark-surface/30">
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Client / Owner Record</label>
+                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Client / Owner Record</label>
                     <div className="relative">
                       <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
                         <option value="">— Select Owner —</option>
                         {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Patient / Pet Identification *</label>
+                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Patient / Pet Identification *</label>
                     <div className="relative">
                       <select {...register("pet_id")} disabled={!selectedOwnerId} className={clsx(getQInputClass(errors.pet_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
                         <option value="">— Select Pet —</option>
                         {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species?.name})</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
                     </div>
                     {errors.pet_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.pet_id.message}</p>}
                   </div>
 
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Clinical Service *</label>
+                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Clinical Service *</label>
                     <div className="relative">
                       <select {...register("service_id")} className={clsx(getQInputClass(errors.service_id), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
                         <option value="">— Select Service —</option>
                         {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
                     </div>
                     {errors.service_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.service_id.message}</p>}
                   </div>
@@ -485,34 +546,34 @@ function AppointmentsView() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Date</label>
+                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Date</label>
                     <input type="date" {...register("date")} className={clsx(getQInputClass(errors.date), "font-bold bg-white dark:bg-dark-card")} />
                     {errors.date && <p className="mt-1 text-xs text-red-500 font-bold">{errors.date.message}</p>}
                   </div>
                   <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Time</label>
+                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Time</label>
                     <input type="time" {...register("time")} className={clsx(getQInputClass(errors.time), "font-bold bg-white dark:bg-dark-card")} />
                     {errors.time && <p className="mt-1 text-xs text-red-500 font-bold">{errors.time.message}</p>}
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Assigned Veterinarian</label>
+                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Assigned Veterinarian</label>
                   <div className="relative">
                     <select {...register("vet_id")} className={clsx(getQInputClass(false), "appearance-none pr-10 font-bold bg-white dark:bg-dark-card")}>
                       <option value="">— Select Vet —</option>
                       {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
                     </select>
-                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-401" />
+                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-401" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Notes / Clinical Reason</label>
+                  <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Notes / Clinical Reason</label>
                   <textarea {...register("notes")} className={clsx(getQInputClass(false), "bg-white dark:bg-dark-card min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea>
                 </div>
 
-                <button type="submit" disabled={isSubmitting} className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-blue-500/40 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all mt-4">
+                <button type="submit" disabled={isSubmitting} className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-emerald-500/40 hover:bg-emerald-700 active:scale-95 disabled:opacity-50 transition-all mt-4">
                   <FiPlusCircle className="h-6 w-6" />
                   {isSubmitting ? "Syncing..." : "Finalize Appointment"}
                 </button>
@@ -520,16 +581,16 @@ function AppointmentsView() {
             </section>
           ) : (
             <section className="p-0">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 p-8 dark:border-dark-border bg-white/80 dark:bg-dark-card/80 backdrop-blur-lg">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 p-8 dark:border-dark-border bg-white/80 dark:bg-dark-card/80 backdrop-blur-lg">
                 <div>
-                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 uppercase italic">
-                    <span className="text-blue-600 dark:text-blue-400 mr-2">/</span>Clinical Details
+                  <h3 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase italic">
+                    <span className="text-emerald-600 dark:text-emerald-400 mr-2">/</span>Clinical Details
                   </h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Internal record view</p>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Internal record view</p>
                 </div>
                 <button
                   onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
-                  className="rounded-2xl bg-slate-100 p-3 text-slate-500 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
+                  className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
                 >
                   <FiX className="h-6 w-6" />
                 </button>
@@ -537,11 +598,11 @@ function AppointmentsView() {
 
               <div className="p-8 space-y-10">
                 <div className="flex items-start gap-6">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[2rem] bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shadow-xl shadow-blue-500/10">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[2rem] bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-xl shadow-emerald-500/10">
                     <FiInfo className="h-10 w-10" />
                   </div>
                   <div className="overflow-hidden">
-                    <h4 className="text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
+                    <h4 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
                     <div className={clsx(
                       "mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest shadow-lg",
                       selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
@@ -556,33 +617,33 @@ function AppointmentsView() {
                   </div>
                 </div>
 
-                <div className="grid gap-6 rounded-[2.5rem] border-2 border-slate-100 bg-slate-50/20 p-8 dark:border-dark-border dark:bg-dark-surface/10">
+                <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8 dark:border-dark-border dark:bg-dark-surface/10">
                   <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiCalendar className="h-6 w-6 text-blue-500" />
+                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-zinc-100 dark:border-dark-border">
+                      <FiCalendar className="h-6 w-6 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Date Scheduled</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Date Scheduled</p>
+                      <p className="text-lg font-black text-zinc-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiClock className="h-6 w-6 text-blue-500" />
+                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-zinc-100 dark:border-dark-border">
+                      <FiClock className="h-6 w-6 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Arrival Time</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 italic">{selectedAppointment?.time?.substring(0, 5)}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Arrival Time</p>
+                      <p className="text-lg font-black text-zinc-800 dark:text-zinc-100 italic">{selectedAppointment?.time?.substring(0, 5)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-5">
-                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-slate-100 dark:border-dark-border">
-                      <FiUser className="h-6 w-6 text-blue-500" />
+                    <div className="h-12 w-12 rounded-2xl bg-white dark:bg-dark-card flex items-center justify-center shadow-md dark:shadow-none border border-zinc-100 dark:border-dark-border">
+                      <FiUser className="h-6 w-6 text-emerald-500" />
                     </div>
                     <div className="overflow-hidden">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Patient & Guardian</p>
-                      <p className="text-lg font-black text-slate-800 dark:text-zinc-100 truncate">
-                        {selectedAppointment?.pet?.name} <span className="mx-2 text-slate-300 font-normal">|</span> <span className="text-slate-500 dark:text-zinc-400">ID #{selectedAppointment?.pet?.owner_id}</span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Patient & Guardian</p>
+                      <p className="text-lg font-black text-zinc-800 dark:text-zinc-100 truncate">
+                        {selectedAppointment?.pet?.name} <span className="mx-2 text-zinc-300 font-normal">|</span> <span className="text-zinc-500 dark:text-zinc-400">ID #{selectedAppointment?.pet?.owner_id}</span>
                       </p>
                     </div>
                   </div>
@@ -590,22 +651,30 @@ function AppointmentsView() {
 
                 {selectedAppointment?.notes && (
                   <div>
-                    <label className="mb-4 block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Case Notes / Context</label>
-                    <div className="rounded-3xl bg-slate-50 p-6 text-md font-medium leading-relaxed text-slate-600 dark:bg-dark-surface dark:text-zinc-400 italic border-l-8 border-blue-500/20 dark:border-blue-400/10">
+                    <label className="mb-4 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Case Notes / Context</label>
+                    <div className="rounded-3xl bg-zinc-50 p-6 text-md font-medium leading-relaxed text-zinc-600 dark:bg-dark-surface dark:text-zinc-400 italic border-l-8 border-emerald-500/20 dark:border-emerald-400/10">
                       "{selectedAppointment.notes}"
                     </div>
                   </div>
                 )}
 
                 <div className="pt-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 text-center mb-6">Security & Lifecycle Actions</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 text-center mb-6">Security & Lifecycle Actions</p>
 
                   <button
                     onClick={() => setIsSendModalOpen(true)}
-                    className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl bg-blue-100 text-sm font-black uppercase tracking-widest text-blue-700 shadow-xl shadow-blue-200/50 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50 transition-all active:scale-95"
+                    className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl bg-emerald-100 text-sm font-black uppercase tracking-widest text-emerald-700 shadow-xl shadow-emerald-200/50 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-800/50 transition-all active:scale-95"
                   >
                     <FiBell className="h-5 w-5" />
                     Send Reminder
+                  </button>
+
+                  <button
+                    onClick={handleEditClick}
+                    className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl border-2 border-emerald-100 text-sm font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 dark:border-emerald-900/30 dark:hover:bg-emerald-900/10 transition-all active:scale-95"
+                  >
+                    <FiCalendar className="h-5 w-5" />
+                    Edit Details
                   </button>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -618,7 +687,7 @@ function AppointmentsView() {
                     </button>
                     <button
                       onClick={() => handleStatusUpdate(selectedAppointment?.id, "cancelled")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-slate-100 text-sm font-black uppercase tracking-widest text-slate-700 shadow-xl shadow-slate-200/50 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
+                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-zinc-100 text-sm font-black uppercase tracking-widest text-zinc-700 shadow-xl shadow-zinc-200/50 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
                     >
                       <FiXCircle className="h-6 w-6" />
                       Discard
@@ -637,15 +706,15 @@ function AppointmentsView() {
           )}
 
           {/* AI Insights in Drawer Footer */}
-          <section className="mt-auto border-t border-slate-100 bg-blue-50/30 p-8 dark:border-dark-border dark:bg-blue-600/5">
-            <div className="mb-4 inline-flex items-center gap-3 text-blue-700 dark:text-blue-400">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xl shadow-blue-500/40">
+          <section className="mt-auto border-t border-zinc-100 bg-emerald-50/30 p-8 dark:border-dark-border dark:bg-emerald-600/5">
+            <div className="mb-4 inline-flex items-center gap-3 text-emerald-700 dark:text-emerald-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xl shadow-emerald-500/40">
                 <LuSparkles className="h-5 w-5" />
               </div>
               <p className="text-xs font-black uppercase tracking-[0.2em] italic">Forecaster Intelligence</p>
             </div>
-            <p className="text-sm leading-relaxed text-slate-600 dark:text-blue-300/80 font-bold italic">{aiForecast?.insight || "Analyzing clinic data for scheduling trends..."}</p>
-            <button onClick={handleReviewHints} className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-emerald-300/80 font-bold italic">{aiForecast?.insight || "Analyzing clinic data for scheduling trends..."}</p>
+            <button onClick={handleReviewHints} className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors">
               <FiBell className="h-4 w-4" />
               Access planning matrix
             </button>

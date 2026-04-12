@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/logo.png";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -53,19 +54,19 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-dark-bg transition-colors duration-300">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
       <form
         onSubmit={handleSubmit}
         className="card-shell w-full max-w-md p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500"
       >
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-white font-bold text-2xl mx-auto shadow-lg shadow-brand-500/20">A</div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-zinc-100 font-sans tracking-tight">AutoVet Login</h1>
-          <p className="text-slate-500 dark:text-zinc-400">Welcome back, Administrator!</p>
+          <img src={logo} alt="Pet Wellness Animal Clinic Logo" className="mx-auto w-16 h-16 object-contain" />
+          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100 font-sans tracking-tight">Pet Wellness Animal Clinic</h1>
+          <p className="text-zinc-500 dark:text-zinc-400">Welcome back, Administrator!</p>
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-1">Email</label>
+          <label htmlFor="email" className="block text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Email</label>
           <input
             id="email"
             type="email"
@@ -79,7 +80,7 @@ function LoginPage() {
         </div>
 
         <div>
-          <label htmlFor="password" name="password" className="block text-sm font-semibold text-slate-600 dark:text-zinc-400 mb-1">Password</label>
+          <label htmlFor="password" name="password" className="block text-sm font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Password</label>
           <div className="relative">
             <input
               id="password"
@@ -87,14 +88,14 @@ function LoginPage() {
               autoComplete="current-password"
               required
               className="input-field pr-10"
-              placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+              placeholder="Enter your password"
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300 transition-colors"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-none dark:hover:text-zinc-300 transition-colors"
             >
               {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
             </button>

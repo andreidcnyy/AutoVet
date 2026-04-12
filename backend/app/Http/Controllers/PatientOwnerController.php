@@ -19,7 +19,7 @@ class PatientOwnerController extends Controller
             'user_type' => $user ? get_class($user) : 'null',
         ]);
 
-        $query = Owner::with('pets');
+        $query = Owner::with(['pets', 'user']);
 
         if ($user instanceof \App\Models\PortalUser) {
             $query->where('id', $user->owner?->id);
@@ -40,26 +40,13 @@ class PatientOwnerController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => [
-                'required',
-                'string',
-                'regex:/^\+?[0-9]{10,15}$/'
-            ],
-            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|size:11', 
+            'email' => 'nullable|string|email:rfc,dns|max:255',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'zip' => 'nullable|string|max:255',
         ]);
-
-        // Phone normalization
-        $phone = $validated['phone'];
-        $cleaned = preg_replace('/(?<!^)\+|[^0-9+]/', '', $phone);
-        if (str_starts_with($cleaned, '09') && strlen($cleaned) === 11) {
-            $validated['phone'] = '+63' . substr($cleaned, 1);
-        } else {
-            $validated['phone'] = $cleaned;
-        }
 
         if (Owner::where('phone', $validated['phone'])->exists()) {
             return response()->json([
@@ -81,12 +68,8 @@ class PatientOwnerController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => [
-                'required',
-                'string',
-                'regex:/^\+?[0-9]{10,15}$/'
-            ],
-            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|size:11', 
+            'email' => 'nullable|string|email:rfc,dns|max:255',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
@@ -94,7 +77,7 @@ class PatientOwnerController extends Controller
         ]);
 
         $owner->update($validated);
-        return response()->json($owner);
+        return response()->json($owner->load('pets'));
     }
 
     public function destroy(Owner $owner)

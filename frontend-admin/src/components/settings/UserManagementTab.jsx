@@ -18,7 +18,7 @@ export default function UserManagementTab() {
   const [tempPassword, setTempPassword] = useState("");
   const { user } = useAuth();
 
-  const [formData, setFormData] = useState({ name: "", email: "", role: ROLES.STAFF, status: "Active", password: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", role: ROLES.STAFF, status: "active", password: "" });
 
   const fetchUsers = () => {
     if (!user?.token) return;
@@ -30,7 +30,11 @@ export default function UserManagementTab() {
       }
     })
       .then(res => res.json())
-      .then(data => { setUsers(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []); setLoading(false); })
+      .then(data => { 
+        const userList = Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []);
+        setUsers(userList); 
+        setLoading(false); 
+      })
       .catch(err => { toast.error("Failed to load users"); setLoading(false); });
   };
 
@@ -41,10 +45,16 @@ export default function UserManagementTab() {
   const handleOpenModal = (user = null) => {
     if (user) {
       setEditingUser(user);
-      setFormData({ name: user.name, email: user.email, role: user.role, status: user.status, password: "" });
+      setFormData({ 
+        name: user.name, 
+        email: user.email, 
+        role: user.role || ROLES.STAFF, 
+        status: user.status?.toLowerCase() || "active", 
+        password: "" 
+      });
     } else {
       setEditingUser(null);
-      setFormData({ name: "", email: "", role: ROLES.STAFF, status: "Active", password: "" });
+      setFormData({ name: "", email: "", role: ROLES.STAFF, status: "active", password: "" });
     }
     setIsModalOpen(true);
   };
@@ -75,7 +85,17 @@ export default function UserManagementTab() {
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Failed to save user");
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 422 && data.errors) {
+          const firstError = Object.values(data.errors)[0][0];
+          throw new Error(firstError);
+        }
+        throw new Error(data.message || "Failed to save user");
+      }
+      
       toast.success(isEditing ? "User updated" : "User created");
       fetchUsers();
       handleCloseModal();
@@ -94,7 +114,18 @@ export default function UserManagementTab() {
           "Authorization": `Bearer ${user?.token}`
         }
       });
-      if (!res.ok) throw new Error("Failed to delete");
+      
+      if (!res.ok) {
+        let errorMsg = "Failed to delete";
+        try {
+          const data = await res.json();
+          errorMsg = data.message || errorMsg;
+        } catch (e) {
+          // Fallback to default msg if JSON parse fails
+        }
+        throw new Error(errorMsg);
+      }
+      
       toast.success("User deleted");
       fetchUsers();
     } catch (err) {
@@ -130,16 +161,16 @@ export default function UserManagementTab() {
     }
   };
 
-  if (loading) return <div className="p-6 text-slate-500">Loading users...</div>;
+  if (loading) return <div className="p-6 text-zinc-500">Loading users...</div>;
 
   return (
     <section className="card-shell p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">User Management</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage real clinic staff from the database.</p>
+          <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">User Management</h3>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Manage real clinic staff from the database.</p>
         </div>
-        <button onClick={() => handleOpenModal()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+        <button onClick={() => handleOpenModal()} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
           <FiUserPlus className="h-4 w-4" />
           Add New User
         </button>
@@ -147,7 +178,7 @@ export default function UserManagementTab() {
 
       <div className="mt-5 overflow-x-auto">
         <table className="w-full min-w-[680px]">
-          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Email</th>
@@ -158,22 +189,22 @@ export default function UserManagementTab() {
           </thead>
           <tbody>
             {users.map((member) => (
-              <tr key={member.id} className="border-b border-slate-200/80 dark:border-dark-border">
+              <tr key={member.id} className="border-b border-zinc-200/80 dark:border-dark-border">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <img src={member.avatar || getUserAvatarUrl(member.role, member.name)} alt={member.name} className="h-9 w-9 rounded-full object-cover bg-slate-100" />
-                    <span className="text-sm font-medium text-slate-900 dark:text-zinc-50">{member.name}</span>
+                    <img src={member.avatar || getUserAvatarUrl(member.role, member.name)} alt={member.name} className="h-9 w-9 rounded-full object-cover bg-zinc-100" />
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{member.name}</span>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-slate-500 dark:text-zinc-400">{member.email}</td>
-                <td className="px-4 py-4 text-sm text-slate-700 dark:text-zinc-300">{member.role}</td>
+                <td className="px-4 py-4 text-sm text-zinc-500 dark:text-zinc-400">{member.email}</td>
+                <td className="px-4 py-4 text-sm text-zinc-700 dark:text-zinc-300">{member.role}</td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
-                      "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
-                      member.status === "Active"
+                      "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize",
+                      member.status?.toLowerCase() === "active"
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
-                        : "border-slate-200 bg-slate-100 text-slate-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400"
                     )}
                   >
                     {member.status}
@@ -181,10 +212,10 @@ export default function UserManagementTab() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleOpenModal(member)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface hover:bg-slate-100">
+                    <button onClick={() => handleOpenModal(member)} className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface hover:bg-zinc-100">
                       Edit
                     </button>
-                    <button onClick={() => { setResetingUser(member); setResetModalOpen(true); }} className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/30 hover:bg-blue-50">
+                    <button onClick={() => { setResetingUser(member); setResetModalOpen(true); }} className="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:border-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:bg-emerald-50">
                       Reset
                     </button>
                     <button onClick={() => handleDelete(member.id)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30 hover:bg-rose-50">
@@ -199,56 +230,56 @@ export default function UserManagementTab() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">{editingUser ? "Edit User" : "Add User"}</h3>
-              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingUser ? "Edit User" : "Add User"}</h3>
+              <button onClick={handleCloseModal} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
             </div>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Name</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Name</label>
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Email</label>
-                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Role</label>
-                  <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Role</label>
+                  <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
                     <option value={ROLES.ADMIN}>Admin</option>
                     <option value={ROLES.VETERINARIAN}>Veterinarian</option>
                     <option value={ROLES.STAFF}>Staff</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Status</label>
-                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
+                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">
-                  Password {editingUser && <span className="text-xs font-normal text-slate-400">(Leave blank to keep current)</span>}
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Password {editingUser && <span className="text-xs font-normal text-zinc-400">(Leave blank to keep current)</span>}
                 </label>
                 <div className="relative">
-                  <input required={!editingUser} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full rounded-xl border border-slate-200 p-2.5 pr-10 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                  <input required={!editingUser} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-none dark:hover:text-zinc-300"
                   >
                     {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-dark-border">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2 font-semibold text-slate-600 hover:text-slate-800 dark:text-zinc-300">Cancel</button>
-                <button type="submit" className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"><FiSave/> Save User</button>
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-dark-border">
+                <button type="button" onClick={handleCloseModal} className="px-4 py-2 font-semibold text-zinc-600 hover:text-zinc-800 dark:text-zinc-300">Cancel</button>
+                <button type="submit" className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-semibold text-white hover:bg-emerald-700"><FiSave/> Save User</button>
               </div>
             </form>
           </div>
@@ -256,39 +287,39 @@ export default function UserManagementTab() {
       )}
 
       {resetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Reset Password</h3>
-              <button onClick={() => setResetModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Reset Password</h3>
+              <button onClick={() => setResetModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
             </div>
-            <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
               Resetting password for <strong>{resetingUser?.name}</strong>. User will be forced to change it on next login.
             </p>
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Temporary Password</label>
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Temporary Password</label>
                 <div className="relative">
                   <input 
                     required 
                     type={showPassword ? "text" : "password"} 
                     value={tempPassword} 
                     onChange={e => setTempPassword(e.target.value)} 
-                    className="w-full rounded-xl border border-slate-200 p-2.5 pr-10 text-sm focus:border-blue-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
                     placeholder="Enter temp password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none dark:hover:text-zinc-300"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-none dark:hover:text-zinc-300"
                   >
                     {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-dark-border">
-                <button type="button" onClick={() => setResetModalOpen(false)} className="px-4 py-2 font-semibold text-slate-600 hover:text-slate-800 dark:text-zinc-300">Cancel</button>
-                <button type="submit" className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Confirm Reset</button>
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-dark-border">
+                <button type="button" onClick={() => setResetModalOpen(false)} className="px-4 py-2 font-semibold text-zinc-600 hover:text-zinc-800 dark:text-zinc-300">Cancel</button>
+                <button type="submit" className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-semibold text-white hover:bg-emerald-700">Confirm Reset</button>
               </div>
             </form>
           </div>

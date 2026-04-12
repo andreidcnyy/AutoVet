@@ -5,7 +5,8 @@ import PatientRecordsView from "../components/patients/PatientRecordsView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
-import PhoneInput from "../components/common/PhoneInput";
+import { PH_LOCATION_DATA } from "../utils/phLocationData";
+import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 
 function PatientsPage() {
   const toast = useToast();
@@ -17,7 +18,13 @@ function PatientsPage() {
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
+  
+  // Form States for "Register New Owner" view
   const [phoneValue, setPhoneValue] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [zip, setZip] = useState("");
+  const [availableCities, setAvailableCities] = useState([]);
 
   const fetchOwners = () => {
     setIsLoading(true);
@@ -43,6 +50,22 @@ function PatientsPage() {
       fetchOwners();
     }
   }, [user?.token]);
+
+  // Sync cities when province changes
+  useEffect(() => {
+    const provinceData = PH_LOCATION_DATA.find(p => p.name === province);
+    setAvailableCities(provinceData ? provinceData.cities : []);
+    setCity("");
+    setZip("");
+  }, [province]);
+
+  // Sync zip when city changes
+  useEffect(() => {
+    const cityData = availableCities.find(c => c.name === city);
+    if (cityData) {
+      setZip(cityData.zip);
+    }
+  }, [city, availableCities]);
 
   const handleSaveNewOwner = (newOwner) => {
     setOwners((prev) => [newOwner, ...prev]);
@@ -90,18 +113,22 @@ function PatientsPage() {
     return (
       <div className="p-6">
         <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-50">Register New Owner</h2>
+            <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Register New Owner</h2>
             <button 
               onClick={() => setView("records")}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300"
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 transition-all"
             >
               Back to List
             </button>
         </div>
         
-        <div className="card-shell p-8 max-w-2xl mx-auto border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
+        <div className="card-shell p-8 max-w-3xl mx-auto border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
            <form onSubmit={async (e) => {
               e.preventDefault();
+              if (phoneValue.length !== 11) {
+                toast.error("Contact number must be exactly 11 digits.");
+                return;
+              }
               const formData = new FormData(e.target);
               const data = Object.fromEntries(formData);
               try {
@@ -112,44 +139,128 @@ function PatientsPage() {
                     "Accept": "application/json",
                     "Authorization": `Bearer ${user?.token}`
                   },
-                  body: JSON.stringify({ ...data, phone: phoneValue }),
+                  body: JSON.stringify({ 
+                    ...data, 
+                    phone: phoneValue,
+                    province,
+                    city,
+                    zip
+                  }),
                 });
                 if (!res.ok) {
                   const errData = await res.json().catch(() => ({}));
                   throw new Error(errData.message || "Failed to create owner");
                 }
                 const newOwner = await res.json();
-                setOwners((prev) => [...prev, { ...newOwner, pets: [] }]);
+                setOwners((prev) => [newOwner, ...prev]);
                 setView("records");
                 setSelectedOwnerId(newOwner.id);
                 toast.success("Owner registered successfully!");
               } catch (err) {
                 toast.error(err.message);
               }
-           }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Full Name</label>
-                  <input name="name" required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="e.g. Maria Clara" />
+           }} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Full Name */}
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Full Name *</label>
+                  <div className="relative">
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input name="name" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="e.g. Maria Clara" />
+                  </div>
                 </div>
+
+                {/* Email Address */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Phone *</label>
-                  <PhoneInput
-                    value={phoneValue}
-                    onChange={setPhoneValue}
-                  />
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Email Address</label>
+                  <div className="relative">
+                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input name="email" type="email" className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="email@example.com" />
+                  </div>
                 </div>
+
+                {/* Contact Number */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Email</label>
-                  <input name="email" type="email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="email@example.com" />
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Contact Number *</label>
+                  <div className="flex gap-2">
+                    <div className="flex h-12 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
+                      🇵🇭 +63
+                    </div>
+                    <div className="relative flex-1">
+                      <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                      <input 
+                        required 
+                        value={phoneValue}
+                        onChange={(e) => setPhoneValue(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                        maxLength={11}
+                        className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" 
+                        placeholder="09123456789" 
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Address</label>
-                  <input name="address" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200" placeholder="123 Street..." />
+
+                {/* Street Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Street Address *</label>
+                  <div className="relative">
+                    <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input name="address" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="123 Street, Brgy..." />
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <button type="submit" className="w-full rounded-xl bg-blue-600 py-4 text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-colors">
-                    Register Client
+
+                {/* Province Dropdown */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Province *</label>
+                  <div className="relative">
+                    <select 
+                      required 
+                      value={province} 
+                      onChange={(e) => setProvince(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-none appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all"
+                    >
+                      <option value="">Select Province...</option>
+                      {PH_LOCATION_DATA.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
+                  </div>
+                </div>
+
+                {/* City Dropdown */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">City / Municipality *</label>
+                  <div className="relative">
+                    <select 
+                      required 
+                      disabled={!province}
+                      value={city} 
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-none appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 disabled:opacity-50 transition-all"
+                    >
+                      <option value="">Select City...</option>
+                      {availableCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
+                  </div>
+                </div>
+
+                {/* Zip Code (Auto) */}
+                <div className="w-1/2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Zip Code (Auto)</label>
+                  <div className="relative">
+                    <FiMap className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                    <input 
+                      readOnly 
+                      value={zip}
+                      className="w-full h-12 rounded-xl border border-emerald-100 bg-emerald-50/50 pl-10 pr-4 text-sm font-bold text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400 cursor-not-allowed transition-all" 
+                      placeholder="Select city..." 
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 pt-4">
+                  <button type="submit" className="w-full h-14 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 hover:scale-[1.01] active:scale-[0.98] transition-all">
+                    Register New Client
                   </button>
                 </div>
               </div>
@@ -181,19 +292,25 @@ function PatientsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-64 items-center justify-center text-slate-500">
+      <div className="flex h-64 items-center justify-center text-zinc-500">
         Loading owner records...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 dark:bg-dark-surface/30">
+    <div className="min-h-screen bg-zinc-50/50 p-6 dark:bg-dark-surface/30">
       <PatientRecordsView
         owners={owners}
         selectedOwnerId={selectedOwnerId}
         onSelectOwner={setSelectedOwnerId}
-        onOpenAddPatient={() => setView("add")}
+        onOpenAddPatient={() => {
+          setPhoneValue("");
+          setProvince("");
+          setCity("");
+          setZip("");
+          setView("add");
+        }}
         onDeleteOwner={handleDeleteOwner}
         onEditOwner={handleEditOwner}
         onOwnerEdited={fetchOwners}

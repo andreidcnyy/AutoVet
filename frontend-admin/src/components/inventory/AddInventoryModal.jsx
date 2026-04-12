@@ -198,39 +198,39 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
   };
 
   const inputBase =
-    "w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm text-slate-800 transition-colors focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-dark-surface/80 dark:focus:border-blue-500";
+    "w-full rounded-xl border bg-zinc-50 px-4 py-2.5 text-sm text-zinc-800 transition-colors focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-dark-surface/80 dark:focus:border-emerald-500";
   const getInputClass = (error) =>
     clsx(
       inputBase,
       error
         ? "border-red-400 focus:border-red-500 focus:ring-red-500 dark:border-red-500/50"
-        : "border-slate-200 focus:border-blue-500 dark:border-dark-border"
+        : "border-zinc-200 focus:border-emerald-500 dark:border-dark-border"
     );
 
   const SectionHeading = ({ children }) => (
     <div className="mb-4 mt-6 first:mt-0">
-      <h4 className="text-[13px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+      <h4 className="text-[13px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         {children}
       </h4>
-      <div className="mt-1.5 h-px w-full bg-slate-100 dark:bg-dark-border/50"></div>
+      <div className="mt-1.5 h-px w-full bg-zinc-100 dark:bg-dark-border/50"></div>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
       <div className="flex w-full max-w-5xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-dark-border">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-zinc-50">
+            <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">
               Add New Inventory Item
             </h3>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
               Define parameters for clinical stock management
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -239,12 +239,12 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col overflow-hidden h-full">
           <div className="grid flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-2">
             
-            <div className="border-r border-slate-100 p-6 dark:border-dark-border">
+            <div className="border-r border-zinc-100 p-6 dark:border-dark-border">
               
               <SectionHeading>A. Item Information</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Item Name *
                   </label>
                   <input
@@ -258,7 +258,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       Category *
                     </label>
                     <select {...register("inventory_category_id")} className={getInputClass(errors.inventory_category_id)}>
@@ -271,7 +271,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       Unit *
                     </label>
                     <select {...register("unit")} className={getInputClass(errors.unit)}>
@@ -286,7 +286,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               <SectionHeading>B. Inventory & Expiration</SectionHeading>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Quantity *
                   </label>
                   <input
@@ -299,7 +299,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Alert Threshold *
                   </label>
                   <input
@@ -315,18 +315,18 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                    <label className="flex cursor-pointer items-center gap-3">
                       <div className="relative">
                         <input type="checkbox" className="peer sr-only" {...register("track_expiration")} />
-                        <div className="block h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-blue-600 dark:bg-dark-surface"></div>
+                        <div className="block h-6 w-11 rounded-full bg-zinc-200 transition-colors peer-checked:bg-emerald-600 dark:bg-dark-surface"></div>
                         <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Track Expiration</span>
+                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Track Expiration</span>
                       </div>
                     </label>
                 </div>
 
                 {watchTrackExpiration && (
                   <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                       Expiration Date *
                     </label>
                     <input
@@ -339,10 +339,10 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 )}
               </div>
 
-              <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface/40">
+              <div className="mt-6 rounded-lg border border-zinc-100 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Stock Status Preview</span>
+                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Stock Status Preview</span>
                     {highThresholdWarning && (
                         <p className="text-[11px] text-amber-500 mt-0.5 flex items-center gap-1">
                             <FiInfo className="h-3 w-3" /> Threshold exceeds/matches qty.
@@ -356,12 +356,12 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               </div>
             </div>
 
-            <div className="p-6 bg-slate-50/50 dark:bg-zinc-900/30">
+            <div className="p-6 bg-zinc-50/50 dark:bg-zinc-900/30">
               
               <SectionHeading>C. Financials</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Selling Price (₱) *
                   </label>
                   <input
@@ -381,7 +381,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Cost Price (₱)
                   </label>
                   <input
@@ -401,75 +401,75 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               </div>
 
               <SectionHeading>D. Usage Settings</SectionHeading>
-              <p className="mb-4 text-xs text-slate-500 dark:text-zinc-400">
+              <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
                 Determines how the item interacts with invoices and treatments.
               </p>
               
               <div className="space-y-3">
                 <label className={clsx(
                   "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchBillable ? "border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-900/20" : "border-slate-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
+                  watchBillable ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
                 )}>
                   <div className="mt-0.5">
                     <input
                       type="checkbox"
                       {...register("is_billable")}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Billable</span>
-                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">Item appears on client invoices</span>
+                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Billable</span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Item appears on client invoices</span>
                   </div>
                 </label>
 
                 <label className={clsx(
                   "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchConsumable ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-900/20" : "border-slate-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
+                  watchConsumable ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
                 )}>
                   <div className="mt-0.5">
                     <input
                       type="checkbox"
                       {...register("is_consumable")}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Consumable</span>
-                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">Item is consumed during treatments</span>
+                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Consumable</span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Item is consumed during treatments</span>
                   </div>
                 </label>
 
                 <label className={clsx(
                   "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchAutoDeduct ? "border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-900/20" : "border-slate-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
+                  watchAutoDeduct ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
                 )}>
                   <div className="mt-0.5">
                     <input
                       type="checkbox"
                       {...register("deduct_on_finalize")}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Auto-Deduct Stock</span>
-                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">Automatic stock reduction</span>
+                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Auto-Deduct Stock</span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Automatic stock reduction</span>
                   </div>
                 </label>
               </div>
 
               {/* Simple Preview Widget */}
-              <div className="mt-6 rounded-2xl bg-slate-900 p-4 shadow-xl">
-                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400">Preview</p>
+              <div className="mt-6 rounded-2xl bg-zinc-900 p-4 shadow-xl">
+                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Preview</p>
                  <div className="mt-3 flex items-center justify-between">
                     <div className="flex flex-col">
                        <span className="text-lg font-bold text-white leading-tight">₱{sellingPriceDisplay || "0.00"}</span>
-                       <span className="text-xs text-slate-400">Retail Price</span>
+                       <span className="text-xs text-zinc-400">Retail Price</span>
                     </div>
-                    <div className="h-8 w-px bg-slate-800"></div>
+                    <div className="h-8 w-px bg-zinc-800"></div>
                     <div className="flex flex-col items-end">
                        <span className="text-lg font-bold text-white leading-tight">{initialStock} {watch("unit") || "units"}</span>
-                       <span className="text-xs text-slate-400">Initial Total</span>
+                       <span className="text-xs text-zinc-400">Initial Total</span>
                     </div>
                  </div>
               </div>
@@ -477,18 +477,18 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           </div>
 
           {/* ================= MODAL FOOTER ================= */}
-          <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-4 dark:border-dark-border dark:bg-dark-card/90 pb-safe">
+          <div className="flex shrink-0 items-center justify-between border-t border-zinc-100 bg-zinc-50 px-6 py-4 dark:border-dark-border dark:bg-dark-card/90 pb-safe">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-200 focus:outline-none dark:text-zinc-300 dark:hover:bg-dark-surface"
+              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-200 focus:outline-none dark:text-zinc-300 dark:hover:bg-dark-surface"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-dark-card"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-dark-card"
             >
               {isSubmitting ? "Saving..." : <><FiCheckCircle className="h-4 w-4" /> Save Item</>}
             </button>
@@ -504,15 +504,15 @@ function ProfileRow({ label, description, active }) {
     return (
         <div className="flex items-center justify-between">
             <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">{label}</span>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-500">{description}</span>
+                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{label}</span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500">{description}</span>
             </div>
             {active ? (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                     <FiCheck className="h-3 w-3" />
                 </div>
             ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-dark-surface dark:text-zinc-600">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-dark-surface dark:text-zinc-600">
                     <FiX className="h-3 w-3" />
                 </div>
             )}

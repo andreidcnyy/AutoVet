@@ -57,7 +57,7 @@ export default function ClientNotificationHistory() {
                     <select 
                         value={channel} 
                         onChange={e => { setChannel(e.target.value); setPage(1); }}
-                        className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     >
                         <option value="">All Channels</option>
                         <option value="email">Email</option>
@@ -66,7 +66,7 @@ export default function ClientNotificationHistory() {
                     <select 
                         value={status} 
                         onChange={e => { setStatus(e.target.value); setPage(1); }}
-                        className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     >
                         <option value="">All Statuses</option>
                         <option value="pending">Pending</option>

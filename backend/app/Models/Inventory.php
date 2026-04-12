@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Archivable;
+use App\Traits\HasAuditTrail;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class Inventory extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable;
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
     protected $fillable = [
         'item_name',
         'sub_details',

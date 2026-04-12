@@ -20,8 +20,8 @@ export const metricCards = [
     badge: "+9% this week",
     badgeTone: "success",
     icon: FiCalendar,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-100",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100",
   },
   {
     id: "pending-labs",
@@ -53,8 +53,8 @@ export const metricCards = [
     value: "962",
     detail: "24 new records this month",
     icon: FiUsers,
-    iconColor: "text-slate-700",
-    iconBg: "bg-slate-100",
+    iconColor: "text-zinc-700",
+    iconBg: "bg-zinc-100",
   },
 ];
 

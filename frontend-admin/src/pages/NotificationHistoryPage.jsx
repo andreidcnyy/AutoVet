@@ -7,9 +7,9 @@ import clsx from "clsx";
 
 const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
-  info: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+  info: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
   success: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
-  neutral: "bg-slate-100 text-slate-600 dark:bg-dark-surface dark:text-zinc-400",
+  neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 
 function NotificationHistoryPage() {
@@ -77,25 +77,25 @@ function NotificationHistoryPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="group flex w-fit items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+          className="group flex w-fit items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
         >
           <FiArrowLeft className="transition-transform group-hover:-translate-x-1" />
           Back
         </button>
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
             <FiBell className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Notification Center</h1>
-            <p className="text-slate-500 dark:text-zinc-400">Manage your alerts and system updates</p>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Notification Center</h1>
+            <p className="text-zinc-500 dark:text-zinc-400">Manage your alerts and system updates</p>
           </div>
         </div>
         <div className="flex gap-2">
           {unreadCount > 0 && (
             <button
               onClick={() => markAsRead(notifications.filter((n) => !n.read_at).map((n) => n.id))}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-surface/70 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-surface/70 transition-colors"
             >
               <FiCheck /> Mark all as read
             </button>
@@ -104,12 +104,12 @@ function NotificationHistoryPage() {
       </div>
 
       <div className="card-shell overflow-hidden flex flex-col min-h-[500px]">
-        <div className="flex items-center gap-4 border-b border-slate-200 px-6 py-4 dark:border-dark-border">
+        <div className="flex items-center gap-4 border-b border-zinc-200 px-6 py-4 dark:border-dark-border">
           <button
             onClick={() => setFilter("all")}
             className={clsx(
               "px-3 py-1 text-sm font-bold rounded-lg transition-colors",
-              filter === "all" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
+              filter === "all" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
             )}
           >
             All
@@ -118,17 +118,17 @@ function NotificationHistoryPage() {
             onClick={() => setFilter("unread")}
             className={clsx(
               "px-3 py-1 text-sm font-bold rounded-lg transition-colors flex items-center gap-2",
-              filter === "unread" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
+              filter === "unread" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
             )}
           >
             Unread
-            {unreadCount > 0 && <span className={clsx("h-2 w-2 rounded-full", filter === "unread" ? "bg-white" : "bg-blue-500")} />}
+            {unreadCount > 0 && <span className={clsx("h-2 w-2 rounded-full", filter === "unread" ? "bg-white" : "bg-emerald-500")} />}
           </button>
           <button
             onClick={() => setFilter("read")}
             className={clsx(
               "px-3 py-1 text-sm font-bold rounded-lg transition-colors",
-              filter === "read" ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
+              filter === "read" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
             )}
           >
             Read
@@ -137,20 +137,20 @@ function NotificationHistoryPage() {
 
         <div className="flex-1 overflow-y-auto slim-scroll">
           {loading ? (
-            <div className="flex h-64 items-center justify-center text-slate-400">Loading notifications...</div>
+            <div className="flex h-64 items-center justify-center text-zinc-400">Loading notifications...</div>
           ) : filteredNotifications.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center text-slate-400">
+            <div className="flex h-64 flex-col items-center justify-center text-zinc-400">
               <FiBell className="mb-2 h-10 w-10 opacity-20" />
               <p>No notifications to display</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-dark-border">
+            <div className="divide-y divide-zinc-100 dark:divide-dark-border">
               {filteredNotifications.map((notif) => (
                 <div
                   key={notif.id}
                   className={clsx(
                     "group relative flex gap-4 px-6 py-5 transition-colors",
-                    !notif.read_at && "bg-blue-50/30 dark:bg-blue-900/5"
+                    !notif.read_at && "bg-emerald-50/30 dark:bg-emerald-900/5"
                   )}
                 >
                   <div
@@ -163,17 +163,17 @@ function NotificationHistoryPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
-                      <h4 className={clsx("text-lg font-bold leading-tight", !notif.read_at ? "text-slate-900 dark:text-zinc-50" : "text-slate-600 dark:text-zinc-400")}>
+                      <h4 className={clsx("text-lg font-bold leading-tight", !notif.read_at ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400")}>
                         {notif.message}
                       </h4>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap ml-4">
+                      <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest whitespace-nowrap ml-4">
                         {new Date(notif.created_at).toLocaleString()}
                       </p>
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                        <span className={clsx(
                          "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
-                         notif.read_at ? "bg-slate-100 text-slate-400 dark:bg-dark-surface" : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                         notif.read_at ? "bg-zinc-100 text-zinc-400 dark:bg-dark-surface" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                        )}>
                          {notif.read_at ? "Read" : "Unread"}
                        </span>
@@ -181,7 +181,7 @@ function NotificationHistoryPage() {
                        {!notif.read_at && (
                          <button
                            onClick={() => markAsRead([notif.id])}
-                           className="text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                           className="text-xs font-bold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100"
                          >
                            Mark as read
                          </button>

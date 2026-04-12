@@ -7,13 +7,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Archivable;
+use App\Traits\HasAuditTrail;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\Roles;
 use Illuminate\Support\Facades\DB;
 
 class Admin extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable, HasAuditTrail;
 
     protected $table = 'admins';
 

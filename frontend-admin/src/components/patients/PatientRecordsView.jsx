@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -11,7 +11,6 @@ import {
   FiPlus,
   FiSearch,
   FiTrash2,
-  FiUploadCloud,
   FiUser,
   FiEdit2,
   FiChevronRight,
@@ -25,57 +24,9 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchValue, setSearchValue] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
 
-  const handleImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Please upload a valid CSV file.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setIsImporting(true);
-    try {
-      const response = await fetch("/api/owners/import", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to import owners.");
-      }
-
-      const result = await response.json();
-      toast.success(`Successfully imported ${result.count} owners!`);
-      if (onOwnerEdited) onOwnerEdited();
-      else window.location.reload(); 
-    } catch (err) {
-      toast.error(err.message);
-      console.error(err);
-    } finally {
-      setIsImporting(false);
-      e.target.value = ""; 
-    }
-  };
-
-  const downloadTemplate = () => {
-    const headers = "name,phone,email,address,city,province,zip\n";
-    const blob = new Blob([headers], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "autovet_owner_template.csv";
-    a.click();
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const ownersPerPage = 10;
 
   const filteredOwners = useMemo(() => {
     const search = searchValue.trim().toLowerCase();
@@ -97,45 +48,33 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
     });
   }, [owners, searchValue, activeFilter]);
 
-  const selectedOwner = filteredOwners.find((owner) => owner.id === selectedOwnerId) || filteredOwners[0] || null;
+  // Pagination Logic
+  const indexOfLastOwner = currentPage * ownersPerPage;
+  const indexOfFirstOwner = indexOfLastOwner - ownersPerPage;
+  const currentOwners = filteredOwners.slice(indexOfFirstOwner, indexOfLastOwner);
+  const totalPages = Math.ceil(filteredOwners.length / ownersPerPage);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchValue, activeFilter]);
+
+  const selectedOwner = filteredOwners.find((owner) => owner.id === selectedOwnerId) || currentOwners[0] || null;
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Pet Owners</h2>
-          <p className="mt-1 text-base text-slate-500 dark:text-zinc-400">
+          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Pet Owners</h2>
+          <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
             Manage {owners.length} clients and {owners.reduce((sum, owner) => sum + (owner.pets?.length || 0), 0)} pets.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <input
-            type="file"
-            id="csv-import"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImport}
-          />
-          <div className="flex flex-col items-end">
-            <button
-              onClick={() => document.getElementById("csv-import").click()}
-              disabled={isImporting}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500 disabled:opacity-50"
-            >
-              <FiUploadCloud className="h-4 w-4" />
-              {isImporting ? "Importing..." : "Import CSV"}
-            </button>
-            <button 
-              onClick={downloadTemplate}
-              className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:underline dark:text-blue-400"
-            >
-              Download Template
-            </button>
-          </div>
           <button
             onClick={onOpenAddPatient}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
           >
             <FiPlus className="h-4 w-4" />
             Add New Owner
@@ -146,25 +85,25 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
       {/* Search & Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative flex-1 min-w-[300px]">
-          <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder="Search owners by name, phone, or email..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-blue-500/10"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
         </div>
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-dark-border dark:bg-dark-card shadow-sm">
-          {["All", "With Pets", "No Pets"].map((f) => (
+        <div className="flex rounded-xl border border-zinc-200 bg-white p-1 dark:border-dark-border dark:bg-dark-card shadow-sm">
+          {["All", "With Pets"].map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
               className={clsx(
                 "rounded-lg px-4 py-1.5 text-sm font-semibold transition-all",
                 activeFilter === f
-                  ? "bg-slate-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950"
-                  : "text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-dark-surface"
+                  ? "bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-950"
+                  : "text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-dark-surface"
               )}
             >
               {f}
@@ -175,35 +114,35 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Main List */}
-        <div className="card-shell lg:col-span-8 overflow-hidden border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xl">
+        <div className="card-shell lg:col-span-8 overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px]">
-              <thead className="border-b border-slate-100 bg-slate-50/50 dark:border-dark-border dark:bg-dark-surface/50">
-                <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-zinc-500">
+              <thead className="border-b border-zinc-100 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
+                <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
                   <th className="px-6 py-4">Owner Identity</th>
                   <th className="px-6 py-4">Contact Details</th>
                   <th className="px-6 py-4 text-center">Pets</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-dark-border">
-                {filteredOwners.length > 0 ? filteredOwners.map((owner) => (
+              <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+                {currentOwners.length > 0 ? currentOwners.map((owner) => (
                   <tr
                     key={owner.id}
                     onClick={() => onSelectOwner(owner.id)}
                     className={clsx(
-                      "group cursor-pointer transition-all duration-200 hover:bg-slate-50/80 dark:hover:bg-dark-surface/40",
-                      selectedOwnerId === owner.id ? "bg-blue-50/60 dark:bg-blue-900/10 ring-1 ring-inset ring-blue-500/20" : ""
+                      "group cursor-pointer transition-all duration-200 hover:bg-zinc-50/80 dark:hover:bg-dark-surface/40",
+                      selectedOwnerId === owner.id ? "bg-emerald-50/60 dark:bg-emerald-900/10 ring-1 ring-inset ring-emerald-500/20" : ""
                     )}
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 text-lg shadow-sm group-hover:scale-105 transition-transform dark:from-zinc-800 dark:to-zinc-900">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 text-lg shadow-sm group-hover:scale-105 transition-transform dark:from-zinc-800 dark:to-zinc-900">
                           👤
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-zinc-100">{owner.name}</p>
-                          <p className="max-w-[200px] truncate text-xs text-slate-500 dark:text-zinc-500">
+                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{owner.name}</p>
+                          <p className="max-w-[200px] truncate text-xs text-zinc-500 dark:text-zinc-500">
                             <FiMapPin className="inline mr-1 h-3 w-3" />
                             {owner.address || "No address provided"}
                           </p>
@@ -212,11 +151,11 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                     </td>
                     <td className="px-6 py-5">
                        <div className="space-y-1">
-                          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                            <FiPhoneCall className="h-3 w-3 text-blue-500" />
+                          <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                            <FiPhoneCall className="h-3 w-3 text-emerald-500" />
                             {owner.phone || "—"}
                           </p>
-                          <p className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-zinc-500">
+                          <p className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
                             <FiMail className="h-3 w-3" />
                             {owner.email || "—"}
                           </p>
@@ -224,7 +163,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                     </td>
                     <td className="px-6 py-5 text-center">
                       <div className="inline-flex flex-col items-center">
-                        <span className="flex h-7 min-w-[28px] items-center justify-center rounded-lg bg-blue-100 px-2 text-[11px] font-black text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-300">
+                        <span className="flex h-7 min-w-[28px] items-center justify-center rounded-lg bg-emerald-100 px-2 text-[11px] font-black text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">
                           {owner.pets?.length || 0}
                         </span>
                       </div>
@@ -233,13 +172,13 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={(e) => { e.stopPropagation(); onEditOwner(owner); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-md dark:hover:bg-dark-surface"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white hover:text-emerald-600 hover:shadow-md dark:hover:bg-dark-surface"
                         >
                           <FiEdit2 className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); onDeleteOwner(owner.id); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600 hover:shadow-md dark:hover:bg-dark-surface"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white hover:text-rose-600 hover:shadow-md dark:hover:bg-dark-surface"
                         >
                           <FiTrash2 className="h-4 w-4" />
                         </button>
@@ -250,11 +189,11 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                   <tr>
                     <td colSpan="4" className="py-20 text-center">
                       <div className="flex flex-col items-center">
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 dark:bg-dark-surface">
-                          <FiUser className="h-8 w-8 text-slate-200" />
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-50 dark:bg-dark-surface">
+                          <FiUser className="h-8 w-8 text-zinc-200" />
                         </div>
-                        <p className="text-lg font-bold text-slate-900 dark:text-zinc-50">No owners found</p>
-                        <p className="text-sm text-slate-500">Try adjusting your search or filters.</p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">No owners found</p>
+                        <p className="text-sm text-zinc-500">Try adjusting your search or filters.</p>
                       </div>
                     </td>
                   </tr>
@@ -262,14 +201,38 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/30">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Detail Sidebar */}
         <div className="lg:col-span-4 space-y-6">
           {selectedOwner ? (
-            <div className="card-shell sticky top-24 overflow-hidden border border-slate-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
+            <div className="card-shell sticky top-24 overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
                {/* Header Gradient */}
-               <div className="h-32 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 relative">
+               <div className="h-32 bg-gradient-to-br from-emerald-600 to-indigo-700 p-6 relative">
                   <div className="absolute -bottom-6 left-6">
                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-4xl shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
                        👤
@@ -287,51 +250,74 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
 
                {/* Owner Info */}
                <div className="p-6 pt-10">
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-50">{selectedOwner.name}</h3>
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mt-1">Client ID: #{selectedOwner.id}</p>
+                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{selectedOwner.name}</h3>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">Client ID: #{selectedOwner.id}</p>
                   
                   <div className="mt-8 space-y-4">
                      <div className="flex items-center gap-4 group">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-blue-50 transition-colors dark:bg-dark-surface">
-                          <FiPhone className="h-4 w-4 text-slate-400 group-hover:text-blue-500" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 group-hover:bg-emerald-50 transition-colors dark:bg-dark-surface">
+                          <FiPhone className="h-4 w-4 text-zinc-400 group-hover:text-emerald-500" />
                         </div>
                         <div className="min-w-0">
-                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Phone Number</p>
-                           <p className="font-bold text-slate-700 dark:text-zinc-200">{selectedOwner.phone || "Not provided"}</p>
+                           <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Phone Number</p>
+                           <p className="font-bold text-zinc-700 dark:text-zinc-200">{selectedOwner.phone || "Not provided"}</p>
                         </div>
                      </div>
                      <div className="flex items-center gap-4 group">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-blue-50 transition-colors dark:bg-dark-surface">
-                          <FiMail className="h-4 w-4 text-slate-400 group-hover:text-blue-500" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 group-hover:bg-emerald-50 transition-colors dark:bg-dark-surface">
+                          <FiMail className="h-4 w-4 text-zinc-400 group-hover:text-emerald-500" />
                         </div>
                         <div className="min-w-0">
-                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Email Address</p>
-                           <p className="font-bold text-slate-700 truncate dark:text-zinc-200">{selectedOwner.email || "Not provided"}</p>
+                           <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Email Address</p>
+                           <p className="font-bold text-zinc-700 truncate dark:text-zinc-200">{selectedOwner.email || "Not provided"}</p>
                         </div>
                      </div>
                      <div className="flex items-start gap-4 group">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-blue-50 transition-colors dark:bg-dark-surface">
-                          <FiMapPin className="h-4 w-4 text-slate-400 group-hover:text-blue-500" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-50 group-hover:bg-emerald-50 transition-colors dark:bg-dark-surface">
+                          <FiMapPin className="h-4 w-4 text-zinc-400 group-hover:text-emerald-500" />
                         </div>
                         <div className="min-w-0">
-                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Permanent Address</p>
-                           <p className="font-bold text-slate-700 dark:text-zinc-200 leading-snug">
+                           <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Permanent Address</p>
+                           <p className="font-bold text-zinc-700 dark:text-zinc-200 leading-snug">
                             {selectedOwner.address ? `${selectedOwner.address}, ${selectedOwner.city} ${selectedOwner.zip || ''}` : "No address recorded"}
                            </p>
                         </div>
                      </div>
                   </div>
 
+                  {/* Web Portal Section */}
+                  <div className="mt-8 border-t border-zinc-100 pt-8 dark:border-dark-border">
+                    <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">
+                      🌐 Web Portal Account
+                    </h4>
+                    {selectedOwner.user ? (
+                      <div className="rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">Status: {selectedOwner.user.status || 'Active'}</p>
+                            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mt-0.5">{selectedOwner.user.email}</p>
+                          </div>
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-zinc-50/50 p-4 border border-zinc-100 dark:bg-dark-surface dark:border-dark-border">
+                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">No portal account linked</p>
+                        <p className="text-[10px] text-zinc-400 mt-1 italic">Client cannot login to web portal.</p>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Pets Section */}
-                  <div className="mt-10 border-t border-slate-100 pt-8 dark:border-dark-border">
+                  <div className="mt-10 border-t border-zinc-100 pt-8 dark:border-dark-border">
                      <div className="mb-6 flex items-center justify-between">
-                        <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400">
+                        <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-zinc-400">
                           <LuPawPrint className="h-4 w-4" />
                           Pets ({selectedOwner.pets?.length || 0})
                         </h4>
                         <button 
                           onClick={() => onAddPet(selectedOwner.id)}
-                          className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                          className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-600 hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
                         >
                           <FiPlus className="h-3 w-3" /> Add Pet
                         </button>
@@ -342,7 +328,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                           <div 
                             key={pet.id} 
                             onClick={() => navigate(`/patients/${pet.id}`)}
-                            className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/30 p-4 hover:border-blue-500/30 hover:bg-white hover:shadow-xl hover:shadow-blue-500/5 transition-all cursor-pointer dark:border-dark-border dark:bg-dark-surface/30 dark:hover:border-blue-500/40"
+                            className="flex items-center gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/30 p-4 hover:border-emerald-500/30 hover:bg-white hover:shadow-xl hover:shadow-emerald-500/5 transition-all cursor-pointer dark:border-dark-border dark:bg-dark-surface/30 dark:hover:border-emerald-500/40"
                           >
                              <img 
                                 src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)} 
@@ -350,26 +336,26 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                                 className="h-14 w-14 rounded-xl object-cover shadow-sm bg-white dark:bg-dark-card" 
                              />
                              <div className="min-w-0 flex-1">
-                                <p className="font-black text-slate-900 dark:text-zinc-50">{pet.name}</p>
-                                <p className="text-xs font-bold text-slate-500 dark:text-zinc-500">{pet.species?.name} • {pet.breed?.name}</p>
+                                <p className="font-black text-zinc-900 dark:text-zinc-50">{pet.name}</p>
+                                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.species?.name} • {pet.breed?.name}</p>
                              </div>
-                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm dark:bg-dark-card">
+                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-300 shadow-sm dark:bg-dark-card">
                                 <FiChevronRight className="h-4 w-4" />
                              </div>
                           </div>
                         )) : (
-                          <div className="rounded-2xl border-2 border-dashed border-slate-100 p-8 text-center dark:border-zinc-800">
-                             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-200 dark:bg-dark-surface">
+                          <div className="rounded-2xl border-2 border-dashed border-zinc-100 p-8 text-center dark:border-zinc-800">
+                             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-50 text-zinc-200 dark:bg-dark-surface">
                                <LuPawPrint className="h-6 w-6" />
                              </div>
-                             <p className="text-sm font-bold text-slate-400">No pets recorded</p>
+                             <p className="text-sm font-bold text-zinc-400">No pets recorded</p>
                           </div>
                         )}
                      </div>
 
                      <button
                         onClick={() => navigate(`/appointments`)} // Contextual booking could go here
-                        className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 text-sm font-black text-white shadow-xl shadow-slate-900/20 hover:scale-[1.02] transition-transform active:scale-95 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-none"
+                        className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-4 text-sm font-black text-white shadow-xl shadow-zinc-900/20 hover:scale-[1.02] transition-transform active:scale-95 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-none"
                       >
                         Book Unified Appointment
                       </button>
@@ -377,12 +363,12 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                </div>
             </div>
           ) : (
-            <div className="flex h-[600px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-100 p-12 text-center dark:border-zinc-800 shadow-inner">
-               <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-slate-50 text-4xl dark:bg-dark-surface shadow-2xl">
+            <div className="flex h-[600px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-zinc-100 p-12 text-center dark:border-zinc-800 shadow-inner">
+               <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-zinc-50 text-4xl dark:bg-dark-surface shadow-2xl">
                  🔍
                </div>
-               <h3 className="text-xl font-black text-slate-900 dark:text-zinc-50">Select an Owner</h3>
-               <p className="mt-2 text-sm font-medium text-slate-400 max-w-[200px]">Choose a client from the list to view their details and pets.</p>
+               <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50">Select an Owner</h3>
+               <p className="mt-2 text-sm font-medium text-zinc-400 max-w-[200px]">Choose a client from the list to view their details and pets.</p>
             </div>
           )}
         </div>

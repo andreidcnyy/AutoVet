@@ -140,21 +140,21 @@ function BackupRestoreTab() {
 
   return (
     <div className="card-shell flex min-h-[500px] flex-col">
-      <div className="border-b border-slate-200 px-6 py-5 dark:border-dark-border">
+      <div className="border-b border-zinc-200 px-6 py-5 dark:border-dark-border">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
               <FiDatabase className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100">Backup & Restore</h2>
-              <p className="text-sm text-slate-500 dark:text-zinc-400">Manage database snapshots and disaster recovery</p>
+              <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Backup & Restore</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage database snapshots and disaster recovery</p>
             </div>
           </div>
           <button
             onClick={createBackup}
             disabled={processing}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all duration-200"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200"
           >
             {processing ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiDatabase className="h-4 w-4" />}
             Create New Backup
@@ -177,10 +177,10 @@ function BackupRestoreTab() {
 
       <div className="flex-1 p-6">
         {loading ? (
-          <div className="flex h-32 items-center justify-center text-slate-500">Loading backups...</div>
+          <div className="flex h-32 items-center justify-center text-zinc-500">Loading backups...</div>
         ) : backups.length === 0 ? (
-          <div className="flex h-48 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 dark:border-dark-border">
-            <FiFileText className="mb-2 h-8 w-8 text-slate-300" />
+          <div className="flex h-48 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 text-zinc-500 dark:border-dark-border">
+            <FiFileText className="mb-2 h-8 w-8 text-zinc-300" />
             <p className="font-medium">No backups found</p>
             <p className="text-sm">Kick off your first manual backup to see it here.</p>
           </div>
@@ -189,29 +189,29 @@ function BackupRestoreTab() {
             {backups.map((backup) => (
               <div
                 key={backup.filename}
-                className="group relative rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/5 dark:border-dark-border dark:bg-dark-card"
+                className="group relative rounded-2xl border border-zinc-200 bg-white p-4 transition-all duration-200 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/5 dark:border-dark-border dark:bg-dark-card"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-dark-surface dark:text-zinc-400">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-dark-surface dark:text-zinc-400">
                       <FiDatabase className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-mono text-sm font-semibold text-slate-800 dark:text-zinc-200">{backup.filename}</p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400">
+                      <p className="font-mono text-sm font-semibold text-zinc-800 dark:text-zinc-200">{backup.filename}</p>
+                      <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                         <span>{new Date(backup.created_at).toLocaleString()}</span>
-                        <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-600" />
+                        <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
                         <span>{formatSize(backup.size)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 flex animate-in fade-in slide-in-from-bottom-2 items-center justify-end gap-2 border-t border-slate-50 pt-3 dark:border-dark-border/50">
+                <div className="mt-4 flex animate-in fade-in slide-in-from-bottom-2 items-center justify-end gap-2 border-t border-zinc-50 pt-3 dark:border-dark-border/50">
                   <button
                     onClick={() => downloadBackup(backup.filename)}
                     disabled={processing}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-dark-surface"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
                     title="Download Backup"
                   >
                     {processing ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiDownload className="h-4 w-4" />}
@@ -227,7 +227,7 @@ function BackupRestoreTab() {
                   <button
                     onClick={() => deleteBackup(backup.filename)}
                     disabled={processing}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/10"
                   >
                     <FiTrash2 className="h-4 w-4" />
                   </button>
@@ -237,12 +237,12 @@ function BackupRestoreTab() {
                 {showConfirmRestore === backup.filename && (
                   <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-white/95 p-4 text-center backdrop-blur-sm dark:bg-dark-card/95">
                     <FiAlertTriangle className="mb-2 h-8 w-8 text-rose-500" />
-                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">Restore this backup?</p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">This action cannot be undone.</p>
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Restore this backup?</p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">This action cannot be undone.</p>
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => setShowConfirmRestore(null)}
-                        className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-400"
+                        className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400"
                       >
                         Cancel
                       </button>

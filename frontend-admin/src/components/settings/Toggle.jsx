@@ -8,7 +8,7 @@ export default function Toggle({ checked, onChange }) {
       onClick={onChange}
       className={clsx(
         "relative inline-flex h-6 w-11 items-center rounded-full transition",
-        checked ? "bg-blue-600" : "bg-slate-300 dark:bg-zinc-600"
+        checked ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-600"
       )}
     >
       <span

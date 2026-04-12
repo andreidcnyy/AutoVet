@@ -32,7 +32,7 @@ class InvoiceController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $query = Invoice::with('pet', 'items');
+        $query = Invoice::with(['pet.species', 'pet.breed', 'items']);
 
         if (method_exists($user, 'isOwner') && $user->isOwner()) {
             $query->whereHas('pet', function ($q) use ($user) {

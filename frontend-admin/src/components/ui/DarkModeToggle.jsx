@@ -46,10 +46,10 @@ function DarkModeToggle() {
         relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full
         border-2 border-transparent p-0.5
         transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2
-        focus-visible:ring-blue-500 focus-visible:ring-offset-2
+        focus-visible:ring-emerald-500 focus-visible:ring-offset-2
         ${isDark
-                    ? "bg-blue-600"
-                    : "bg-slate-200 dark:bg-slate-600"
+                    ? "bg-emerald-600"
+                    : "bg-zinc-200 dark:bg-zinc-600"
                 }
       `}
         >
@@ -80,7 +80,7 @@ function DarkModeToggle() {
             absolute inset-0 flex items-center justify-center
             transition-opacity duration-200
             ${isDark ? "opacity-100" : "opacity-0"}
-            text-blue-600
+            text-emerald-600
           `}
                 >
                     <MoonIcon />

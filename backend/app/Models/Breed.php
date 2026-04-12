@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\HasAuditTrail;
 use Illuminate\Database\Eloquent\Model;
 
 class Breed extends Model
 {
+    use HasAuditTrail;
     protected $fillable = ['species_id', 'default_size_category_id', 'name', 'status'];
 
     public function species()

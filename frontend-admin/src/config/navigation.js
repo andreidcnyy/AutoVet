@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { ROLES, ALL_ROLES, ADMIN_ONLY } from "../constants/roles";
+import logo from "../assets/logo.png";
 
 export const primaryNavigation = [
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid, allowedRoles: ALL_ROLES },
@@ -24,8 +25,9 @@ export const bottomNavigation = [
 ];
 
 export const clinicInfo = {
-  name: "AutoVet",
-  subtitle: "Clinic Manager",
+  name: "Pet Wellness Animal Clinic",
+  subtitle: "",
+  logo: logo,
 };
 
 export const currentUser = {

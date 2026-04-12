@@ -19,7 +19,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans transition-colors duration-300;
+    @apply bg-zinc-50 text-zinc-800 antialiased font-sans transition-colors duration-300;
     @apply dark:bg-dark-bg dark:text-zinc-100;
   }
 }
@@ -28,19 +28,19 @@
 
   /* Main card / panel surface */
   .card-shell {
-    @apply rounded-2xl border border-slate-200/70 bg-white shadow-soft transition-colors duration-300;
+    @apply rounded-2xl border border-zinc-200/70 bg-white shadow-soft transition-colors duration-300;
     @apply dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft;
   }
 
   /* Reusable input style for dark mode forms */
   .input-field {
-    @apply h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none transition-colors duration-150;
-    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-blue-500 dark:focus:bg-zinc-800;
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:bg-zinc-800;
   }
 
   /* Reusable select style for dark mode forms */
   .select-field {
-    @apply h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 focus:border-blue-300 focus:bg-white focus:outline-none appearance-none pr-10 transition-colors duration-150;
-    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-blue-500;
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-none appearance-none pr-10 transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500;
   }
 }

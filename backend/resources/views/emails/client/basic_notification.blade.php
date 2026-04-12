@@ -7,7 +7,7 @@
 <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
     
     <div style="text-align: center; margin-bottom: 20px;">
-        <h2>AutoVet Clinic</h2>
+        <h2>Pet Wellness Animal Clinic</h2>
     </div>
 
     <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">

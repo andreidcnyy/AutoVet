@@ -44,30 +44,38 @@ class ClientNotificationController extends Controller
             'template_id' => 'nullable|exists:notification_templates,id',
             'custom_message' => 'nullable|string',
             'title' => 'nullable|string', // primarily for email
+            'related_type' => 'nullable|string',
+            'related_id' => 'nullable|integer',
         ]);
 
         $owner = Owner::findOrFail($validated['owner_id']);
 
-        // Check backend before attempting to send so we can fail early if needed?
-        // Actually, ClientNotificationService checks for email/phone.
-        
+        $relatedModel = null;
+        if (!empty($validated['related_type']) && !empty($validated['related_id'])) {
+            try {
+                $relatedModel = $validated['related_type']::findOrFail($validated['related_id']);
+            } catch (\Exception $e) {
+                // Ignore if model not found
+            }
+        }
+
         $message = '';
         $title = $validated['title'] ?? 'Notification from AutoVet';
 
         if (!empty($validated['template_id'])) {
             $template = NotificationTemplate::findOrFail($validated['template_id']);
-            $message = $this->service->interpolateVariables($template->body, [], $owner);
+            $message = $this->service->interpolateVariables($template->body, [], $owner, $relatedModel);
             if ($template->subject && $validated['channel'] === 'email') {
-                $title = $this->service->interpolateVariables($template->subject, [], $owner);
+                $title = $this->service->interpolateVariables($template->subject, [], $owner, $relatedModel);
             }
         } else if (!empty($validated['custom_message'])) {
-            $message = $validated['custom_message'];
+            $message = $this->service->interpolateVariables($validated['custom_message'], [], $owner, $relatedModel);
         } else {
             return response()->json(['message' => 'Must provide either custom_message or template_id'], 422);
         }
 
         try {
-            $notification = $this->service->send($owner, $validated['channel'], $message, $title, 'manual');
+            $notification = $this->service->send($owner, $validated['channel'], $message, $title, 'manual', $relatedModel);
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([

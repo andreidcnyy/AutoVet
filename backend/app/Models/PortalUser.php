@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasAuditTrail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,13 +12,18 @@ use App\Enums\Roles;
 
 class PortalUser extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasAuditTrail;
 
     protected $table = 'portal_users';
 
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'address',
+        'city',
+        'province',
+        'zip',
         'password',
         'status',
     ];

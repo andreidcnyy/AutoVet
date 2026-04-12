@@ -9,7 +9,7 @@ import { useAuth } from "../context/AuthContext";
  */
 function SimpleLineChart({ data, width = 600, height = 200, color = "#10b981", dataKey = "total" }) {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    return <div className="h-[200px] flex items-center justify-center text-slate-400">No data available</div>;
+    return <div className="h-[200px] flex items-center justify-center text-zinc-400">No data available</div>;
   }
 
   const padding = 20;
@@ -46,7 +46,7 @@ function SimpleLineChart({ data, width = 600, height = 200, color = "#10b981", d
  */
 function SimpleBarChart({ data, width = 600, height = 250, color = "#6366f1" }) {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    return <div className="h-[250px] flex items-center justify-center text-slate-400">No data available</div>;
+    return <div className="h-[250px] flex items-center justify-center text-zinc-400">No data available</div>;
   }
 
   const padding = 40;
@@ -71,7 +71,7 @@ function SimpleBarChart({ data, width = 600, height = 250, color = "#6366f1" }) 
                 y={height - 15}
                 textAnchor="middle"
                 fontSize="10"
-                className="fill-slate-500 dark:fill-zinc-400"
+                className="fill-zinc-500 dark:fill-zinc-400"
               >
                 {String(d.item_name || d.name || "").substring(0, 10)}
               </text>
@@ -138,8 +138,8 @@ function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Advanced Reports</h2>
-          <p className="mt-1 text-slate-500 dark:text-zinc-400">Analyze clinic data, revenue, and patient demographics.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Advanced Reports</h2>
+          <p className="mt-1 text-zinc-500 dark:text-zinc-400">Analyze clinic data, revenue, and patient demographics.</p>
         </div>
         <button className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors">
           <FiIcons.FiDownload className="w-4 h-4" />
@@ -147,16 +147,16 @@ function ReportsPage() {
         </button>
       </div>
 
-      <div className="flex border-b border-slate-200 dark:border-zinc-800">
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
         {tabs.map((tab) => (
           <button
             key={tab.name}
             onClick={() => setActiveTab(tab.name)}
             className={clsx(
-              "flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 hover:bg-slate-50 dark:hover:bg-zinc-900",
+              "flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all border-b-2 hover:bg-zinc-50 dark:hover:bg-zinc-900",
               activeTab === tab.name
                 ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                : "border-transparent text-slate-500 dark:text-zinc-500"
+                : "border-transparent text-zinc-500 dark:text-zinc-500"
             )}
           >
             <tab.icon className="w-4 h-4" />
@@ -166,7 +166,7 @@ function ReportsPage() {
       </div>
 
       {isLoading ? (
-        <div className="h-64 flex items-center justify-center text-slate-500">
+        <div className="h-64 flex items-center justify-center text-zinc-500">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
             <span>Loading Report Data...</span>
@@ -199,7 +199,7 @@ function ReportsPage() {
             <>
               <div className="card-shell p-6">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <FiIcons.FiPieChart className="text-blue-500" /> Species Distribution
+                  <FiIcons.FiPieChart className="text-emerald-500" /> Species Distribution
                 </h3>
                 <SimpleBarChart data={patientData.species} color="#3b82f6" />
               </div>
@@ -213,11 +213,11 @@ function ReportsPage() {
           )}
 
           {activeTab === "Inventory" && (
-            <div className="card-shell p-6 col-span-full bg-slate-50 dark:bg-dark-surface border-dashed border-2 border-slate-200 dark:border-dark-border">
+            <div className="card-shell p-6 col-span-full bg-zinc-50 dark:bg-dark-surface border-dashed border-2 border-zinc-200 dark:border-dark-border">
               <div className="flex flex-col items-center text-center py-10">
-                <FiIcons.FiBox className="w-12 h-12 text-slate-300 mb-4" />
+                <FiIcons.FiBox className="w-12 h-12 text-zinc-300 mb-4" />
                 <h3 className="text-lg font-bold mb-2">Inventory Status Summary</h3>
-                <p className="max-w-md text-slate-500 dark:text-zinc-400">Inventory reporting is integrated with our real-time stock monitoring system.</p>
+                <p className="max-w-md text-zinc-500 dark:text-zinc-400">Inventory reporting is integrated with our real-time stock monitoring system.</p>
                 <button
                   onClick={() => window.location.href = '/inventory'}
                   className="mt-6 flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"

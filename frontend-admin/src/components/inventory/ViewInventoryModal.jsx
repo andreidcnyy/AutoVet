@@ -146,17 +146,17 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   if (!isOpen || !product) return null;
 
   const inputClass =
-    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-slate-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded-sm";
+    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-dark-border">
-          <h3 className="text-xl font-bold text-slate-800 dark:text-zinc-50">Product Details</h3>
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
+          <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">Product Details</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -174,13 +174,13 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   onChange={(e) => handleChange("item_name", e.target.value)}
                 />
               ) : (
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{product.item_name}</h2>
+                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{product.item_name}</h2>
               )}
             </div>
             <span
               className={clsx(
                 "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
-                statusStyles[product.status] || "border-slate-200 bg-slate-50 text-slate-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                statusStyles[product.status] || "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
               )}
             >
               {product.status}
@@ -197,7 +197,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ["Expiration Date", "expiration_date"],
             ].map(([label, field]) => (
               <div key={field}>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">{label}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">{label}</p>
                 {isEditing ? (
                   field === "inventory_category_id" ? (
                     <select
@@ -226,43 +226,43 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     />
                   )
                 ) : field === "inventory_category_id" ? (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                     {product.inventory_category?.name || "N/A"}
                   </p>
                 ) : (field === "price" || field === "selling_price") ? (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                     ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 ) : (field === "stock_level" || field === "min_stock_level") ? (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
                 ) : (
-                  <p className="font-semibold text-slate-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
                 )}
               </div>
             ))}
           </div>
 
           {/* Invoice & Logic Flags */}
-          <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-dark-border dark:bg-dark-surface/50">
+          <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface/50">
             <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Invoicing Profile</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Invoicing Profile</p>
               {isEditing ? (
                 <label className="flex items-center gap-2 cursor-pointer mt-1">
                   <input 
                     type="checkbox" 
                     checked={!!formData.is_billable} 
                     onChange={(e) => handleCheckboxChange("is_billable", e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                    className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" 
                   />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Billable?</span>
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Billable?</span>
                 </label>
               ) : (
                 <div className="flex items-center gap-2 mt-1">
                   <span className={clsx(
                     "inline-block h-2 w-2 rounded-full",
-                    product.is_billable ? "bg-emerald-500" : "bg-slate-300"
+                    product.is_billable ? "bg-emerald-500" : "bg-zinc-300"
                   )} />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     {product.is_billable ? "Billable Item" : "Non-Billable"}
                   </span>
                 </div>
@@ -270,24 +270,24 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             </div>
 
             <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Inventory Logic</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Inventory Logic</p>
               {isEditing ? (
                 <label className="flex items-center gap-2 cursor-pointer mt-1">
                   <input 
                     type="checkbox" 
                     checked={!!formData.deduct_on_finalize} 
                     onChange={(e) => handleCheckboxChange("deduct_on_finalize", e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                    className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" 
                   />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">Auto-Deduct?</span>
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Auto-Deduct?</span>
                 </label>
               ) : (
                 <div className="flex items-center gap-2 mt-1">
                    <span className={clsx(
                     "inline-block h-2 w-2 rounded-full",
-                    product.deduct_on_finalize ? "bg-blue-500" : "bg-amber-500"
+                    product.deduct_on_finalize ? "bg-emerald-500" : "bg-amber-500"
                   )} />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300">
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     {product.deduct_on_finalize ? "Deduct on Finalize" : "Manual Stock Out"}
                   </span>
                 </div>
@@ -297,15 +297,15 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           
           {/* AI Forecast Display */}
           {aiForecastData && (
-            <div className="mt-8 border-t border-slate-100 dark:border-dark-border pt-6">
-              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 flex items-center gap-2">
+            <div className="mt-8 border-t border-zinc-100 dark:border-dark-border pt-6">
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
                 <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
               </h4>
               {aiForecastData.error ? (
                 <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-lg font-semibold text-slate-800 dark:text-zinc-50">
+                  <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
                     {aiForecastData.prediction_status === "Forecast Available" ? (
                       <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">{aiForecastData.predicted_stockout_date}</span></>
                     ) : aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (
@@ -315,11 +315,11 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     )}
                   </p>
                   {aiForecastData.prediction_status === "Forecast Available" && (
-                    <p className="text-sm text-slate-600 dark:text-zinc-300">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
                       Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
                     </p>
                   )}
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Current Stock: {aiForecastData.current_stock} | Min Stock Level: {aiForecastData.min_stock_level} | As of: {aiForecastData.last_recorded_date}
                   </p>
                 </div>
@@ -328,46 +328,54 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           )}
 
           {/* Transactions Ledger */}
-          <div className="mt-8 border-t border-slate-100 dark:border-dark-border pt-6">
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Transaction Ledger</h4>
-            <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="mt-8 border-t border-zinc-100 dark:border-dark-border pt-6">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Transaction Ledger</h4>
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-zinc-100 dark:border-dark-border custom-scrollbar">
                 {isLoadingTx ? (
-                    <p className="text-sm text-slate-400 dark:text-zinc-500">Loading transactions...</p>
+                    <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500">Loading transactions...</div>
                 ) : transactions.length > 0 ? (
-                    <div className="space-y-3">
-                        {transactions.map(tx => (
-                            <div key={tx.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-dark-border dark:bg-dark-surface">
-                                <div>
-                                    <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">
-                                        {tx.transaction_type}
-                                    </p>
-                                    <p className="text-xs text-slate-500 dark:text-zinc-500">
-                                        {new Date(tx.created_at).toLocaleString()} • {tx.creator?.name || 'System'}
-                                    </p>
-                                    {tx.remarks && <p className="mt-1 text-xs italic text-slate-600 dark:text-zinc-400">"{tx.remarks}"</p>}
-                                </div>
-                                <div className="text-right">
-                                    <p className={clsx(
-                                        "text-sm font-bold",
-                                        tx.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                                    )}>
-                                        {tx.quantity > 0 ? '+' : ''}{tx.quantity}
-                                    </p>
-                                    <p className="text-xs text-slate-500 dark:text-zinc-500">
-                                        Stock: {tx.new_stock}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <table className="w-full text-left text-sm border-collapse">
+                        <thead className="sticky top-0 bg-zinc-50 dark:bg-dark-surface z-10">
+                            <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border">
+                                <th className="px-4 py-3">Type & User</th>
+                                <th className="px-4 py-3">Details</th>
+                                <th className="px-4 py-3 text-right">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+                            {transactions.map(tx => (
+                                <tr key={tx.id} className="group hover:bg-zinc-50/50 dark:hover:bg-dark-surface/40 transition-colors">
+                                    <td className="px-4 py-3">
+                                        <p className="font-bold text-zinc-800 dark:text-zinc-200">{tx.transaction_type}</p>
+                                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">{tx.creator?.name || 'System'}</p>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 italic">
+                                            {new Date(tx.created_at).toLocaleDateString()}
+                                        </p>
+                                        {tx.remarks && <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium truncate max-w-[150px]">"{tx.remarks}"</p>}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        <p className={clsx(
+                                            "font-black",
+                                            tx.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                        )}>
+                                            {tx.quantity > 0 ? '+' : ''}{tx.quantity}
+                                        </p>
+                                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Stock: {tx.new_stock}</p>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 ) : (
-                    <p className="text-sm text-slate-400 dark:text-zinc-500">No transactions recorded yet.</p>
+                    <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No transactions recorded yet.</div>
                 )}
             </div>
           </div>
 
           {/* Footer Buttons */}
-          <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-dark-border">
+          <div className="mt-8 flex justify-end gap-3 border-t border-zinc-100 pt-6 dark:border-dark-border">
             {isAdmin && (
               <>
                 <button
@@ -376,8 +384,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   className={clsx(
                     "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition",
                     isLoadingForecast
-                      ? "bg-blue-400 text-white cursor-wait"
-                      : "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20"
+                      ? "bg-emerald-400 text-white cursor-wait"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
                   )}
                 >
                   <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
@@ -404,7 +412,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold focus:outline-none",
                     isEditing
                       ? (isSaving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20")
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
                   )}
                 >
                   {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
@@ -415,7 +423,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
             <button
               onClick={onClose}
-              className="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-200 focus:outline-none dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 focus:outline-none dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Close
             </button>

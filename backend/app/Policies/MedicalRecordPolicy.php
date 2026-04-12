@@ -75,7 +75,10 @@ class MedicalRecordPolicy
      */
     public function delete(Authenticatable $user, MedicalRecord $medicalRecord): bool
     {
-        return method_exists($user, 'isAdmin') && $user->isAdmin();
+        if (method_exists($user, 'isClinical')) {
+            return $user->isClinical();
+        }
+        return false;
     }
 
     /**
@@ -83,7 +86,10 @@ class MedicalRecordPolicy
      */
     public function restore(Authenticatable $user, MedicalRecord $medicalRecord): bool
     {
-        return method_exists($user, 'isAdmin') && $user->isAdmin();
+        if (method_exists($user, 'isAdmin')) {
+            return $user->isAdmin();
+        }
+        return false;
     }
 
     /**
@@ -91,6 +97,9 @@ class MedicalRecordPolicy
      */
     public function forceDelete(Authenticatable $user, MedicalRecord $medicalRecord): bool
     {
-        return method_exists($user, 'isAdmin') && $user->isAdmin();
+        if (method_exists($user, 'isAdmin')) {
+            return $user->isAdmin();
+        }
+        return false;
     }
 }

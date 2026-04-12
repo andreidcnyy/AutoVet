@@ -94,13 +94,13 @@ export default function ArchiveRecoveryTab() {
   return (
     <div className="card-shell p-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-50">Archive & Recovery</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Archive & Recovery</h2>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Restore soft-deleted records or permanently purge them from the database.
         </p>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4 dark:border-dark-border">
+      <div className="mt-6 flex flex-wrap gap-2 border-b border-zinc-200 pb-4 dark:border-dark-border">
         {ARCHIVE_TYPES.map((t) => (
           <button
             key={t.id}
@@ -108,8 +108,8 @@ export default function ArchiveRecoveryTab() {
             className={clsx(
               "rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
               activeType === t.id
-                ? "bg-slate-200 text-slate-800 dark:bg-zinc-800 dark:text-zinc-100"
-                : "text-slate-600 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
+                ? "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
             )}
           >
             {t.label}
@@ -119,7 +119,7 @@ export default function ArchiveRecoveryTab() {
 
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-slate-500 dark:border-dark-border dark:text-zinc-400">
+          <thead className="border-b border-zinc-200 text-zinc-500 dark:border-dark-border dark:text-zinc-400">
             <tr>
               <th className="py-3 pr-4 font-semibold">Record Name</th>
               <th className="py-3 px-4 font-semibold">Deleted At</th>
@@ -128,16 +128,16 @@ export default function ArchiveRecoveryTab() {
               <th className="py-3 pl-4 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
+          <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
             {isLoading ? (
               <tr>
-                <td colSpan="5" className="py-8 text-center text-slate-500">
+                <td colSpan="5" className="py-8 text-center text-zinc-500">
                   Loading archives...
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan="5" className="py-8 text-center text-slate-500 dark:text-zinc-400">
+                <td colSpan="5" className="py-8 text-center text-zinc-500 dark:text-zinc-400">
                   No {ARCHIVE_TYPES.find(t => t.id === activeType)?.label.toLowerCase()} in the archive.
                 </td>
               </tr>
@@ -147,14 +147,14 @@ export default function ArchiveRecoveryTab() {
                 const isExpired = item.restore_until && new Date(item.restore_until) < new Date();
                 
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-dark-surface/50">
-                    <td className="py-3 pr-4 font-medium text-slate-900 dark:text-zinc-100">
+                  <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-dark-surface/50">
+                    <td className="py-3 pr-4 font-medium text-zinc-900 dark:text-zinc-100">
                       {name}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-zinc-300">
+                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">
                       {new Date(item.deleted_at).toLocaleDateString()}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-zinc-300">
+                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">
                       {item.deleter?.name || "System/Unknown"}
                     </td>
                     <td className="py-3 px-4">
@@ -167,7 +167,7 @@ export default function ArchiveRecoveryTab() {
                           {new Date(item.restore_until).toLocaleDateString()}
                         </span>
                       ) : (
-                        <span className="text-slate-400">Never</span>
+                        <span className="text-zinc-400">Never</span>
                       )}
                     </td>
                     <td className="py-3 pl-4 text-right">
