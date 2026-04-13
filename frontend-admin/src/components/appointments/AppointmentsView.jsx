@@ -41,6 +41,18 @@ const quickAddSchema = z.object({
   service_id: z.string().min(1, "Please select a service"),
   vet_id: z.string().optional(),
   notes: z.string().optional(),
+}).refine((data) => {
+  const now = new Date();
+  const todayStr = format(now, "yyyy-MM-dd");
+  if (data.date < todayStr) return false;
+  if (data.date === todayStr) {
+    const currentTime = format(now, "HH:mm");
+    return data.time >= currentTime;
+  }
+  return true;
+}, {
+  message: "Cannot schedule appointments in the past.",
+  path: ["time"],
 });
 
 function AppointmentsView() {

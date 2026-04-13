@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Admin;
+use App\Traits\HasInternalNotifications;
 
 class InventoryController extends Controller
 {
+    use HasInternalNotifications;
+
     protected $skuGenerator;
 
     public function __construct(\App\Services\SkuGeneratorService $skuGenerator)
@@ -66,6 +69,14 @@ class InventoryController extends Controller
                 'remarks' => 'Initial Stock',
                 'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
             ]);
+
+            // Internal admin notification for initial stock
+            $this->createInternalNotification(
+                'StockAdjustment',
+                'New Stock Added',
+                "Initial stock of {$item->stock_level} units added for '{$item->item_name}'.",
+                ['inventory_id' => $item->id]
+            );
         }
 
         return response()->json($item->load('inventoryCategory'), 201);
@@ -107,6 +118,23 @@ class InventoryController extends Controller
                 'remarks' => 'Manual adjustment via UI',
                 'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
             ]);
+
+            // Internal admin notification for stock adjustment
+            if ($qtyDiff > 0) {
+                $this->createInternalNotification(
+                    'StockAdjustment',
+                    'Stock Increased',
+                    "Stock level for '{$inventory->item_name}' was manually increased by {$qtyDiff} units.",
+                    ['inventory_id' => $inventory->id]
+                );
+            } else {
+                $this->createInternalNotification(
+                    'StockAdjustment',
+                    'Stock Decreased',
+                    "Stock level for '{$inventory->item_name}' was manually decreased by " . abs($qtyDiff) . " units.",
+                    ['inventory_id' => $inventory->id]
+                );
+            }
         }
 
         return response()->json($inventory->load('inventoryCategory'));

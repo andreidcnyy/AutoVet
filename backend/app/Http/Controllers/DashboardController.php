@@ -348,7 +348,7 @@ class DashboardController extends Controller
                 'title' => 'Monthly Revenue',
                 'value' => '₱' . number_format($monthlyRevenue, 0),
                 'detail' => 'Gross income this month',
-                'iconName' => 'FiDollarSign',
+                'iconName' => 'FiTrendingUp',
                 'iconBg' => 'bg-emerald-100 dark:bg-emerald-900/30',
                 'iconColor' => 'text-emerald-600 dark:text-emerald-400',
                 'badge' => round($revenueGrowth, 1) . '% from last month',
@@ -496,15 +496,29 @@ class DashboardController extends Controller
             $iconName = 'FiBell';
             $tone = 'info';
 
-            if ($notif->type === 'LowStockAlert') {
-                $iconName = 'FiAlertTriangle';
-                $tone = 'danger';
+            if ($notif->type === 'LowStockAlert' || $notif->type === 'StockAdjustment') {
+                $iconName = ($notif->type === 'LowStockAlert') ? 'FiAlertTriangle' : 'FiPackage';
+                $tone = ($notif->type === 'LowStockAlert' || (isset($notif->data['quantity']) && $notif->data['quantity'] < 0)) ? 'danger' : 'success';
+                
+                // Fine-tune tone for StockAdjustment based on message if data is not explicit
+                if ($notif->type === 'StockAdjustment') {
+                    if (str_contains($notif->message, 'decreased') || str_contains($notif->message, 'deducted')) {
+                        $tone = 'danger';
+                    } else {
+                        $tone = 'success';
+                    }
+                }
             } elseif (str_contains($notif->type, 'Patient')) {
                 $iconName = 'FiPlusCircle';
                 $tone = 'success';
             } elseif (str_contains($notif->type, 'Appointment')) {
                 $iconName = 'FiCalendar';
-                $tone = 'info';
+                if ($notif->type === 'AppointmentPending') $tone = 'info';
+                if ($notif->type === 'AppointmentApproved') $tone = 'success';
+                if ($notif->type === 'AppointmentDeclined') $tone = 'danger';
+            } elseif ($notif->type === 'InvoiceFinalized') {
+                $iconName = 'FiFileText';
+                $tone = 'success';
             }
 
             $notifications[] = [
@@ -519,6 +533,39 @@ class DashboardController extends Controller
         }
 
         return response()->json($notifications);
+    }
+
+    public function markNotificationsRead(Request $request)
+    {
+        $query = \App\Models\Notification::whereNull('read_at');
+        
+        if ($request->user()) {
+            $query->where(function ($q) use ($request) {
+                $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
+            });
+        }
+
+        $query->update(['read_at' => now()]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function dismissNotification(Request $request, $id)
+    {
+        // Strip 'notif-' prefix if present
+        $dbId = str_replace('notif-', '', $id);
+        
+        $notification = \App\Models\Notification::where('id', $dbId);
+        
+        if ($request->user()) {
+            $notification->where(function ($q) use ($request) {
+                $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
+            });
+        }
+
+        $notification->update(['read_at' => now()]);
+
+        return response()->json(['status' => 'success']);
     }
 
     /**

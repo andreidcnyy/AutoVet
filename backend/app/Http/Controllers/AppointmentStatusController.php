@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use App\Services\ClientNotificationService;
+use App\Traits\HasInternalNotifications;
 use Illuminate\Support\Facades\Log;
 
 class AppointmentStatusController extends Controller
 {
+    use HasInternalNotifications;
+
     protected ClientNotificationService $notificationService;
 
     public function __construct(ClientNotificationService $notificationService)
@@ -21,6 +24,14 @@ class AppointmentStatusController extends Controller
     {
         $appointment->status = 'approved';
         $appointment->save();
+
+        // Internal admin notification
+        $this->createInternalNotification(
+            'AppointmentApproved',
+            'Appointment Approved',
+            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been approved.",
+            ['appointment_id' => $appointment->id]
+        );
 
         try {
             $owner = $appointment->pet->owner;
@@ -47,6 +58,14 @@ class AppointmentStatusController extends Controller
     {
         $appointment->status = 'declined';
         $appointment->save();
+
+        // Internal admin notification
+        $this->createInternalNotification(
+            'AppointmentDeclined',
+            'Appointment Declined',
+            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been declined.",
+            ['appointment_id' => $appointment->id]
+        );
 
         try {
             $owner = $appointment->pet->owner;

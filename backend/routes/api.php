@@ -80,6 +80,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
     Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
+    Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markNotificationsRead']);
+    Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
     Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
     Route::get('/dashboard/sales-forecast',        [DashboardController::class, 'getSalesForecast']);
     Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecast']);

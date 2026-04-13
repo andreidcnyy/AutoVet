@@ -7,11 +7,13 @@ use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Admin;
 use App\Events\LowStockDetected;
+use App\Traits\HasInternalNotifications;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
 class InvoiceFinalizationService
 {
+    use HasInternalNotifications;
     /**
      * Finalize an invoice and deduct inventory stock.
      * 
@@ -68,6 +70,14 @@ class InvoiceFinalizationService
                         'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
                     ]);
 
+                    // Internal admin notification for stock deduction
+                    $this->createInternalNotification(
+                        'StockAdjustment',
+                        'Inventory Subtracted',
+                        "{$item->qty} units of '{$inventoryItem->item_name}' were deducted due to Invoice #{$invoice->invoice_number}.",
+                        ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
+                    );
+
                     // Trigger low stock event if necessary
                     if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
                         event(new LowStockDetected($inventoryItem));
@@ -77,6 +87,14 @@ class InvoiceFinalizationService
             
             $invoice->stock_deducted = true;
             $invoice->save();
+
+            // Internal admin notification for invoice finalization
+            $this->createInternalNotification(
+                'InvoiceFinalized',
+                'Invoice Finalized',
+                "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has been finalized. Total: ₱" . number_format($invoice->total, 2),
+                ['invoice_id' => $invoice->id]
+            );
         });
     }
 }

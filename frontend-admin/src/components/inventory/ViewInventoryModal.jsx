@@ -22,6 +22,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null); // New state for AI forecast
   const [isLoadingForecast, setIsLoadingForecast] = useState(false); // New state for forecast loading
+  const [historyDays, setHistoryDays] = useState(30); // Selection for forecast history range
 
   const { user } = useAuth();
   const isAdmin = user?.role === ROLES.ADMIN;
@@ -122,7 +123,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     setIsLoadingForecast(true);
     setAiForecastData(null); // Clear previous forecast
     try {
-      const response = await fetch(`/api/inventory/${product.id}/forecast`, {
+      const response = await fetch(`/api/inventory/${product.id}/forecast?history_days=${historyDays}`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
@@ -308,6 +309,18 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               </h4>
               {aiForecastData.error ? (
                 <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
+              ) : aiForecastData.prediction_status === "Insufficient Data" ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {aiForecastData.message}
+                  </p>
+                  <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
+                    Record stock movements or invoice this item to enable AI forecasting.
+                  </p>
+                  <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold tracking-tight">
+                    Current: {aiForecastData.current_stock} | Min: {aiForecastData.min_stock_level}
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
@@ -320,9 +333,28 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     )}
                   </p>
                   {aiForecastData.prediction_status === "Forecast Available" && (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
-                    </p>
+                    <>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                        Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase">Model Confidence</p>
+                          <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
+                            {(aiForecastData.lr_r2 * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase">Avg Daily Usage</p>
+                          <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
+                            {Number(aiForecastData.average_daily_consumption || 0).toFixed(1)} units/day
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 italic mt-1">
+                        Model: scikit-learn LinearRegression
+                      </p>
+                    </>
                   )}
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Current Stock: {aiForecastData.current_stock} | Min Stock Level: {aiForecastData.min_stock_level} | As of: {aiForecastData.last_recorded_date}
@@ -380,22 +412,42 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           </div>
 
           {/* Footer Buttons */}
-          <div className="mt-8 flex justify-end gap-3 border-t border-zinc-100 pt-6 dark:border-dark-border">
+          <div className="mt-8 flex justify-end gap-3 border-t border-zinc-100 pt-6 dark:border-dark-border text-right">
             {isAdmin && (
               <>
-                <button
-                  onClick={handleRunForecast}
-                  disabled={isLoadingForecast}
-                  className={clsx(
-                    "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition",
-                    isLoadingForecast
-                      ? "bg-emerald-400 text-white cursor-wait"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase text-zinc-400">Range:</span>
+                    <select 
+                      value={historyDays}
+                      onChange={(e) => setHistoryDays(parseInt(e.target.value))}
+                      className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                    >
+                      <option value={7}>7 Days</option>
+                      <option value={30}>30 Days</option>
+                      <option value={90}>90 Days</option>
+                      <option value={180}>6 Months</option>
+                    </select>
+                    <button
+                      onClick={handleRunForecast}
+                      disabled={isLoadingForecast || isSaving}
+                      className={clsx(
+                        "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition",
+                        (isLoadingForecast || isSaving)
+                          ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                      )}
+                    >
+                      <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
+                      {isLoadingForecast ? "Analyzing..." : "Run AI Forecast"}
+                    </button>
+                  </div>
+                  {isLoadingForecast && (
+                    <span className="text-[10px] font-medium text-emerald-600 animate-pulse pr-1">
+                      Analyzing stock history...
+                    </span>
                   )}
-                >
-                  <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
-                  {isLoadingForecast ? "Analyzing..." : "Run AI Forecast"}
-                </button>
+                </div>
                 <button
                   onClick={() => onDeleteRequest(product)}
                   className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"

@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\VetSchedule;
 use App\Models\Admin;
+use App\Traits\HasInternalNotifications;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
+    use HasInternalNotifications;
+
     protected $clientNotificationService;
 
     public function __construct(
@@ -108,6 +111,14 @@ class AppointmentController extends Controller
         }
 
         $appointment = Appointment::create($validated);
+
+        // Create internal notification for admins
+        $this->createInternalNotification(
+            'AppointmentPending',
+            'New Appointment Request',
+            "A new appointment for {$appointment->pet->name} has been requested for " . date('M d, Y', strtotime($appointment->date)) . " at " . date('g:i A', strtotime($appointment->time)) . ".",
+            ['appointment_id' => $appointment->id]
+        );
 
         try {
             $appointment->load('pet.owner');

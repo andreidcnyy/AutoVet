@@ -5,6 +5,7 @@ import RecentNotificationsCard from "../components/dashboard/RecentNotifications
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
 import AiInsightPanels from "../components/dashboard/AiInsightPanels";
 import * as Icons from "react-icons/fi";
+import * as LuIcons from "react-icons/lu";
 import { useAuth } from "../context/AuthContext";
 import { ROLES } from "../constants/roles";
 
@@ -37,7 +38,7 @@ function DashboardPage() {
           .filter(stat => !(isStaff && stat.title === "Monthly Revenue"))
           .map(stat => ({
             ...stat,
-            icon: Icons[stat.iconName] || Icons.FiActivity
+            icon: Icons[stat.iconName] || LuIcons[stat.iconName] || Icons.FiActivity
           }));
         setMetrics(mappedMetrics);
 
@@ -45,7 +46,7 @@ function DashboardPage() {
         // Map icon names to components for notifications
         const mappedNotifs = safeNotifs.map(notif => ({
           ...notif,
-          icon: Icons[notif.iconName] || Icons.FiBell
+          icon: Icons[notif.iconName] || LuIcons[notif.iconName] || Icons.FiBell
         }));
         setNotifications(mappedNotifs);
         
@@ -57,12 +58,34 @@ function DashboardPage() {
       });
   }, [user?.token]);
 
-  const handleMarkAllRead = () => {
-    setNotifications([]);
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch("/api/dashboard/notifications/mark-all-read", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      setNotifications([]);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
   };
 
-  const handleDismissNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const handleDismissNotification = async (id) => {
+    try {
+      await fetch(`/api/dashboard/notifications/${id}/dismiss`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error("Failed to dismiss notification:", err);
+    }
   };
 
   if (isLoading) {
@@ -87,17 +110,19 @@ function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[2fr_1fr]">
-        <div className="space-y-6">
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8 space-y-6">
           {!isStaff && <AiSalesForecastCard />}
-          {!isStaff && <AiInsightPanels />}
           <InventoryChartCard />
         </div>
-        <RecentNotificationsCard 
-          items={notifications} 
-          onMarkAllRead={handleMarkAllRead}
-          onDismiss={handleDismissNotification}
-        />
+        <div className="lg:col-span-4 space-y-6">
+          {!isStaff && <AiInsightPanels />}
+          <RecentNotificationsCard 
+            items={notifications} 
+            onMarkAllRead={handleMarkAllRead}
+            onDismiss={handleDismissNotification}
+          />
+        </div>
       </section>
     </div>
   );

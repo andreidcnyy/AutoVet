@@ -1,3 +1,9 @@
+/**
+ * LEGACY PLACEHOLDER DATA
+ * This file contains static mock data used during early development.
+ * Current components should fetch data from the Laravel API instead.
+ */
+
 import {
   FiAlertTriangle,
   FiCalendar,

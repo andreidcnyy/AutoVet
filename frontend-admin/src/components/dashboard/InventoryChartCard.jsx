@@ -49,9 +49,9 @@ function InventoryChartCard() {
         <div className="h-16 w-16 rounded-full bg-zinc-50 flex items-center justify-center mb-4 dark:bg-dark-surface">
           <FiCircle className="h-8 w-8 text-zinc-300 animate-pulse" />
         </div>
-        <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 italic">No Consumption Trends Yet</h3>
+        <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 italic">No inventory consumption data yet</h3>
         <p className="mt-2 max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
-          We need at least two months of inventory transactional history to generate consumption trends and AI forecasts.
+          Start recording invoices to see AI-powered charts and consumption trends.
         </p>
       </section>
     );
