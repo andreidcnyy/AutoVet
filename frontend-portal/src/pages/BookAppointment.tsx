@@ -14,8 +14,8 @@ import {
   FiCheckCircle,
   FiAlertCircle
 } from 'react-icons/fi';
-import { format, addMonths, subMonths } from 'date-fns';
-import { generateCalendarGrid } from '../utils/calendarUtils';
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
+import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getAppointments } from '../api';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -30,6 +30,18 @@ const bookingSchema = z.object({
   service_id: z.string().min(1, "Please select a service"),
   vet_id: z.string().optional(),
   notes: z.string().optional(),
+}).refine((data) => {
+  const now = new Date();
+  const todayStr = format(now, "yyyy-MM-dd");
+  if (data.date < todayStr) return false;
+  if (data.date === todayStr) {
+    const currentTime = format(now, "HH:mm");
+    return data.time >= currentTime;
+  }
+  return true;
+}, {
+  message: "Cannot book appointments in the past.",
+  path: ["time"],
 });
 
 type BookingForm = z.infer<typeof bookingSchema>;
@@ -67,6 +79,10 @@ export default function BookAppointment() {
 
   const handleDayClick = (entry: any) => {
     if (!entry.inMonth) return;
+    
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    if (entry.dateString < todayStr) return; // Prevent booking in the past
+
     setSelectedDay(entry);
     setValue("date", entry.dateString);
     setIsDrawerOpen(true);
@@ -125,7 +141,9 @@ export default function BookAppointment() {
 
         <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100 dark:divide-dark-border/50">
           {calendarDays.map((entry, idx) => {
-            const isToday = entry.dateString === format(new Date(), "yyyy-MM-dd");
+            const todayStr = format(new Date(), "yyyy-MM-dd");
+            const isToday = entry.dateString === todayStr;
+            const isPast = entry.dateString < todayStr;
             const hasEvents = entry.events.length > 0;
 
             return (
@@ -133,15 +151,18 @@ export default function BookAppointment() {
                 key={`${entry.dateString}-${idx}`}
                 onClick={() => handleDayClick(entry)}
                 className={clsx(
-                  "group relative min-h-[120px] p-2 transition-all hover:bg-brand-50/30 dark:hover:bg-brand-500/5 cursor-pointer",
+                  "group relative min-h-[120px] p-2 transition-all cursor-pointer",
                   !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-30 pointer-events-none",
-                  isToday && "bg-brand-50/50 dark:bg-brand-900/10"
+                  isToday && "bg-brand-50/50 dark:bg-brand-900/10",
+                  isPast && "bg-zinc-100/50 dark:bg-zinc-800/40 grayscale-sm cursor-default",
+                  !isPast && entry.inMonth && "hover:bg-brand-50/30 dark:hover:bg-brand-500/5"
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span className={clsx(
                     "inline-flex h-8 w-8 items-center justify-center rounded-xl text-sm font-bold transition-all",
-                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" : "text-zinc-700 dark:text-zinc-300"
+                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" : 
+                    (isPast ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-700 dark:text-zinc-300")
                   )}>
                     {entry.day}
                   </span>

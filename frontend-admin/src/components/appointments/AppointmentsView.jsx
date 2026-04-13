@@ -22,8 +22,8 @@ import {
   FiThumbsDown
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
-import { format, addMonths, subMonths } from "date-fns";
-import { generateCalendarGrid } from "../../utils/calendarUtils";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from "../../utils/calendarUtils";
 import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -262,6 +262,9 @@ function AppointmentsView() {
   };
 
   const handleDayClick = (entry) => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    if (entry.dateString < todayStr) return; // Prevent booking in the past
+
     reset({
       date: entry.dateString,
       time: "",
@@ -348,7 +351,24 @@ function AppointmentsView() {
     }
   };
 
-  const calendarDays = generateCalendarGrid(currentDate, appointments);
+  const handlePrev = () => {
+    if (activeViewMode === "Month") setCurrentDate(subMonths(currentDate, 1));
+    else if (activeViewMode === "Week") setCurrentDate(subWeeks(currentDate, 1));
+    else setCurrentDate(subDays(currentDate, 1));
+  };
+
+  const handleNext = () => {
+    if (activeViewMode === "Month") setCurrentDate(addMonths(currentDate, 1));
+    else if (activeViewMode === "Week") setCurrentDate(addWeeks(currentDate, 1));
+    else setCurrentDate(addDays(currentDate, 1));
+  };
+
+  const calendarDays = activeViewMode === "Month"
+    ? generateCalendarGrid(currentDate, appointments)
+    : activeViewMode === "Week"
+    ? generateWeekGrid(currentDate, appointments)
+    : generateDayGrid(currentDate, appointments);
+
   const qInputBase = "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
   const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-500 dark:border-dark-border");
 
@@ -394,16 +414,18 @@ function AppointmentsView() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+                  onClick={handlePrev}
                   className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
                 >
                   <FiChevronLeft className="h-4 w-4" />
                 </button>
                 <h2 className="min-w-[140px] text-center text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 italic">
-                  {format(currentDate, "MMMM yyyy")}
+                  {activeViewMode === "Month" ? format(currentDate, "MMMM yyyy") : 
+                   activeViewMode === "Week" ? `Week of ${format(currentDate, "MMM d")}` :
+                   format(currentDate, "MMMM d, yyyy")}
                 </h2>
                 <button
-                  onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+                  onClick={handleNext}
                   className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
                 >
                   <FiChevronRight className="h-4 w-4" />
@@ -423,17 +445,29 @@ function AppointmentsView() {
             ))}
           </div>
 
-          <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100 transition-colors duration-300 dark:divide-dark-border/50">
+          <div className={clsx(
+            "grid divide-x divide-y divide-zinc-100 transition-colors duration-300 dark:divide-dark-border/50",
+            activeViewMode === "Month" || activeViewMode === "Week" ? "grid-cols-7" : "grid-cols-1"
+          )}>
             {calendarDays.map((entry, index) => {
-              const isToday = entry.dateString === format(new Date(), "yyyy-MM-dd");
+              const todayStr = format(new Date(), "yyyy-MM-dd");
+              const isToday = entry.dateString === todayStr;
+              const isPast = entry.dateString < todayStr;
+
+              if (activeViewMode === "Month" && !entry.inMonth) {
+                return <div key={`empty-${index}`} className="min-h-[140px] bg-zinc-50/10 dark:bg-dark-surface/5" />;
+              }
+
               return (
                 <div
-                  key={`${entry.day}-${index}`}
+                  key={`${entry.dateString}-${index}`}
                   onClick={() => handleDayClick(entry)}
                   className={clsx(
-                    "group relative min-h-[140px] p-2 transition-all hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 cursor-pointer",
+                    "group relative min-h-[140px] p-2 transition-all cursor-pointer",
                     !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-40",
-                    isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
+                    isToday && "bg-emerald-50/50 dark:bg-emerald-900/10",
+                    isPast && "bg-zinc-100/50 dark:bg-zinc-800/40 grayscale-sm cursor-default",
+                    !isPast && "hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5"
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -442,13 +476,16 @@ function AppointmentsView() {
                         "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
                         isToday
                           ? "bg-emerald-600 text-white shadow-lg"
-                          : (entry.inMonth ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-600")
+                          : (isPast ? "text-zinc-400 dark:text-zinc-600" : (entry.inMonth ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-600"))
                       )}
                     >
                       {entry.day}
                     </span>
                     {entry.events.length > 0 && (
-                      <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md dark:bg-emerald-900/20 italic">
+                      <span className={clsx(
+                        "text-[9px] font-bold px-1.5 py-0.5 rounded-md italic",
+                        isPast ? "text-zinc-400 bg-zinc-100 dark:bg-zinc-800" : "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                      )}>
                         {entry.events.length}
                       </span>
                     )}
