@@ -31,6 +31,7 @@ class InventoryController extends Controller
     {
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:100',
             'sub_details' => 'nullable|string|max:255',
             'inventory_category_id' => 'required|exists:mdm_inventory_categories,id',
             'stock_level' => 'required|integer|min:0',
@@ -67,13 +68,14 @@ class InventoryController extends Controller
             ]);
         }
 
-        return response()->json($item, 201);
+        return response()->json($item->load('inventoryCategory'), 201);
     }
 
     public function update(Request $request, Inventory $inventory)
     {
         $validatedData = $request->validate([
             'item_name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:100',
             'sub_details' => 'nullable|string|max:255',
             'inventory_category_id' => 'required|exists:mdm_inventory_categories,id',
             'sku' => 'required|string|max:255|unique:inventories,sku,' . $inventory->id,

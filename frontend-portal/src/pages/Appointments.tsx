@@ -9,12 +9,17 @@ import {
   FiArrowLeft
 } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
+import PetProfileModal from '../components/PetProfileModal';
 import clsx from 'clsx';
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
 
   const fetchAppointments = () => {
     setLoading(true);
@@ -36,6 +41,11 @@ export default function Appointments() {
     } catch (err) {
       alert("Failed to cancel appointment.");
     }
+  };
+
+  const handlePetClick = (id: number) => {
+    setSelectedPetId(id);
+    setIsModalOpen(true);
   };
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading appointments...</div>;
@@ -101,11 +111,12 @@ export default function Appointments() {
                         <FiXCircle /> Cancel
                       </button>
                     )}
-                    <Link to={`/pets/${appt.pet_id}`}>
-                      <button className="px-4 py-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-600 dark:text-zinc-400 text-xs font-bold hover:bg-zinc-100 transition-all">
-                        View Pet Details
-                      </button>
-                    </Link>
+                    <button 
+                      onClick={() => handlePetClick(appt.pet_id)}
+                      className="px-4 py-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-600 dark:text-zinc-400 text-xs font-bold hover:bg-zinc-100 transition-all"
+                    >
+                      View Pet Details
+                    </button>
                   </div>
                 </div>
               </div>
@@ -117,6 +128,13 @@ export default function Appointments() {
           </div>
         )}
       </div>
+
+      {/* Pet Profile Modal */}
+      <PetProfileModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        petId={selectedPetId}
+      />
     </div>
   );
 }

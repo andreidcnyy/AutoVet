@@ -18,10 +18,8 @@ const BACKGROUND_IMAGES = [
 const CLINIC_SERVICES = [
   { name: 'Consultations', icon: <FiHeart />, description: 'Expert medical advice and thorough check-ups for your pets.' },
   { name: 'Grooming', icon: <FiScissors />, description: 'Professional styling and hygiene services to keep pets looking their best.' },
-  { name: 'Imaging', icon: <FiSearch />, description: 'Advanced diagnostic imaging including X-rays and ultrasounds.' },
-  { name: 'Laboratory', icon: <FiLayers />, description: 'In-house blood tests and diagnostic screening for rapid results.' },
-  { name: 'Surgery', icon: <FiActivity />, description: 'Comprehensive surgical care from routine procedures to specialized operations.' },
   { name: 'Vaccination', icon: <FiShield />, description: 'Essential preventative care and immunization schedules.' },
+  { name: 'Deworming', icon: <FiActivity />, description: 'Safe and effective treatments to protect your pets from internal parasites.' },
 ];
 
 export default function Landing() {

@@ -161,7 +161,7 @@ export default function EditPet() {
     setError(null);
     try {
       await updatePet(parseInt(id), data);
-      navigate(`/pets/${id}`);
+      navigate('/');
     } catch (err: any) {
       console.error("SUBMIT ERROR:", err);
       setError(err.response?.data?.message || "Failed to update pet details.");

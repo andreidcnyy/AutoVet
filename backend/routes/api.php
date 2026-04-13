@@ -7,46 +7,46 @@ use App\Enums\Roles;
 
 
 use App\Http\Controllers\AppointmentController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\SettingController;
-use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\AppointmentStatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\NotificationTemplateController;
+use App\Http\Controllers\PatientOwnerController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VetScheduleController;
+use App\Http\Controllers\CmsContentController;
+use App\Http\Controllers\ClientNotificationController;
+
 use App\Http\Controllers\PetSizeCategoryController;
-use App\Http\Controllers\WeightRangeController;
 use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\SpeciesController;
 use App\Http\Controllers\BreedController;
-use App\Http\Controllers\VetScheduleController;
-use App\Http\Controllers\PatientOwnerController;
-use App\Http\Controllers\MedicalRecordController;
-use App\Http\Controllers\CmsContentController;
-use App\Http\Controllers\ClientNotificationController;
-use App\Http\Controllers\NotificationTemplateController;
+use App\Http\Controllers\WeightRangeController;
+use App\Models\Owner;
 
 // ---------------------------------------------------------------------------
-// Public routes (no authentication required)
+// Public-facing routes (Login, Registration, etc.)
 // ---------------------------------------------------------------------------
 
-Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
-Route::post('/password/reset', [AuthController::class, 'resetPassword']);
-Route::get('/services/public', [ServiceController::class, 'index']);
+Route::post('/login',           [AuthController::class, 'login']);
+Route::post('/register',        [AuthController::class, 'register']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
-/** Sync receiver (webhook from clinic) */
-Route::post('/sync/receive', [\App\Http\Controllers\SyncController::class, 'receive']);
-
-/** Health-check endpoint — intentionally public for monitoring tools. */
-Route::get('/status', function () {
+// Test endpoint to check API status
+Route::get('/health', function () {
+    $dbStatus = 'disconnected';
     try {
-        \DB::connection()->getPdo();
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
         $dbStatus = 'connected';
     } catch (\Exception $e) {
-        $dbStatus = 'disconnected';
+        // Leave as disconnected
     }
 
     return response()->json([
@@ -88,6 +88,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // Core Modules
     // -----------------------------------------------------------------------
+    Route::post('appointments/{appointment}/approve', [AppointmentStatusController::class, 'approve']);
+    Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
+    Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
     Route::apiResource('appointments',    AppointmentController::class);
 
     // Inventory and Specialized Forecast
@@ -148,37 +151,14 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
 
     // -----------------------------------------------------------------------
-    // Archive & Recovery — Admin only
+    // Reporting
     // -----------------------------------------------------------------------
-    Route::group(['prefix' => 'archives', 'middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
-        Route::get('/{type}', [\App\Http\Controllers\ArchiveController::class, 'index']);
-        Route::post('/{type}/{id}/restore', [\App\Http\Controllers\ArchiveController::class, 'restore']);
-        Route::delete('/{type}/{id}/force', [\App\Http\Controllers\ArchiveController::class, 'forceDelete']);
-    });
-
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
-        Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index']);
-        
-        // Database Backup & Restore
-        Route::get('/backups', [\App\Http\Controllers\BackupController::class, 'index']);
-        Route::post('/backups', [\App\Http\Controllers\BackupController::class, 'create']);
-        Route::post('/backups/restore', [\App\Http\Controllers\BackupController::class, 'restore']);
-        Route::delete('/backups/{filename}', [\App\Http\Controllers\BackupController::class, 'destroy']);
-        Route::get('/backups/download/{filename}', [\App\Http\Controllers\BackupController::class, 'download']);
-    });
-
-    // -----------------------------------------------------------------------
-    // Specialized Reports — restricted to Admin only
-    // -----------------------------------------------------------------------
-    $reportRoles = Roles::adminRoles();
-    Route::group(['prefix' => 'reports', 'middleware' => 'role:' . implode(',', $reportRoles)], function () {
-
-        Route::get('/inventory/low-stock',            [\App\Http\Controllers\LowStockReportController::class, 'generate']);
-        Route::get('/sales/revenue-summary',          [\App\Http\Controllers\SalesReportController::class, 'getRevenueSummary']);
-        Route::get('/sales/top-services',             [\App\Http\Controllers\SalesReportController::class, 'getTopServices']);
-        Route::get('/sales/transaction-volume',       [\App\Http\Controllers\SalesReportController::class, 'getTransactionVolume']);
-        Route::get('/patients/species-distribution',  [\App\Http\Controllers\PatientReportController::class, 'getSpeciesDistribution']);
-        Route::get('/patients/registration-trends',   [\App\Http\Controllers\PatientReportController::class, 'getRegistrationTrends']);
+        Route::get('/reports/revenue',                  [\App\Http\Controllers\FinancialReportController::class, 'getRevenue']);
+        Route::get('/reports/service-performance',      [\App\Http\Controllers\FinancialReportController::class, 'getServicePerformance']);
+        Route::get('/reports/inventory-usage',          [\App\Http\Controllers\InventoryReportController::class, 'getUsage']);
+        Route::get('/reports/client-acquisition',       [\App\Http\Controllers\PatientReportController::class, 'getClientAcquisition']);
+        Route::get('/reports/patient-registration-trends',   [\App\Http\Controllers\PatientReportController::class, 'getRegistrationTrends']);
         Route::get('/patients/demographics',          [\App\Http\Controllers\PatientReportController::class, 'getDemographics']);
     });
 });

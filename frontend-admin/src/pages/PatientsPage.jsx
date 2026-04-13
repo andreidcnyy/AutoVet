@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
+import PetsListView from "../components/patients/PetsListView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
+import { LuPawPrint } from "react-icons/lu";
+import clsx from "clsx";
 
 function PatientsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [view, setView] = useState("records");
+  const [view, setView] = useState("records"); // "records", "add", "add-pet"
+  const [activeTab, setActiveTab] = useState("owners"); // "owners", "patients"
   const { user } = useAuth();
   const [owners, setOwners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -290,32 +294,64 @@ function PatientsPage() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center text-zinc-500">
-        Loading owner records...
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-zinc-50/50 p-6 dark:bg-dark-surface/30">
-      <PatientRecordsView
-        owners={owners}
-        selectedOwnerId={selectedOwnerId}
-        onSelectOwner={setSelectedOwnerId}
-        onOpenAddPatient={() => {
-          setPhoneValue("");
-          setProvince("");
-          setCity("");
-          setZip("");
-          setView("add");
-        }}
-        onDeleteOwner={handleDeleteOwner}
-        onEditOwner={handleEditOwner}
-        onOwnerEdited={fetchOwners}
-        onAddPet={handleAddPetToOwner}
-      />
+    <div className="min-h-screen bg-zinc-50/50 p-6 dark:bg-dark-surface/30 space-y-6">
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-1 w-fit rounded-2xl bg-zinc-100 p-1.5 dark:bg-zinc-800/50 shadow-inner">
+        <button
+          onClick={() => setActiveTab("owners")}
+          className={clsx(
+            "flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all",
+            activeTab === "owners" 
+              ? "bg-white text-emerald-600 shadow-md dark:bg-dark-card dark:text-emerald-400" 
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          )}
+        >
+          <FiUser className="h-4 w-4" />
+          Owner Records
+        </button>
+        <button
+          onClick={() => setActiveTab("patients")}
+          className={clsx(
+            "flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all",
+            activeTab === "patients" 
+              ? "bg-white text-emerald-600 shadow-md dark:bg-dark-card dark:text-emerald-400" 
+              : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          )}
+        >
+          <LuPawPrint className="h-4 w-4" />
+          Patient Directory
+        </button>
+      </div>
+
+      {activeTab === "owners" ? (
+        <>
+          {isLoading ? (
+            <div className="flex h-64 items-center justify-center text-zinc-500">
+                Loading owner records...
+            </div>
+          ) : (
+            <PatientRecordsView
+                owners={owners}
+                selectedOwnerId={selectedOwnerId}
+                onSelectOwner={setSelectedOwnerId}
+                onOpenAddPatient={() => {
+                setPhoneValue("");
+                setProvince("");
+                setCity("");
+                setZip("");
+                setView("add");
+                }}
+                onDeleteOwner={handleDeleteOwner}
+                onEditOwner={handleEditOwner}
+                onOwnerEdited={fetchOwners}
+                onAddPet={handleAddPetToOwner}
+            />
+          )}
+        </>
+      ) : (
+        <PetsListView />
+      )}
 
       <EditOwnerModal 
         isOpen={isEditModalOpen}

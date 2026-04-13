@@ -373,7 +373,7 @@ async function generateAllMedicalRecordsPDF(records, patient) {
 
 /* ───────────────────────────────────────── Component ── */
 
-function ViewPatientProfile({ patient, onRefresh }) {
+function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState("overview");
@@ -403,7 +403,11 @@ function ViewPatientProfile({ patient, onRefresh }) {
       }
 
       toast.success("Patient record archived successfully.");
-      navigate("/patients");
+      if (isModal) {
+        if (onRefresh) onRefresh();
+      } else {
+        navigate("/patients");
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -421,19 +425,21 @@ function ViewPatientProfile({ patient, onRefresh }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className={clsx("space-y-5", isModal && "p-6")}>
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/patients")}
-            className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+          {!isModal && (
+            <button
+              onClick={() => navigate("/patients")}
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
+            >
+              <FiArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          )}
           <div>
-            <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <h2 className={clsx("font-bold tracking-tight text-zinc-900 dark:text-zinc-50", isModal ? "text-3xl" : "text-4xl")}>
               {patient.name}
             </h2>
             <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">

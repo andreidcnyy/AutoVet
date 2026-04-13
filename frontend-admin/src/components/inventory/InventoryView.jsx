@@ -66,6 +66,14 @@ function InventoryView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState([]);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const { user } = useAuth();
   const isAdmin = user?.role === ROLES.ADMIN;
 
@@ -82,6 +90,10 @@ function InventoryView() {
         if (response.ok) {
           const data = await response.json();
           setInventoryRows(data);
+          
+          // Extract unique categories for the filter
+          const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
+          setCategories(uniqueCats);
         }
       } catch (error) {
         console.error("Failed to fetch inventory:", error);
@@ -91,6 +103,11 @@ function InventoryView() {
     };
     fetchInventory();
   }, [user?.token]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchQuery, selectedCategory]);
 
   const handleRunForecast = async () => {
     setIsSimulating(true);
@@ -119,8 +136,6 @@ function InventoryView() {
   };
 
   const handleSaveNewItem = (newItem) => {
-    // Optimistically push the newly saved backend item to the top of the local state 
-    // without triggering a full screen refresh!
     setInventoryRows((prev) => [newItem, ...prev]);
     toast.success(`Successfully added ${newItem.item_name} to the database!`);
   };
@@ -154,6 +169,19 @@ function InventoryView() {
   };
 
   const filteredRows = inventoryRows.filter((row) => {
+    // 1. Search Logic
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = 
+        row.item_name.toLowerCase().includes(q) ||
+        (row.code && row.code.toLowerCase().includes(q)) ||
+        (row.inventory_category?.name && row.inventory_category.name.toLowerCase().includes(q));
+    
+    if (!matchesSearch) return false;
+
+    // 2. Category Logic
+    if (selectedCategory !== "all" && row.inventory_category?.name !== selectedCategory) return false;
+
+    // 3. Status Tabs Logic
     if (activeFilter === "All Items") return true;
     if (activeFilter === "Low Stock") return Number(row.stock_level) <= Number(row.min_stock_level);
     if (activeFilter === "Expiring") {
@@ -162,26 +190,32 @@ function InventoryView() {
       const today = new Date();
       const diffTime = expDate - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays > 0 && diffDays <= 30;
+      return diffDays <= 30; // Expired or expiring within 30 days
     }
     return row.status === activeFilter;
   });
 
+  // Calculate Pagination
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredRows.slice(indexOfFirstItem, indexOfLastItem);
+
   const totalItems = inventoryRows.length;
   const lowStock = inventoryRows.filter((r) => Number(r.stock_level) <= Number(r.min_stock_level)).length;
-  const expiring = inventoryRows.filter((r) => {
+  const expiringCount = inventoryRows.filter((r) => {
     if (!r.expiration_date) return false;
     const expDate = new Date(r.expiration_date);
     const today = new Date();
     const diffTime = expDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 && diffDays <= 30; // Flag if expiring within 30 days
+    return diffDays <= 30; 
   }).length;
 
   const dynamicSummaryCards = [
     { id: "total", label: "TOTAL ITEMS", value: totalItems.toLocaleString(), meta: "Based on DB", metaTone: "text-emerald-600", icon: FiBox },
     { id: "low", label: "LOW STOCK", value: lowStock.toLocaleString(), meta: "Needs attention", metaTone: "text-amber-600", icon: FiAlertTriangle },
-    { id: "expiring", label: "EXPIRING SOON", value: expiring.toLocaleString(), meta: "Check dates", metaTone: "text-rose-600", icon: FiBell },
+    { id: "expiring", label: "EXPIRING/EXPIRED", value: expiringCount.toLocaleString(), meta: "Check dates", metaTone: "text-rose-600", icon: FiBell },
   ];
 
   return (
@@ -227,7 +261,7 @@ function InventoryView() {
             AI Insight
           </p>
           <p className="mt-1 text-2xl font-bold">Stock Optimization</p>
-          <p className="mt-2 text-sm text-emerald-100">Forecast refresh complete. 6 items flagged for reorder planning.</p>
+          <p className="mt-2 text-sm text-emerald-100">Forecast refresh complete. {lowStock} items flagged for reorder planning.</p>
         </article>
       </section>
 
@@ -237,16 +271,26 @@ function InventoryView() {
             <FiSearch className="h-4 w-4" />
             <input
               type="text"
-              placeholder="Search items, categories, or SKUs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search items, codes, or categories..."
               className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500"
             />
           </label>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface">
-              <FiFilter className="h-4 w-4" />
-              Filter
-            </button>
+            <div className="relative">
+                <select 
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="appearance-none inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 pr-8 text-sm font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface cursor-pointer"
+                >
+                    <option value="all">All Categories</option>
+                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <FiFilter className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400 pointer-events-none" />
+            </div>
+
             <button
               onClick={() => setActiveFilter("All Items")}
               className={clsx("rounded-xl border px-4 py-2 text-sm font-semibold", activeFilter === "All Items" ? "border-zinc-400 bg-zinc-100 text-zinc-900 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-50" : "border-zinc-200 bg-white text-zinc-700 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300")}
@@ -279,99 +323,154 @@ function InventoryView() {
           </div>
         </div>
 
+        {/* Pagination Controls - TOP */}
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-dark-border px-5 py-3 bg-zinc-50/50 dark:bg-dark-surface/30">
+            <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredRows.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredRows.length}</span> entries
+            </div>
+            
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                
+                <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, i) => (
+                        <button
+                            key={i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={clsx(
+                                "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all",
+                                currentPage === i + 1
+                                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md"
+                                    : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                            )}
+                        >
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1150px]">
-            <thead className="bg-zinc-50 dark:bg-dark-surface">
+            <thead className="bg-zinc-50/50 dark:bg-dark-surface/50 border-b border-zinc-200 dark:border-dark-border">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                <th className="px-5 py-4">Item Name / Category</th>
+                <th className="px-5 py-4">Code</th>
+                <th className="px-5 py-4">Item</th>
+                <th className="px-5 py-4">Category</th>
+                <th className="px-5 py-4">Buying Price</th>
+                <th className="px-5 py-4">Selling Price</th>
                 <th className="px-5 py-4">Stock Level</th>
-                <th className="px-5 py-4">Pricing (Cost/Sell)</th>
-                <th className="px-5 py-4">Status & Logic</th>
-                <th className="px-5 py-4">Action</th>
+                <th className="px-5 py-4">Min Stock</th>
+                <th className="px-5 py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  <td colSpan="8" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                     Loading inventory data...
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  <td colSpan="8" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                     No items found matching the current filter.
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row) => {
+                currentItems.map((row) => {
                   const catName = row.inventory_category?.name || "Uncategorized";
                   const Icon = categoryIcons[catName] || FiBox;
                   const iconStyle = categoryIconStyles[catName] || "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+                  
+                  const isLowStock = Number(row.stock_level) <= Number(row.min_stock_level);
+                  const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
+                  const isExpiring = expDate && (expDate - new Date()) / (1000 * 60 * 60 * 24) <= 30;
+                  
+                  let currentStatus = row.status;
+                  if (isLowStock) currentStatus = "Low Stock";
+                  else if (isExpiring) currentStatus = "Expiring";
+                  else currentStatus = "In Stock";
+
                   return (
-                    <tr key={row.id} className="border-t border-zinc-200 dark:border-dark-border align-top hover:bg-zinc-50 dark:hover:bg-dark-surface/50">
+                    <tr key={row.id} className="border-t border-zinc-200 dark:border-dark-border align-middle hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
                       <td className="px-5 py-4">
-                        <div className="flex items-start gap-3">
-                          <span className={clsx("mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-lg", iconStyle)}>
+                        <span className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest bg-zinc-100 dark:bg-dark-surface px-2 py-1 rounded">
+                          {row.code || "---"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className={clsx("inline-flex h-8 w-8 items-center justify-center rounded-lg shrink-0", iconStyle)}>
                             <Icon className="h-4 w-4" />
                           </span>
-                          <div>
-                            <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{catName}</p>
-                            <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{row.item_name}</p>
+                          <div className="flex flex-col">
+                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-tight">{row.item_name}</p>
+                            <div className="mt-1 flex gap-1">
+                                <span className={clsx(
+                                  "text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border",
+                                  statusStyles[currentStatus] || "border-zinc-200 bg-zinc-50 text-zinc-700"
+                                )}>
+                                  {currentStatus}
+                                </span>
+                                {row.is_billable && (
+                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                        Billable
+                                    </span>
+                                )}
+                            </div>
+                            {row.expiration_date && (
+                              <p className="text-[10px] font-bold text-rose-500 dark:text-rose-400 mt-1 flex items-center gap-1">
+                                <FiBell className="h-3 w-3" />
+                                Exp: {new Date(row.expiration_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-lg font-medium text-zinc-800 dark:text-zinc-200">
-                        {Number(row.stock_level || 0).toLocaleString()} {row.unit || "units"}
+                      <td className="px-5 py-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{catName}</p>
+                      </td>
+                      <td className="px-5 py-4 font-bold text-zinc-600 dark:text-zinc-400">
+                        ₱{Number(row.price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-5 py-4 font-black text-zinc-900 dark:text-zinc-50">
+                        ₱{Number(row.selling_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col">
-                          <p className="text-sm text-zinc-500 dark:text-zinc-500 line-through decoration-zinc-300 font-medium">
-                            ₱{Number(row.price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                            ₱{Number(row.selling_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                          </p>
+                            <p className={clsx("text-lg font-bold", isLowStock ? "text-amber-600" : "text-zinc-800 dark:text-zinc-200")}>
+                                {Number(row.stock_level || 0).toLocaleString()}
+                            </p>
+                            <p className="text-[10px] uppercase font-bold text-zinc-400">{row.unit || "units"}</p>
                         </div>
                       </td>
-                      <td className="px-5 py-4 space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {(() => {
-                             const isLowStock = Number(row.stock_level) <= Number(row.min_stock_level);
-                             const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
-                             const isExpiring = expDate && (expDate - new Date()) / (1000 * 60 * 60 * 24) <= 30;
-                             
-                             let currentStatus = row.status;
-                             if (isLowStock) currentStatus = "Low Stock";
-                             else if (isExpiring) currentStatus = "Expiring";
-                             else currentStatus = "In Stock";
-
-                             return (
-                               <span
-                                 className={clsx(
-                                   "inline-flex rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap",
-                                   statusStyles[currentStatus] || "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                                 )}
-                               >
-                                 {currentStatus}
-                               </span>
-                             );
-                          })()}
-                          {row.is_billable && (
-                            <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400 whitespace-nowrap">
-                              Billable
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500">
-                           <span className={clsx("h-1.5 w-1.5 rounded-full", row.deduct_on_finalize ? "bg-emerald-400" : "bg-zinc-300")} />
-                           {row.deduct_on_finalize ? "Auto-Deduct" : "Manual Stock Out"}
-                        </div>
+                      <td className="px-5 py-4 text-sm font-semibold text-zinc-500 dark:text-zinc-500">
+                        {Number(row.min_stock_level || 0).toLocaleString()}
                       </td>
                       <td className="px-5 py-4 text-center">
                         <button
                           onClick={() => setViewedProduct(row)}
-                          className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 focus:outline-none w-full"
+                          className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 focus:outline-none transition-colors"
                         >
                           View Details
                         </button>
@@ -383,9 +482,6 @@ function InventoryView() {
             </tbody>
           </table>
         </div>
-
-        <div className="px-5 py-4 text-sm text-zinc-500 dark:text-zinc-400">Showing {filteredRows.length} entries</div>
-
       </section>
 
       <AddInventoryModal
@@ -425,7 +521,7 @@ function InventoryView() {
 
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-dark-border dark:bg-dark-surface">
                 <TrendMiniChart />
-                <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">
+                <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-zinc-400 dark:text-zinc-50">
                   {aiForecastData.chart_data.months.map((m, i) => (
                     <span key={i} className={i === 6 ? "text-emerald-600 dark:text-emerald-400" : ""}>{m} {i === 6 ? "(Est)" : ""}</span>
                   ))}
@@ -460,7 +556,7 @@ function InventoryView() {
 
       {isSimulating && (
         <div className="fixed bottom-6 right-6 z-[9999] flex w-[320px] transform items-center gap-4 rounded-xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-1 ring-zinc-200 dark:bg-dark-card dark:ring-dark-border animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+          <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
             <LuSparkles className="h-5 w-5 animate-pulse" />
           </div>
           <div>

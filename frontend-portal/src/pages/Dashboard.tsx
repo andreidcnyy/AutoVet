@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getPets, getAppointments } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2 } from 'react-icons/fi';
+import PetProfileModal from '../components/PetProfileModal';
+import EditPetModal from '../components/EditPetModal';
 import clsx from 'clsx';
 
 export default function Dashboard() {
@@ -10,7 +12,14 @@ export default function Dashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [petToEditId, setPetToEditId] = useState<number | null>(null);
+
+  const fetchData = () => {
     Promise.all([getPets(), getAppointments()])
       .then(([petsRes, apptsRes]) => {
         setPets(petsRes.data);
@@ -18,7 +27,23 @@ export default function Dashboard() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
+
+  const handlePetClick = (id: number) => {
+    setSelectedPetId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPetToEditId(id);
+    setIsEditModalOpen(true);
+  };
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading your dashboard...</div>;
 
@@ -54,7 +79,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {pets.length > 0 ? (
               pets.map(pet => (
-                <Link key={pet.id} to={`/pets/${pet.id}`}>
+                <div key={pet.id} onClick={() => handlePetClick(pet.id)}>
                   <div className="card-shell p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
                     <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
                       {pet.photo ? (
@@ -70,17 +95,13 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        navigate(`/pets/${pet.id}/edit`);
-                      }}
+                      onClick={(e) => handleEditClick(e, pet.id)}
                       className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 hover:text-brand-500 transition-colors"
                     >
                       <FiEdit2 className="w-4 h-4" />
                     </button>
                   </div>
-                </Link>
+                </div>
               ))
             ) : (
               <div className="col-span-full card-shell p-12 text-center space-y-3 bg-zinc-50/50 border-dashed">
@@ -145,6 +166,21 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Pet Profile Modal */}
+      <PetProfileModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        petId={selectedPetId}
+      />
+
+      {/* Edit Pet Modal */}
+      <EditPetModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        petId={petToEditId}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }

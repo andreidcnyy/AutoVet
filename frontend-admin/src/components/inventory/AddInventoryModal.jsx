@@ -12,6 +12,7 @@ const UNIT_OPTIONS = ["", "piece", "vial", "bottle", "tablet", "pack", "box", "d
 const inventorySchema = z.object({
   inventory_category_id: z.coerce.number().min(1, "Category is required"),
   item_name: z.string().min(1, "Item name is required").max(255),
+  code: z.string().max(100).optional().or(z.literal("")),
   stock_level: z.coerce.number().min(0, "Quantity must be 0 or more"),
   unit: z.string().min(1, "Unit is required"),
   min_stock_level: z.coerce.number().min(0, "Alert threshold must be 0 or more"),
@@ -66,6 +67,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     defaultValues: {
       inventory_category_id: "",
       item_name: "",
+      code: "",
       stock_level: 0,
       unit: "",
       min_stock_level: 10,
@@ -243,17 +245,31 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               
               <SectionHeading>A. Item Information</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Item Name *
-                  </label>
-                  <input
-                    type="text"
-                    {...register("item_name")}
-                    className={getInputClass(errors.item_name)}
-                    placeholder="e.g., Meloxicam Oral Suspension"
-                  />
-                  {errors.item_name && <p className="mt-1 text-xs text-red-500">{errors.item_name.message}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                            Item Name *
+                        </label>
+                        <input
+                            type="text"
+                            {...register("item_name")}
+                            className={getInputClass(errors.item_name)}
+                            placeholder="e.g., Meloxicam Oral Suspension"
+                        />
+                        {errors.item_name && <p className="mt-1 text-xs text-red-500">{errors.item_name.message}</p>}
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                            Item Code
+                        </label>
+                        <input
+                            type="text"
+                            {...register("code")}
+                            className={getInputClass(errors.code)}
+                            placeholder="e.g., MED-001"
+                        />
+                        {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code.message}</p>}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -382,7 +398,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Cost Price (₱)
+                    Buying Price (₱) *
                   </label>
                   <input
                     type="text"
@@ -395,8 +411,9 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                       }
                     }}
                     className={getInputClass(errors.price)}
-                    placeholder="Optional"
+                    placeholder="0.00"
                   />
+                  {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price.message}</p>}
                 </div>
               </div>
 

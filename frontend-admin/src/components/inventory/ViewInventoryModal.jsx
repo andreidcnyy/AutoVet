@@ -189,11 +189,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
           <div className="mb-6 grid grid-cols-2 gap-y-4">
             {[
+              ["Item Code", "code"],
               ["Category", "inventory_category_id"],
               ["Quantity", "stock_level"],
               ["Min Stock (Alert)", "min_stock_level"],
               ["Selling Price", "selling_price"],
-              ["Cost Price", "price"],
+              ["Buying Price", "price"],
               ["Expiration Date", "expiration_date"],
             ].map(([label, field]) => (
               <div key={field}>
@@ -235,6 +236,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   </p>
                 ) : (field === "stock_level" || field === "min_stock_level") ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
+                ) : field === "expiration_date" ? (
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {product[field] ? new Date(product[field]).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : "N/A"}
+                  </p>
                 ) : (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
                 )}

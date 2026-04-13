@@ -16,7 +16,10 @@ import {
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
-  FiBell
+  FiBell,
+  FiRefreshCcw,
+  FiThumbsUp,
+  FiThumbsDown
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
 import { format, addMonths, subMonths } from "date-fns";
@@ -268,35 +271,50 @@ function AppointmentsView() {
     setIsDrawerOpen(true);
   };
 
-  const handleStatusUpdate = async (id, status) => {
+  const handleStatusAction = async (action) => {
     try {
-      const response = await fetch(`/api/appointments/${id}`, {
-        method: "PUT",
+      const response = await fetch(`/api/appointments/${selectedAppointment.id}/${action}`, {
+        method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
-        body: JSON.stringify({
-          ...selectedAppointment,
-          status,
-          pet_id: selectedAppointment.pet_id,
-          service_id: selectedAppointment.service_id,
-          date: selectedAppointment.date,
-          time: selectedAppointment.time?.substring(0, 5), // Ensure HH:mm format
-        }),
       });
 
-      if (!response.ok) throw new Error("Failed to update status");
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || `Failed to ${action} appointment.`);
+      }
 
-      toast.success(`Appointment marked as ${status}`);
+      toast.success(`Appointment ${action} successfully.`);
       fetchAppointments();
-      // Update local state if needed
-      setSelectedAppointment(prev => ({ ...prev, status }));
+      setSelectedAppointment(prev => ({ ...prev, status: action === 'approve' ? 'approved' : 'declined' }));
     } catch (err) {
       toast.error(err.message);
     }
   };
+
+  const handleSendReminder = async () => {
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointment.id}/remind`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || `Failed to send reminder.`);
+      }
+
+      toast.success(`Reminder sent successfully.`);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
 
   const handleDeleteAppointment = async (id) => {
     if (!window.confirm("Are you sure you want to cancel/delete this appointment?")) return;
@@ -357,7 +375,7 @@ function AppointmentsView() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Past / No Show</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Declined/Cancelled/Past</span>
               </div>
             </div>
 
@@ -428,18 +446,26 @@ function AppointmentsView() {
                     {entry.events.map((event) => {
                       // Status logic:
                       // Grey: Pending
-                      // Green: Completed (Approved)
-                      // Red: Cancelled / No Show / Past its time if still pending
+                      // Green: Approved / Completed
+                      // Red: Declined / Cancelled / Past its time if still pending
                       const isPast = new Date(`${event.date}T${event.time}`) < new Date();
                       
                       let statusColorClass = "";
-                      if (event.status === 'completed') {
+                      let statusText = event.status;
+
+                      if (event.status === 'approved' || event.status === 'completed') {
                         statusColorClass = "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300";
-                      } else if (event.status === 'cancelled' || (event.status === 'pending' && isPast)) {
+                        if (event.status === 'approved') statusText = 'Approved';
+                        if (event.status === 'completed') statusText = 'Completed';
+                      } else if (event.status === 'declined' || event.status === 'cancelled' || (event.status === 'pending' && isPast)) {
                         statusColorClass = "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300";
+                        if (event.status === 'declined') statusText = 'Declined';
+                        if (event.status === 'cancelled') statusText = 'Cancelled';
+                        if (event.status === 'pending' && isPast) statusText = 'Past/No Show';
                       } else {
-                        // Default pending or other
+                        // Default pending
                         statusColorClass = "border-zinc-400/50 bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+                        statusText = 'Pending';
                       }
 
                       return (
@@ -447,7 +473,7 @@ function AppointmentsView() {
                           key={event.id}
                           onClick={(e) => handleAppointmentClick(e, event)}
                           className={clsx(
-                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:tranzinc-x-1 group/appt",
+                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:translate-x-1 group/appt",
                             statusColorClass
                           )}
                         >
@@ -483,7 +509,7 @@ function AppointmentsView() {
         <aside
           className={clsx(
             "absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-[-20px_0_50px_-10px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] overflow-y-auto",
-            isDrawerOpen ? "tranzinc-x-0" : "tranzinc-x-full"
+            isDrawerOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
           {activePanel === "booking" ? (
@@ -515,7 +541,7 @@ function AppointmentsView() {
                         <option value="">— Select Owner —</option>
                         {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     </div>
                   </div>
 
@@ -526,7 +552,7 @@ function AppointmentsView() {
                         <option value="">— Select Pet —</option>
                         {pets.filter(p => p.owner_id.toString() === selectedOwnerId.toString()).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.species?.name})</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     </div>
                     {errors.pet_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.pet_id.message}</p>}
                   </div>
@@ -538,7 +564,7 @@ function AppointmentsView() {
                         <option value="">— Select Service —</option>
                         {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
-                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-400" />
+                      <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     </div>
                     {errors.service_id && <p className="mt-2 text-xs text-red-500 font-black italic">{errors.service_id.message}</p>}
                   </div>
@@ -564,7 +590,7 @@ function AppointmentsView() {
                       <option value="">— Select Vet —</option>
                       {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
                     </select>
-                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -tranzinc-y-1/2 text-zinc-401" />
+                    <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-401" />
                   </div>
                 </div>
 
@@ -588,12 +614,41 @@ function AppointmentsView() {
                   </h3>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Internal record view</p>
                 </div>
-                <button
-                  onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
-                  className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
-                >
-                  <FiX className="h-6 w-6" />
-                </button>
+                <div className="flex gap-2">
+                  {selectedAppointment?.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleStatusAction('approve')}
+                        className="rounded-2xl bg-emerald-100 p-3 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-800/50 transition-all active:scale-90"
+                        title="Approve Appointment"
+                      >
+                        <FiThumbsUp className="h-6 w-6" />
+                      </button>
+                      <button
+                        onClick={() => handleStatusAction('decline')}
+                        className="rounded-2xl bg-rose-100 p-3 text-rose-600 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-800/50 transition-all active:scale-90"
+                        title="Decline Appointment"
+                      >
+                        <FiThumbsDown className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
+                  {selectedAppointment?.status === 'approved' && (
+                    <button
+                      onClick={handleSendReminder}
+                      className="rounded-2xl bg-indigo-100 p-3 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-800/50 transition-all active:scale-90"
+                      title="Send Reminder"
+                    >
+                      <FiBell className="h-6 w-6" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setIsDrawerOpen(false); setSelectedAppointment(null); }}
+                    className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-dark-border transition-all active:scale-90"
+                  >
+                    <FiX className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
 
               <div className="p-8 space-y-10">
@@ -605,12 +660,12 @@ function AppointmentsView() {
                     <h4 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 truncate italic leading-tight">{selectedAppointment?.title}</h4>
                     <div className={clsx(
                       "mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase tracking-widest shadow-lg",
-                      selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
-                        selectedAppointment?.status === "cancelled" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
+                      selectedAppointment?.status === "approved" || selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                      selectedAppointment?.status === "declined" || selectedAppointment?.status === "cancelled" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" :
                           "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                     )}>
-                      {selectedAppointment?.status === "completed" && <FiCheckCircle className="h-4 w-4" />}
-                      {selectedAppointment?.status === "cancelled" && <FiXCircle className="h-4 w-4" />}
+                      {selectedAppointment?.status === "approved" || selectedAppointment?.status === "completed" && <FiCheckCircle className="h-4 w-4" />}
+                      {selectedAppointment?.status === "declined" || selectedAppointment?.status === "cancelled" && <FiXCircle className="h-4 w-4" />}
                       {selectedAppointment?.status === "pending" && <FiAlertCircle className="h-4 w-4" />}
                       {selectedAppointment?.status || "pending"}
                     </div>
@@ -661,13 +716,15 @@ function AppointmentsView() {
                 <div className="pt-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 text-center mb-6">Security & Lifecycle Actions</p>
 
-                  <button
-                    onClick={() => setIsSendModalOpen(true)}
-                    className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl bg-emerald-100 text-sm font-black uppercase tracking-widest text-emerald-700 shadow-xl shadow-emerald-200/50 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-800/50 transition-all active:scale-95"
-                  >
-                    <FiBell className="h-5 w-5" />
-                    Send Reminder
-                  </button>
+                  {(selectedAppointment?.status === 'approved' || selectedAppointment?.status === 'pending') && (
+                    <button
+                      onClick={handleSendReminder}
+                      className="mb-4 w-full flex h-14 items-center justify-center gap-3 rounded-2xl bg-indigo-100 text-sm font-black uppercase tracking-widest text-indigo-700 shadow-xl shadow-indigo-200/50 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-800/50 transition-all active:scale-95"
+                    >
+                      <FiBell className="h-5 w-5" />
+                      Send Reminder
+                    </button>
+                  )}
 
                   <button
                     onClick={handleEditClick}
@@ -678,27 +735,40 @@ function AppointmentsView() {
                   </button>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => handleStatusUpdate(selectedAppointment?.id, "completed")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95"
-                    >
-                      <FiCheckCircle className="h-6 w-6" />
-                      Close Case
-                    </button>
-                    <button
-                      onClick={() => handleStatusUpdate(selectedAppointment?.id, "cancelled")}
-                      className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-zinc-100 text-sm font-black uppercase tracking-widest text-zinc-700 shadow-xl shadow-zinc-200/50 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-border transition-all active:scale-95"
-                    >
-                      <FiXCircle className="h-6 w-6" />
-                      Discard
-                    </button>
+                    {selectedAppointment?.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleStatusAction('approve')}
+                          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95"
+                        >
+                          <FiThumbsUp className="h-6 w-6" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusAction('decline')}
+                          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-rose-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-rose-500/30 hover:bg-rose-700 transition-all active:scale-95"
+                        >
+                          <FiThumbsDown className="h-6 w-6" />
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {(selectedAppointment?.status === 'approved' || selectedAppointment?.status === 'declined' || selectedAppointment?.status === 'completed') && (
+                      <button
+                        onClick={() => handleStatusAction('completed')}
+                        className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95 col-span-2"
+                      >
+                        <FiCheckCircle className="h-6 w-6" />
+                        Mark as Completed
+                      </button>
+                    )}
                   </div>
                   <button
                     onClick={() => handleDeleteAppointment(selectedAppointment?.id)}
                     className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl border-2 border-rose-100 text-sm font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 dark:border-rose-900/30 dark:hover:bg-rose-900/10 transition-all active:scale-95 mt-4"
                   >
                     <FiTrash2 className="h-6 w-6" />
-                    Purple heart Wipe
+                    Archive Appointment
                   </button>
                 </div>
               </div>

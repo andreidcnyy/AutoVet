@@ -204,23 +204,46 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/30">
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex gap-2">
+              <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstOwner + 1}-{Math.min(indexOfLastOwner, filteredOwners.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredOwners.length}</span> clients
+              </div>
+              
+              <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
                 >
-                  Previous
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
+                
+                <div className="flex items-center gap-1.5">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={clsx(
+                        "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                        currentPage === i + 1
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                          : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                      )}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
                 <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
                 >
-                  Next
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>

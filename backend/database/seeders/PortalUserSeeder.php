@@ -15,19 +15,18 @@ class PortalUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create the Portal User
-        $user = User::updateOrCreate(
+        // 1. Create the Portal User in the portal_users table
+        $user = \App\Models\PortalUser::updateOrCreate(
             ['email' => 'portal@autovet.com'],
             [
                 'name' => 'John Doe (Pet Owner)',
                 'password' => Hash::make('password123'),
-                'role' => Roles::OWNER->value,
                 'status' => 'active',
             ]
         );
 
         // 2. Create the associated Owner record
-        Owner::updateOrCreate(
+        \App\Models\Owner::updateOrCreate(
             ['email' => 'portal@autovet.com'],
             [
                 'name' => 'John Doe',
