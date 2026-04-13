@@ -241,7 +241,6 @@ class DashboardController extends Controller
         $overdue = \App\Models\MedicalRecord::with(['pet.owner'])
             ->whereNotNull('follow_up_date')
             ->where('follow_up_date', '<', now()->toDateString())
-            ->whereNull('deleted_at')
             ->orderBy('follow_up_date', 'asc')
             ->limit(10)
             ->get();
@@ -250,7 +249,6 @@ class DashboardController extends Controller
         $upcoming = \App\Models\MedicalRecord::with(['pet.owner'])
             ->whereNotNull('follow_up_date')
             ->whereBetween('follow_up_date', [now()->toDateString(), now()->addDays(30)->toDateString()])
-            ->whereNull('deleted_at')
             ->orderBy('follow_up_date', 'asc')
             ->limit(10)
             ->get();
@@ -282,7 +280,6 @@ class DashboardController extends Controller
 
         $totalOverdue = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
             ->where('follow_up_date', '<', now()->toDateString())
-            ->whereNull('deleted_at')
             ->count();
 
         return response()->json([
@@ -593,6 +590,17 @@ class DashboardController extends Controller
             }
         }
 
+        // Not enough data to run regression meaningfully
+        if ($n < 2) {
+            return response()->json([
+                'data' => [],
+                'model' => null,
+                'insights' => [
+                    ['type' => 'info', 'text' => 'Not enough invoice data yet to run the forecast model. Record at least 2 months of sales to activate AI forecasting.']
+                ],
+            ]);
+        }
+
         // Simple Linear Regression: y = mx + b
         $sumX = array_sum($xValues);
         $sumY = array_sum($yValues);
@@ -636,6 +644,8 @@ class DashboardController extends Controller
             $aiInsights[] = ['type' => 'success', 'text' => "Revenue is growing at +₱" . number_format(round($m), 0) . "/month. The model projects ₱" . number_format($nextMonthForecast, 0) . " next month."];
         } elseif ($m < 0) {
             $aiInsights[] = ['type' => 'warning', 'text' => "Revenue shows a declining trend of ₱" . number_format(abs(round($m)), 0) . "/month. Review pricing or service volume."];
+        } else {
+            $aiInsights[] = ['type' => 'info', 'text' => "Revenue trend is flat. The model needs more monthly data points to detect a growth direction."];
         }
 
         if ($r2 >= 0.75) {
@@ -643,7 +653,10 @@ class DashboardController extends Controller
         } elseif ($r2 >= 0.4) {
             $aiInsights[] = ['type' => 'warning', 'text' => "Model confidence is moderate (R²=" . $r2 . "). Forecast accuracy improves with more historical invoice data."];
         } else {
-            $aiInsights[] = ['type' => 'danger', 'text' => "Low model confidence (R²=" . $r2 . "). Forecast may not be reliable yet — keep recording sales data."];
+            $trainingNote = $n < 4 
+                ? " The model is training on only {$n} month(s) of data — accuracy improves automatically as more invoices are recorded."
+                : " Consider checking for unusual revenue spikes that may be affecting the trend.";
+            $aiInsights[] = ['type' => 'warning', 'text' => "Model is still learning (R²=" . $r2 . ").{$trainingNote}"];
         }
 
         $lowStock = \App\Models\Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();

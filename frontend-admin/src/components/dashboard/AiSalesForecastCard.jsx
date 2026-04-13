@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiCircle } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
+import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 
 const WIDTH = 760;
@@ -16,6 +17,7 @@ function createPath(points) {
 }
 
 function AiSalesForecastCard() {
+    const { user } = useAuth();
     const [activeRange, setActiveRange] = useState("6 Months");
     const [data, setData] = useState([]);
     const [model, setModel] = useState(null);
@@ -24,20 +26,32 @@ function AiSalesForecastCard() {
 
     useEffect(() => {
         setIsLoading(true);
-        fetch(`/api/dashboard/sales-forecast?range=${activeRange}`)
+        fetch(`/api/dashboard/sales-forecast?range=${activeRange}`, {
+            headers: {
+                'Authorization': `Bearer ${user?.token}`,
+                'Accept': 'application/json'
+            }
+        })
             .then(res => res.json())
             .then(fetchedData => {
                 const { data: forecastData, model: modelData, insights: insightData } = fetchedData;
-                setData(Array.isArray(forecastData) ? forecastData : []);
-                setModel(modelData ?? null);
-                setInsights(Array.isArray(insightData) ? insightData : []);
+                
+                if (Array.isArray(forecastData) && forecastData.length === 0 && modelData?.training_months === 0) {
+                    setData([]);
+                    setModel(null);
+                    setInsights([]);
+                } else {
+                    setData(Array.isArray(forecastData) ? forecastData : []);
+                    setModel(modelData ?? null);
+                    setInsights(Array.isArray(insightData) ? insightData : []);
+                }
                 setIsLoading(false);
             })
             .catch(err => {
                 console.error("Failed to fetch forecast:", err);
                 setIsLoading(false);
             });
-    }, [activeRange]);
+    }, [activeRange, user?.token]);
 
     const safeData = Array.isArray(data) ? data : [];
     
@@ -204,12 +218,8 @@ function AiSalesForecastCard() {
                         ))}
 
                         {/* Confidence Band Polygon */}
-                        {model && (
-                            <polygon 
-                                points={confidencePolygonPoints} 
-                                fill="#a78bfa" 
-                                fillOpacity="0.15" 
-                            />
+                        {bandPath && (
+                            <path d={bandPath} fill="#a78bfa" fillOpacity="0.15" stroke="none" />
                         )}
 
                         <path d={createPath(forecastPoints)} className="fill-none stroke-violet-400 dark:stroke-violet-400" strokeWidth="2.5" strokeDasharray="8 8" />
