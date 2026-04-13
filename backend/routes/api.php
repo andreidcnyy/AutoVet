@@ -40,7 +40,7 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
 
 // Test endpoint to check API status
-Route::get('/health', function () {
+Route::get('/status', function () {
     $dbStatus = 'disconnected';
     try {
         \Illuminate\Support\Facades\DB::connection()->getPdo();
@@ -84,6 +84,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/dashboard/sales-forecast',        [DashboardController::class, 'getSalesForecast']);
     Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecast']);
     Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
+    Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
 
     // -----------------------------------------------------------------------
     // Core Modules

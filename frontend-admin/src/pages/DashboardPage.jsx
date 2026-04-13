@@ -3,6 +3,7 @@ import InventoryChartCard from "../components/dashboard/InventoryChartCard";
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
+import AiInsightPanels from "../components/dashboard/AiInsightPanels";
 import * as Icons from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { ROLES } from "../constants/roles";
@@ -89,6 +90,7 @@ function DashboardPage() {
       <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           {!isStaff && <AiSalesForecastCard />}
+          {!isStaff && <AiInsightPanels />}
           <InventoryChartCard />
         </div>
         <RecentNotificationsCard 

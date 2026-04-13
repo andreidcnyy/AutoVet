@@ -4,6 +4,8 @@ import json
 import sys
 import math
 from datetime import datetime, timedelta
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -121,6 +123,16 @@ def forecast_stockout(csv_filepath, min_stock_level):
 
     predicted_date_to_min = last_date + timedelta(days=predicted_days_to_min)
 
+    # Scikit-learn LinearRegression model
+    X = np.arange(len(df)).reshape(-1, 1)  # day index as feature
+    y = df['stock_level'].values
+    model = LinearRegression()
+    model.fit(X, y)
+    lr_slope = round(float(model.coef_[0]), 4)
+    lr_intercept = round(float(model.intercept_), 4)
+    lr_r2 = round(float(r2_score(y, model.predict(X))), 4)
+    predicted_next = round(float(model.predict([[len(df)]])[0]), 2)
+
     # For sanity, limit forecast to max 5 years
     if predicted_days_to_min > 365 * 5:
          return {
@@ -138,7 +150,12 @@ def forecast_stockout(csv_filepath, min_stock_level):
         "current_stock": last_stock,
         "min_stock_level": min_stock_level,
         "average_daily_consumption": round(average_daily_consumption, 2),
-        "last_recorded_date": last_date.strftime('%Y-%m-%d')
+        "last_recorded_date": last_date.strftime('%Y-%m-%d'),
+        "lr_slope": lr_slope,
+        "lr_intercept": lr_intercept,
+        "lr_r2": lr_r2,
+        "lr_predicted_next_stock": predicted_next,
+        "ml_algorithm": "scikit-learn LinearRegression"
     }
 
 if __name__ == '__main__':

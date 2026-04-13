@@ -124,44 +124,174 @@ class DashboardController extends Controller
      */
     public function getAppointmentForecast()
     {
-        $lastWeekCount = Appointment::whereBetween('date', [now()->subDays(7)->toDateString(), now()->toDateString()])->count();
-        $nextWeekCount = Appointment::whereBetween('date', [now()->addDay()->toDateString(), now()->addDays(8)->toDateString()])->count();
-        $totalApps = Appointment::count();
-
-        $insight = "Clinic appointment volume is stable. Standard operations recommended for the coming week.";
-        $hints = [];
-
-        if ($nextWeekCount > $lastWeekCount * 1.2) {
-            $insight = "A " . round((($nextWeekCount - $lastWeekCount) / max(1, $lastWeekCount)) * 100) . "% increase in appointments is expected next week compared to the last 7 days.";
-            $hints[] = "Consider scheduling additional staff or extending hours.";
-        } elseif ($nextWeekCount < $lastWeekCount * 0.8) {
-            $insight = "Upcoming scheduled appointments are lower than usual. Consider sending reminder campaigns to clients.";
-            $hints[] = "Great time to perform facility maintenance or staff training.";
-        } else {
-            $hints[] = "Maintain standard staffing levels.";
+        // Get last 8 weeks of appointment counts grouped by week number
+        // Used as training data for linear regression
+        $weeklyData = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $weekStart = now()->startOfWeek()->subWeeks($i);
+            $weekEnd = $weekStart->copy()->endOfWeek();
+            $count = \App\Models\Appointment::whereBetween('date', [
+                $weekStart->toDateString(),
+                $weekEnd->toDateString()
+            ])->count();
+            $weeklyData[] = $count;
         }
 
-        // Check if there are many overdue followups
+        // Linear Regression on weekly appointment counts (x = week index, y = count)
+        $n = count($weeklyData);
+        $xValues = range(0, $n - 1);
+        $yValues = $weeklyData;
+        $sumX = array_sum($xValues);
+        $sumY = array_sum($yValues);
+        $sumXY = 0; $sumX2 = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $sumXY += $xValues[$i] * $yValues[$i];
+            $sumX2 += $xValues[$i] * $xValues[$i];
+        }
+        $denom = ($n * $sumX2) - ($sumX * $sumX);
+        $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
+        $b = ($sumY - ($m * $sumX)) / $n;
+
+        // R² for appointment model
+        $meanY = $sumY / $n;
+        $ssTot = array_sum(array_map(fn($y) => pow($y - $meanY, 2), $yValues));
+        $ssRes = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $ssRes += pow($yValues[$i] - ($m * $xValues[$i] + $b), 2);
+        }
+        $r2 = $ssTot > 0 ? round(1 - ($ssRes / $ssTot), 4) : 0;
+
+        // Forecast next 2 weeks
+        $forecastNext1 = max(0, round($m * $n + $b));
+        $forecastNext2 = max(0, round($m * ($n + 1) + $b));
+
+        // Build week labels for chart (last 8 weeks + 2 forecast weeks)
+        $weekLabels = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $weekLabels[] = 'W' . now()->startOfWeek()->subWeeks($i)->format('M d');
+        }
+        $weekLabels[] = 'Next wk';
+        $weekLabels[] = 'Wk +2';
+
+        $chartData = array_merge($weeklyData, [$forecastNext1, $forecastNext2]);
+
+        // Per-day appointment counts for the current + next 7 days (for bar chart)
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $date = now()->addDays($i);
+            $count = \App\Models\Appointment::whereDate('date', $date->toDateString())->count();
+            $days[] = [
+                'label' => $date->format('D'),
+                'date'  => $date->toDateString(),
+                'count' => $count,
+            ];
+        }
+
+        // Insight text from regression
+        $lastWeekCount = $weeklyData[count($weeklyData) - 1];
+        $insight = 'Clinic appointment volume is stable. Standard operations recommended.';
+        if ($m > 1) {
+            $pct = round(($forecastNext1 - max(1, $lastWeekCount)) / max(1, $lastWeekCount) * 100);
+            $insight = "Appointments are trending upward. Model projects {$forecastNext1} appointments next week" . ($pct > 0 ? " (+{$pct}% vs this week)." : '.');
+        } elseif ($m < -1) {
+            $insight = "Appointment volume is trending downward. Consider sending client reminders to fill the schedule.";
+        }
+
+        // Hints
+        $hints = [];
+        if ($forecastNext1 > $lastWeekCount * 1.2) {
+            $hints[] = "Consider scheduling additional staff or extending hours next week.";
+        }
         $overdueFollowups = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
             ->where('follow_up_date', '<', now()->toDateString())
             ->count();
-        if ($overdueFollowups > 5) {
-            $hints[] = "There are {$overdueFollowups} overdue patient follow-ups. Assign staff to call owners.";
+        if ($overdueFollowups > 0) {
+            $hints[] = "There are {$overdueFollowups} overdue patient follow-ups. Assign staff to contact owners.";
         }
-
-        // Low inventory check again for hints
-        $lowStock = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
+        $lowStock = \App\Models\Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
         if ($lowStock > 0) {
-            $hints[] = "Ensure to refill {$lowStock} low-stock items before the busy periods.";
+            $hints[] = "Refill {$lowStock} low-stock items before busy appointment days.";
         }
-
         if (empty($hints)) {
-            $hints[] = "No specific warnings. Great job!";
+            $hints[] = "No critical warnings. Clinic is operating normally.";
         }
 
         return response()->json([
-            'insight' => $insight,
-            'hints' => $hints
+            'insight'         => $insight,
+            'hints'           => $hints,
+            'model'           => [
+                'slope'            => round($m, 4),
+                'intercept'        => round($b, 4),
+                'r2'               => $r2,
+                'forecast_week_1'  => $forecastNext1,
+                'forecast_week_2'  => $forecastNext2,
+                'algorithm'        => 'Simple Linear Regression',
+            ],
+            'weekly_chart'    => [
+                'labels' => $weekLabels,
+                'data'   => $chartData,
+            ],
+            'daily_next7'     => $days,
+        ]);
+    }
+
+    public function getPatientVisitPredictions()
+    {
+        // Overdue follow-ups: follow_up_date is in the past, load pet + owner
+        $overdue = \App\Models\MedicalRecord::with(['pet.owner'])
+            ->whereNotNull('follow_up_date')
+            ->where('follow_up_date', '<', now()->toDateString())
+            ->whereNull('deleted_at')
+            ->orderBy('follow_up_date', 'asc')
+            ->limit(10)
+            ->get();
+
+        // Upcoming follow-ups: follow_up_date within next 30 days
+        $upcoming = \App\Models\MedicalRecord::with(['pet.owner'])
+            ->whereNotNull('follow_up_date')
+            ->whereBetween('follow_up_date', [now()->toDateString(), now()->addDays(30)->toDateString()])
+            ->whereNull('deleted_at')
+            ->orderBy('follow_up_date', 'asc')
+            ->limit(10)
+            ->get();
+
+        $formatRecord = function ($record, $tone) {
+            $daysAgo = now()->diffInDays($record->follow_up_date, false);
+            if ($tone === 'danger') {
+                $statusLabel = abs((int)$daysAgo) . 'd overdue';
+            } else {
+                $statusLabel = (int)$daysAgo . 'd away';
+            }
+            return [
+                'pet'          => $record->pet->name ?? 'Unknown',
+                'owner'        => $record->pet->owner->last_name ?? ($record->pet->owner->name ?? 'Unknown'),
+                'follow_up'    => $record->follow_up_date?->toDateString(),
+                'status_label' => $statusLabel,
+                'tone'         => $tone,
+                'diagnosis'    => $record->diagnosis ?? null,
+            ];
+        };
+
+        $results = [];
+        foreach ($overdue as $r)  { $results[] = $formatRecord($r, 'danger'); }
+        foreach ($upcoming as $r) {
+            $days = now()->diffInDays($r->follow_up_date, false);
+            $tone = $days <= 5 ? 'warning' : ($days <= 14 ? 'info' : 'success');
+            $results[] = $formatRecord($r, $tone);
+        }
+
+        $totalOverdue = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
+            ->where('follow_up_date', '<', now()->toDateString())
+            ->whereNull('deleted_at')
+            ->count();
+
+        return response()->json([
+            'patients'      => $results,
+            'total_overdue' => $totalOverdue,
+            'total_upcoming'=> $upcoming->count(),
+            'summary'       => $totalOverdue > 0
+                ? "{$totalOverdue} pets are overdue for follow-up visits."
+                : "No overdue follow-ups. All patients are on schedule.",
         ]);
     }
 
@@ -481,6 +611,51 @@ class DashboardController extends Controller
         $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
         $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
 
+        // 1. R² calculation
+        $meanY = $n > 0 ? $sumY / $n : 0;
+        $ssTot = 0;
+        foreach ($yValues as $y) {
+            $ssTot += ($y - $meanY) ** 2;
+        }
+        $ssRes = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $ssRes += ($yValues[$i] - ($m * $xValues[$i] + $b)) ** 2;
+        }
+        $r2 = ($ssTot > 0) ? round(1 - ($ssRes / $ssTot), 4) : 0;
+
+        // 2. Standard error for confidence band
+        $standardError = ($n > 2) ? round(sqrt($ssRes / ($n - 2)), 2) : 0;
+        $confidenceMargin = round($standardError * 1.5, 2);
+
+        // 3. Next month forecast value
+        $nextMonthForecast = round(max(0, ($m * $n) + $b), 2);
+
+        // 4. AI Insights array
+        $aiInsights = [];
+        if ($m > 0) {
+            $aiInsights[] = ['type' => 'success', 'text' => "Revenue is growing at +₱" . number_format(round($m), 0) . "/month. The model projects ₱" . number_format($nextMonthForecast, 0) . " next month."];
+        } elseif ($m < 0) {
+            $aiInsights[] = ['type' => 'warning', 'text' => "Revenue shows a declining trend of ₱" . number_format(abs(round($m)), 0) . "/month. Review pricing or service volume."];
+        }
+
+        if ($r2 >= 0.75) {
+            $aiInsights[] = ['type' => 'success', 'text' => "Model confidence is strong (R²=" . $r2 . "). The forecast is based on consistent historical patterns."];
+        } elseif ($r2 >= 0.4) {
+            $aiInsights[] = ['type' => 'warning', 'text' => "Model confidence is moderate (R²=" . $r2 . "). Forecast accuracy improves with more historical invoice data."];
+        } else {
+            $aiInsights[] = ['type' => 'danger', 'text' => "Low model confidence (R²=" . $r2 . "). Forecast may not be reliable yet — keep recording sales data."];
+        }
+
+        $lowStock = \App\Models\Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
+        if ($lowStock > 0) {
+            $aiInsights[] = ['type' => 'danger', 'text' => $lowStock . " inventory items are critically low. Restock before peak appointment days."];
+        }
+
+        $overdueFollowups = \App\Models\MedicalRecord::whereNotNull('follow_up_date')->where('follow_up_date', '<', now()->toDateString())->count();
+        if ($overdueFollowups > 0) {
+            $aiInsights[] = ['type' => 'info', 'text' => $overdueFollowups . " pets are overdue for follow-up visits. Auto-reminders can be sent from the Notifications module."];
+        }
+
         // Construct final data structure
         $results = [];
         
@@ -512,6 +687,19 @@ class DashboardController extends Controller
             }
         }
 
-        return response()->json($results);
+        return response()->json([
+            'data' => $results,
+            'model' => [
+                'slope' => round($m, 2),
+                'intercept' => round($b, 2),
+                'r2' => $r2,
+                'standard_error' => $standardError,
+                'confidence_margin' => $confidenceMargin,
+                'training_months' => $n,
+                'next_month_forecast' => $nextMonthForecast,
+                'algorithm' => 'Simple Linear Regression',
+            ],
+            'insights' => $aiInsights,
+        ]);
     }
 }

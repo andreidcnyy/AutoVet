@@ -29,6 +29,13 @@ class TestForecastStockout(unittest.TestCase):
         self.assertEqual(result.get('prediction_status'), 'Forecast Available')
         # 90 currently. min is 10. To deplete: 80 units. rate = 2/day. 80/2 = 40 days.
         self.assertEqual(result.get('days_until_stockout'), 40)
+        
+        # New ML metrics check
+        self.assertIn('lr_slope', result)
+        self.assertIn('lr_intercept', result)
+        self.assertIn('lr_r2', result)
+        self.assertIn('lr_predicted_next_stock', result)
+        self.assertEqual(result.get('ml_algorithm'), 'scikit-learn LinearRegression')
 
     def test_increasing_stock_trend(self):
         data = {

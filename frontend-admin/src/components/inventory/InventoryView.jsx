@@ -109,7 +109,7 @@ function InventoryView() {
     setCurrentPage(1);
   }, [activeFilter, searchQuery, selectedCategory]);
 
-  const handleRunForecast = async () => {
+  const handleForecast = async () => {
     setIsSimulating(true);
     setShowAiAside(false);
     
@@ -123,6 +123,10 @@ function InventoryView() {
       if (!response.ok) throw new Error("Failed to fetch forecast");
       const data = await response.json();
       setAiForecastData(data);
+      
+      setInventoryRows(prev => prev.map(row => 
+        row.item_name === data.item_name ? { ...row, aiForecastData: data } : row
+      ));
       
       // Simulate analysis delay
       setTimeout(() => {
@@ -225,19 +229,6 @@ function InventoryView() {
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Internal Inventory Management</h2>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Clinics &gt; Downtown Branch &gt; Stock Control &amp; Forecasting</p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={handleRunForecast}
-            disabled={isSimulating}
-            className={clsx(
-              "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition",
-              isSimulating ? "bg-emerald-400 cursor-wait" : "bg-emerald-600 hover:bg-emerald-700"
-            )}
-          >
-            <LuSparkles className={clsx("h-4 w-4", isSimulating && "animate-spin")} />
-            {isSimulating ? "Analyzing..." : "Run AI Forecast"}
-          </button>
-        )}
       </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
@@ -264,6 +255,29 @@ function InventoryView() {
           <p className="mt-2 text-sm text-emerald-100">Forecast refresh complete. {lowStock} items flagged for reorder planning.</p>
         </article>
       </section>
+
+      {isAdmin && (
+        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <LuSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">AI Inventory Forecast</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                {aiForecastData
+                  ? `Last run: ${new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })} · ${aiForecastData.item_name} analyzed`
+                  : 'Run the model to predict stockout dates using linear regression on your transaction history.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleForecast}
+            disabled={isSimulating}
+            className="flex-shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+          >
+            {isSimulating ? 'Analyzing...' : 'Run AI Forecast'}
+          </button>
+        </div>
+      )}
 
       <section className="relative card-shell overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border p-4">
@@ -380,19 +394,20 @@ function InventoryView() {
                 <th className="px-5 py-4">Selling Price</th>
                 <th className="px-5 py-4">Stock Level</th>
                 <th className="px-5 py-4">Min Stock</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">AI Forecast</th>
                 <th className="px-5 py-4 text-center">Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  <td colSpan="9" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                     Loading inventory data...
                   </td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  <td colSpan="9" className="px-5 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                     No items found matching the current filter.
                   </td>
                 </tr>
@@ -467,6 +482,24 @@ function InventoryView() {
                       <td className="px-5 py-4 text-sm font-semibold text-zinc-500 dark:text-zinc-500">
                         {Number(row.min_stock_level || 0).toLocaleString()}
                       </td>
+                      <td className="px-4 py-3">
+                        {row.aiForecastData?.prediction_status === 'Forecast Available' ? (
+                          <button
+                            onClick={() => { setAiForecastData(row.aiForecastData); setShowAiAside(true); }}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              row.aiForecastData.days_until_stockout <= 14
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                : row.aiForecastData.days_until_stockout <= 30
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            }`}
+                          >
+                            {row.aiForecastData.days_until_stockout}d left
+                          </button>
+                        ) : (
+                          <span className="text-xs text-zinc-400 dark:text-zinc-600">—</span>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-center">
                         <button
                           onClick={() => setViewedProduct(row)}
@@ -482,6 +515,63 @@ function InventoryView() {
             </tbody>
           </table>
         </div>
+
+        {showAiAside && aiForecastData && (
+          <div className="mt-4 rounded-2xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <LuSparkles className="h-4 w-4 text-emerald-500" />
+                  <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-50">AI Analysis: {aiForecastData.item_name}</h4>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">scikit-learn LinearRegression · trained on transaction history</p>
+              </div>
+              <button onClick={() => setShowAiAside(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                <FiX className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-4">
+              <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface p-3">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Current stock</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{aiForecastData.current_stock ?? aiForecastData.chart_data?.usage?.at(-1) ?? '—'}</p>
+              </div>
+              <div className="rounded-xl bg-rose-50 dark:bg-rose-900/20 p-3">
+                <p className="text-xs text-rose-600 dark:text-rose-400 mb-1">Days until stockout</p>
+                <p className="text-xl font-bold text-rose-700 dark:text-rose-300">{aiForecastData.days_until_stockout ?? '—'}</p>
+              </div>
+              <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface p-3">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Daily consumption</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{aiForecastData.average_daily_consumption ?? '—'} <span className="text-xs font-normal">units/day</span></p>
+              </div>
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Recommended restock</p>
+                <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{aiForecastData.recommended_stock ?? '—'} units</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4 leading-relaxed">{aiForecastData.analysis}</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/inventory/${aiForecastData.inventory_id}/accept-forecast`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ recommended_stock: aiForecastData.recommended_stock }) });
+                    if (!res.ok) throw new Error();
+                    toast.success('Target stock updated based on AI forecast.');
+                    setShowAiAside(false);
+                  } catch { toast.error('Failed to apply recommendation.'); }
+                }}
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+              >
+                Apply recommendation
+              </button>
+              <button onClick={() => setShowAiAside(false)} className="rounded-xl border border-zinc-200 dark:border-dark-border px-5 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <AddInventoryModal
@@ -496,63 +586,6 @@ function InventoryView() {
         onDeleteRequest={handleDeleteProduct}
         onUpdate={handleEditProduct}
       />
-
-      {showAiAside && aiForecastData && (
-        <aside className="fixed bottom-6 right-6 z-[9500] w-[430px] animate-in slide-in-from-bottom-10 fade-in duration-300">
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft ring-1 ring-zinc-900/5 dark:ring-white/10">
-            <div className="flex items-center justify-between bg-emerald-600 px-5 py-3 text-white">
-              <p className="text-xl font-bold flex items-center gap-2">
-                <LuSparkles className="h-5 w-5" />
-                AI Analysis: {aiForecastData.item_name}
-              </p>
-              <button onClick={() => setShowAiAside(false)} className="rounded-md p-1 hover:bg-white/15 transition-colors">
-                <FiX className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 p-5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Recommended Stock Level</p>
-                  <p className="mt-1 text-4xl font-bold text-zinc-900 dark:text-zinc-50">{aiForecastData.recommended_stock} Units</p>
-                </div>
-                <span className="mt-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{aiForecastData.growth_label}</span>
-              </div>
-
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-dark-border dark:bg-dark-surface">
-                <TrendMiniChart />
-                <div className="mt-1 grid grid-cols-7 text-[11px] font-semibold text-zinc-400 dark:text-zinc-50">
-                  {aiForecastData.chart_data.months.map((m, i) => (
-                    <span key={i} className={i === 6 ? "text-emerald-600 dark:text-emerald-400" : ""}>{m} {i === 6 ? "(Est)" : ""}</span>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                {aiForecastData.analysis}
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <button
-                  onClick={() => toast.info("Item marked for manual review.")}
-                  className="rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
-                >
-                  Mark for Review
-                </button>
-                <button
-                  onClick={() => {
-                    toast.success("Target stock updated in system based on AI forecast.");
-                    setShowAiAside(false);
-                  }}
-                  className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
-                >
-                  Update Target Stock
-                </button>
-              </div>
-            </div>
-          </div>
-        </aside>
-      )}
 
       {isSimulating && (
         <div className="fixed bottom-6 right-6 z-[9999] flex w-[320px] transform items-center gap-4 rounded-xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-1 ring-zinc-200 dark:bg-dark-card dark:ring-dark-border animate-in slide-in-from-bottom-5 fade-in duration-300">

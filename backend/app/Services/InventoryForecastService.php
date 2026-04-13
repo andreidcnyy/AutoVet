@@ -54,8 +54,10 @@ class InventoryForecastService
             return ['error' => 'AI forecasting script not found.'];
         }
 
+        $pythonExecutable = env('PYTHON_BIN_PATH') ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
+
         try {
-            $command = "python3 " . escapeshellarg($pythonScriptPath) . " " . escapeshellarg($csvPath) . " " . escapeshellarg($minStockLevel);
+            $command = $pythonExecutable . " " . escapeshellarg($pythonScriptPath) . " " . escapeshellarg($csvPath) . " " . escapeshellarg($minStockLevel);
             $process = Process::run($command);
             $output = $process->output();
             $errorOutput = $process->errorOutput();
