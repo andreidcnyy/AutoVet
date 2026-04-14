@@ -1,4 +1,4 @@
-import CalendarView from "../components/calendar/CalendarView";
+import CalendarView from "../components/Calendar/CalendarView";
 
 function CalendarPage() {
   return <CalendarView />;
