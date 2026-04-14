@@ -34,6 +34,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (data) => {
+    // Safety check: Never set an error object as a user
+    if (data && (data.error || data.message && !data.token)) {
+      console.error("AuthContext: Attempted to login with error data", data);
+      return;
+    }
     // Ensure all data (including must_change_password) is preserved
     const userWithToken = { ...data }; 
     setUser(userWithToken);

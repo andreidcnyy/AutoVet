@@ -41,11 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (data: any) => {
+    if (data && (data.error || (data.message && !data.token))) {
+      console.error("AuthContext: Attempted to login with error data", data);
+      return;
+    }
     setUser(data);
     localStorage.setItem("user", JSON.stringify(data));
   };
 
   const register = (data: any) => {
+    if (data && (data.error || (data.message && !data.token))) {
+      console.error("AuthContext: Attempted to register with error data", data);
+      return;
+    }
     setUser(data);
     localStorage.setItem("user", JSON.stringify(data));
   };

@@ -5,14 +5,17 @@ import "./index.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import ToastContainer from "./components/ui/ToastContainer";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ToastProvider>
-        <App />
-        <ToastContainer />
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <App />
+          <ToastContainer />
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
