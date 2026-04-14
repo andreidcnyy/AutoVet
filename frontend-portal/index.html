@@ -5,6 +5,24 @@
     <link rel="icon" type="image/png" href="/src/assets/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AutoVet - Pet Owner Portal</title>
+    <script>
+      // Global Emergency Error Interceptor
+      window.onerror = function(message) {
+        if (message.includes('Minified React error #31')) {
+          document.body.innerHTML = `
+            <div style="font-family:sans-serif; padding:40px; text-align:center; background:#fff1f2; min-height:100vh;">
+              <h1 style="color:#e11d48;">Portal Error Detected</h1>
+              <p style="color:#4b5563;">The portal crashed while displaying pet or owner information.</p>
+              <div style="background:#fff; padding:20px; border-radius:12px; border:1px solid #fda4af; display:inline-block; text-align:left; max-width:600px; margin-top:20px;">
+                <p style="font-family:monospace; font-size:12px; color:#9f1239;">${message}</p>
+              </div>
+              <br/><br/>
+              <button onclick="window.location.reload()" style="padding:12px 24px; background:#111827; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Reload Portal</button>
+            </div>
+          `;
+        }
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

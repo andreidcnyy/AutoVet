@@ -30,11 +30,14 @@ function AppLayout() {
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.clinic_name) {
-            setClinic((prev) => ({ ...prev, name: data.clinic_name }));
-          }
-          if (data.clinic_logo) {
-            setClinic((prev) => ({ ...prev, logo: data.clinic_logo }));
+          if (data && typeof data === 'object') {
+            if (data.clinic_name) {
+              const name = typeof data.clinic_name === 'string' ? data.clinic_name : String(data.clinic_name?.message || data.clinic_name?.text || 'Pet Wellness');
+              setClinic((prev) => ({ ...prev, name }));
+            }
+            if (data.clinic_logo && typeof data.clinic_logo === 'string') {
+              setClinic((prev) => ({ ...prev, logo: data.clinic_logo }));
+            }
           }
         })
         .catch(console.error);

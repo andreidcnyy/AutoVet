@@ -151,7 +151,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
                           <FiClock className="w-3 h-3" />
-                          {appt.time.substring(0, 5)}
+                          {appt.time?.substring(0, 5) || '00:00'}
                         </div>
                       </div>
                     </div>

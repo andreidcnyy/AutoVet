@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>autovet</title>
+    <title>Pet Wellness Animal Clinic | AutoVet</title>
+    <script>
+      // Global Emergency Error Interceptor
+      window.onerror = function(message, source, lineno, colno, error) {
+        if (message.includes('Minified React error #31')) {
+          document.body.innerHTML = `
+            <div style="font-family:sans-serif; padding:40px; text-align:center; background:#fff1f2; min-height:100vh;">
+              <h1 style="color:#e11d48;">System Error Detected</h1>
+              <p style="color:#4b5563;">React crashed because it tried to render an object from the backend as a piece of text.</p>
+              <div style="background:#fff; padding:20px; border-radius:12px; border:1px solid #fda4af; display:inline-block; text-align:left; max-width:600px; margin-top:20px;">
+                <p style="font-family:monospace; font-size:12px; color:#9f1239;">${message}</p>
+                <hr/>
+                <p style="font-size:14px; color:#6b7280;"><b>Next steps:</b> Try clearing your browser cache and refreshing. If this persists, our team is already tracking this object-rendering issue.</p>
+              </div>
+              <br/><br/>
+              <button onclick="window.location.reload()" style="padding:12px 24px; background:#111827; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Reload Application</button>
+            </div>
+          `;
+        }
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
