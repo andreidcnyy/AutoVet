@@ -44,10 +44,18 @@ function LoginPage() {
           navigate("/");
         }
       } else {
-        const errorMsg = typeof data.error === "string" 
-          ? data.error 
-          : (data.error?.message || data.message || "Invalid credentials");
-        setError(errorMsg);
+        // Extremely robust string extraction
+        let errorMsg = "Invalid credentials";
+        if (typeof data.error === "string") {
+          errorMsg = data.error;
+        } else if (data.error && typeof data.error === "object") {
+          errorMsg = data.error.message || data.error.code || JSON.stringify(data.error);
+        } else if (data.message) {
+          errorMsg = data.message;
+        } else if (data.code) {
+          errorMsg = `Error Code: ${data.code}`;
+        }
+        setError(String(errorMsg));
       }
     } catch (err) {
       setError("Network error. Please ensure the backend is running.");

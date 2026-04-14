@@ -48,10 +48,18 @@ export default function ResetPassword() {
       if (res.ok) {
         navigate("/login", { state: { message: "Password reset successful! Please log in with your new password." } });
       } else {
-        const errorMsg = typeof data.error === "string" 
-          ? data.error 
-          : (data.error?.message || data.message || "Reset failed. The link may be expired.");
-        setError(errorMsg);
+        // Extremely robust string extraction
+        let errorMsg = "Reset failed. The link may be expired.";
+        if (typeof data.error === "string") {
+          errorMsg = data.error;
+        } else if (data.error && typeof data.error === "object") {
+          errorMsg = data.error.message || data.error.code || JSON.stringify(data.error);
+        } else if (data.message) {
+          errorMsg = data.message;
+        } else if (data.code) {
+          errorMsg = `Error Code: ${data.code}`;
+        }
+        setError(String(errorMsg));
       }
     } catch (err) {
       setError("Network error. Please try again.");
