@@ -5,8 +5,8 @@
 /**
  * Returns the URL for a pet's actual uploaded photo.
  */
-export const getActualPetImageUrl = (photoPath: string | null) => {
-  if (!photoPath) return null;
+export const getActualPetImageUrl = (photoPath: string | null | undefined): string | undefined => {
+  if (!photoPath) return undefined;
   // Already an absolute URL (e.g., data: URI or a previously resolved http URL)
   if (photoPath.startsWith("http") || photoPath.startsWith("data:image")) return photoPath;
   // Local Laravel storage path

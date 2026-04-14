@@ -61,10 +61,13 @@ export default function BookAppointment() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema)
   });
+
+  const selectedPetId = watch("pet_id");
 
   useEffect(() => {
     Promise.all([getPets(), getServices(), getVets(), getAppointments()])
@@ -229,7 +232,7 @@ export default function BookAppointment() {
                       onClick={() => setValue("pet_id", pet.id.toString())}
                       className={clsx(
                         "p-3 rounded-2xl border-2 transition-all text-left",
-                        register("pet_id").value === pet.id.toString() || String(pet.id) === String(z.string().parse(register("pet_id").name)) // This is a bit tricky with react-hook-form
+                        selectedPetId === pet.id.toString()
                         ? "border-brand-500 bg-brand-50 dark:bg-brand-900/10"
                         : "border-transparent bg-white dark:bg-dark-card hover:border-zinc-200"
                       )}

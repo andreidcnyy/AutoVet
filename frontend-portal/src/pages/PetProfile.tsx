@@ -10,7 +10,8 @@ import {
   FiInfo,
   FiClock,
   FiAlertCircle,
-  FiEdit2
+  FiEdit2,
+  FiUser
 } from 'react-icons/fi';
 import { LuPawPrint } from 'react-icons/lu';
 import clsx from 'clsx';

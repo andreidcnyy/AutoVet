@@ -34,8 +34,6 @@ const petSchema = z.object({
   photo: z.string().optional()
 });
 
-type PetFormValues = z.infer<typeof petSchema>;
-
 export default function AddPet() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +49,7 @@ export default function AddPet() {
     setValue,
     watch,
     formState: { errors, isSubmitting }
-  } = useForm<PetFormValues>({
+  } = useForm({
     resolver: zodResolver(petSchema),
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
@@ -65,29 +63,14 @@ export default function AddPet() {
   const dobValue = watch("date_of_birth");
   const weightValue = watch("weight");
 
-  // Debug: Monitor the species list
-  useEffect(() => {
-    console.log("RENDER: speciesList count =", speciesList.length);
-  }, [speciesList]);
-
   // Load Initial Master Data
   useEffect(() => {
-    console.log("FETCH: Loading species...");
     getSpecies()
       .then(res => {
-        console.log("FETCH SUCCESS: /api/species raw data:", res.data);
         const data = res.data.data || res.data;
-        if (Array.isArray(data)) {
-          setSpeciesList(data);
-          console.log("STATE SET: speciesList updated with", data.length, "items");
-        } else {
-          console.warn("FETCH WARNING: Expected array but got:", typeof data);
-        }
+        if (Array.isArray(data)) setSpeciesList(data);
       })
-      .catch(err => {
-        console.error("FETCH ERROR: /api/species:", err);
-        setError("Error loading species. Check if backend is running.");
-      });
+      .catch(console.error);
 
     getWeightRanges().then(res => {
         const data = res.data.data || res.data;
@@ -98,38 +81,30 @@ export default function AddPet() {
   // Sync Breeds when Species changes
   useEffect(() => {
     if (speciesIdValue) {
-      console.log("EVENT: Species ID changed to:", speciesIdValue);
       const selected = speciesList.find(s => String(s.id) === String(speciesIdValue));
-      console.log("EVENT: Selected species object:", selected);
-      
       if (selected && selected.breeds && selected.breeds.length > 0) {
-        console.log("SYNC: Found", selected.breeds.length, "nested breeds");
         setAvailableBreeds(selected.breeds);
       } else {
-        console.log("SYNC: No nested breeds found, fetching explicitly for species:", speciesIdValue);
         getBreeds(Number(speciesIdValue)).then(res => {
           const data = res.data.data || res.data;
-          console.log("FETCH SUCCESS: breeds for species", speciesIdValue, ":", data.length, "items");
           setAvailableBreeds(Array.isArray(data) ? data : []);
-        }).catch(err => console.error("SYNC ERROR: Breeds fetch failed:", err));
+        }).catch(console.error);
       }
     } else {
       setAvailableBreeds([]);
     }
   }, [speciesIdValue, speciesList]);
 
-  // Logic: Auto-calculate Age Group based on DOB
+  // Logic: Auto-calculate Age Group
   useEffect(() => {
     if (speciesIdValue && dobValue) {
       const speciesName = speciesList.find(s => String(s.id) === String(speciesIdValue))?.name;
       const computedAgeGroup = getAgeGroup(speciesName, dobValue);
       setValue("age_group", computedAgeGroup);
-    } else if (!dobValue) {
-      setValue("age_group", "Not yet determined");
     }
   }, [speciesIdValue, dobValue, speciesList, setValue]);
 
-  // Logic: Auto-calculate Size Category based on Weight Range
+  // Logic: Auto-calculate Size Category
   useEffect(() => {
     if (weightValue && speciesIdValue) {
       const w = parseFloat(weightValue.toString());
@@ -155,14 +130,14 @@ export default function AddPet() {
     reader.readAsDataURL(file);
   };
 
-  const onSubmit = async (data: PetFormValues) => {
+  const onSubmit = async (data: any) => {
     setError(null);
     try {
       await createPet(data);
       navigate('/');
     } catch (err: any) {
-      console.error("SUBMIT ERROR:", err);
-      setError(err.response?.data?.message || "Failed to register pet. Check your data.");
+      console.error(err);
+      setError(err.response?.data?.message || "Failed to register pet.");
     }
   };
 
@@ -232,7 +207,7 @@ export default function AddPet() {
                   {...register("species_id")}
                   className="input-field font-bold appearance-none pr-10"
                 >
-                  <option value="">— Select Species ({speciesList.length} available) —</option>
+                  <option value="">— Select Species —</option>
                   {speciesList.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
                 </select>
                 <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />

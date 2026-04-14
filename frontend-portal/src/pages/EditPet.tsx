@@ -33,8 +33,6 @@ const petSchema = z.object({
   photo: z.string().optional()
 });
 
-type PetFormValues = z.infer<typeof petSchema>;
-
 export default function EditPet() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -53,7 +51,7 @@ export default function EditPet() {
     watch,
     reset,
     formState: { errors, isSubmitting }
-  } = useForm<PetFormValues>({
+  } = useForm({
     resolver: zodResolver(petSchema),
   });
 
@@ -122,7 +120,7 @@ export default function EditPet() {
     }
   }, [speciesIdValue, speciesList]);
 
-  // Auto-calculate Age Group and Size Category (logic copied from AddPet)
+  // Auto-calculate Age Group and Size Category
   useEffect(() => {
     if (speciesIdValue && dobValue) {
       const speciesName = speciesList.find(s => String(s.id) === String(speciesIdValue))?.name;
@@ -156,7 +154,7 @@ export default function EditPet() {
     reader.readAsDataURL(file);
   };
 
-  const onSubmit = async (data: PetFormValues) => {
+  const onSubmit = async (data: any) => {
     if (!id) return;
     setError(null);
     try {

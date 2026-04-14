@@ -32,8 +32,6 @@ const petSchema = z.object({
   photo: z.string().optional()
 });
 
-type PetFormValues = z.infer<typeof petSchema>;
-
 interface EditPetModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +55,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
     watch,
     reset,
     formState: { errors, isSubmitting }
-  } = useForm<PetFormValues>({
+  } = useForm({
     resolver: zodResolver(petSchema),
   });
 
@@ -160,7 +158,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
     reader.readAsDataURL(file);
   };
 
-  const onSubmit = async (data: PetFormValues) => {
+  const onSubmit = async (data: any) => {
     if (!petId) return;
     setError(null);
     try {
