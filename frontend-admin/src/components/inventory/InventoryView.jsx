@@ -393,7 +393,6 @@ function InventoryView() {
                 <th className="px-5 py-4">Buying Price</th>
                 <th className="px-5 py-4">Selling Price</th>
                 <th className="px-5 py-4">Stock Level</th>
-                <th className="px-5 py-4">Min Stock</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">AI Forecast</th>
                 <th className="px-5 py-4 text-center">Action</th>
               </tr>
@@ -478,9 +477,6 @@ function InventoryView() {
                             </p>
                             <p className="text-[10px] uppercase font-bold text-zinc-400">{row.unit || "units"}</p>
                         </div>
-                      </td>
-                      <td className="px-5 py-4 text-sm font-semibold text-zinc-500 dark:text-zinc-500">
-                        {Number(row.min_stock_level || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
                         {row.aiForecastData?.prediction_status === 'Forecast Available' ? (

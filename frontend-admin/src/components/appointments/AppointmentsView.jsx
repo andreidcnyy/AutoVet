@@ -309,25 +309,8 @@ function AppointmentsView() {
     }
   };
 
-  const handleSendReminder = async () => {
-    try {
-      const response = await fetch(`/api/appointments/${selectedAppointment.id}/remind`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || `Failed to send reminder.`);
-      }
-
-      toast.success(`Reminder sent successfully.`);
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const handleSendReminder = () => {
+    setIsSendModalOpen(true);
   };
 
 

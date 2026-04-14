@@ -219,8 +219,8 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
-      <div className="flex w-full max-w-5xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
+      <div className="my-auto flex w-full max-w-5xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <div>
             <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">
@@ -312,19 +312,6 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                     className={getInputClass(errors.stock_level)}
                   />
                   {errors.stock_level && <p className="mt-1 text-xs text-red-500">{errors.stock_level.message}</p>}
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Alert Threshold *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    {...register("min_stock_level")}
-                    className={getInputClass(errors.min_stock_level)}
-                  />
-                  {errors.min_stock_level && <p className="mt-1 text-xs text-red-500">{errors.min_stock_level.message}</p>}
                 </div>
 
                 <div className="flex items-center col-span-2 pt-2">

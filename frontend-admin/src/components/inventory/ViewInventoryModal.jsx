@@ -150,10 +150,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
+      <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border shrink-0">
           <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">Product Details</h3>
           <button
             onClick={onClose}
@@ -164,7 +164,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex-1">
               {isEditing ? (
@@ -193,7 +193,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ["Item Code", "code"],
               ["Category", "inventory_category_id"],
               ["Quantity", "stock_level"],
-              ["Min Stock (Alert)", "min_stock_level"],
               ["Selling Price", "selling_price"],
               ["Buying Price", "price"],
               ["Expiration Date", "expiration_date"],
@@ -410,81 +409,77 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 )}
             </div>
           </div>
+        </div>
 
-          {/* Footer Buttons */}
-          <div className="mt-8 flex justify-end gap-3 border-t border-zinc-100 pt-6 dark:border-dark-border text-right">
-            {isAdmin && (
-              <>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase text-zinc-400">Range:</span>
-                    <select 
-                      value={historyDays}
-                      onChange={(e) => setHistoryDays(parseInt(e.target.value))}
-                      className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                    >
-                      <option value={7}>7 Days</option>
-                      <option value={30}>30 Days</option>
-                      <option value={90}>90 Days</option>
-                      <option value={180}>6 Months</option>
-                    </select>
-                    <button
-                      onClick={handleRunForecast}
-                      disabled={isLoadingForecast || isSaving}
-                      className={clsx(
-                        "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition",
-                        (isLoadingForecast || isSaving)
-                          ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
-                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
-                      )}
-                    >
-                      <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
-                      {isLoadingForecast ? "Analyzing..." : "Run AI Forecast"}
-                    </button>
-                  </div>
-                  {isLoadingForecast && (
-                    <span className="text-[10px] font-medium text-emerald-600 animate-pulse pr-1">
-                      Analyzing stock history...
-                    </span>
-                  )}
+        {/* Footer Buttons */}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 p-6 dark:border-dark-border shrink-0 bg-white dark:bg-dark-card rounded-b-2xl">
+          {isAdmin && (
+            <>
+              <div className="flex flex-col items-end gap-2 mr-auto lg:mr-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase text-zinc-400">Range:</span>
+                  <select 
+                    value={historyDays}
+                    onChange={(e) => setHistoryDays(parseInt(e.target.value))}
+                    className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                  >
+                    <option value={7}>7 Days</option>
+                    <option value={30}>30 Days</option>
+                    <option value={90}>90 Days</option>
+                    <option value={180}>6 Months</option>
+                  </select>
+                  <button
+                    onClick={handleRunForecast}
+                    disabled={isLoadingForecast || isSaving}
+                    className={clsx(
+                      "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
+                      (isLoadingForecast || isSaving)
+                        ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                    )}
+                  >
+                    <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
+                    {isLoadingForecast ? "Analyzing..." : "AI Forecast"}
+                  </button>
                 </div>
-                <button
-                  onClick={() => onDeleteRequest(product)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
-                >
-                  <FiTrash2 className="h-4 w-4" />
-                  Delete Product
-                </button>
+              </div>
+              
+              <button
+                onClick={() => onDeleteRequest(product)}
+                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
+              >
+                <FiTrash2 className="h-4 w-4" />
+                Delete
+              </button>
 
-                <button
-                  onClick={() => {
-                    if (isEditing) {
-                      handleSave();
-                    } else {
-                      setIsEditing(true);
-                    }
-                  }}
-                  disabled={isSaving}
-                  className={clsx(
-                    "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold focus:outline-none",
-                    isEditing
-                      ? (isSaving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20")
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  )}
-                >
-                  {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
-                  {isEditing ? (isSaving ? "Saving..." : "Save") : "Edit"}
-                </button>
-              </>
-            )}
+              <button
+                onClick={() => {
+                  if (isEditing) {
+                    handleSave();
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
+                disabled={isSaving}
+                className={clsx(
+                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none",
+                  isEditing
+                    ? (isSaving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20")
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+                )}
+              >
+                {isEditing ? <FiSave className="h-4 w-4" /> : <FiEdit2 className="h-4 w-4" />}
+                {isEditing ? (isSaving ? "Saving..." : "Save") : "Edit"}
+              </button>
+            </>
+          )}
 
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 focus:outline-none dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              Close
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 focus:outline-none dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

@@ -230,7 +230,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-1">Body</label>
                         <div className="text-xs text-gray-500 mb-2 font-bold italic uppercase tracking-tighter">
-                            Available: {'{owner_name}, {date_scheduled}, {arrival_time}, {patient}, {findings}, {diagnosis}'}
+                            Available: {'{owner_name}, {pet_name}, {date}, {time}, {date_scheduled}, {arrival_time}, {patient}, {findings}, {diagnosis}'}
                         </div>
                         <textarea 
                             required rows="4"

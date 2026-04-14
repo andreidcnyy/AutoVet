@@ -213,7 +213,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                             <div>
                                 <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1 text-left">Message Content</label>
                                 <div className="mb-2 text-[9px] text-zinc-500 font-bold uppercase italic tracking-tighter">
-                                    Available: {'{owner_name}, {date_scheduled}, {arrival_time}, {patient}'}
+                                    Available: {'{owner_name}, {pet_name}, {date}, {time}, {date_scheduled}, {arrival_time}, {patient}'}
                                 </div>
                                 <textarea 
                                     value={customMessage} 

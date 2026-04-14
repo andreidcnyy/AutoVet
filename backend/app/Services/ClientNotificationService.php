@@ -99,7 +99,10 @@ class ClientNotificationService
         if ($relatedModel instanceof \App\Models\Appointment) {
             $variables['date_scheduled'] = $relatedModel->date;
             $variables['arrival_time'] = $relatedModel->time;
+            $variables['date'] = $relatedModel->date;
+            $variables['time'] = $relatedModel->time;
             $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
+            $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
         }
 
         if ($relatedModel instanceof \App\Models\MedicalRecord) {
