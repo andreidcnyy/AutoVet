@@ -44,7 +44,10 @@ function LoginPage() {
           navigate("/");
         }
       } else {
-        setError(data.error || "Invalid credentials");
+        const errorMsg = typeof data.error === "string" 
+          ? data.error 
+          : (data.error?.message || data.message || "Invalid credentials");
+        setError(errorMsg);
       }
     } catch (err) {
       setError("Network error. Please ensure the backend is running.");

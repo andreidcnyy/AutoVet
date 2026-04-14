@@ -103,7 +103,10 @@ export default function Register() {
           const firstError = Object.values(data.errors)[0] as string[];
           setError(firstError[0] || "Registration failed. Ensure you used a real email.");
         } else {
-          setError(data.error || data.message || "Registration failed.");
+          const errorMsg = typeof data.error === "string" 
+            ? data.error 
+            : (data.error?.message || data.message || "Registration failed.");
+          setError(errorMsg);
         }
       }
     } catch (err: any) {

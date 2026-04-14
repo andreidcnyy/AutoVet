@@ -26,7 +26,10 @@ export default function ForgotPassword() {
       if (res.ok) {
         setMessage(data.message);
       } else {
-        setError(data.error || "Something went wrong.");
+        const errorMsg = typeof data.error === "string" 
+          ? data.error 
+          : (data.error?.message || data.message || "Something went wrong.");
+        setError(errorMsg);
       }
     } catch (err) {
       setError("Network error. Please try again.");

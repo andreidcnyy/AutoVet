@@ -32,10 +32,13 @@ function LoginPage() {
       const data = await res.json();
 
       if (res.ok && !data.error) {
-        login(data); 
-        navigate("/");
+        login(data);
+        navigate("/dashboard");
       } else {
-        setError(data.error || "Invalid credentials");
+        const errorMsg = typeof data.error === "string" 
+          ? data.error 
+          : (data.error?.message || data.message || "Invalid credentials");
+        setError(errorMsg);
       }
     } catch (err: any) {
       console.error(err);
