@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/sanctum/:path*",
+      "destination": "https://auto-vet-v1qy.vercel.app/sanctum/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://auto-vet-v1qy.vercel.app/api/:path*"
+    }
+  ]
+}
