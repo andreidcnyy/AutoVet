@@ -6,6 +6,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const sanitizeUser = (data) => {
+    if (!data) return null;
+    return {
+      ...data,
+      name: typeof data.name === 'string' ? data.name : (data.name?.message || data.name?.text || String(data.name || 'User')),
+      role: typeof data.role === 'string' ? data.role : (data.role?.message || data.role?.text || String(data.role || 'Guest')),
+    };
+  };
+
   useEffect(() => {
     // Try to load user from localStorage
     const stored = localStorage.getItem("user");
@@ -13,15 +22,10 @@ export function AuthProvider({ children }) {
       try {
         const parsed = JSON.parse(stored);
         // Robustness check: Ensure token exists in flattened structure
-        if (parsed && parsed.token) {
-          setUser(parsed);
-        } else if (parsed && parsed.user && parsed.user.token) {
-          // Migration: Flatten nested structure if found
-          const migrated = { ...parsed.user, token: parsed.user.token };
-          setUser(migrated);
-          localStorage.setItem("user", JSON.stringify(migrated));
+        if (parsed && (parsed.token || (parsed.user && parsed.user.token))) {
+          const userData = parsed.token ? parsed : { ...parsed.user, token: parsed.user.token };
+          setUser(sanitizeUser(userData));
         } else {
-          // Invalid session: missing token
           localStorage.removeItem("user");
           setUser(null);
         }
@@ -35,14 +39,13 @@ export function AuthProvider({ children }) {
 
   const login = (data) => {
     // Safety check: Never set an error object as a user
-    if (data && (data.error || data.message && !data.token)) {
+    if (data && (data.error || (data.message && !data.token))) {
       console.error("AuthContext: Attempted to login with error data", data);
       return;
     }
-    // Ensure all data (including must_change_password) is preserved
-    const userWithToken = { ...data }; 
-    setUser(userWithToken);
-    localStorage.setItem("user", JSON.stringify(userWithToken));
+    const sanitized = sanitizeUser(data);
+    setUser(sanitized);
+    localStorage.setItem("user", JSON.stringify(sanitized));
   };
 
   const logout = () => {

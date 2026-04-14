@@ -21,15 +21,19 @@ import {
   ALL_ROLES
 } from "../constants/roles";
 
+import RouterErrorElement from "../components/RouterErrorElement";
+
 export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouterErrorElement />,
     handle: { title: "Login" },
   },
   {
     path: "/forbidden",
     element: <ForbiddenPage />,
+    errorElement: <RouterErrorElement />,
     handle: { title: "Access Denied" },
   },
   {
@@ -39,6 +43,7 @@ export const router = createBrowserRouter([
         <ChangePasswordPage />
       </ProtectedRoute>
     ),
+    errorElement: <RouterErrorElement />,
     handle: { title: "Change Password" },
   },
   {
@@ -48,6 +53,7 @@ export const router = createBrowserRouter([
         <AppLayout />
       </ProtectedRoute>
     ),
+    errorElement: <RouterErrorElement />,
     children: [
       {
         index: true,

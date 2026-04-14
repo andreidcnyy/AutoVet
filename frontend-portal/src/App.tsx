@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './Login';
 import Register from './pages/Register';
@@ -14,6 +14,7 @@ import Notifications from './pages/Notifications';
 import Invoices from './pages/Invoices';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
+import RouterErrorElement from './components/RouterErrorElement';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,73 +26,114 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <PortalLayout>{children}</PortalLayout>;
 }
 
-function App() {
+function AppContent() {
   const { user } = useAuth();
 
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: user ? <Navigate to="/dashboard" replace /> : <Landing />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/login",
+      element: <Login />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/register",
+      element: <Register />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/forgot-password",
+      element: <ForgotPassword />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/reset-password",
+      element: <ResetPassword />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/dashboard",
+      element: (
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/add-pet",
+      element: (
+        <ProtectedRoute>
+          <AddPet />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/pets/:id",
+      element: (
+        <ProtectedRoute>
+          <PetProfile />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/pets/:id/edit",
+      element: (
+        <ProtectedRoute>
+          <EditPet />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/book",
+      element: (
+        <ProtectedRoute>
+          <BookAppointment />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/appointments",
+      element: (
+        <ProtectedRoute>
+          <Appointments />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/notifications",
+      element: (
+        <ProtectedRoute>
+          <Notifications />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/invoices",
+      element: (
+        <ProtectedRoute>
+          <Invoices />
+        </ProtectedRoute>
+      ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "*",
+      element: <Navigate to="/" replace />
+    }
+  ]);
 
-        {/* Protected Portal Routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/add-pet" element={
-          <ProtectedRoute>
-            <AddPet />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/pets/:id" element={
-          <ProtectedRoute>
-            <PetProfile />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/pets/:id/edit" element={
-          <ProtectedRoute>
-            <EditPet />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/book" element={
-          <ProtectedRoute>
-            <BookAppointment />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/appointments" element={
-          <ProtectedRoute>
-            <Appointments />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/notifications" element={
-          <ProtectedRoute>
-            <Notifications />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/invoices" element={
-          <ProtectedRoute>
-            <Invoices />
-          </ProtectedRoute>
-        } />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
-export default App;
+export default AppContent;
