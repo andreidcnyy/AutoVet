@@ -9,7 +9,7 @@ const ARCHIVE_TYPES = [
   { id: "owners", label: "Owners" },
   { id: "services", label: "Services" },
   { id: "inventories", label: "Inventory" },
-  { id: "users", label: "Users" },
+  { id: "admins", label: "Users" },
   { id: "cms", label: "CMS Content" },
 ];
 

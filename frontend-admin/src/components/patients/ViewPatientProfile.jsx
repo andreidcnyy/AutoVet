@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
@@ -8,6 +8,7 @@ import {
   FiMail,
   FiMapPin,
   FiCalendar,
+  FiChevronDown,
   FiFileText,
   FiDownload,
   FiUser,
@@ -16,6 +17,8 @@ import {
   FiClipboard,
   FiBell,
   FiClock,
+  FiSearch,
+  FiX,
 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
@@ -952,10 +955,12 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [vets, setVets] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
+  const [selectedVetId, setSelectedVetId] = useState("");
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [sendingRecord, setSendingRecord] = useState(null);
 
@@ -995,16 +1000,33 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
         return res.json();
       })
       .then(data => {
-        setAppointments(data.slice(0, 10));
+        setAppointments(data);
       })
       .catch(err => {
         console.error("Error fetching appointments:", err);
       });
   };
 
+  const fetchVets = () => {
+    if (!user?.token) return;
+    fetch("/api/vets", { // Changed from /api/users/vets
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => setVets(Array.isArray(data) ? data : []))
+      .catch(err => {
+        console.error("Error fetching vets:", err);
+        setVets([]);
+      });
+  };
+
   useEffect(() => {
     fetchRecords();
     fetchAppointments();
+    fetchVets();
   }, [patient.id]);
 
   const onSave = (record, setErrors) => {
@@ -1074,6 +1096,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const handleRowClick = (record) => {
     setEditingRecord(record);
     setSelectedAppointmentId(record.appointment_id || "");
+    setSelectedVetId(record.user_id || "");
     setIsModalOpen(true);
   };
 
@@ -1095,7 +1118,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
          </div>
          {isVet && (
            <button 
-             onClick={() => { setEditingRecord(null); setSelectedAppointmentId(""); setIsModalOpen(true); }}
+             onClick={() => { setEditingRecord(null); setSelectedAppointmentId(""); setSelectedVetId(""); setIsModalOpen(true); }}
              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
            >
              Add Record
@@ -1219,6 +1242,9 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           appointments={appointments}
           selectedAppointmentId={selectedAppointmentId}
           setSelectedAppointmentId={setSelectedAppointmentId}
+          vets={vets}
+          selectedVetId={selectedVetId}
+          setSelectedVetId={setSelectedVetId}
         />
       )}
 
@@ -1241,12 +1267,29 @@ function MedicalRecordModal({
   isVet, 
   appointments, 
   selectedAppointmentId, 
-  setSelectedAppointmentId 
+  setSelectedAppointmentId,
+  vets = [],
+  selectedVetId,
+  setSelectedVetId
 }) {
   const isEdit = !!record;
   // If user is not vet, it's view-only (Admins can view but not add/edit clinical data)
   const isViewOnly = !isVet;
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
+  
+  const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
+  const [apptSearch, setApptSearch] = useState("");
+
+  const filteredAppointments = useMemo(() => {
+    if (!apptSearch.trim()) return appointments;
+    const search = apptSearch.toLowerCase();
+    return appointments.filter(apt => 
+      formatDate(apt.date).toLowerCase().includes(search) ||
+      (apt.service?.name || apt.title || "").toLowerCase().includes(search)
+    );
+  }, [appointments, apptSearch]);
+
+  const selectedApt = appointments.find(a => a.id.toString() === selectedAppointmentId?.toString());
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1254,8 +1297,9 @@ function MedicalRecordModal({
     
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
-    // Attach appointment ID from state
+    // Attach values from state
     data.appointment_id = selectedAppointmentId;
+    data.user_id = selectedVetId; // Attach the vet ID
     
     // Clear previous errors
     clearErrors();
@@ -1273,27 +1317,110 @@ function MedicalRecordModal({
         </div>
         <div className="overflow-y-auto p-6">
           <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
-             {/* Appointment Selector */}
-             <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Link to Appointment (Required)</label>
-               <select 
-                 disabled={isViewOnly}
-                 value={selectedAppointmentId}
-                 onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                 className={clsx(
-                   "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-none focus:border-emerald-400 dark:text-zinc-200",
-                   isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white",
-                   getError("appointment_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
-                 )}
-               >
-                 <option value="">Select an appointment...</option>
-                 {appointments.map(apt => (
-                   <option key={apt.id} value={apt.id}>
-                     {formatDate(apt.date)} {apt.time?.substring(0, 5)} — {apt.service?.name || apt.title || "General Visit"}
-                   </option>
-                 ))}
-               </select>
-               {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
+             {/* Vet and Appointment Selectors */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div>
+                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Attending Veterinarian</label>
+                 <select 
+                   disabled={isViewOnly}
+                   value={selectedVetId}
+                   onChange={(e) => setSelectedVetId(e.target.value)}
+                   className={clsx(
+                     "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-none focus:border-emerald-400 dark:text-zinc-200",
+                     isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white",
+                     getError("user_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
+                   )}
+                 >
+                   <option value="">Select veterinarian...</option>
+                   {vets.map(vet => (
+                     <option key={vet.id} value={vet.id}>Dr. {vet.name}</option>
+                   ))}
+                 </select>
+                 {getError("user_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("user_id")}</p>}
+               </div>
+
+               <div>
+                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Link to Appointment (Required)</label>
+                 
+                 <div className="relative">
+                    <button
+                      type="button"
+                      disabled={isViewOnly}
+                      onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
+                      className={clsx(
+                        "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                        isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400" />
+                        <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
+                          {selectedApt 
+                            ? `${formatDate(selectedApt.date)} - ${selectedApt.service?.name || selectedApt.title || "General Visit"}`
+                            : "Select an appointment..."
+                          }
+                        </span>
+                      </div>
+                      {!isViewOnly && <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", isApptDropdownOpen && "rotate-180")} />}
+                    </button>
+
+                    {isApptDropdownOpen && !isViewOnly && (
+                      <div className="absolute left-0 top-full z-[70] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
+                        <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
+                          <div className="relative">
+                            <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                            <input 
+                              type="text"
+                              placeholder="Search date or service..."
+                              value={apptSearch}
+                              onChange={(e) => setApptSearch(e.target.value)}
+                              autoFocus
+                              className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                            />
+                            {apptSearch && (
+                              <button
+                                type="button"
+                                onClick={() => setApptSearch("")}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                              >
+                                <FiX className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
+                          {filteredAppointments.length > 0 ? filteredAppointments.map(apt => (
+                            <button
+                              key={apt.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedAppointmentId(apt.id.toString());
+                                setIsApptDropdownOpen(false);
+                                setApptSearch("");
+                              }}
+                              className={clsx(
+                                "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                                selectedAppointmentId?.toString() === apt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
+                              )}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span>{formatDate(apt.date)}</span>
+                                <span className="opacity-60">{apt.time?.substring(0, 5)}</span>
+                              </div>
+                              <div className="truncate opacity-80">{apt.service?.name || apt.title || "General Visit"}</div>
+                            </button>
+                          )) : (
+                            <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
+                              No appointments found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                 </div>
+                 {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
+               </div>
              </div>
 
              <div>

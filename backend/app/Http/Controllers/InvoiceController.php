@@ -181,14 +181,7 @@ class InvoiceController extends Controller
                 try {
                     $owner = $invoice->pet->owner;
                     if ($owner) {
-                        $this->clientNotificationService->sendFromTemplate(
-                            $owner,
-                            'invoice_finalized',
-                            'email',
-                            ['invoice_number' => $invoice->invoice_number, 'total' => $invoice->total],
-                            'automated',
-                            $invoice
-                        );
+                        $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
@@ -374,14 +367,7 @@ class InvoiceController extends Controller
                 try {
                     $owner = $invoice->pet->owner;
                     if ($owner) {
-                        $this->clientNotificationService->sendFromTemplate(
-                            $owner,
-                            'invoice_finalized',
-                            'email',
-                            ['invoice_number' => $invoice->invoice_number, 'total' => $invoice->total],
-                            'automated',
-                            $invoice
-                        );
+                        $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
