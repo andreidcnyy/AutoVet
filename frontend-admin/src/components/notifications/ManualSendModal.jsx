@@ -61,8 +61,8 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (e, forceInvoice = false) => {
+        if (e) e.preventDefault();
 
         if (channel === 'email' && !owner.email) {
             toast.error('Owner has no email address');
@@ -73,7 +73,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
 
         try {
             // 1. If "Save as Template" is checked, create the template first
-            if (saveAsTemplate && !selectedTemplate && newTemplateName) {
+            if (!forceInvoice && saveAsTemplate && !selectedTemplate && newTemplateName) {
                 const tResponse = await fetch('/api/client-notifications/templates', {
                     method: 'POST',
                     headers: {
@@ -95,9 +95,10 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
             }
 
             // 2. Send the notification
-            const isInvoice = relatedType === 'App\\Models\\Invoice';
-            const url = isInvoice ? '/api/client-notifications/send-invoice' : '/api/client-notifications/send';
-            const payload = isInvoice ? {
+            const isInvoiceFlow = forceInvoice || (relatedType === 'App\\Models\\Invoice' && !selectedTemplate && !customMessage);
+            const url = isInvoiceFlow ? '/api/client-notifications/send-invoice' : '/api/client-notifications/send';
+            
+            const payload = isInvoiceFlow ? {
                 owner_id: owner.id,
                 invoice_id: relatedObject?.id
             } : {
@@ -125,7 +126,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                 throw new Error(errorData.message || 'Failed to send notification');
             }
             
-            toast.success('Notification sent successfully!');
+            toast.success(isInvoiceFlow ? 'Professional Invoice sent successfully!' : 'Notification sent successfully!');
             onClose();
         } catch (err) {
             toast.error(err.message || 'Failed to send notification');
@@ -163,6 +164,30 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                 </div>
                 
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-6 px-1">Sending to: <span className="text-zinc-700 dark:text-zinc-300">{owner.name}</span></p>
+
+                {relatedType === 'App\\Models\\Invoice' && (
+                    <div className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20">
+                        <p className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider mb-2">Recommended Action</p>
+                        <button
+                            type="button"
+                            onClick={() => handleSubmit(null, true)}
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-emerald-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Send Professional Invoice
+                        </button>
+                        <p className="mt-2 text-[10px] text-emerald-600/60 dark:text-emerald-400/60 text-center font-medium">Sends the full professional layout via email</p>
+                    </div>
+                )}
+
+                <div className="relative flex items-center mb-6">
+                    <div className="flex-grow border-t border-zinc-100 dark:border-dark-border"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-black uppercase text-zinc-300 dark:text-zinc-600 tracking-widest">OR</span>
+                    <div className="flex-grow border-t border-zinc-100 dark:border-dark-border"></div>
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>

@@ -401,6 +401,7 @@ function InvoiceModuleView() {
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
 
   const groupedItems = useMemo(() => {
@@ -724,53 +725,80 @@ function InvoiceModuleView() {
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Select Appointment</label>
                     <div className="relative">
-                      <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                      <input 
-                        type="text"
-                        placeholder="Search date or title..."
-                        value={appointmentSearch}
-                        onChange={(e) => setAppointmentSearch(e.target.value)}
+                      <button
+                        type="button"
+                        onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
                         disabled={!selectedPatientId || status === "Finalized"}
-                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-10 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
-                      />
-                      {appointmentSearch && (
-                        <button
-                          onClick={() => setAppointmentSearch("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-                        >
-                          <FiX className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className={clsx(
-                      "max-h-48 overflow-y-auto rounded-xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card divide-y divide-zinc-50 dark:divide-dark-surface",
-                      !selectedPatientId && "opacity-50"
-                    )}>
-                      {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
-                        <button
-                          key={appt.id}
-                          type="button"
-                          onClick={() => setSelectedAppointmentId(appt.id.toString())}
-                          className={clsx(
-                            "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
-                            selectedAppointmentId === appt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
-                          )}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span>{formatDate(appt.date)}</span>
-                            <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
-                          </div>
-                          <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
-                        </button>
-                      )) : (
-                        <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
-                          {selectedPatientId ? "No appointments found" : "Select pet first"}
+                        className={clsx(
+                          "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                          isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400" />
+                          <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
+                            {selectedAppointmentId 
+                              ? appointments.find(a => a.id.toString() === selectedAppointmentId)?.date 
+                                ? `${formatDate(appointments.find(a => a.id.toString() === selectedAppointmentId).date)} - ${appointments.find(a => a.id.toString() === selectedAppointmentId).title || appointments.find(a => a.id.toString() === selectedAppointmentId).service?.name}`
+                                : "Selected Appointment"
+                              : "Choose an appointment..."
+                            }
+                          </span>
                         </div>
-                      )}
-                      {filteredAppointments.length > 50 && (
-                        <div className="px-4 py-2 text-center text-[9px] text-zinc-400 font-bold uppercase bg-zinc-50 dark:bg-dark-surface">
-                          Showing top 50 results. Use search to narrow down.
+                        <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", isApptDropdownOpen && "rotate-180")} />
+                      </button>
+
+                      {isApptDropdownOpen && (
+                        <div className="absolute left-0 top-full z-[60] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
+                          <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
+                            <div className="relative">
+                              <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                              <input 
+                                type="text"
+                                placeholder="Search date or title..."
+                                value={appointmentSearch}
+                                onChange={(e) => setAppointmentSearch(e.target.value)}
+                                autoFocus
+                                className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                              />
+                              {appointmentSearch && (
+                                <button
+                                  onClick={() => setAppointmentSearch("")}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                                >
+                                  <FiX className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
+                            {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
+                              <button
+                                key={appt.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAppointmentId(appt.id.toString());
+                                  setIsApptDropdownOpen(false);
+                                  setAppointmentSearch("");
+                                }}
+                                className={clsx(
+                                  "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                                  selectedAppointmentId === appt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
+                                )}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{formatDate(appt.date)}</span>
+                                  <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
+                                </div>
+                                <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
+                              </button>
+                            )) : (
+                              <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
+                                No appointments found
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

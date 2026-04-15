@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import InventoryChartCard from "../components/dashboard/InventoryChartCard";
+import InventoryAiStatusCard from "../components/dashboard/InventoryAiStatusCard";
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
-import AiInsightPanels from "../components/dashboard/AiInsightPanels";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { useAuth } from "../context/AuthContext";
@@ -113,10 +112,9 @@ function DashboardPage() {
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-8 space-y-6">
           {!isStaff && <AiSalesForecastCard />}
-          <InventoryChartCard />
+          <InventoryAiStatusCard />
         </div>
         <div className="lg:col-span-4 space-y-6">
-          {!isStaff && <AiInsightPanels />}
           <RecentNotificationsCard 
             items={notifications} 
             onMarkAllRead={handleMarkAllRead}
