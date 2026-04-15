@@ -32,8 +32,8 @@ class ClientNotificationService
             throw new \Exception("No active $channel template found for event '$eventKey'.");
         }
 
-        $subject = $this->interpolateVariables($template->subject ?? '', $variables, $owner);
-        $body = $this->interpolateVariables($template->body, $variables, $owner);
+        $subject = $this->interpolateVariables($template->subject ?? '', $variables, $owner, $relatedModel);
+        $body = $this->interpolateVariables($template->body, $variables, $owner, $relatedModel);
 
         return $this->send($owner, $channel, $body, $subject, $type, $relatedModel);
     }

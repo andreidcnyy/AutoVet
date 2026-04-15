@@ -93,7 +93,7 @@ export default function Notifications() {
             {notifications.map((notification) => (
               <div 
                 key={notification.id}
-                onClick={() => !notification.read_at && handleMarkRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
                 className={clsx(
                   "group relative p-6 rounded-[2rem] border-2 transition-all cursor-pointer overflow-hidden",
                   notification.read_at 
@@ -129,7 +129,7 @@ export default function Notifications() {
                       </div>
                     </div>
                     <p className={clsx(
-                      "text-sm leading-relaxed",
+                      "text-sm leading-relaxed line-clamp-2",
                       notification.read_at ? "text-zinc-400 font-medium" : "text-zinc-600 dark:text-zinc-400 font-semibold"
                     )}>
                       {notification.message}
@@ -151,6 +151,57 @@ export default function Notifications() {
           </div>
         )}
       </div>
+
+      {/* Notification Detail Modal */}
+      {isModalOpen && selectedNotification && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          
+          <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-zinc-100 dark:border-dark-border flex justify-between items-center bg-zinc-50/50 dark:bg-dark-surface/30">
+              <div className="flex items-center gap-4">
+                <div className={clsx(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                  selectedNotification.type === 'alert' ? "bg-rose-50 text-rose-500" : "bg-brand-50 text-brand-500"
+                )}>
+                  {selectedNotification.type === 'alert' ? <FiAlertCircle className="w-6 h-6" /> : <FiInfo className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black italic uppercase tracking-tight text-zinc-800 dark:text-zinc-100 leading-tight">
+                    Notification Details
+                  </h2>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                    Received on {new Date(selectedNotification.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors text-zinc-400">
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-100 mb-2">
+                  {selectedNotification.title}
+                </h3>
+                <div className="p-6 rounded-3xl bg-zinc-50 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
+                  <p className="text-zinc-600 dark:text-zinc-400 font-semibold leading-relaxed">
+                    {selectedNotification.message}
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all shadow-xl"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
