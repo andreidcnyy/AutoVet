@@ -24,38 +24,38 @@ def generate_ph_clinic_data(years=2):
         
         season_mult = 1.0
         if month in [3, 4, 5]: # Summer peak (March to May)
-            season_mult = 1.3
+            season_mult = 1.1
         elif month in [6, 7, 8]: # Rainy season (June to August)
-            season_mult = 1.4
+            season_mult = 1.2
         elif month == 12: # Christmas rush
-            season_mult = 1.5
+            season_mult = 1.2
             
         # 2. Holiday Factors
         holiday_mult = 1.0
         # Holy Week (approx mid-April)
         if month == 4 and 10 <= current_date.day <= 17:
-            holiday_mult = 0.2
+            holiday_mult = 0.4
         # All Saints Day
         if month == 11 and current_date.day in [1, 2]:
-            holiday_mult = 0.1
+            holiday_mult = 0.3
         # Christmas/New Year
         if (month == 12 and current_date.day in [24, 25, 30, 31]) or (month == 1 and current_date.day == 1):
-            holiday_mult = 0.1
+            holiday_mult = 0.2
             
         # 3. Weekly Patterns (Busy on weekends)
         week_mult = 1.0
         if day_of_week in [5, 6]: # Sat, Sun
-            week_mult = 1.6
+            week_mult = 1.4
         elif day_of_week == 0: # Mon
-            week_mult = 1.2
+            week_mult = 1.1
             
         # Calculate daily visits
-        base_visits = 15
-        daily_visits = int(base_visits * season_mult * holiday_mult * week_mult + random.randint(-3, 3))
+        base_visits = 8
+        daily_visits = int(base_visits * season_mult * holiday_mult * week_mult + random.randint(-2, 2))
         daily_visits = max(0, daily_visits)
         
         # Calculate Revenue (PHP)
-        avg_ticket = 1500 + random.randint(-500, 1000)
+        avg_ticket = 850 + random.randint(-350, 650)
         daily_revenue = daily_visits * avg_ticket
         
         # 4. Inventory Consumption

@@ -296,37 +296,21 @@ export default function Chatbot() {
             )}
           </div>
 
-          {/* Suggestions & Input */}
-          <div className="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
+          {/* Suggestions Only Area */}
+          <div className="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
             <div className="flex flex-wrap gap-2">
               {INTENTS.filter(i => i.question).map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(item.question!)}
-                  className="text-[10px] font-bold uppercase tracking-tight px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-all dark:text-zinc-400 flex items-center gap-1.5"
+                  disabled={isTyping}
+                  className="text-[10px] font-bold uppercase tracking-tight px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-all dark:text-zinc-400 flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {item.icon}
                   {item.question?.replace("?", "")}
                 </button>
               ))}
             </div>
-
-            <form onSubmit={handleSubmit} className="relative flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Type your message..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="flex-1 h-11 bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 text-sm focus:ring-2 focus:ring-brand-500/20 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isTyping}
-                className="w-11 h-11 bg-brand-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
           </div>
         </div>
       )}

@@ -40,21 +40,37 @@ class PHClinicAISeeder extends Seeder
         $golden = Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id]);
         $persian = Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id]);
 
-        $vaccine = Inventory::create([
-            'item_name' => 'Parvo Vaccine (AI Sample)',
-            'inventory_category_id' => $medCategory->id,
-            'sku' => 'VAC-PARVO-AI',
-            'stock_level' => 500,
-            'min_stock_level' => 100,
-            'price' => 450,
-            'selling_price' => 850,
-            'status' => 'Active',
-            'is_billable' => true
-        ]);
+        $vaccine = Inventory::updateOrCreate(
+            ['sku' => 'VAC-PARVO-AI'],
+            [
+                'item_name' => 'Parvo Vaccine (AI Sample)',
+                'inventory_category_id' => $medCategory->id,
+                'stock_level' => 500,
+                'min_stock_level' => 100,
+                'price' => 450,
+                'selling_price' => 850,
+                'status' => 'Active',
+                'is_billable' => true
+            ]
+        );
 
         // 2. Create pool of owners and pets
         $owners = [];
-        for ($i = 1; $i <= 20; $i++) {
+        // Add specific portal user owner to the pool
+        $portalOwner = Owner::updateOrCreate(
+            ['email' => 'portal@autovet.com'],
+            [
+                'name' => 'John Doe',
+                'phone' => '1234567890',
+                'address' => '123 Pet St',
+                'city' => 'Anytown',
+                'province' => 'Anyprovince',
+                'zip' => '12345'
+            ]
+        );
+        $owners[] = $portalOwner;
+
+        for ($i = 1; $i <= 19; $i++) {
             $owners[] = Owner::create([
                 'name' => "PH Client {$i}",
                 'email' => "client{$i}@example.ph",
@@ -117,10 +133,10 @@ class PHClinicAISeeder extends Seeder
             if (($month == 12 && in_array($currentDate->day, [24, 25, 30, 31])) || ($month == 1 && $currentDate->day == 1)) $holidayMult = 0.1;
 
             // Weekly Multipliers
-            $weekMult = (in_array($dayOfWeek, [0, 6])) ? 1.6 : 1.0; // Sat/Sun busy in PH
+            $weekMult = (in_array($dayOfWeek, [0, 6])) ? 1.4 : 1.0; // Sat/Sun busy in PH
 
-            $baseVisits = 4;
-            $dailyVisits = (int)($baseVisits * $seasonMult * $holidayMult * $weekMult + rand(-1, 2));
+            $baseVisits = 2;
+            $dailyVisits = (int)($baseVisits * $seasonMult * $holidayMult * $weekMult + rand(-1, 1));
             $dailyVisits = max(0, $dailyVisits);
 
             for ($v = 0; $v < $dailyVisits; $v++) {
@@ -128,7 +144,7 @@ class PHClinicAISeeder extends Seeder
                 
                 if ($currentDate <= Carbon::now()) {
                     // Create Past Invoice
-                    $total = 1200 + rand(-300, 1500);
+                    $total = 650 + rand(-250, 550);
                     $invoiceId = DB::table('invoices')->insertGetId([
                         'invoice_number' => 'AI-' . strtoupper(Str::random(8)),
                         'pet_id' => $pet->id,

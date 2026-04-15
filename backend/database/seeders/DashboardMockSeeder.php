@@ -122,7 +122,7 @@ class DashboardMockSeeder extends Seeder
             for ($i = 0; $i < 3; $i++) {
                 $pet = $pets[rand(0, count($pets) - 1)];
                 
-                $total = rand(1000, 5000);
+                $total = rand(500, 2000);
                 $invoiceId = DB::table('invoices')->insertGetId([
                     'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                     'pet_id' => $pet->id,
