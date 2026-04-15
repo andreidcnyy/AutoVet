@@ -7,10 +7,19 @@
  */
 export const getActualPetImageUrl = (photoPath: string | null | undefined): string | undefined => {
   if (!photoPath) return undefined;
-  // Already an absolute URL (e.g., data: URI or a previously resolved http URL)
-  if (photoPath.startsWith("http") || photoPath.startsWith("data:image")) return photoPath;
-  // Local Laravel storage path
-  return `http://localhost:8000/storage/${photoPath}`;
+  
+  // 1. Already an absolute URL or Data URI
+  if (photoPath.startsWith("http") || photoPath.startsWith("data:image")) {
+    return photoPath;
+  }
+
+  // 2. If it already starts with /storage
+  if (photoPath.startsWith("/storage")) {
+    return photoPath;
+  }
+
+  // 3. Local Laravel storage path
+  return `/storage/${photoPath}`;
 };
 
 /**

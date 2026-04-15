@@ -87,15 +87,37 @@ class ClientNotificationService
         }
     }
 
+    public function sendInvoiceEmail(Owner $owner, $invoice)
+    {
+        $clinic = \App\Models\Setting::first();
+        $invoice->load(['items', 'pet.owner']);
+        
+        Mail::to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, $clinic));
+
+        return ClientNotification::create([
+            'owner_id' => $owner->id,
+            'channel' => 'email',
+            'type' => 'manual',
+            'title' => 'Invoice Sent',
+            'message' => "Invoice #{$invoice->invoice_number} sent to client via email.",
+            'status' => 'sent',
+            'sent_at' => now(),
+            'related_type' => get_class($invoice),
+            'related_id' => $invoice->id,
+        ]);
+    }
+
     /**
      * Interpolate variables in a string.
      */
     public function interpolateVariables(string $text, array $variables, ?Owner $owner = null, $relatedModel = null): string
     {
+        // 1. Basic owner variables
         if ($owner) {
             $variables['owner_name'] = $owner->name;
         }
 
+        // 2. Model-specific variables
         if ($relatedModel instanceof \App\Models\Appointment) {
             $variables['date_scheduled'] = $relatedModel->date;
             $variables['arrival_time'] = $relatedModel->time;
@@ -107,12 +129,22 @@ class ClientNotificationService
 
         if ($relatedModel instanceof \App\Models\MedicalRecord) {
             $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
+            $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
             $variables['findings'] = $relatedModel->findings;
             $variables['diagnosis'] = $relatedModel->diagnosis;
         }
 
+        if ($relatedModel instanceof \App\Models\Invoice) {
+            $variables['invoice_number'] = $relatedModel->invoice_number;
+            $variables['total'] = $relatedModel->total;
+            $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
+            $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
+            $variables['date'] = $relatedModel->created_at->format('Y-m-d');
+        }
+
+        // 3. Final replacement
         foreach ($variables as $key => $value) {
-            $text = str_replace('{' . $key . '}', $value, $text);
+            $text = str_replace('{' . $key . '}', (string)$value, $text);
         }
 
         return $text;

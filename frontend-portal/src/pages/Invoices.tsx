@@ -11,7 +11,8 @@ import {
   FiClock,
   FiCheckCircle,
   FiAlertCircle,
-  FiDownload
+  FiDownload,
+  FiX
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -103,10 +104,18 @@ export default function Invoices() {
               <input 
                 type="text" 
                 placeholder="Search..." 
-                className="input-field pl-10 h-10 text-xs font-bold w-48"
+                className="input-field pl-10 pr-8 h-10 text-xs font-bold w-48"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <FiX className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <div className="relative">
               <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />

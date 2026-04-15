@@ -1,8 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getNotifications } from '../api';
 import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiDollarSign } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
+import EditProfileModal from './EditProfileModal';
 import logo from '../assets/logo.png';
 
 interface LayoutProps {
@@ -13,6 +15,8 @@ export default function PortalLayout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
@@ -20,8 +24,23 @@ export default function PortalLayout({ children }: LayoutProps) {
     { name: 'Book Visit', path: '/book', icon: FiCalendar },
     { name: 'Visit History', path: '/appointments', icon: FiClock },
     { name: 'Invoice', path: '/invoices', icon: FiDollarSign },
-    { name: 'Notifications', path: '/notifications', icon: FiBell },
+    { name: 'Notifications', path: '/notifications', icon: FiBell, badge: unreadCount },
   ];
+
+  useEffect(() => {
+    if (user) {
+      const fetchCount = () => {
+        getNotifications().then(res => {
+          const unread = res.data.filter((n: any) => !n.read_at).length;
+          setUnreadCount(unread);
+        }).catch(console.error);
+      };
+
+      fetchCount();
+      const interval = setInterval(fetchCount, 30000); // refresh every 30s
+      return () => clearInterval(interval);
+    }
+  }, [user, location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -46,14 +65,21 @@ export default function PortalLayout({ children }: LayoutProps) {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
                 location.pathname === item.path
                   ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
                   : 'text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
               }`}
             >
-              <item.icon className="w-5 h-5" />
-              {item.name}
+              <div className="flex items-center gap-3">
+                <item.icon className="w-5 h-5" />
+                {item.name}
+              </div>
+              {item.badge > 0 && (
+                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg shadow-sm">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -93,17 +119,22 @@ export default function PortalLayout({ children }: LayoutProps) {
             <div className="h-8 w-px bg-zinc-200 dark:bg-dark-border mx-2"></div>
             <Link to="/notifications" className="p-2 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative">
               <FiBell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-dark-card"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-dark-card"></span>
+              )}
             </Link>
-            <div className="flex items-center gap-3 ml-2">
-              <div className="text-right hidden sm:block">
+            <button 
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-3 ml-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="text-right hidden sm:block text-left">
                 <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-tight">{user?.name}</p>
-                <p className="text-[10px] font-bold text-brand-600 uppercase tracking-tight">Pet Owner</p>
+                <p className="text-[10px] font-bold text-brand-600 uppercase tracking-tight text-right">Pet Owner</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-dark-border flex items-center justify-center overflow-hidden transition-colors">
                 <FiUser className="w-6 h-6 text-zinc-400" />
               </div>
-            </div>
+            </button>
           </div>
         </header>
 
@@ -114,6 +145,11 @@ export default function PortalLayout({ children }: LayoutProps) {
           </div>
         </div>
       </main>
+
+      <EditProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </div>
   );
 }

@@ -82,7 +82,7 @@ function PetProfile() {
         <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
           <div className="w-32 h-32 rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-dark-border shadow-xl flex items-center justify-center overflow-hidden">
              {pet.photo ? (
-               <img src={`http://localhost:8000/storage/${pet.photo}`} alt={pet.name} className="w-full h-full object-cover" />
+               <img src={`/storage/${pet.photo}`} alt={pet.name} className="w-full h-full object-cover" />
              ) : (
                <LuPawPrint className="w-12 h-12 text-zinc-300" />
              )}
@@ -142,13 +142,9 @@ function PetProfile() {
                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
                     <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
                     <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category?.name || 'N/A'}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase">Status</div>
-                    <div className="font-bold text-emerald-600">{pet.status}</div>
                   </div>
                </div>
             </div>

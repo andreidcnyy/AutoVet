@@ -196,7 +196,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $reset = DB::table('password_reset_tokens')->where('email', $email = $request->email)->first();
+        $reset = DB::table('password_reset_tokens')->where('email', $request->email)->first();
 
         if (!$reset || !Hash::check($request->token, $reset->token)) {
             return response()->json(['error' => 'Invalid or expired token.'], 422);

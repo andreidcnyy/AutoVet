@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Pet;
 use Illuminate\Http\Request;
+use App\Traits\IdentifiesPortalOwner;
 
 class PetController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     public function __construct()
     {
         $this->authorizeResource(Pet::class, 'pet');
@@ -17,8 +20,8 @@ class PetController extends Controller
         $user = auth()->user();
         $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory']);
         
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $query->where('owner_id', $user->owner?->id);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->where('owner_id', $ownerId);
         } elseif ($request->has('owner_id')) {
             $query->where('owner_id', $request->owner_id);
         }
@@ -28,9 +31,8 @@ class PetController extends Controller
 
     public function store(Request $request)
     {
-        $user = auth()->user();
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $request->merge(['owner_id' => $user->owner?->id]);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $request->merge(['owner_id' => $ownerId]);
         }
 
         $validated = $request->validate([
@@ -74,9 +76,8 @@ class PetController extends Controller
 
     public function update(Request $request, Pet $pet)
     {
-        $user = auth()->user();
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $request->merge(['owner_id' => $user->owner?->id]);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $request->merge(['owner_id' => $ownerId]);
         }
 
         $validated = $request->validate([

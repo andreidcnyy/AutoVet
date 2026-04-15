@@ -25,7 +25,6 @@ const petSchema = z.object({
   weight: z.coerce.number().min(0.01, "Weight is required").max(500, "Invalid weight"),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
   size_category_id: z.coerce.string().optional().or(z.literal("")),
-  status: z.string().max(50).default("Healthy"),
   allergies: z.string().max(255).optional(),
   medication: z.string().max(255).optional(),
   notes: z.string().optional(),
@@ -92,7 +91,6 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
           weight: pet.weight || 0,
           weight_unit: pet.weight_unit || "kg",
           size_category_id: pet.size_category_id ? String(pet.size_category_id) : "",
-          status: pet.status || "Healthy",
           allergies: pet.allergies || "",
           medication: pet.medication || "",
           notes: pet.notes || "",
@@ -288,7 +286,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
 
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
-                  <input type="number" step="0.01" {...register("weight")} className="input-field font-bold" placeholder="0.00" />
+                  <input type="number" step="any" {...register("weight")} className="input-field font-bold" placeholder="0.0" />
                 </div>
                 
                 <div>
@@ -296,11 +294,6 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
                   <div className="input-field font-bold bg-zinc-50 dark:bg-dark-surface/50 flex items-center text-zinc-500 px-4">
                     {watch("age_group") || "Determined by birth date"}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Health Status</label>
-                  <input {...register("status")} className="input-field font-bold" placeholder="Healthy, Recovering, etc." />
                 </div>
               </div>
 

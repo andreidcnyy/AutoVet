@@ -20,12 +20,14 @@ class ClientNotification extends Model
         'related_id',
         'sent_at',
         'failed_at',
+        'read_at',
         'error_message',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
         'failed_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
     public function owner()

@@ -16,7 +16,7 @@ import {
 } from 'react-icons/fi';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
-import { getPets, getServices, getVets, createAppointment, getAppointments } from '../api';
+import { getPets, getServices, getVets, createAppointment, getAppointments, getAvailability } from '../api';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +55,9 @@ export default function BookAppointment() {
   const [vets, setVets] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<any>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [availability, setAvailability] = useState<any[]>([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const {
     register,
@@ -68,6 +71,18 @@ export default function BookAppointment() {
   });
 
   const selectedPetId = watch("pet_id");
+  const selectedDate = watch("date");
+  const selectedVetId = watch("vet_id");
+
+  useEffect(() => {
+    if (selectedDate) {
+      setIsCheckingAvailability(true);
+      getAvailability(selectedDate, selectedVetId)
+        .then(res => setAvailability(res.data))
+        .catch(console.error)
+        .finally(() => setIsCheckingAvailability(false));
+    }
+  }, [selectedDate, selectedVetId]);
 
   useEffect(() => {
     Promise.all([getPets(), getServices(), getVets(), getAppointments()])
@@ -89,16 +104,16 @@ export default function BookAppointment() {
     setSelectedDay(entry);
     setValue("date", entry.dateString);
     setIsDrawerOpen(true);
+    setIsSuccess(false);
   };
 
   const onBookingSubmit = async (data: BookingForm) => {
     try {
       await createAppointment(data);
-      setIsDrawerOpen(false);
-      reset();
       // Refresh appointments to show on calendar
       getAppointments().then(res => setAppointments(res.data));
-      alert("Appointment requested successfully!");
+      setIsSuccess(true);
+      reset();
     } catch (err: any) {
       console.error(err);
       alert(err.response?.data?.message || "Failed to book appointment.");
@@ -205,88 +220,140 @@ export default function BookAppointment() {
           "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
           isDrawerOpen ? "translate-x-0" : "translate-x-full"
         )}>
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
-                <span className="text-brand-500 mr-2">/</span>Book Visit
-              </h3>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
-                {selectedDay ? format(new Date(selectedDay.dateString), "MMMM d, yyyy") : ""}
-              </p>
-            </div>
-            <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
-              <FiX className="w-6 h-6" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-6">
-            <div className="space-y-5 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 p-6 border-2 border-zinc-50 dark:border-dark-border">
-              {/* Pet Selection */}
+          {isSuccess ? (
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                <FiCheckCircle className="w-12 h-12" />
+              </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 ml-1">Select Pet</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {pets.map(pet => (
-                    <button
-                      key={pet.id}
-                      type="button"
-                      onClick={() => setValue("pet_id", pet.id.toString())}
-                      className={clsx(
-                        "p-3 rounded-2xl border-2 transition-all text-left",
-                        selectedPetId === pet.id.toString()
-                        ? "border-brand-500 bg-brand-50 dark:bg-brand-900/10"
-                        : "border-transparent bg-white dark:bg-dark-card hover:border-zinc-200"
-                      )}
-                    >
-                      <div className="font-bold text-sm text-zinc-800 dark:text-zinc-100">{pet.name}</div>
-                    </button>
-                  ))}
+                <h3 className="text-2xl font-black italic uppercase tracking-tight text-zinc-800 dark:text-zinc-100">
+                  Appointment Requested!
+                </h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
+                  Your visit has been queued for approval. We'll notify you once the clinic confirms your slot.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsDrawerOpen(false)}
+                className="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-dark-surface text-zinc-800 dark:text-zinc-100 font-bold uppercase tracking-widest text-xs hover:bg-zinc-200 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                    <span className="text-brand-500 mr-2">/</span>Book Visit
+                  </h3>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                    {selectedDay ? format(new Date(selectedDay.dateString), "MMMM d, yyyy") : ""}
+                  </p>
                 </div>
-                <select {...register("pet_id")} className="hidden">
-                  <option value="">Select</option>
-                  {pets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                {errors.pet_id && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
+                <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
+                  <FiX className="w-6 h-6" />
+                </button>
               </div>
 
-              {/* Service Selection */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Service Required</label>
-                <select {...register("service_id")} className="input-field bg-white dark:bg-dark-card font-bold">
-                  <option value="">— Select Service —</option>
-                  {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                {errors.service_id && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.service_id.message}</p>}
-              </div>
+              <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-6">
+                <div className="space-y-5 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 p-6 border-2 border-zinc-50 dark:border-dark-border">
+                  {/* Pet Selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 ml-1">Select Pet</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {pets.map(pet => (
+                        <button
+                          key={pet.id}
+                          type="button"
+                          onClick={() => setValue("pet_id", pet.id.toString())}
+                          className={clsx(
+                            "relative p-4 rounded-2xl border-2 transition-all text-left overflow-hidden",
+                            selectedPetId === pet.id.toString()
+                            ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10 shadow-md ring-2 ring-brand-500/20"
+                            : "border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:border-zinc-200"
+                          )}
+                        >
+                          <div className={clsx(
+                            "font-bold text-sm",
+                            selectedPetId === pet.id.toString() ? "text-brand-700 dark:text-brand-400" : "text-zinc-800 dark:text-zinc-100"
+                          )}>
+                            {pet.name}
+                          </div>
+                          {selectedPetId === pet.id.toString() && (
+                            <FiCheckCircle className="absolute top-2 right-2 text-brand-500 w-4 h-4" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <select {...register("pet_id")} className="hidden">
+                      <option value="">Select</option>
+                      {pets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    {errors.pet_id && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
+                  </div>
 
-              {/* Time Selection */}
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Arrival Time</label>
-                <input type="time" {...register("time")} className="input-field bg-white dark:bg-dark-card font-bold" />
-                {errors.time && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
-              </div>
-            </div>
+                  {/* Service Selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Service Required</label>
+                    <select {...register("service_id")} className="input-field bg-white dark:bg-dark-card font-bold">
+                      <option value="">— Select Service —</option>
+                      {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    {errors.service_id && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.service_id.message}</p>}
+                  </div>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Assigned Doctor (Optional)</label>
-              <select {...register("vet_id")} className="input-field font-bold">
-                <option value="">Any Available Vet</option>
-                {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
-              </select>
-            </div>
+                  {/* Time Selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Arrival Time</label>
+                    <input type="time" {...register("time")} className="input-field bg-white dark:bg-dark-card font-bold" />
+                    {errors.time && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
+                  </div>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Additional Notes</label>
-              <textarea {...register("notes")} className="input-field h-24 py-3 resize-none font-medium" placeholder="Tell us what's happening..." />
-            </div>
+                  {/* Availability List */}
+                  {selectedDate && (
+                    <div className="pt-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Already Booked Slots</p>
+                      <div className="flex flex-wrap gap-2">
+                        {isCheckingAvailability ? (
+                          <span className="text-[10px] text-zinc-400 animate-pulse">Checking...</span>
+                        ) : availability.length > 0 ? (
+                          availability.map((a: any) => (
+                            <span key={a.id} className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-dark-surface text-zinc-500 text-[10px] font-bold border border-zinc-200 dark:border-dark-border">
+                              {a.time.substring(0, 5)}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-emerald-500 font-bold uppercase">All slots available</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-            <button 
-              disabled={isSubmitting}
-              type="submit"
-              className="w-full h-16 rounded-2xl bg-brand-500 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
-            >
-              {isSubmitting ? "Syncing..." : "Confirm Booking"}
-            </button>
-          </form>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Assigned Doctor (Optional)</label>
+                  <select {...register("vet_id")} className="input-field font-bold">
+                    <option value="">Any Available Vet</option>
+                    {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Additional Notes</label>
+                  <textarea {...register("notes")} className="input-field h-24 py-3 resize-none font-medium" placeholder="Tell us what's happening..." />
+                </div>
+
+                <button 
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="w-full h-16 rounded-2xl bg-brand-500 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isSubmitting ? "Syncing..." : "Confirm Booking"}
+                </button>
+              </form>
+            </>
+          )}
         </aside>
       </div>
     </div>

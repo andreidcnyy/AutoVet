@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { getPets, getAppointments } from '../api';
+import { getPets, getAppointments, getNotifications } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2 } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
+import { getActualPetImageUrl } from '../utils/petImages';
 import clsx from 'clsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [pets, setPets] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal states
@@ -20,10 +22,11 @@ export default function Dashboard() {
   const [petToEditId, setPetToEditId] = useState<number | null>(null);
 
   const fetchData = () => {
-    Promise.all([getPets(), getAppointments()])
-      .then(([petsRes, apptsRes]) => {
+    Promise.all([getPets(), getAppointments(), getNotifications()])
+      .then(([petsRes, apptsRes, notifRes]) => {
         setPets(petsRes.data);
         setAppointments(apptsRes.data);
+        setNotifications(notifRes.data.filter((n: any) => !n.read_at).slice(0, 3));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -83,7 +86,7 @@ export default function Dashboard() {
                   <div className="card-shell p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
                     <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
                       {pet.photo ? (
-                        <img src={`http://localhost:8000/storage/${pet.photo}`} alt={pet.name} className="w-full h-full object-cover" />
+                        <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
                       ) : (
                         <FiHeart className="w-8 h-8 text-zinc-300 dark:text-zinc-600 group-hover:scale-110 transition-transform" />
                       )}
@@ -115,54 +118,82 @@ export default function Dashboard() {
         </div>
 
         {/* Appointments Section */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
-              <FiClock className="text-brand-500" />
-              Upcoming
-            </h2>
-            <Link to="/appointments" className="text-xs font-bold text-brand-600 hover:underline">
-              View All
-            </Link>
-          </div>
-          
-          <div className="card-shell bg-white dark:bg-dark-card overflow-hidden">
-            {appointments.length > 0 ? (
-              <div className="divide-y divide-zinc-100 dark:divide-dark-border">
-                {appointments.filter(a => a.status !== 'cancelled').slice(0, 5).map(appt => (
-                  <div key={appt.id} className="p-4 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                           <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest truncate">{appt.service?.name}</span>
-                           <span className={clsx(
-                             "text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md",
-                             appt.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                           )}>
-                             {appt.status}
-                           </span>
-                        </div>
-                        <h4 className="font-bold text-zinc-800 dark:text-zinc-100 truncate mt-0.5">{appt.pet?.name}</h4>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
-                          <FiCalendar className="w-3 h-3 text-zinc-400" />
-                          {new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </div>
-                        <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
-                          <FiClock className="w-3 h-3" />
-                          {appt.time?.substring(0, 5) || '00:00'}
-                        </div>
-                      </div>
+        <div className="space-y-6">
+          {/* Notifications Highlight */}
+          {notifications.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
+                <FiBell className="text-brand-500" />
+                Recent Alerts
+              </h2>
+              <div className="space-y-2">
+                {notifications.map(n => (
+                  <div 
+                    key={n.id} 
+                    onClick={() => navigate('/notifications')}
+                    className="group flex items-start gap-3 p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-500/20 cursor-pointer hover:shadow-md transition-all animate-in slide-in-from-right-4 duration-300"
+                  >
+                    <div className="mt-1 w-2 h-2 rounded-full bg-brand-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-zinc-800 dark:text-zinc-100 truncate">{n.title}</p>
+                      <p className="text-[10px] text-zinc-500 line-clamp-1">{n.message}</p>
                     </div>
+                    <FiChevronRight className="mt-1 w-3 h-3 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="p-8 text-center text-zinc-400 text-sm">
-                No upcoming appointments.
-              </div>
-            )}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
+                <FiClock className="text-brand-500" />
+                Upcoming
+              </h2>
+              <Link to="/appointments" className="text-xs font-bold text-brand-600 hover:underline">
+                View All
+              </Link>
+            </div>
+            
+            <div className="card-shell bg-white dark:bg-dark-card overflow-hidden">
+              {appointments.length > 0 ? (
+                <div className="divide-y divide-zinc-100 dark:divide-dark-border">
+                  {appointments.filter(a => a.status !== 'cancelled').slice(0, 5).map(appt => (
+                    <div key={appt.id} className="p-4 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest truncate">{appt.service?.name}</span>
+                             <span className={clsx(
+                               "text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md",
+                               appt.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                             )}>
+                               {appt.status}
+                             </span>
+                          </div>
+                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 truncate mt-0.5">{appt.pet?.name}</h4>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
+                            <FiCalendar className="w-3 h-3 text-zinc-400" />
+                            {new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                          <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
+                            <FiClock className="w-3 h-3" />
+                            {appt.time?.substring(0, 5) || '00:00'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-zinc-400 text-sm">
+                  No upcoming appointments.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

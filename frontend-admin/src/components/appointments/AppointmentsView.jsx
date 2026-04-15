@@ -107,6 +107,29 @@ function AppointmentsView() {
   const [services, setServices] = useState([]);
   const [vets, setVets] = useState([]);
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [availability, setAvailability] = useState([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+
+  const selectedDate = watch("date");
+  const selectedVetId = watch("vet_id");
+
+  useEffect(() => {
+    if (selectedDate && user?.token) {
+      setIsCheckingAvailability(true);
+      const headers = {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      };
+      const params = new URLSearchParams({ date: selectedDate });
+      if (selectedVetId) params.append('vet_id', selectedVetId);
+
+      fetch(`/api/appointments/availability?${params.toString()}`, { headers })
+        .then(res => res.json())
+        .then(data => setAvailability(Array.isArray(data) ? data : []))
+        .catch(console.error)
+        .finally(() => setIsCheckingAvailability(false));
+    }
+  }, [selectedDate, selectedVetId, user?.token]);
 
   const fetchAppointments = () => {
     if (!user?.token) return;
@@ -614,6 +637,26 @@ function AppointmentsView() {
                     {errors.time && <p className="mt-1 text-xs text-red-500 font-bold">{errors.time.message}</p>}
                   </div>
                 </div>
+
+                {/* Availability List */}
+                {selectedDate && (
+                  <div className="rounded-2xl bg-zinc-50 dark:bg-dark-surface/50 p-4 border border-zinc-100 dark:border-dark-border">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3">Already Booked Slots</p>
+                    <div className="flex flex-wrap gap-2">
+                      {isCheckingAvailability ? (
+                        <span className="text-xs text-zinc-400 animate-pulse font-bold">Synchronizing availability...</span>
+                      ) : availability.length > 0 ? (
+                        availability.map((a) => (
+                          <span key={a.id} className="px-3 py-1.5 rounded-xl bg-white dark:bg-dark-card text-zinc-600 dark:text-zinc-300 text-[11px] font-black border border-zinc-200 dark:border-dark-border shadow-sm">
+                            {a.time.substring(0, 5)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black uppercase italic">No overlaps — All slots free</span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Assigned Veterinarian</label>

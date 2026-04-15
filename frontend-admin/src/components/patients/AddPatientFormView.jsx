@@ -43,7 +43,6 @@ const patientSchema = z.object({
   weight: z.coerce.number().min(0.01, "Weight is required to determine pet size").max(500, "Weight exceeds valid range"),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
   size_category_id: z.coerce.string().optional().or(z.literal("")),
-  status: z.string().max(50).optional(),
   owner_id: z.coerce.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string().optional().or(z.literal("")),
@@ -98,7 +97,6 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
       sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg",
-      status: "Healthy",
       owner_id: initialOwnerId || "", owner_name: "", owner_phone: "", owner_email: "",
       owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
       allergies: "", medication: "", notes: "", photo: "",
@@ -218,7 +216,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
           owner_id: finalOwnerId, name: data.name, species_id: data.species_id, breed_id: data.breed_id || null,
           date_of_birth: data.date_of_birth || null, sex: data.sex, age_group: data.age_group, color: data.color || null,
           weight: data.weight, weight_unit: data.weight_unit, size_category_id: data.size_category_id,
-          status: data.status, allergies: data.allergies || null, medication: data.medication || null,
+          allergies: data.allergies || null, medication: data.medication || null,
           notes: data.notes || null, photo: data.photo || null
         }),
       });
@@ -288,7 +286,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Date of Birth</label><input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Weight</label><div className="flex gap-2"><input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} /><select {...register("weight_unit")} className="w-20 rounded-xl border border-zinc-200 bg-white/50 p-2 text-sm dark:bg-zinc-800"><option value="kg">kg</option><option value="lbs">lbs</option></select></div></div>
+                <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Weight</label><div className="flex gap-2"><input type="number" step="any" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" /><select {...register("weight_unit")} className="w-20 rounded-xl border border-zinc-200 bg-white/50 p-2 text-sm dark:bg-zinc-800"><option value="kg">kg</option><option value="lbs">lbs</option></select></div></div>
                 <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Age Group</label><div className="flex h-12 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 dark:bg-dark-surface dark:text-zinc-200">{watch("age_group")}</div></div>
               </div>
             </div>

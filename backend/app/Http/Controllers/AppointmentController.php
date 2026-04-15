@@ -6,11 +6,12 @@ use App\Models\Appointment;
 use App\Models\VetSchedule;
 use App\Models\Admin;
 use App\Traits\HasInternalNotifications;
+use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
-    use HasInternalNotifications;
+    use HasInternalNotifications, IdentifiesPortalOwner;
 
     protected $clientNotificationService;
 
@@ -25,9 +26,9 @@ class AppointmentController extends Controller
         $user = auth()->user();
         $query = Appointment::with(['pet', 'service', 'vet']);
 
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $query->whereHas('pet', function ($q) use ($user) {
-                $q->where('owner_id', $user->owner?->id);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->whereHas('pet', function ($q) use ($ownerId) {
+                $q->where('owner_id', $ownerId);
             });
         }
 
@@ -227,6 +228,25 @@ class AppointmentController extends Controller
 
         $appointment->update($validated);
         return response()->json($appointment->load(['pet', 'service', 'vet']));
+    }
+
+    public function getAvailability(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'vet_id' => 'nullable|exists:admins,id'
+        ]);
+
+        $query = Appointment::where('date', $request->date)
+            ->where('status', '!=', 'cancelled');
+
+        if ($request->vet_id) {
+            $query->where('vet_id', $request->vet_id);
+        }
+
+        $appointments = $query->get(['id', 'time', 'status', 'vet_id', 'service_id']);
+
+        return response()->json($appointments);
     }
 
     public function destroy(Appointment $appointment)

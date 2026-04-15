@@ -4,6 +4,20 @@ import { getPetImageUrl, getActualPetImageUrl } from "./petImages";
 
 const pdfCurrency = (value: any) => "P " + (parseFloat(value) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/**
+ * Converts an image URL to a base64 data URI.
+ */
+async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject("Failed to convert image to base64");
+        reader.readAsDataURL(blob);
+    });
+}
+
 export async function generateInvoicePDF(invoiceData: any, clinic: any) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
@@ -82,9 +96,10 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
 
   if (patient) {
     const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species, patient.breed);
-    if (photoUrl && !photoUrl.endsWith(".svg")) { // jsPDF can't easily handle SVGs directly
+    if (photoUrl && !photoUrl.endsWith(".svg")) { 
       try {
-          doc.addImage(photoUrl, 'JPEG', patientCardX, y + 5, 10, 10);
+          const base64 = await getBase64ImageFromUrl(photoUrl);
+          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 20, 20);
       } catch(e){
         console.error("PDF Patient Image error:", e);
       }
@@ -93,12 +108,12 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
-  doc.text(patient?.name || "N/A", patientCardX + 13, y + 10);
+  doc.text(patient?.name || "N/A", patientCardX + 23, y + 10);
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   const speciesName = typeof patient?.species === 'string' ? patient?.species : patient?.species?.name || "";
   const breedName = typeof patient?.breed === 'string' ? patient?.breed : patient?.breed?.name || "";
-  doc.text(`${speciesName} • ${breedName}`, patientCardX + 13, y + 15);
+  doc.text(`${speciesName} • ${breedName}`, patientCardX + 23, y + 15);
 
   y += 45;
 

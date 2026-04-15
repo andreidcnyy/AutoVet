@@ -281,15 +281,23 @@ function InventoryView() {
 
       <section className="relative card-shell overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border p-4">
-          <label className="flex h-11 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 lg:max-w-md dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400">
+          <label className="flex h-11 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 lg:max-w-md dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 relative">
             <FiSearch className="h-4 w-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search items, codes, or categories..."
-              className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500"
+              className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500 pr-8"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <FiX className="h-3.5 w-3.5" />
+              </button>
+            )}
           </label>
 
           <div className="flex flex-wrap items-center gap-2">

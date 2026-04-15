@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser } from "react-icons/fi";
+import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -9,6 +9,7 @@ import { getUserAvatarUrl } from "../../utils/userImages";
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -44,13 +45,23 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-3xl">{title}</h1>
         </div>
 
-        <label className="col-span-2 flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 transition-colors duration-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 lg:col-span-1">
+        <label className="col-span-2 flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 transition-colors duration-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 lg:col-span-1 relative">
           <FiSearch className="h-4 w-4 shrink-0" />
           <input
             type="text"
             placeholder={searchPlaceholder}
-            className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500 pr-8"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <FiX className="h-3.5 w-3.5" />
+            </button>
+          )}
         </label>
 
         <div className="hidden items-center gap-4 lg:flex">

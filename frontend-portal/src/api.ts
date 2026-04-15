@@ -41,6 +41,7 @@ export const createAppointment = (data: any) => api.post('/appointments', data);
 export const cancelAppointment = (id: number) => api.put(`/appointments/${id}`, { status: 'cancelled' });
 export const getServices = () => api.get('/services');
 export const getVets = () => api.get('/vets');
+export const getAvailability = (date: string, vetId?: string) => api.get('/appointments/availability', { params: { date, vet_id: vetId } });
 
 // Medical Records
 export const getMedicalRecords = (petId?: number) => api.get('/medical-records' + (petId ? `?pet_id=${petId}` : ''));
@@ -56,6 +57,10 @@ export const markNotificationAsRead = (id: number) => api.put(`/notifications/${
 
 // Pet Details
 export const getPet = (id: number) => api.get(`/pets/${id}`);
+
+// Profile
+export const getProfile = () => api.get('/profile');
+export const updateProfile = (data: any) => api.put('/profile', data);
 
 // Settings
 export const getSettings = () => api.get('/settings');

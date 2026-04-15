@@ -94,7 +94,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('appointments/{appointment}/approve', [AppointmentStatusController::class, 'approve']);
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
-    Route::apiResource('appointments',    AppointmentController::class);
+    Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
+    Route::apiResource('appointments', AppointmentController::class);
 
     // Inventory and Specialized Forecast
     Route::get('inventory/low-stock',     [InventoryController::class, 'lowStock']);
@@ -119,6 +120,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
     Route::get('/client-notifications',           [ClientNotificationController::class, 'index']);
     Route::post('/client-notifications/send',      [ClientNotificationController::class, 'send']);
+    Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
+
+    Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
+    Route::put('/notifications/{id}',             [ClientNotificationController::class, 'markAsRead']);
 
     // -----------------------------------------------------------------------
     // Master Data Management

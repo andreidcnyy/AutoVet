@@ -6,10 +6,13 @@ use App\Models\ClientNotification;
 use App\Models\Owner;
 use App\Models\NotificationTemplate;
 use App\Services\ClientNotificationService;
+use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Http\Request;
 
 class ClientNotificationController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     protected ClientNotificationService $service;
 
     public function __construct(ClientNotificationService $service)
@@ -34,6 +37,52 @@ class ClientNotificationController extends Controller
         }
 
         return response()->json($query->paginate(20));
+    }
+
+    public function portalIndex(Request $request)
+    {
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $notifications = ClientNotification::where('owner_id', $ownerId)
+                ->where('channel', 'email') // Only show in-app/email ones? 
+                ->latest()
+                ->limit(50)
+                ->get();
+            return response()->json($notifications);
+        }
+        return response()->json([], 403);
+    }
+
+    public function markAsRead(Request $request, $id)
+    {
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $notification = ClientNotification::where('owner_id', $ownerId)
+                ->where('id', $id)
+                ->firstOrFail();
+            
+            $notification->update(['read_at' => now()]);
+            return response()->json(['message' => 'Notification marked as read.']);
+        }
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    public function sendInvoice(Request $request)
+    {
+        $validated = $request->validate([
+            'owner_id' => 'required|exists:owners,id',
+            'invoice_id' => 'required|exists:invoices,id',
+        ]);
+
+        $owner = Owner::findOrFail($validated['owner_id']);
+        $invoice = \App\Models\Invoice::findOrFail($validated['invoice_id']);
+
+        try {
+            $notification = $this->service->sendInvoiceEmail($owner, $invoice);
+            return response()->json($notification);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to send invoice email: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 
     public function send(Request $request)

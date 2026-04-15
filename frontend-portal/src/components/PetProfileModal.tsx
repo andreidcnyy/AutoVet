@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import { LuPawPrint } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
+import { getActualPetImageUrl } from '../utils/petImages';
 import clsx from 'clsx';
 
 interface PetProfileModalProps {
@@ -102,7 +103,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                 <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
                   <div className="w-32 h-32 rounded-[2.5rem] bg-white/20 backdrop-blur-md border-4 border-white/30 shadow-2xl flex items-center justify-center overflow-hidden shrink-0">
                      {pet.photo ? (
-                       <img src={`http://localhost:8000/storage/${pet.photo}`} alt={pet.name} className="w-full h-full object-cover" />
+                       <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
                      ) : (
                        <LuPawPrint className="w-12 h-12 text-white/50" />
                      )}
@@ -181,13 +182,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                             <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
                             <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
                           </div>
-                          <div>
+                          <div className="col-span-2">
                             <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
                             <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category?.name || 'N/A'}</div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] font-bold text-zinc-400 uppercase">Status</div>
-                            <div className="font-bold text-emerald-600">{pet.status}</div>
                           </div>
                        </div>
                     </div>

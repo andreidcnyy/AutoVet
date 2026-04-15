@@ -10,6 +10,7 @@ import {
   FiSearch,
   FiSend,
   FiBell,
+  FiX,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
@@ -22,6 +23,20 @@ import ManualSendModal from "../notifications/ManualSendModal";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Converts an image URL to a base64 data URI.
+ */
+async function getBase64ImageFromUrl(imageUrl) {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject("Failed to convert image to base64");
+        reader.readAsDataURL(blob);
+    });
+}
 
 const formatDate = (date) => {
   if (!date) return "N/A";
@@ -110,9 +125,10 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 
   if (patient) {
     const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name);
-    if (photoUrl) {
+    if (photoUrl && !photoUrl.endsWith(".svg")) {
       try {
-          doc.addImage(photoUrl, 'JPEG', patientCardX, y + 5, 10, 10);
+          const base64 = await getBase64ImageFromUrl(photoUrl);
+          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 10, 10);
       } catch(e){
         console.error("PDF Patient Image error:", e);
       }
@@ -233,6 +249,7 @@ function InvoiceModuleView() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [appointmentSearch, setAppointmentSearch] = useState("");
 
   const [currentWeight, setCurrentWeight] = useState("");
 
@@ -241,6 +258,22 @@ function InvoiceModuleView() {
 
   const [inventory, setInventory] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
+
+  const filteredAppointments = useMemo(() => {
+    if (!appointmentSearch) return appointments;
+    const term = appointmentSearch.toLowerCase();
+    return appointments.filter(appt => {
+      const formatted = formatDate(appt.date).toLowerCase();
+      const rawDate = appt.date.toLowerCase();
+      const title = (appt.title || "").toLowerCase();
+      const serviceName = (appt.service?.name || "").toLowerCase();
+      
+      return formatted.includes(term) || 
+             rawDate.includes(term) || 
+             title.includes(term) || 
+             serviceName.includes(term);
+    });
+  }, [appointments, appointmentSearch]);
 
   useEffect(() => {
     if (!user?.token) return;
@@ -639,10 +672,20 @@ function InvoiceModuleView() {
                     <select
                       value={selectedOwnerId}
                       onChange={(e) => {
-                        setSelectedOwnerId(e.target.value);
+                        const oId = e.target.value;
+                        setSelectedOwnerId(oId);
                         setSelectedPatientId(""); // reset pet
                         setPatientDetails(null);
                         setAppointments([]);
+                        
+                        if (oId) {
+                          const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === oId.toString());
+                          if (ownerPets.length === 1) {
+                            // Auto select the only pet
+                            const onlyPet = ownerPets[0];
+                            handlePatientSelect({ target: { value: onlyPet.id.toString() } });
+                          }
+                        }
                       }}
                       className="h-11 w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
                       disabled={status === "Finalized"}
@@ -678,24 +721,59 @@ function InvoiceModuleView() {
                     {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
                   </div>
 
-                  <div className="relative">
-                    <select
-                      value={selectedAppointmentId}
-                      onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                      disabled={!selectedPatientId || status === "Finalized"}
-                      className={clsx(
-                        "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
-                        getError("appointment_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Select Appointment</label>
+                    <div className="relative">
+                      <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                      <input 
+                        type="text"
+                        placeholder="Search date or title..."
+                        value={appointmentSearch}
+                        onChange={(e) => setAppointmentSearch(e.target.value)}
+                        disabled={!selectedPatientId || status === "Finalized"}
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-10 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50"
+                      />
+                      {appointmentSearch && (
+                        <button
+                          onClick={() => setAppointmentSearch("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                          <FiX className="h-3.5 w-3.5" />
+                        </button>
                       )}
-                    >
-                      <option value="">Select an appointment...</option>
-                      {appointments.map(appt => (
-                        <option key={appt.id} value={appt.id}>
-                          {formatDate(appt.date)} {appt.time ? `@ ${appt.time}` : ""} - {appt.title}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                    </div>
+                    
+                    <div className={clsx(
+                      "max-h-48 overflow-y-auto rounded-xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card divide-y divide-zinc-50 dark:divide-dark-surface",
+                      !selectedPatientId && "opacity-50"
+                    )}>
+                      {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
+                        <button
+                          key={appt.id}
+                          type="button"
+                          onClick={() => setSelectedAppointmentId(appt.id.toString())}
+                          className={clsx(
+                            "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                            selectedAppointmentId === appt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
+                          )}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span>{formatDate(appt.date)}</span>
+                            <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
+                          </div>
+                          <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
+                        </button>
+                      )) : (
+                        <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
+                          {selectedPatientId ? "No appointments found" : "Select pet first"}
+                        </div>
+                      )}
+                      {filteredAppointments.length > 50 && (
+                        <div className="px-4 py-2 text-center text-[9px] text-zinc-400 font-bold uppercase bg-zinc-50 dark:bg-dark-surface">
+                          Showing top 50 results. Use search to narrow down.
+                        </div>
+                      )}
+                    </div>
                     {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
                   </div>
 
@@ -705,8 +783,9 @@ function InvoiceModuleView() {
                          <strong className="text-zinc-700 dark:text-zinc-300">Weight Override (kg)</strong>
                          <input 
                             type="number" 
-                            step="0.01" 
+                            step="any" 
                             value={currentWeight} 
+                            placeholder="0.0"
                             onChange={(e) => {
                                setCurrentWeight(e.target.value);
                                // Force price recalculation for items in the list?
@@ -960,14 +1039,6 @@ function InvoiceModuleView() {
                 <FiSend className="h-4 w-4" />
                 Finalize &amp; Send
               </button>
-              <button
-                onClick={() => setIsSendModalOpen(true)}
-                disabled={status === "Draft"}
-                className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-dark-surface px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 disabled:opacity-50"
-              >
-                <FiBell className="h-4 w-4" />
-                Notify Client
-              </button>
             </div>
           </div>
 
@@ -1165,7 +1236,11 @@ function InvoiceModuleView() {
         isOpen={isSendModalOpen} 
         onClose={() => setIsSendModalOpen(false)} 
         owner={patientDetails?.owner}
-        relatedObject={null}
+        relatedObject={{
+          id: selectedAppointmentId, // We might need the actual invoice ID if saved
+          invoice_number: "INV-" + new Date().getFullYear(), // placeholder if not yet saved
+          total: totalDue
+        }}
         relatedType="App\Models\Invoice"
       />
     </div>

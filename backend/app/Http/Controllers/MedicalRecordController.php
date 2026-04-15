@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Roles;
 use App\Models\MedicalRecord;
 use Illuminate\Http\Request;
+use App\Traits\IdentifiesPortalOwner;
 
 /**
  * MedicalRecordController
@@ -15,6 +16,8 @@ use Illuminate\Http\Request;
  */
 class MedicalRecordController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     protected $clientNotificationService;
 
     public function __construct(
@@ -29,9 +32,9 @@ class MedicalRecordController extends Controller
         $user = auth()->user();
         $query = MedicalRecord::with(['pet', 'vet', 'appointment.service']);
 
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $query->whereHas('pet', function ($q) use ($user) {
-                $q->where('owner_id', $user->owner?->id);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->whereHas('pet', function ($q) use ($ownerId) {
+                $q->where('owner_id', $ownerId);
             });
         } elseif ($request->has('pet_id')) {
             $query->where('pet_id', $request->pet_id);

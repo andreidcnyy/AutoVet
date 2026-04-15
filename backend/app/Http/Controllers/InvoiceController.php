@@ -8,9 +8,12 @@ use App\Services\InvoiceFinalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Traits\IdentifiesPortalOwner;
 
 class InvoiceController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     protected $pricingService;
     protected $finalizationService;
     protected $clientNotificationService;
@@ -34,9 +37,9 @@ class InvoiceController extends Controller
         $user = auth()->user();
         $query = Invoice::with(['pet.species', 'pet.breed', 'items']);
 
-        if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            $query->whereHas('pet', function ($q) use ($user) {
-                $q->where('owner_id', $user->owner?->id);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->whereHas('pet', function ($q) use ($ownerId) {
+                $q->where('owner_id', $ownerId);
             });
         }
 

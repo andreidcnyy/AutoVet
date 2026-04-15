@@ -29,7 +29,6 @@ const patientSchema = z.object({
     weight: z.coerce.number().min(0.01, "Weight is required to determine pet size").max(500, "Weight exceeds valid range"),
     weight_unit: z.enum(["kg", "lbs"]).default("kg"),
     size_category_id: z.string().optional().or(z.literal("")),
-    status: z.string().max(50).optional(),
     owner_name: z.string().min(1, "Owner name is required").max(255),
     owner_phone: z.string()
         .min(1, "Phone number is required")
@@ -94,7 +93,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         resolver: zodResolver(patientSchema),
         defaultValues: {
             name: "", species_id: "", breed_id: "", date_of_birth: "",
-            sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg", status: "Healthy",
+            sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg",
             owner_name: "", owner_phone: "", owner_email: "",
             owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
             allergies: "", medication: "", notes: "", photo: "",
@@ -114,7 +113,6 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 weight: patient.weight || "",
                 weight_unit: patient.weight_unit || "kg",
                 size_category_id: patient.size_category_id ? patient.size_category_id.toString() : "",
-                status: patient.status || "Healthy",
                 owner_name: patient.owner?.name || patient.ownerName || "",
                 owner_phone: patient.owner?.phone || patient.ownerPhone || "",
                 owner_email: patient.owner?.email || patient.ownerEmail || "",
@@ -261,7 +259,6 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 weight: data.weight,
                 weight_unit: data.weight_unit,
                 size_category_id: data.size_category_id || null,
-                status: data.status,
                 allergies: data.allergies,
                 medication: data.medication,
                 notes: data.notes,
@@ -370,8 +367,8 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Weight ({watch("weight_unit") || "kg"})</label>
-                                        <div className="flex gap-2">
-                                            <input type="number" step="0.01" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
+                                        <div className="flex gap-1">
+                                            <input type="number" step="any" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
                                             <select {...register("weight_unit")} className="w-16 rounded border border-zinc-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
                                                 <option value="kg">kg</option>
                                                 <option value="lbs">lbs</option>
@@ -429,12 +426,6 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Color</label>
                                     <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Status</label>
-                                    <select {...register("status")} className={getSelectClass(errors.status)}>
-                                        <option>Healthy</option><option>Treatment</option><option>Overdue</option>
-                                    </select>
                                 </div>
                             </div>
                         </section>

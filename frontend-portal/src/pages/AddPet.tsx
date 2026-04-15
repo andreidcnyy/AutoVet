@@ -27,7 +27,6 @@ const petSchema = z.object({
   weight: z.coerce.number().min(0.01, "Weight is required").max(500, "Invalid weight"),
   weight_unit: z.enum(["kg", "lbs"]).default("kg"),
   size_category_id: z.coerce.string().optional().or(z.literal("")),
-  status: z.string().max(50).default("Healthy"),
   allergies: z.string().max(255).optional(),
   medication: z.string().max(255).optional(),
   notes: z.string().optional(),
@@ -54,7 +53,7 @@ export default function AddPet() {
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
       sex: "Male", age_group: "Adult", color: "", weight: 0, weight_unit: "kg",
-      status: "Healthy", photo: ""
+      photo: ""
     }
   });
 
@@ -246,7 +245,7 @@ export default function AddPet() {
 
             <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
-              <input type="number" step="0.01" {...register("weight")} className="input-field font-bold" placeholder="0.00" />
+              <input type="number" step="any" {...register("weight")} className="input-field font-bold" placeholder="0.0" />
             </div>
 
             <div>

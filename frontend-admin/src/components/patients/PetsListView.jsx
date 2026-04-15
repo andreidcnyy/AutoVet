@@ -12,6 +12,7 @@ import {
   FiChevronRight,
   FiUser,
   FiActivity,
+  FiX,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 
@@ -123,8 +124,16 @@ function PetsListView() {
             placeholder="Search by pet name, breed, or owner..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <FiX className="h-4 w-4" />
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-3">

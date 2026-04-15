@@ -52,6 +52,9 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                     setTitle('Medical Record Update - Pet Wellness');
                     setCustomMessage('Hello {owner_name}, a new medical record has been added for your pet {patient}. Findings: {findings}');
                 }
+            } else if (relatedType === 'App\\Models\\Invoice') {
+                setTitle(`Invoice #${relatedObject?.invoice_number || 'INV'} - Pet Wellness`);
+                setCustomMessage(`Hello {owner_name}, your invoice for the recent visit is ready. Total Amount: P ${relatedObject?.total}. You can view and download it through your portal.`);
             }
         } catch (err) {
             toast.error('Failed to load templates');
@@ -92,22 +95,29 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
             }
 
             // 2. Send the notification
-            const response = await fetch('/api/client-notifications/send', {
+            const isInvoice = relatedType === 'App\\Models\\Invoice';
+            const url = isInvoice ? '/api/client-notifications/send-invoice' : '/api/client-notifications/send';
+            const payload = isInvoice ? {
+                owner_id: owner.id,
+                invoice_id: relatedObject?.id
+            } : {
+                owner_id: owner.id,
+                channel,
+                template_id: selectedTemplate || null,
+                custom_message: customMessage || null,
+                title: channel === 'email' ? title : null,
+                related_type: relatedType || null,
+                related_id: relatedObject ? relatedObject.id : null,
+            };
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'Authorization': `Bearer ${user?.token}`
                 },
-                body: JSON.stringify({
-                    owner_id: owner.id,
-                    channel,
-                    template_id: selectedTemplate || null,
-                    custom_message: customMessage || null,
-                    title: channel === 'email' ? title : null,
-                    related_type: relatedType || null,
-                    related_id: relatedObject ? relatedObject.id : null,
-                })
+                body: JSON.stringify(payload)
             });
             
             if (!response.ok) {
