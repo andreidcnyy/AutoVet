@@ -83,7 +83,7 @@ export default function Dashboard() {
             {pets.length > 0 ? (
               pets.map(pet => (
                 <div key={pet.id} onClick={() => handlePetClick(pet.id)}>
-                  <div className="card-shell p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
+                  <div className="card-shell card-shell-hover p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
                     <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
                       {pet.photo ? (
                         <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />

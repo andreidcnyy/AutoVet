@@ -87,6 +87,7 @@ function ReportsPage() {
   const [activeTab, setActiveTab] = useState("Sales");
   const [salesData, setSalesData] = useState({ revenue: [], topServices: [], volume: [] });
   const [patientData, setPatientData] = useState({ species: [], trends: [], demographics: {} });
+  const [inventoryData, setInventoryData] = useState({ lowStock: [] });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -115,6 +116,11 @@ function ReportsPage() {
             fetch("/api/reports/patients/demographics", { headers }).then(r => r.json())
           ]);
           if (isMounted) setPatientData({ species, trends, demographics });
+        } else if (activeTab === "Inventory") {
+          const [lowStock] = await Promise.all([
+            fetch("/api/reports/inventory/low-stock", { headers }).then(r => r.json())
+          ]);
+          if (isMounted) setInventoryData({ lowStock });
         }
       } catch (error) {
         console.error("Reports data fetch failed:", error);
@@ -209,21 +215,69 @@ function ReportsPage() {
                 </h3>
                 <SimpleLineChart data={patientData.trends} dataKey="total" color="#10b981" />
               </div>
+
+              <div className="card-shell p-6 col-span-full">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                   <FiIcons.FiUsers className="text-indigo-500" /> Patient Demographics (Sex)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                   {patientData.demographics?.sex?.map((item, idx) => (
+                      <div key={idx} className="bg-zinc-50 dark:bg-dark-surface p-4 rounded-xl border border-zinc-100 dark:border-dark-border text-center">
+                         <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-1">{item.sex || "Not Specified"}</p>
+                         <p className="text-3xl font-black text-zinc-900 dark:text-zinc-50">{item.total}</p>
+                      </div>
+                   ))}
+                </div>
+              </div>
             </>
           )}
 
           {activeTab === "Inventory" && (
-            <div className="card-shell p-6 col-span-full bg-zinc-50 dark:bg-dark-surface border-dashed border-2 border-zinc-200 dark:border-dark-border">
-              <div className="flex flex-col items-center text-center py-10">
-                <FiIcons.FiBox className="w-12 h-12 text-zinc-300 mb-4" />
-                <h3 className="text-lg font-bold mb-2">Inventory Status Summary</h3>
-                <p className="max-w-md text-zinc-500 dark:text-zinc-400">Inventory reporting is integrated with our real-time stock monitoring system.</p>
-                <button
-                  onClick={() => window.location.href = '/inventory'}
-                  className="mt-6 flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
-                >
-                  Go to Inventory Management <FiIcons.FiArrowRight />
-                </button>
+            <div className="card-shell p-6 col-span-full">
+              <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-xl font-bold flex items-center gap-2">
+                    <FiIcons.FiAlertTriangle className="text-rose-500" /> Low Stock Inventory Items
+                 </h3>
+                 <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-rose-100">
+                    {inventoryData.lowStock?.length || 0} Items at risk
+                 </span>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-zinc-50 dark:bg-dark-surface text-xs font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-200 dark:border-dark-border">
+                    <tr>
+                      <th className="px-4 py-3">Item Name</th>
+                      <th className="px-4 py-3">SKU</th>
+                      <th className="px-4 py-3">Current</th>
+                      <th className="px-4 py-3">Min. Level</th>
+                      <th className="px-4 py-3">Supplier</th>
+                      <th className="px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-dark-border text-sm">
+                    {inventoryData.lowStock?.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-12 text-center text-zinc-400 italic">No low stock items detected. Well done!</td>
+                      </tr>
+                    ) : (
+                      inventoryData.lowStock.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/50">
+                          <td className="px-4 py-4 font-bold text-zinc-900 dark:text-zinc-100">{item.item_name}</td>
+                          <td className="px-4 py-4 text-zinc-500 font-mono text-xs">{item.sku}</td>
+                          <td className="px-4 py-4 text-rose-600 font-black">{item.stock_level}</td>
+                          <td className="px-4 py-4 text-zinc-500">{item.min_stock_level}</td>
+                          <td className="px-4 py-4 text-zinc-500">{item.supplier || "—"}</td>
+                          <td className="px-4 py-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">
+                              Critical
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

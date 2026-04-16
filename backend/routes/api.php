@@ -25,6 +25,9 @@ use App\Http\Controllers\ClientNotificationController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\PatientReportController;
+use App\Http\Controllers\LowStockReportController;
 
 use App\Http\Controllers\PetSizeCategoryController;
 use App\Http\Controllers\UnitOfMeasureController;
@@ -185,11 +188,17 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // Reporting
     // -----------------------------------------------------------------------
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
-        Route::get('/reports/revenue',                  [\App\Http\Controllers\FinancialReportController::class, 'getRevenue']);
-        Route::get('/reports/service-performance',      [\App\Http\Controllers\FinancialReportController::class, 'getServicePerformance']);
-        Route::get('/reports/inventory-usage',          [\App\Http\Controllers\InventoryReportController::class, 'getUsage']);
-        Route::get('/reports/client-acquisition',       [\App\Http\Controllers\PatientReportController::class, 'getClientAcquisition']);
-        Route::get('/reports/patient-registration-trends',   [\App\Http\Controllers\PatientReportController::class, 'getRegistrationTrends']);
-        Route::get('/patients/demographics',          [\App\Http\Controllers\PatientReportController::class, 'getDemographics']);
+        // Sales Reports
+        Route::get('/reports/sales/revenue-summary',   [SalesReportController::class, 'getRevenueSummary']);
+        Route::get('/reports/sales/top-services',      [SalesReportController::class, 'getTopServices']);
+        Route::get('/reports/sales/transaction-volume', [SalesReportController::class, 'getTransactionVolume']);
+
+        // Patient Reports
+        Route::get('/reports/patients/species-distribution', [PatientReportController::class, 'getSpeciesDistribution']);
+        Route::get('/reports/patients/registration-trends',  [PatientReportController::class, 'getRegistrationTrends']);
+        Route::get('/reports/patients/demographics',         [PatientReportController::class, 'getDemographics']);
+
+        // Inventory Reports
+        Route::get('/reports/inventory/low-stock', [LowStockReportController::class, 'generate']);
     });
 });

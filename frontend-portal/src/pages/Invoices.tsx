@@ -134,7 +134,7 @@ export default function Invoices() {
         {filteredInvoices.length > 0 ? (
           <div className="space-y-3">
             {filteredInvoices.map(invoice => (
-              <div key={invoice.id} className="card-shell bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm hover:shadow-md">
+              <div key={invoice.id} className="card-shell card-shell-hover bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm">
                 <div 
                   className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-pointer"
                   onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}

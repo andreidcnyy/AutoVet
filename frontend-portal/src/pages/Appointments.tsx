@@ -71,7 +71,7 @@ export default function Appointments() {
         {appointments.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
             {appointments.map(appt => (
-              <div key={appt.id} className="card-shell p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
+              <div key={appt.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
                 <div className={clsx(
                   "absolute left-0 top-0 bottom-0 w-1.5",
                   appt.status === 'pending' ? 'bg-amber-400' : 
