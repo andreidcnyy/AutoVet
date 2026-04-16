@@ -359,21 +359,13 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Species *</label>
-                                    <div className="relative">
-                                        <select {...register("species_id")} className={getSelectClass(errors.species_id)}>
-                                            <option value="">Select Species...</option>
-                                            {speciesList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    </div>
-                                </div>
-                                <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Breed</label>
                                     <div className="relative">
-                                        <select {...register("breed_id")} className={getSelectClass(errors.breed_id)} disabled={!speciesIdValue}>
+                                        <select {...register("breed_id")} className={getSelectClass(errors.breed_id)}>
                                             <option value="">Select Breed...</option>
-                                            {availableBreeds.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                            {speciesList.flatMap(s => s.breeds || []).map((b) => (
+                                                <option key={b.id} value={b.id}>{b.name}</option>
+                                            ))}
                                         </select>
                                         <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     </div>

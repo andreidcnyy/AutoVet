@@ -9,7 +9,6 @@ import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
 import ProfilePage from "../pages/ProfilePage";
 import SettingsPage from "../pages/SettingsPage";
 import LoginPage from "../pages/LoginPage";
-import ReportsPage from "../pages/ReportsPage";
 import ForbiddenPage from "../pages/ForbiddenPage";
 import CalendarPage from "../pages/CalendarPage";
 import ChangePasswordPage from "../pages/ChangePasswordPage";
@@ -117,15 +116,6 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Invoices" },
-      },
-      {
-        path: "reports",
-        element: (
-          <ProtectedRoute allowedRoles={ADMIN_ONLY}>
-            <ReportsPage />
-          </ProtectedRoute>
-        ),
-        handle: { title: "Clinical & Business Reports" },
       },
       {
         path: "settings",

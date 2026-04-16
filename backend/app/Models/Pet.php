@@ -96,6 +96,18 @@ class Pet extends Model
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
 
+    protected $appends = ['total_paid', 'total_due', 'last_visit', 'next_due'];
+
+    public function getTotalPaidAttribute()
+    {
+        return $this->invoices()->sum('amount_paid');
+    }
+
+    public function getTotalDueAttribute()
+    {
+        return $this->invoices()->sum('total');
+    }
+
     protected $casts = [
         'synced_at'                => 'datetime',
         'last_modified_locally_at' => 'datetime',

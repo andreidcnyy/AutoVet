@@ -154,7 +154,6 @@ async function generatePatientPDF(patient) {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
     head: [["Field", "Details"]],
     body: [
-      ["Species", patient.species?.name || "—"],
       ["Breed", patient.breed?.name || "—"],
       ["Sex", patient.sex || "—"],
       ["Age Group", formatAgeGroup(patient.age_group)],
@@ -446,7 +445,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
               {patient.name}
             </h2>
             <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-              {patient.species?.name || "N/A"} • {patient.breed?.name || "N/A"} • {patient.sex || "N/A"} • ID #{patient.id}
+              {patient.breed?.name || "N/A"} • {patient.sex || "N/A"} • ID #{patient.id}
             </p>
           </div>
         </div>
@@ -576,7 +575,6 @@ function OverviewTab({ patient, onOpenOwner }) {
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Species", value: patient.species?.name || "N/A" },
             { label: "Breed", value: patient.breed?.name || "N/A" },
             { label: "Sex", value: patient.sex || "N/A" },
             { label: "Age Group", value: formatAgeGroup(patient.age_group) },
@@ -586,6 +584,8 @@ function OverviewTab({ patient, onOpenOwner }) {
             { label: "Size", value: patient.size_category?.name || "N/A" },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
             { label: "Status", value: patient.status || "N/A" },
+            { label: "Total Paid", value: formatCurrency(patient.total_paid) },
+            { label: "Balance", value: formatCurrency(patient.total_due - patient.total_paid) },
             { label: "Last Visit", value: patient.last_visit || "N/A" },
             { label: "Next Due", value: patient.next_due || "N/A" },
           ].map((item) => (
@@ -729,7 +729,6 @@ function AppointmentsTab({ appointments }) {
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Time</th>
               <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Category</th>
             </tr>
           </thead>
           <tbody>
@@ -747,12 +746,6 @@ function AppointmentsTab({ appointments }) {
                 </td>
                 <td className="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {apt.title}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                    <span className={clsx("h-2 w-2 rounded-full", toneDotStyles[apt.tone] || "bg-zinc-400")} />
-                    {toneLabels[apt.tone] || apt.tone || "—"}
-                  </span>
                 </td>
               </tr>
             ))}
@@ -793,7 +786,6 @@ function AppointmentsTab({ appointments }) {
             { label: "Date", value: formatDate(selectedApt.date) },
             { label: "Time", value: selectedApt.time || "N/A" },
             { label: "Title", value: selectedApt.title },
-            { label: "Category", value: toneLabels[selectedApt.tone] || selectedApt.tone },
             { label: "Reason/Notes", value: selectedApt.reason || selectedApt.notes || "None" },
             { label: "Status", value: selectedApt.status || "N/A" }
           ]}
@@ -857,12 +849,12 @@ function InvoiceTab({ invoices }) {
                     className={clsx(
                       "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
                       invoiceStatusStyles[inv.status] ||
+                      invoiceStatusStyles[Object.keys(invoiceStatusStyles).find(k => k.toLowerCase() === inv.status?.toLowerCase())] ||
                         "border-zinc-200 bg-zinc-50 text-zinc-600"
                     )}
                   >
                     {inv.status}
-                  </span>
-                </td>
+                  </span>                </td>
                 <td className="px-4 py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {formatCurrency(inv.amount_paid)}
                 </td>

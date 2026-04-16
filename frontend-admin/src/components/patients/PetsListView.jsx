@@ -24,7 +24,6 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [speciesFilter, setSpeciesFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -57,11 +56,6 @@ function PetsListView() {
     fetchPets();
   }, [user?.token]);
 
-  const speciesList = useMemo(() => {
-    const species = pets.map(pet => pet.species?.name).filter(Boolean);
-    return ["all", ...new Set(species)];
-  }, [pets]);
-
   const filteredPets = useMemo(() => {
     return pets.filter(pet => {
       const matchesSearch = 
@@ -69,16 +63,14 @@ function PetsListView() {
         pet.owner?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (pet.breed?.name && pet.breed.name.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesSpecies = speciesFilter === "all" || pet.species?.name === speciesFilter;
-      
-      return matchesSearch && matchesSpecies;
+      return matchesSearch;
     });
-  }, [pets, searchQuery, speciesFilter]);
+  }, [pets, searchQuery]);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, speciesFilter]);
+  }, [searchQuery]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
@@ -185,19 +177,6 @@ function PetsListView() {
             </button>
           )}
         </div>
-        
-        <div className="flex items-center gap-3">
-            <div className="relative">
-                <select 
-                    value={speciesFilter}
-                    onChange={(e) => setSpeciesFilter(e.target.value)}
-                    className="appearance-none inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 pr-10 text-sm font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 cursor-pointer"
-                >
-                    {speciesList.map(s => <option key={s} value={s}>{s === "all" ? "All Species" : s}</option>)}
-                </select>
-                <FiFilter className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-            </div>
-        </div>
       </div>
 
       <Pagination />
@@ -254,8 +233,8 @@ function PetsListView() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Age</p>
-                                <p className="text-xs font-black text-emerald-600">{getAge(pet.date_of_birth)}</p>
+                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Total Paid</p>
+                                <p className="text-xs font-black text-emerald-600">₱{Number(pet.total_paid || 0).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>

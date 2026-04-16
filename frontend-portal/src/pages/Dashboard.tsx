@@ -21,6 +21,9 @@ export default function Dashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [petToEditId, setPetToEditId] = useState<number | null>(null);
 
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   const fetchData = () => {
     Promise.all([getPets(), getAppointments(), getNotifications()])
       .then(([petsRes, apptsRes, notifRes]) => {
@@ -46,6 +49,11 @@ export default function Dashboard() {
     e.stopPropagation();
     setPetToEditId(id);
     setIsEditModalOpen(true);
+  };
+
+  const handleDetailsClick = (appt: any) => {
+    setSelectedAppointment(appt);
+    setIsDetailsOpen(true);
   };
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading your dashboard...</div>;
@@ -160,7 +168,11 @@ export default function Dashboard() {
               {appointments.length > 0 ? (
                 <div className="divide-y divide-zinc-100 dark:divide-dark-border">
                   {appointments.filter(a => a.status !== 'cancelled').slice(0, 5).map(appt => (
-                    <div key={appt.id} className="p-4 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
+                    <div 
+                      key={appt.id} 
+                      onClick={() => handleDetailsClick(appt)}
+                      className="p-4 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -172,7 +184,7 @@ export default function Dashboard() {
                                {appt.status}
                              </span>
                           </div>
-                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 truncate mt-0.5">{appt.pet?.name}</h4>
+                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 truncate mt-0.5 group-hover:text-brand-500 transition-colors">{appt.pet?.name}</h4>
                         </div>
                         <div className="text-right shrink-0">
                           <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
@@ -196,6 +208,116 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Appointment Details Drawer */}
+      <div className={clsx(
+        "fixed inset-0 z-[60] transition-opacity duration-500",
+        isDetailsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      )}>
+        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
+        
+        <aside className={clsx(
+          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
+          isDetailsOpen ? "translate-x-0" : "translate-x-full"
+        )}>
+          {selectedAppointment && (
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                    <span className="text-brand-500 mr-2">/</span>Visit Details
+                  </h3>
+                  <div className={clsx(
+                    "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
+                    selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {selectedAppointment.status}
+                  </div>
+                </div>
+                <button onClick={() => setIsDetailsOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
+                  <FiPlusCircle className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                      <FiHeart className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Patient</p>
+                      <p className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiCalendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{new Date(selectedAppointment.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiClock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                      <FiPlusCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name}</p>
+                    </div>
+                  </div>
+
+                  {selectedAppointment.vet && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiUser className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Doctor</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Dr. {selectedAppointment.vet.name}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAppointment.notes && (
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiEdit2 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1">{selectedAppointment.notes}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => setIsDetailsOpen(false)}
+                  className="w-full h-16 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all"
+                >
+                  Close Details
+                </button>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* Pet Profile Modal */}

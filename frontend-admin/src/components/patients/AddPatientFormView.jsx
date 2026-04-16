@@ -308,14 +308,16 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Pet Name *</label><input {...register("name")} className={getInputClass(errors.name)} /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Species *</label>
-                  <div className="relative"><select {...register("species_id")} className={getSelectClass(errors.species_id)}><option value="">Select...</option>{speciesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select><FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Breed</label>
-                  <div className="relative"><select {...register("breed_id")} className={getSelectClass(errors.breed_id)} disabled={!speciesIdValue}><option value="">Select...</option>{availableBreeds.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select><FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
+              <div>
+                <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Breed</label>
+                <div className="relative">
+                  <select {...register("breed_id")} className={getSelectClass(errors.breed_id)}>
+                    <option value="">Select...</option>
+                    {speciesList.flatMap(s => (s.breeds || []).map(b => ({ ...b, speciesName: s.name }))).map(b => (
+                      <option key={b.id} value={b.id}>{b.name} ({b.speciesName})</option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

@@ -267,7 +267,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                               </div>
                               <span className={clsx(
                                 "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
-                                invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                               )}>
                                 {invoice.status}
                               </span>
