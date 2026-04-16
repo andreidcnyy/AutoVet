@@ -358,8 +358,28 @@ function InvoiceModuleView() {
       .then(res => res.json())
       .then(data => {
         const appts = Array.isArray(data) ? data : [];
-        // Sort by date descending, take recent 5 + future
-        const sorted = appts.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const sorted = appts.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          dateA.setHours(0, 0, 0, 0);
+          dateB.setHours(0, 0, 0, 0);
+
+          const isA_Past = dateA < now;
+          const isB_Past = dateB < now;
+
+          // If one is past and other is future/today
+          if (isA_Past && !isB_Past) return 1;
+          if (!isA_Past && isB_Past) return -1;
+
+          // Both are future/today: Ascending (Today -> Tomorrow)
+          if (!isA_Past && !isB_Past) return dateA - dateB;
+
+          // Both are past: Descending (Yesterday -> Day Before)
+          return dateB - dateA;
+        });
         setAppointments(sorted);
       })
       .catch(err => {
@@ -863,8 +883,19 @@ function InvoiceModuleView() {
                         }
                       }}
                       disabled={status === "Finalized"}
-                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
+                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
                     />
+                    {serviceInput && (
+                      <button
+                        onClick={() => {
+                          setServiceInput("");
+                          setSelectedService(null);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
+                      >
+                        <FiX className="h-4 w-4" />
+                      </button>
+                    )}
                     {isDropdownOpen && (
                       <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
                         {Object.keys(groupedItems).length > 0 ? (
@@ -1190,11 +1221,15 @@ function InvoiceModuleView() {
                         disabled={status !== "Draft"}
                         className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
                       />
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-3">
                         <p className="text-right text-sm font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
                         {status === "Draft" && (
-                          <button onClick={() => removeItem(item.id)} className="text-rose-400 hover:text-rose-600 dark:text-rose-500 dark:hover:text-rose-300">
-                            <span className="text-[10px] font-bold leading-none">✕</span>
+                          <button 
+                            onClick={() => removeItem(item.id)} 
+                            className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all"
+                            title="Remove item"
+                          >
+                            <FiX className="w-4 h-4" />
                           </button>
                         )}
                       </div>

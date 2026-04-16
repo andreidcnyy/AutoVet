@@ -6,7 +6,9 @@ import {
   FiXCircle, 
   FiCheckCircle, 
   FiAlertCircle,
-  FiArrowLeft
+  FiArrowLeft,
+  FiHeart,
+  FiUser
 } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
 import PetProfileModal from '../components/PetProfileModal';
@@ -27,7 +29,26 @@ export default function Appointments() {
   const fetchAppointments = () => {
     setLoading(true);
     getAppointments()
-      .then(res => setAppointments(res.data))
+      .then(res => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const sorted = [...res.data].sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          dateA.setHours(0, 0, 0, 0);
+          dateB.setHours(0, 0, 0, 0);
+
+          const isA_Past = dateA < now;
+          const isB_Past = dateB < now;
+
+          if (isA_Past && !isB_Past) return 1;
+          if (!isA_Past && isB_Past) return -1;
+          if (!isA_Past && !isB_Past) return dateA.getTime() - dateB.getTime();
+          return dateB.getTime() - dateA.getTime();
+        });
+        setAppointments(sorted);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };

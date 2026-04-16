@@ -12,7 +12,8 @@ import {
   FiChevronRight,
   FiPlusCircle,
   FiCheckCircle,
-  FiAlertCircle
+  FiAlertCircle,
+  FiHeart
 } from 'react-icons/fi';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
