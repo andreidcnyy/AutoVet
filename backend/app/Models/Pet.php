@@ -100,12 +100,25 @@ class Pet extends Model
 
     public function getTotalPaidAttribute()
     {
-        return $this->invoices()->sum('amount_paid');
+        // Use the loaded relationship if available to avoid N+1 queries
+        $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
+
+        return $invoices
+            ->whereIn('status', ['Paid', 'Partially Paid'])
+            ->sum(function($invoice) {
+                if ($invoice->status === 'Paid') {
+                    // For "Paid" status, if amount_paid is 0, we treat it as fully paid (total)
+                    // This handles mock data where status is Paid but amount_paid was not set.
+                    return (float) ($invoice->amount_paid > 0 ? $invoice->amount_paid : $invoice->total);
+                }
+                return (float) $invoice->amount_paid;
+            });
     }
 
     public function getTotalDueAttribute()
     {
-        return $this->invoices()->sum('total');
+        $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
+        return $invoices->sum('total');
     }
 
     protected $casts = [

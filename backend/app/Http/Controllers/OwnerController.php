@@ -13,7 +13,7 @@ class OwnerController extends Controller
      */
     public function index()
     {
-        return response()->json(Owner::with('pets')->orderBy('created_at', 'desc')->get());
+        return response()->json(Owner::with('pets.invoices')->orderBy('created_at', 'desc')->get());
     }
 
     /**
