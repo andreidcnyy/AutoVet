@@ -22,6 +22,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VetScheduleController;
 use App\Http\Controllers\CmsContentController;
 use App\Http\Controllers\ClientNotificationController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\ArchiveController;
 
 use App\Http\Controllers\PetSizeCategoryController;
 use App\Http\Controllers\UnitOfMeasureController;
@@ -145,10 +148,30 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     // Settings
     Route::get('/settings',  [SettingController::class, 'index']);
-    Route::post('/settings', [SettingController::class, 'update']);
+    Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
 
     // Content Management
     Route::apiResource('cms-content', CmsContentController::class);
+
+    // -----------------------------------------------------------------------
+    // System Administration
+    // -----------------------------------------------------------------------
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        // Audit Logs
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+        // Backup & Restore
+        Route::get('/backups',                     [BackupController::class, 'index']);
+        Route::post('/backups',                    [BackupController::class, 'create']);
+        Route::post('/backups/restore',            [BackupController::class, 'restore']);
+        Route::get('/backups/download/{filename}', [BackupController::class, 'download']);
+        Route::delete('/backups/{filename}',       [BackupController::class, 'destroy']);
+
+        // Archive & Recovery
+        Route::get('/archives/{type}',              [ArchiveController::class, 'index']);
+        Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore']);
+        Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete']);
+    });
 
     // -----------------------------------------------------------------------
     // User Management — Admin only

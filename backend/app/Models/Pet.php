@@ -89,6 +89,7 @@ class Pet extends Model
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
         'allergies', 'medication', 'notes', 'photo',
+        'chief_complaint', 'findings', 'diagnosis', 'treatment_plan', 'vet_id',
         // Archive tracking
         'deleted_by', 'restore_until',
         // Sync fields

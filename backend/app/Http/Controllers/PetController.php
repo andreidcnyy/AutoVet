@@ -52,6 +52,11 @@ class PetController extends Controller
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
             'photo' => 'nullable|string',
+            'chief_complaint' => 'nullable|string',
+            'findings' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'treatment_plan' => 'nullable|string',
+            'vet_id' => 'nullable|exists:admins,id',
         ]);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,/', $request->photo)) {
@@ -66,6 +71,27 @@ class PetController extends Controller
         }
 
         $pet = Pet::create($validated);
+
+        // Check for clinical fields to create an initial medical record
+        if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
+            $recordVetId = $request->vet_id;
+            if (!$recordVetId) {
+                $user = auth()->user();
+                if ($user && $user->role === \App\Enums\Roles::VETERINARIAN->value) {
+                    $recordVetId = $user->id;
+                }
+            }
+
+            $pet->medicalRecords()->create([
+                'chief_complaint' => $request->chief_complaint,
+                'findings'        => $request->findings,
+                'diagnosis'       => $request->diagnosis,
+                'treatment_plan'  => $request->treatment_plan,
+                'notes'           => $request->notes,
+                'vet_id'          => $recordVetId,
+            ]);
+        }
+
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']), 201);
     }
 
@@ -97,6 +123,11 @@ class PetController extends Controller
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
             'photo' => 'nullable|string',
+            'chief_complaint' => 'nullable|string',
+            'findings' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'treatment_plan' => 'nullable|string',
+            'vet_id' => 'nullable|exists:admins,id',
         ]);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,/', $request->photo)) {
@@ -117,6 +148,30 @@ class PetController extends Controller
         }
 
         $pet->update($validated);
+
+        // Check for clinical fields to create a NEW medical record entry
+        if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
+            // Only create if at least one clinical field is not empty
+            if ($request->chief_complaint || $request->findings || $request->diagnosis || $request->treatment_plan) {
+                $recordVetId = $request->vet_id;
+                if (!$recordVetId) {
+                    $user = auth()->user();
+                    if ($user && $user->role === \App\Enums\Roles::VETERINARIAN->value) {
+                        $recordVetId = $user->id;
+                    }
+                }
+
+                $pet->medicalRecords()->create([
+                    'chief_complaint' => $request->chief_complaint,
+                    'findings'        => $request->findings,
+                    'diagnosis'       => $request->diagnosis,
+                    'treatment_plan'  => $request->treatment_plan,
+                    'notes'           => $request->notes,
+                    'vet_id'          => $recordVetId,
+                ]);
+            }
+        }
+
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']));
     }
 

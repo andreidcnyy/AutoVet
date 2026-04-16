@@ -41,7 +41,13 @@ const patientSchema = z.object({
     allergies: z.string().max(255).optional().or(z.literal("")),
     medication: z.string().max(255).optional().or(z.literal("")),
     notes: z.string().optional().or(z.literal("")),
-    photo: z.string().optional().or(z.literal(""))
+    photo: z.string().optional().or(z.literal("")),
+    // Clinical fields
+    chief_complaint: z.string().optional().or(z.literal("")),
+    findings: z.string().optional().or(z.literal("")),
+    diagnosis: z.string().optional().or(z.literal("")),
+    treatment_plan: z.string().optional().or(z.literal("")),
+    vet_id: z.coerce.string().optional().or(z.literal("")),
 });
 
 function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
@@ -54,6 +60,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const [weightRanges, setWeightRanges] = useState([]);
     const [breedSuggestedSizeId, setBreedSuggestedSizeId] = useState(null);
     const [availableCities, setAvailableCities] = useState([]);
+    const [vetsList, setVetsList] = useState([]);
 
     useEffect(() => {
         if (isOpen && user?.token) {
@@ -77,6 +84,12 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 .then(data => {
                     const ranges = data.data || data;
                     if (Array.isArray(ranges)) setWeightRanges(ranges);
+                })
+                .catch(console.error);
+            fetch("/api/vets", { headers })
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setVetsList(data);
                 })
                 .catch(console.error);
         }
@@ -262,7 +275,13 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 allergies: data.allergies,
                 medication: data.medication,
                 notes: data.notes,
-                photo: data.photo
+                photo: data.photo,
+                // Clinical fields
+                vet_id: data.vet_id,
+                chief_complaint: data.chief_complaint,
+                findings: data.findings,
+                diagnosis: data.diagnosis,
+                treatment_plan: data.treatment_plan,
             };
 
             const petRes = await fetch(`/api/pets/${patient.id}`, {
@@ -501,25 +520,71 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                             </div>
                         </section>
 
-                        <div className="h-px bg-zinc-200 dark:bg-dark-border" />
+                        {VET_AND_ADMIN.includes(user?.role) && (
+                            <>
+                                <div className="h-px bg-zinc-200 dark:bg-dark-border" />
 
-                        <section>
-                            <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Medical History</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Allergies</label>
-                                    <input {...register("allergies")} className={getInputClass(errors.allergies)} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Current Medication</label>
-                                    <input {...register("medication")} className={getInputClass(errors.medication)} />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Additional Notes / Status</label>
-                                    <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
-                                </div>
-                            </div>
-                        </section>
+                                <section>
+                                    <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Medical History</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Allergies</label>
+                                            <input {...register("allergies")} className={getInputClass(errors.allergies)} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Current Medication</label>
+                                            <input {...register("medication")} className={getInputClass(errors.medication)} />
+                                        </div>
+
+                                        <div className="sm:col-span-2 pt-4 border-t border-zinc-100 dark:border-dark-border mt-2">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-4 flex items-center gap-2">
+                                            Create New Clinical Record Entry (Optional)
+                                            </h4>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Attending Veterinarian</label>
+                                            <div className="relative">
+                                                <select {...register("vet_id")} className={getSelectClass(errors.vet_id)}>
+                                                    <option value="">Select veterinarian...</option>
+                                                    {vetsList.map(v => (
+                                                        <option key={v.id} value={v.id}>
+                                                            {v.role === 'veterinarian' ? `Dr. ${v.name}` : v.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Chief Complaint</label>
+                                            <input {...register("chief_complaint")} className={getInputClass(errors.chief_complaint)} placeholder="Reason for this update/visit..." />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Clinical Findings</label>
+                                            <textarea {...register("findings")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Observations..."></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Diagnosis</label>
+                                            <textarea {...register("diagnosis")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Clinical diagnosis..."></textarea>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Treatment Plan</label>
+                                            <textarea {...register("treatment_plan")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Next steps, medications prescribed..."></textarea>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Additional Notes / Status</label>
+                                            <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
+                                        </div>
+                                    </div>
+                                </section>
+                            </>
+                        )}
                     </form>
                 </div>
 

@@ -30,7 +30,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import ManualSendModal from "../notifications/ManualSendModal";
 import EditPatientModal from "./EditPatientModal";
-import { FiEdit3, FiTrash2 } from "react-icons/fi";
+import { FiEdit3, FiTrash2, FiEye } from "react-icons/fi";
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
@@ -40,8 +40,6 @@ const tabs = [
 ];
 
 const statusStyles = {
-  Healthy:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   Overdue:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   Treatment:
@@ -318,7 +316,8 @@ async function generateMedicalRecordPDF(record, patient) {
   if (record.vet) {
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");
-    doc.text(`Attending Veterinarian: Dr. ${record.vet.name}`, 14, y);
+    const vetDisplayName = record.vet.role === 'veterinarian' ? `Dr. ${record.vet.name}` : record.vet.name;
+    doc.text(`Attending Veterinarian: ${vetDisplayName}`, 14, y);
   }
 
   doc.save(`Medical_Record_${patient.name}_${record.id}.pdf`);
@@ -361,6 +360,7 @@ async function generateAllMedicalRecordsPDF(records, patient) {
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 30 } },
       body: [
+        ["Vet", record.vet ? (record.vet.role === 'veterinarian' ? `Dr. ${record.vet.name}` : record.vet.name) : "—"],
         ["Complaint", record.chief_complaint || "—"],
         ["Diagnosis", record.diagnosis || "—"],
         ["Treatment", record.treatment_plan || "—"]
@@ -957,6 +957,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const [appointments, setAppointments] = useState([]);
   const [vets, setVets] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
@@ -1069,6 +1070,9 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     e.stopPropagation(); // Prevent opening modal
     if (!confirm("Are you sure you want to delete this record?")) return;
     
+    // Immediate UI feedback
+    setRecords(prev => prev.filter(r => r.id !== id));
+    
     fetch(`/api/medical-records/${id}`, { 
       method: "DELETE",
       headers: {
@@ -1079,12 +1083,16 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json();
+          // Rollback if failed
+          fetchRecords();
           throw new Error(data.message || "Failed to delete");
         }
-        toast.success("Record deleted");
-        fetchRecords();
+        toast.success("Medical record deleted successfully.");
       })
-      .catch(err => toast.error(err.message));
+      .catch(err => {
+        toast.error(err.message);
+        fetchRecords(); // Rollback
+      });
   };
 
   // Pagination Logic
@@ -1093,11 +1101,13 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const currentRecords = records.slice(indexOfFirstRecord, indexOfLastRecord);
   const totalPages = Math.ceil(records.length / recordsPerPage);
 
-  const handleRowClick = (record) => {
+  const handleRowClick = (record, mode = 'edit') => {
     setEditingRecord(record);
     setSelectedAppointmentId(record.appointment_id || "");
-    setSelectedVetId(record.user_id || "");
+    setSelectedVetId(record.vet_id || "");
     setIsModalOpen(true);
+    // You might want to add a state for view mode if not already there
+    setIsViewOnlyMode(mode === 'view');
   };
 
   return (
@@ -1166,7 +1176,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-semibold uppercase text-[10px] tracking-widest">
                     <FiUser className="text-zinc-400" />
-                    Dr. {record.vet?.name || "N/A"}
+                    {record.vet?.role === 'veterinarian' ? `Dr. ${record.vet?.name}` : (record.vet?.name || "N/A")}
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -1176,6 +1186,13 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRowClick(record, 'view'); }}
+                      className="p-2 rounded-lg text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      title="View Record Details"
+                    >
+                      <FiEye className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); generateMedicalRecordPDF(record, patient); }}
                       className="p-2 rounded-lg text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
@@ -1239,6 +1256,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           onSave={onSave} 
           isStaff={isStaff}
           isVet={isVet}
+          isViewOnlyMode={isViewOnlyMode}
           appointments={appointments}
           selectedAppointmentId={selectedAppointmentId}
           setSelectedAppointmentId={setSelectedAppointmentId}
@@ -1265,6 +1283,7 @@ function MedicalRecordModal({
   onSave, 
   isStaff, 
   isVet, 
+  isViewOnlyMode,
   appointments, 
   selectedAppointmentId, 
   setSelectedAppointmentId,
@@ -1273,8 +1292,10 @@ function MedicalRecordModal({
   setSelectedVetId
 }) {
   const isEdit = !!record;
-  // If user is not vet, it's view-only (Admins can view but not add/edit clinical data)
-  const isViewOnly = !isVet;
+  // If user is Staff (not Admin/Vet), it's view-only.
+  // OR if we explicitly opened in View mode.
+  // Admins and Vets should be able to edit.
+  const isViewOnly = isStaff || isViewOnlyMode;
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
   
   const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
@@ -1299,7 +1320,7 @@ function MedicalRecordModal({
     const data = Object.fromEntries(fd.entries());
     // Attach values from state
     data.appointment_id = selectedAppointmentId;
-    data.user_id = selectedVetId; // Attach the vet ID
+    data.vet_id = selectedVetId; // Attach the vet ID
     
     // Clear previous errors
     clearErrors();
@@ -1311,7 +1332,7 @@ function MedicalRecordModal({
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-            {isViewOnly ? "Medical Record Details" : isEdit ? "Edit Record" : "Add Medical Record"}
+            {isViewOnlyMode ? "View Medical Record" : isViewOnly ? "Medical Record Details" : isEdit ? "Edit Record" : "Add Medical Record"}
           </h2>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
         </div>
@@ -1328,15 +1349,17 @@ function MedicalRecordModal({
                    className={clsx(
                      "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-none focus:border-emerald-400 dark:text-zinc-200",
                      isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white",
-                     getError("user_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
+                     getError("vet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
                    )}
                  >
                    <option value="">Select veterinarian...</option>
                    {vets.map(vet => (
-                     <option key={vet.id} value={vet.id}>Dr. {vet.name}</option>
+                     <option key={vet.id} value={vet.id}>
+                       {vet.role === 'veterinarian' ? `Dr. ${vet.name}` : vet.name}
+                     </option>
                    ))}
                  </select>
-                 {getError("user_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("user_id")}</p>}
+                 {getError("vet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("vet_id")}</p>}
                </div>
 
                <div>

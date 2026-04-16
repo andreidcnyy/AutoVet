@@ -23,6 +23,9 @@ export default function SystemPreferencesTab() {
       .then((res) => res.json())
       .then((data) => {
         setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
+        setAiForecasting(data.enable_ai_forecasting !== 'false' && data.enable_ai_forecasting !== false);
+        setLowStockAlerts(data.enable_low_stock_alerts !== 'false' && data.enable_low_stock_alerts !== false);
+        setCloudSync(data.enable_cloud_sync === 'true' || data.enable_cloud_sync === true);
         setLoading(false);
       })
       .catch((err) => {
@@ -30,9 +33,7 @@ export default function SystemPreferencesTab() {
       });
   }, [user?.token]);
 
-  const toggleMaintenance = async () => {
-    const newValue = !maintenanceMode;
-    setMaintenanceMode(newValue);
+  const updateSetting = async (key, value) => {
     try {
       await fetch("/api/settings", {
         method: "PUT",
@@ -41,12 +42,58 @@ export default function SystemPreferencesTab() {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
-        body: JSON.stringify({ settings: { maintenance_mode: newValue ? 'true' : 'false' } })
+        body: JSON.stringify({ settings: { [key]: value ? 'true' : 'false' } })
       });
-      toast.success(newValue ? "Maintenance Mode enabled." : "Maintenance Mode disabled.");
+      toast.success("Preference updated successfully.");
     } catch {
-      toast.error("Failed to update maintenance settings.");
-      setMaintenanceMode(!newValue);
+      toast.error("Failed to update settings.");
+    }
+  };
+
+  const toggleMaintenance = () => {
+    const newValue = !maintenanceMode;
+    setMaintenanceMode(newValue);
+    updateSetting('maintenance_mode', newValue);
+  };
+
+  const toggleAiForecasting = () => {
+    const newValue = !aiForecasting;
+    setAiForecasting(newValue);
+    updateSetting('enable_ai_forecasting', newValue);
+  };
+
+  const toggleLowStockAlerts = () => {
+    const newValue = !lowStockAlerts;
+    setLowStockAlerts(newValue);
+    updateSetting('enable_low_stock_alerts', newValue);
+  };
+
+  const toggleCloudSync = () => {
+    const newValue = !cloudSync;
+    setCloudSync(newValue);
+    updateSetting('enable_cloud_sync', newValue);
+  };
+
+  const [processingBackup, setProcessingBackup] = useState(false);
+
+  const initiateManualBackup = async () => {
+    setProcessingBackup(true);
+    toast.info("Manual database backup initiated...");
+    try {
+      const res = await fetch("/api/backups", { 
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${user?.token}`,
+          "Accept": "application/json"
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to create backup");
+      toast.success(data.message || "Backup created successfully.");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setProcessingBackup(false);
     }
   };
 
@@ -60,12 +107,12 @@ export default function SystemPreferencesTab() {
       <div className="mt-6 space-y-4">
         <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
           <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Enable AI Inventory Forecasting</p>
-          <Toggle checked={aiForecasting} onChange={() => setAiForecasting((value) => !value)} />
+          <Toggle checked={aiForecasting} onChange={toggleAiForecasting} />
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
           <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Low Stock Email Alerts</p>
-          <Toggle checked={lowStockAlerts} onChange={() => setLowStockAlerts((value) => !value)} />
+          <Toggle checked={lowStockAlerts} onChange={toggleLowStockAlerts} />
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
@@ -81,15 +128,16 @@ export default function SystemPreferencesTab() {
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Auto-sync with Cloud Server</p>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Syncs offline local data when internet is available.</p>
           </div>
-          <Toggle checked={cloudSync} onChange={() => setCloudSync((value) => !value)} />
+          <Toggle checked={cloudSync} onChange={toggleCloudSync} />
         </div>
       </div>
 
       <button
-        onClick={() => toast.info("Manual database backup initiated...")}
-        className="mt-7 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface"
+        onClick={initiateManualBackup}
+        disabled={processingBackup}
+        className="mt-7 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface disabled:opacity-50"
       >
-        Perform Manual Backup
+        {processingBackup ? "Processing Backup..." : "Perform Manual Backup"}
       </button>
     </section>
   );

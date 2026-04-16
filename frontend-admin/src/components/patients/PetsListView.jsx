@@ -103,6 +103,56 @@ function PetsListView() {
     setIsModalOpen(true);
   };
 
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
+          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+              Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
+          </div>
+          
+          <div className="flex items-center gap-2">
+              <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+              </button>
+              
+              <div className="flex items-center gap-1.5">
+                  {[...Array(totalPages)].map((_, i) => (
+                      <button
+                          key={i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={clsx(
+                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                              currentPage === i + 1
+                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                          )}
+                      >
+                          {i + 1}
+                      </button>
+                  ))}
+              </div>
+
+              <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+              </button>
+          </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,7 +160,7 @@ function PetsListView() {
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Directory</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-            Total of {pets.length} active patients across all clients.
+            Total of {pets.length} patient records across all clients.
           </p>
         </div>
       </div>
@@ -150,6 +200,8 @@ function PetsListView() {
         </div>
       </div>
 
+      <Pagination />
+
       {/* Grid List */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {isLoading ? (
@@ -182,10 +234,7 @@ function PetsListView() {
                                 </span>
                             </div>
                             <div className="text-right">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                    <FiActivity className="h-3 w-3" />
-                                    {pet.status || "Regular"}
-                                </span>
+                                {/* Status badge removed */}
                             </div>
                         </div>
 
@@ -229,53 +278,7 @@ function PetsListView() {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
-            <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
-            </div>
-            
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-                >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                
-                <div className="flex items-center gap-1.5">
-                    {[...Array(totalPages)].map((_, i) => (
-                        <button
-                            key={i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className={clsx(
-                                "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                                currentPage === i + 1
-                                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                                    : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                            )}
-                        >
-                            {i + 1}
-                        </button>
-                    ))}
-                </div>
-
-                <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-                >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-      )}
+      <Pagination />
 
       {/* Detail Modal */}
       <ViewPatientModal 
