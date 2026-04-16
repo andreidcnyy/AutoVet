@@ -6,14 +6,15 @@ import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../hooks/useNotifications";
 import { ROLES } from "../constants/roles";
 
 function DashboardPage() {
   const [apiStatus, setApiStatus] = useState(null);
   const [metrics, setMetrics] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { notifications, markAllAsRead, dismissNotification } = useNotifications();
   const isStaff = user?.role === ROLES.STAFF;
 
   useEffect(() => {
@@ -25,10 +26,9 @@ function DashboardPage() {
     };
     Promise.all([
       fetch("/api/status", { headers }).then(res => res.json()),
-      fetch("/api/dashboard/stats", { headers }).then(res => res.json()),
-      fetch("/api/dashboard/notifications", { headers }).then(res => res.json())
+      fetch("/api/dashboard/stats", { headers }).then(res => res.json())
     ])
-      .then(([status, statsData, notifData]) => {
+      .then(([status, statsData]) => {
         setApiStatus(status);
         
         const safeStats = Array.isArray(statsData) ? statsData : [];
@@ -40,14 +40,6 @@ function DashboardPage() {
             icon: Icons[stat.iconName] || LuIcons[stat.iconName] || Icons.FiActivity
           }));
         setMetrics(mappedMetrics);
-
-        const safeNotifs = Array.isArray(notifData) ? notifData : [];
-        // Map icon names to components for notifications
-        const mappedNotifs = safeNotifs.map(notif => ({
-          ...notif,
-          icon: Icons[notif.iconName] || LuIcons[notif.iconName] || Icons.FiBell
-        }));
-        setNotifications(mappedNotifs);
         
         setIsLoading(false);
       })
@@ -57,35 +49,11 @@ function DashboardPage() {
       });
   }, [user?.token]);
 
-  const handleMarkAllRead = async () => {
-    try {
-      await fetch("/api/dashboard/notifications/mark-all-read", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-      setNotifications([]);
-    } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
-    }
-  };
-
-  const handleDismissNotification = async (id) => {
-    try {
-      await fetch(`/api/dashboard/notifications/${id}/dismiss`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch (err) {
-      console.error("Failed to dismiss notification:", err);
-    }
-  };
+  // Map icon components for the child card component
+  const mappedNotifications = notifications.map(notif => ({
+    ...notif,
+    icon: Icons[notif.iconName] || LuIcons[notif.iconName] || Icons.FiBell
+  }));
 
   if (isLoading) {
     return (
@@ -116,9 +84,9 @@ function DashboardPage() {
         </div>
         <div className="lg:col-span-4 space-y-6">
           <RecentNotificationsCard 
-            items={notifications} 
-            onMarkAllRead={handleMarkAllRead}
-            onDismiss={handleDismissNotification}
+            items={mappedNotifications} 
+            onMarkAllRead={markAllAsRead}
+            onDismiss={dismissNotification}
           />
         </div>
       </section>

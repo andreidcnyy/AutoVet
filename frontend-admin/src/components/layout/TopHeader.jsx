@@ -1,34 +1,63 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX } from "react-icons/fi";
+import { 
+  FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX, 
+  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo 
+} from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../hooks/useNotifications";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import clsx from "clsx";
+
+const iconMap = {
+  FiBell: FiBell,
+  FiAlertTriangle: FiAlertTriangle,
+  FiPackage: FiPackage,
+  FiPlusCircle: FiPlusCircle,
+  FiCheck: FiCheck,
+  FiInfo: FiInfo,
+  FiCalendar: FiPlusCircle, // Fallback for calendar icons
+  FiFileText: FiInfo,       // Fallback for invoice icons
+};
+
+const iconToneStyles = {
+  danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+  info: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  success: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
+};
 
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
+  const [openNotifMenu, setOpenNotifMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { notifications, unreadCount, markAllAsRead, dismissNotification } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setOpenProfileMenu(false);
       }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setOpenNotifMenu(false);
+      }
     }
 
-    if (openProfileMenu) {
+    if (openProfileMenu || openNotifMenu) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [openProfileMenu]);
+  }, [openProfileMenu, openNotifMenu]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur transition-colors duration-300 dark:border-dark-border dark:bg-dark-card/95">
@@ -68,14 +97,83 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           {/* Dark Mode Toggle */}
           <DarkModeToggle />
 
-          <button
-            type="button"
-            onClick={() => toast.info("You have no new notifications.")}
-            className="relative rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
-          >
-            <FiBell className="h-5 w-5" />
-            <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
-          </button>
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              onClick={() => setOpenNotifMenu(!openNotifMenu)}
+              className={clsx(
+                "relative rounded-lg p-2 text-zinc-500 transition-colors dark:text-zinc-400",
+                openNotifMenu ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" : "hover:bg-zinc-100 dark:hover:bg-dark-surface"
+              )}
+            >
+              <FiBell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-dark-card">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {openNotifMenu && (
+              <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-80 rounded-2xl border border-zinc-200 bg-white shadow-2xl transition-all dark:border-dark-border dark:bg-dark-card animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-dark-border">
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={markAllAsRead}
+                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                
+                <div className="max-h-[350px] overflow-y-auto slim-scroll">
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <FiBell className="mb-2 h-8 w-8 text-zinc-200 dark:text-zinc-700" />
+                      <p className="text-sm font-medium text-zinc-400">All caught up!</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-50 dark:divide-dark-border/50">
+                      {notifications.map((notif) => {
+                        const Icon = iconMap[notif.iconName] || FiBell;
+                        return (
+                          <div key={notif.id} className="group relative flex gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
+                            <span className={clsx(
+                              "mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                              iconToneStyles[notif.tone] || iconToneStyles.neutral
+                            )}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="flex-1 min-w-0 pr-4">
+                              <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">{notif.title}</p>
+                              <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">{notif.message}</p>
+                              <p className="mt-1 text-[10px] font-medium text-zinc-400 uppercase tracking-tight">{notif.time}</p>
+                            </div>
+                            <button 
+                              onClick={() => dismissNotification(notif.id)}
+                              className="absolute right-2 top-3 p-1 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-all"
+                            >
+                              <FiX className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <Link
+                  to="/notifications"
+                  onClick={() => setOpenNotifMenu(false)}
+                  className="block border-t border-zinc-100 py-3 text-center text-xs font-bold text-zinc-600 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface rounded-b-2xl"
+                >
+                  View full history
+                </Link>
+              </div>
+            )}
+          </div>
 
           <div ref={menuRef} className="relative border-l border-zinc-200 pl-4 dark:border-dark-border">
             <button
