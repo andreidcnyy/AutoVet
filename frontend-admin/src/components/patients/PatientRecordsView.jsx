@@ -122,6 +122,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                   <th className="px-6 py-4">Owner Identity</th>
                   <th className="px-6 py-4">Contact Details</th>
                   <th className="px-6 py-4 text-center">Pets</th>
+                  <th className="px-6 py-4 text-right">Total Paid</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -167,6 +168,9 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                           {owner.pets?.length || 0}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-6 py-5 text-right font-black text-emerald-600 text-sm">
+                      ₱{(owner.pets?.reduce((sum, p) => sum + (Number(p.total_paid) || 0), 0) || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -360,7 +364,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                              />
                              <div className="min-w-0 flex-1">
                                 <p className="font-black text-zinc-900 dark:text-zinc-50">{pet.name}</p>
-                                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.species?.name} • {pet.breed?.name}</p>
+                                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.breed?.name || 'N/A'}</p>
                              </div>
                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-300 shadow-sm dark:bg-dark-card">
                                 <FiChevronRight className="h-4 w-4" />

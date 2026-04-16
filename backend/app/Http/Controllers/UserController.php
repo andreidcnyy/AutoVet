@@ -80,7 +80,7 @@ class UserController extends Controller
     public function vets()
     {
         $vets = Admin::where('role', Roles::VETERINARIAN->value)
-            ->select('id', 'name')
+            ->select('id', 'name', 'role')
             ->get();
 
         return response()->json($vets);

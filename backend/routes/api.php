@@ -22,6 +22,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VetScheduleController;
 use App\Http\Controllers\CmsContentController;
 use App\Http\Controllers\ClientNotificationController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\PatientReportController;
+use App\Http\Controllers\LowStockReportController;
 
 use App\Http\Controllers\PetSizeCategoryController;
 use App\Http\Controllers\UnitOfMeasureController;
@@ -147,10 +153,30 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     // Settings
     Route::get('/settings',  [SettingController::class, 'index']);
-    Route::post('/settings', [SettingController::class, 'update']);
+    Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
 
     // Content Management
     Route::apiResource('cms-content', CmsContentController::class);
+
+    // -----------------------------------------------------------------------
+    // System Administration
+    // -----------------------------------------------------------------------
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        // Audit Logs
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+        // Backup & Restore
+        Route::get('/backups',                     [BackupController::class, 'index']);
+        Route::post('/backups',                    [BackupController::class, 'create']);
+        Route::post('/backups/restore',            [BackupController::class, 'restore']);
+        Route::get('/backups/download/{filename}', [BackupController::class, 'download']);
+        Route::delete('/backups/{filename}',       [BackupController::class, 'destroy']);
+
+        // Archive & Recovery
+        Route::get('/archives/{type}',              [ArchiveController::class, 'index']);
+        Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore']);
+        Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete']);
+    });
 
     // -----------------------------------------------------------------------
     // User Management — Admin only
@@ -164,11 +190,17 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // Reporting
     // -----------------------------------------------------------------------
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
-        Route::get('/reports/revenue',                  [\App\Http\Controllers\FinancialReportController::class, 'getRevenue']);
-        Route::get('/reports/service-performance',      [\App\Http\Controllers\FinancialReportController::class, 'getServicePerformance']);
-        Route::get('/reports/inventory-usage',          [\App\Http\Controllers\InventoryReportController::class, 'getUsage']);
-        Route::get('/reports/client-acquisition',       [\App\Http\Controllers\PatientReportController::class, 'getClientAcquisition']);
-        Route::get('/reports/patient-registration-trends',   [\App\Http\Controllers\PatientReportController::class, 'getRegistrationTrends']);
-        Route::get('/patients/demographics',          [\App\Http\Controllers\PatientReportController::class, 'getDemographics']);
+        // Sales Reports
+        Route::get('/reports/sales/revenue-summary',   [SalesReportController::class, 'getRevenueSummary']);
+        Route::get('/reports/sales/top-services',      [SalesReportController::class, 'getTopServices']);
+        Route::get('/reports/sales/transaction-volume', [SalesReportController::class, 'getTransactionVolume']);
+
+        // Patient Reports
+        Route::get('/reports/patients/species-distribution', [PatientReportController::class, 'getSpeciesDistribution']);
+        Route::get('/reports/patients/registration-trends',  [PatientReportController::class, 'getRegistrationTrends']);
+        Route::get('/reports/patients/demographics',         [PatientReportController::class, 'getDemographics']);
+
+        // Inventory Reports
+        Route::get('/reports/inventory/low-stock', [LowStockReportController::class, 'generate']);
     });
 });

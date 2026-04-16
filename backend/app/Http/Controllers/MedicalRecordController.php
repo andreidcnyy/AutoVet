@@ -33,7 +33,7 @@ class MedicalRecordController extends Controller
         $query = MedicalRecord::with(['pet', 'vet', 'appointment.service']);
 
         if ($ownerId = $this->getPortalOwnerId()) {
-            $query->whereHas('pet', function ($q) use ($ownerId) {
+            $query->whereHas('pet', function($q) use ($ownerId) {
                 $q->where('owner_id', $ownerId);
             });
         } elseif ($request->has('pet_id')) {
@@ -47,7 +47,7 @@ class MedicalRecordController extends Controller
     {
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
-            'appointment_id'  => 'required|exists:appointments,id',
+            'appointment_id'  => 'nullable|exists:appointments,id',
             'vet_id'          => 'nullable|exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
@@ -58,35 +58,18 @@ class MedicalRecordController extends Controller
             'follow_up_time'  => 'nullable',
         ]);
 
-        // Auto-assign the logged-in user as vet if they are a clinical role
-        if (empty($validated['vet_id']) && auth()->check()) {
+        if (!isset($validated['vet_id']) || empty($validated['vet_id'])) {
             $user = auth()->user();
-            $userRole = property_exists($user, 'role') ? $user->role : null;
-            if ($userRole && in_array($userRole, Roles::clinicalRoles())) {
-                $validated['vet_id'] = auth()->id();
+            if ($user && $user->role === Roles::VETERINARIAN->value) {
+                $validated['vet_id'] = $user->id;
             }
         }
 
         $record = MedicalRecord::create($validated);
 
-        try {
-            $record->load('pet.owner');
-            $owner = $record->pet->owner;
-            if ($owner) {
-                $this->clientNotificationService->sendFromTemplate(
-                    $owner,
-                    'medical_summary_notice',
-                    'email',
-                    [
-                        'pet_name' => $record->pet->name,
-                        'diagnosis' => $record->diagnosis ?: 'N/A'
-                    ],
-                    'automated',
-                    $record
-                );
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Failed to send automated medical record notification: " . $e->getMessage());
+        // Notify client if record is finalized with a diagnosis
+        if ($record->diagnosis) {
+            $this->clientNotificationService->notifyMedicalRecordUpdate($record);
         }
 
         return response()->json($record->load(['pet', 'vet', 'appointment.service']), 201);
@@ -101,7 +84,7 @@ class MedicalRecordController extends Controller
     {
         $validated = $request->validate([
             'pet_id'          => 'required|exists:pets,id',
-            'appointment_id'  => 'required|exists:appointments,id',
+            'appointment_id'  => 'nullable|exists:appointments,id',
             'vet_id'          => 'nullable|exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
@@ -112,14 +95,10 @@ class MedicalRecordController extends Controller
             'follow_up_time'  => 'nullable',
         ]);
 
-        // Only clinical staff (Veterinarian) may edit diagnosis
-        if ($request->has('diagnosis') && auth()->check()) {
+        if (!isset($validated['vet_id']) || empty($validated['vet_id'])) {
             $user = auth()->user();
-            $userRole = property_exists($user, 'role') ? $user->role : null;
-            if (!$userRole || !in_array($userRole, Roles::clinicalRoles())) {
-                return response()->json([
-                    'message' => 'Unauthorized. Only veterinarians may edit the diagnosis field.',
-                ], 403);
+            if ($user && $user->role === Roles::VETERINARIAN->value) {
+                $validated['vet_id'] = $user->id;
             }
         }
 
@@ -129,16 +108,6 @@ class MedicalRecordController extends Controller
 
     public function destroy(MedicalRecord $medicalRecord)
     {
-        // Deletion restricted to Admin or Veterinarian
-        if (auth()->check()) {
-            $user = auth()->user();
-            $userRole = property_exists($user, 'role') ? $user->role : null;
-            $allowedRoles = array_merge(Roles::adminRoles(), [Roles::VETERINARIAN->value]);
-            if (!$userRole || !in_array($userRole, $allowedRoles)) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
-        }
-
         $medicalRecord->delete();
         return response()->json(null, 204);
     }

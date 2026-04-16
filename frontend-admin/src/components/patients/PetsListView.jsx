@@ -24,7 +24,6 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [speciesFilter, setSpeciesFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -57,11 +56,6 @@ function PetsListView() {
     fetchPets();
   }, [user?.token]);
 
-  const speciesList = useMemo(() => {
-    const species = pets.map(pet => pet.species?.name).filter(Boolean);
-    return ["all", ...new Set(species)];
-  }, [pets]);
-
   const filteredPets = useMemo(() => {
     return pets.filter(pet => {
       const matchesSearch = 
@@ -69,16 +63,14 @@ function PetsListView() {
         pet.owner?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (pet.breed?.name && pet.breed.name.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesSpecies = speciesFilter === "all" || pet.species?.name === speciesFilter;
-      
-      return matchesSearch && matchesSpecies;
+      return matchesSearch;
     });
-  }, [pets, searchQuery, speciesFilter]);
+  }, [pets, searchQuery]);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, speciesFilter]);
+  }, [searchQuery]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
@@ -103,6 +95,56 @@ function PetsListView() {
     setIsModalOpen(true);
   };
 
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
+          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+              Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
+          </div>
+          
+          <div className="flex items-center gap-2">
+              <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+              </button>
+              
+              <div className="flex items-center gap-1.5">
+                  {[...Array(totalPages)].map((_, i) => (
+                      <button
+                          key={i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={clsx(
+                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                              currentPage === i + 1
+                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                          )}
+                      >
+                          {i + 1}
+                      </button>
+                  ))}
+              </div>
+
+              <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+              </button>
+          </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,7 +152,7 @@ function PetsListView() {
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Directory</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-            Total of {pets.length} active patients across all clients.
+            Total of {pets.length} patient records across all clients.
           </p>
         </div>
       </div>
@@ -135,20 +177,9 @@ function PetsListView() {
             </button>
           )}
         </div>
-        
-        <div className="flex items-center gap-3">
-            <div className="relative">
-                <select 
-                    value={speciesFilter}
-                    onChange={(e) => setSpeciesFilter(e.target.value)}
-                    className="appearance-none inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 pr-10 text-sm font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 cursor-pointer"
-                >
-                    {speciesList.map(s => <option key={s} value={s}>{s === "all" ? "All Species" : s}</option>)}
-                </select>
-                <FiFilter className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
-            </div>
-        </div>
       </div>
+
+      <Pagination />
 
       {/* Grid List */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -182,10 +213,7 @@ function PetsListView() {
                                 </span>
                             </div>
                             <div className="text-right">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                    <FiActivity className="h-3 w-3" />
-                                    {pet.status || "Regular"}
-                                </span>
+                                {/* Status badge removed */}
                             </div>
                         </div>
 
@@ -205,8 +233,8 @@ function PetsListView() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Age</p>
-                                <p className="text-xs font-black text-emerald-600">{getAge(pet.date_of_birth)}</p>
+                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Total Paid</p>
+                                <p className="text-xs font-black text-emerald-600">₱{Number(pet.total_paid || 0).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>
@@ -229,53 +257,7 @@ function PetsListView() {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
-            <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
-            </div>
-            
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-                >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                
-                <div className="flex items-center gap-1.5">
-                    {[...Array(totalPages)].map((_, i) => (
-                        <button
-                            key={i + 1}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className={clsx(
-                                "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                                currentPage === i + 1
-                                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                                    : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                            )}
-                        >
-                            {i + 1}
-                        </button>
-                    ))}
-                </div>
-
-                <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-                >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-      )}
+      <Pagination />
 
       {/* Detail Modal */}
       <ViewPatientModal 

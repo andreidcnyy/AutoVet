@@ -5,7 +5,6 @@ import {
   FiGrid,
   FiPackage,
   FiSettings,
-  FiBarChart2,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { ROLES, ALL_ROLES, ADMIN_ONLY } from "../constants/roles";
@@ -17,7 +16,6 @@ export const primaryNavigation = [
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: ALL_ROLES },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: ALL_ROLES },
   { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: ALL_ROLES },
-  { id: "reports", label: "Reports", path: "/reports", icon: FiBarChart2, allowedRoles: ADMIN_ONLY },
 ];
 
 export const bottomNavigation = [

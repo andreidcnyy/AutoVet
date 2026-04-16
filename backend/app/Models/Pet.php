@@ -89,11 +89,24 @@ class Pet extends Model
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
         'allergies', 'medication', 'notes', 'photo',
+        'chief_complaint', 'findings', 'diagnosis', 'treatment_plan', 'vet_id',
         // Archive tracking
         'deleted_by', 'restore_until',
         // Sync fields
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
+
+    protected $appends = ['total_paid', 'total_due', 'last_visit', 'next_due'];
+
+    public function getTotalPaidAttribute()
+    {
+        return $this->invoices()->sum('amount_paid');
+    }
+
+    public function getTotalDueAttribute()
+    {
+        return $this->invoices()->sum('total');
+    }
 
     protected $casts = [
         'synced_at'                => 'datetime',

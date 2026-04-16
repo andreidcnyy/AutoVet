@@ -46,8 +46,16 @@ export default function Invoices() {
     // We enrich it with the current user's info for the PDF
     const enrichedInvoice = {
       ...invoice,
-      pet: {
+      pet: invoice.pet ? {
         ...invoice.pet,
+        owner: {
+          name: user?.name || 'Valued Client',
+          email: user?.email || '',
+          address: user?.address || 'No address provided',
+          phone: user?.phone || ''
+        }
+      } : {
+        name: 'N/A',
         owner: {
           name: user?.name || 'Valued Client',
           email: user?.email || '',
@@ -61,8 +69,12 @@ export default function Invoices() {
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesPet = selectedPetId === "all" || String(inv.pet_id) === selectedPetId;
-    const matchesSearch = inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         inv.pet?.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const invoiceNumber = inv.invoice_number?.toLowerCase() || "";
+    const petName = inv.pet?.name?.toLowerCase() || "unknown";
+    const q = searchQuery.toLowerCase();
+    
+    const matchesSearch = invoiceNumber.includes(q) || petName.includes(q);
     return matchesPet && matchesSearch;
   });
 
@@ -134,7 +146,7 @@ export default function Invoices() {
         {filteredInvoices.length > 0 ? (
           <div className="space-y-3">
             {filteredInvoices.map(invoice => (
-              <div key={invoice.id} className="card-shell bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm hover:shadow-md">
+              <div key={invoice.id} className="card-shell card-shell-hover bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm">
                 <div 
                   className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-pointer"
                   onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}

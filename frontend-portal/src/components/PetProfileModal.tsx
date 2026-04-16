@@ -211,7 +211,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                   <div className="space-y-4">
                     {medicalRecords.length > 0 ? (
                       medicalRecords.map(record => (
-                        <div key={record.id} className="card-shell p-6 bg-white dark:bg-dark-card hover:border-brand-500/30 transition-all group">
+                        <div key={record.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card hover:border-brand-500/30 transition-all group text-left">
                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex items-start gap-4">
                                  <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/10 flex items-center justify-center text-brand-600 group-hover:scale-110 transition-transform">
@@ -250,7 +250,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                   <div className="space-y-4">
                     {invoices.length > 0 ? (
                       invoices.map(invoice => (
-                        <div key={invoice.id} className="card-shell p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
+                        <div key={invoice.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
                            <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
                                  <FiDollarSign className="w-6 h-6" />
@@ -267,7 +267,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                               </div>
                               <span className={clsx(
                                 "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
-                                invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                               )}>
                                 {invoice.status}
                               </span>

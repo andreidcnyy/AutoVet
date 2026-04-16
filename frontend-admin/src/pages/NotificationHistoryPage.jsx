@@ -22,7 +22,7 @@ function NotificationHistoryPage() {
 
   const fetchNotifications = () => {
     setLoading(true);
-    fetch("/api/notifications", {
+    fetch("/api/dashboard/notifications", {
       headers: {
         "Authorization": `Bearer ${user?.token}`,
         "Accept": "application/json"
@@ -41,27 +41,43 @@ function NotificationHistoryPage() {
     fetchNotifications();
   }, []);
 
-  const markAsRead = (ids) => {
-    fetch("/api/notifications/mark-as-read", {
+  const markAllRead = () => {
+    fetch("/api/dashboard/notifications/mark-all-read", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
         "Authorization": `Bearer ${user?.token}`,
         "Accept": "application/json"
-      },
-      body: JSON.stringify({ notification_ids: ids }),
+      }
     })
       .then((res) => {
         if (!res.ok) throw new Error("Action failed");
-        return res.json();
-      })
-      .then((data) => {
-        setNotifications((prev) =>
-          prev.map((n) => (ids.includes(n.id) ? { ...n, read_at: new Date().toISOString() } : n))
-        );
-        toast.success("Marked as read");
+        setNotifications([]);
+        toast.success("All notifications marked as read");
       })
       .catch((err) => toast.error(err.message));
+  };
+
+  const markAsRead = async (ids) => {
+    const idArray = Array.isArray(ids) ? ids : [ids];
+    
+    try {
+      await Promise.all(idArray.map(id => 
+        fetch(`/api/dashboard/notifications/${id}/dismiss`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user?.token}`,
+            "Accept": "application/json"
+          }
+        })
+      ));
+      
+      setNotifications((prev) => prev.filter((n) => !idArray.includes(n.id)));
+      toast.success(idArray.length > 1 ? "Notifications dismissed" : "Notification dismissed");
+    } catch (err) {
+      toast.error("Failed to dismiss some notifications");
+    }
   };
 
   const filteredNotifications = notifications.filter((n) => {
@@ -94,7 +110,7 @@ function NotificationHistoryPage() {
         <div className="flex gap-2">
           {unreadCount > 0 && (
             <button
-              onClick={() => markAsRead(notifications.filter((n) => !n.read_at).map((n) => n.id))}
+              onClick={markAllRead}
               className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-dark-surface/70 transition-colors"
             >
               <FiCheck /> Mark all as read

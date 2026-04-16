@@ -55,6 +55,8 @@ export default function BookAppointment() {
   const [vets, setVets] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [availability, setAvailability] = useState<any[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
@@ -75,14 +77,14 @@ export default function BookAppointment() {
   const selectedVetId = watch("vet_id");
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && !isViewMode) {
       setIsCheckingAvailability(true);
       getAvailability(selectedDate, selectedVetId)
         .then(res => setAvailability(res.data))
         .catch(console.error)
         .finally(() => setIsCheckingAvailability(false));
     }
-  }, [selectedDate, selectedVetId]);
+  }, [selectedDate, selectedVetId, isViewMode]);
 
   useEffect(() => {
     Promise.all([getPets(), getServices(), getVets(), getAppointments()])
@@ -102,7 +104,22 @@ export default function BookAppointment() {
     if (entry.dateString < todayStr) return; // Prevent booking in the past
 
     setSelectedDay(entry);
+    setSelectedAppointment(null);
+    setIsViewMode(false);
     setValue("date", entry.dateString);
+    setValue("time", "");
+    setValue("pet_id", "");
+    setValue("service_id", "");
+    setValue("vet_id", "");
+    setValue("notes", "");
+    setIsDrawerOpen(true);
+    setIsSuccess(false);
+  };
+
+  const handleEventClick = (e: React.MouseEvent, event: any) => {
+    e.stopPropagation();
+    setSelectedAppointment(event);
+    setIsViewMode(true);
     setIsDrawerOpen(true);
     setIsSuccess(false);
   };
@@ -198,7 +215,11 @@ export default function BookAppointment() {
 
                 <div className="mt-2 space-y-1">
                   {entry.events.map((event: any) => (
-                    <div key={event.id} className="px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-dark-border text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate uppercase">
+                    <div 
+                      key={event.id} 
+                      onClick={(e) => handleEventClick(e, event)}
+                      className="px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-dark-border text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate uppercase hover:border-brand-500 hover:text-brand-500 transition-colors"
+                    >
                       {event.pet?.name} - {event.status}
                     </div>
                   ))}
@@ -239,6 +260,107 @@ export default function BookAppointment() {
               >
                 Close
               </button>
+            </div>
+          ) : isViewMode && selectedAppointment ? (
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                    <span className="text-brand-500 mr-2">/</span>Visit Details
+                  </h3>
+                  <div className={clsx(
+                    "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
+                    selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {selectedAppointment.status}
+                  </div>
+                </div>
+                <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                      <FiHeart className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Patient</p>
+                      <p className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiCalendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{format(new Date(selectedAppointment.date), "MMM d, yyyy")}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiClock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                      <FiPlusCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name}</p>
+                    </div>
+                  </div>
+
+                  {selectedAppointment.vet && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiUser className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Doctor</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Dr. {selectedAppointment.vet.name}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAppointment.notes && (
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiInfo className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1">{selectedAppointment.notes}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4">
+                  <p className="text-xs text-center text-zinc-400 font-medium">
+                    To modify or reschedule this visit, please contact the clinic directly or cancel and re-book.
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="w-full h-16 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all"
+                >
+                  Close Details
+                </button>
+              </div>
             </div>
           ) : (
             <>

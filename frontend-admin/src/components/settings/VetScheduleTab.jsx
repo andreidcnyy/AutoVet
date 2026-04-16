@@ -30,25 +30,18 @@ export default function VetScheduleTab() {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
       };
-      const [usersRes, schedulesRes] = await Promise.all([
-        fetch("/api/users", { headers }),
+      const [vetsRes, schedulesRes] = await Promise.all([
+        fetch("/api/vets", { headers }),
         fetch("/api/vet-schedules", { headers })
       ]);
-      if (usersRes.ok && schedulesRes.ok) {
-        const usersData = await usersRes.json();
+      if (vetsRes.ok && schedulesRes.ok) {
+        const vetsData = await vetsRes.json();
         const schedulesData = await schedulesRes.json();
         
-        // Filter out non-vet users
-        const vetsOnly = usersData.filter(u => {
-          if (!u.role) return false;
-          const r = u.role.toLowerCase();
-          return r.includes("vet") || r.includes("doctor");
-        });
-        
-        setUsers(vetsOnly);
+        setUsers(vetsData);
         setSchedules(schedulesData);
-        if (vetsOnly.length > 0 && !selectedVetId) {
-          setSelectedVetId(vetsOnly[0].id.toString());
+        if (vetsData.length > 0 && !selectedVetId) {
+          setSelectedVetId(vetsData[0].id.toString());
         }
       }
     } catch (err) {

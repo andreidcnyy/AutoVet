@@ -35,13 +35,17 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 flex flex-col relative overflow-hidden">
+      {/* Dynamic Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 dark:bg-brand-500/5 rounded-full blur-[120px] animate-blob pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-[120px] animate-blob delay-500 pointer-events-none"></div>
+
       {/* Background Images Carousel */}
       {BACKGROUND_IMAGES.map((img, index) => (
         <div 
           key={img}
           className={clsx(
-            "absolute inset-0 z-0 scale-105 pointer-events-none transition-opacity duration-1000",
-            index === currentImageIndex ? "opacity-20 dark:opacity-10" : "opacity-0"
+            "absolute inset-0 z-0 scale-105 pointer-events-none transition-all duration-1000",
+            index === currentImageIndex ? "opacity-20 dark:opacity-10 scale-100" : "opacity-0"
           )}
           style={{
             backgroundImage: `url("${img}")`,
@@ -53,10 +57,10 @@ export default function Landing() {
       ))}
 
       {/* Navigation Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border transform transition-transform duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-50">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
+          <Link to="/" className="flex items-center gap-3 hover:scale-105 transition-transform duration-300">
+            <img src={logo} alt="Logo" className="w-10 h-10 object-contain animate-float" />
             <span className="text-2xl font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase">Pet Wellness Animal Clinic</span>
           </Link>
 
@@ -65,13 +69,13 @@ export default function Landing() {
             <div className="h-6 w-[1px] bg-zinc-200 dark:bg-dark-border mx-2"></div>
             <Link 
               to="/login" 
-              className="px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-colors"
+              className="px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5"
             >
               Log In
             </Link>
             <Link 
               to="/register" 
-              className="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-95"
+              className="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 active:scale-95 hover:shadow-brand-500/40"
             >
               Register Now
             </Link>
@@ -82,30 +86,30 @@ export default function Landing() {
       <main className="flex-1 flex items-center justify-center pt-20 px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-10">
           {/* Hero Section */}
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="space-y-6 opacity-0 animate-fade-in-scale">
             <h1 className="text-6xl md:text-7xl font-black text-zinc-900 dark:text-zinc-50 leading-[1.1] tracking-tight">
               Quality Care for Your <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Beloved Companions</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600 animate-pulse-subtle">Beloved Companions</span>
             </h1>
-            <p className="text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto font-medium leading-relaxed">
+            <p className="text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto font-medium leading-relaxed delay-200 opacity-0 animate-fade-in-scale">
               Stay Connected with your Beloved Companions, Be Part of Our Clinic and Book with us Now!
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4 delay-300 opacity-0 animate-fade-in-scale">
             <Link 
               to="/register" 
-              className="group px-10 py-4 bg-emerald-950 dark:bg-zinc-100 dark:text-zinc-950 text-white font-black rounded-2xl flex items-center gap-3 hover:scale-[1.05] transition-all shadow-2xl shadow-emerald-950/20 active:scale-95"
+              className="group px-10 py-4 bg-emerald-950 dark:bg-zinc-100 dark:text-zinc-950 text-white font-black rounded-2xl flex items-center gap-3 hover:scale-110 transition-all duration-300 shadow-2xl shadow-emerald-950/20 active:scale-90"
             >
-              Get Started <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+              Get Started <FiArrowRight className="group-hover:translate-x-2 transition-transform" />
             </Link>
             
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="group px-10 py-4 bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-700 dark:text-zinc-300 font-black rounded-2xl flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all active:scale-95 shadow-sm"
+              className="group px-10 py-4 bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-700 dark:text-zinc-300 font-black rounded-2xl flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all duration-300 active:scale-90 hover:scale-110 shadow-sm"
             >
-              <FiActivity className="text-brand-500" /> Our Services
+              <FiActivity className="text-brand-500 group-hover:animate-pulse" /> Our Services
             </button>
           </div>
         </div>
@@ -113,16 +117,20 @@ export default function Landing() {
 
       {/* Services Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 transition-all duration-500">
           <div 
-            className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-zinc-900/40 backdrop-blur-md opacity-0 animate-fade-in-scale"
+            style={{ animationDuration: '0.3s' }}
             onClick={() => setIsModalOpen(false)}
           ></div>
           
-          <div className="card-shell relative w-full max-w-3xl bg-white dark:bg-dark-card p-8 md:p-12 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 shadow-2xl">
+          <div className="card-shell relative w-full max-w-3xl bg-white dark:bg-dark-card p-8 md:p-12 overflow-hidden shadow-2xl opacity-0 animate-fade-in-scale delay-100">
+            {/* Modal Corner Decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-bl-full pointer-events-none"></div>
+
             <button 
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 dark:text-zinc-500 transition-colors"
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 dark:text-zinc-500 transition-all hover:rotate-90 duration-300"
             >
               <FiX className="text-2xl" />
             </button>
@@ -133,12 +141,15 @@ export default function Landing() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {CLINIC_SERVICES.map((service) => (
+              {CLINIC_SERVICES.map((service, idx) => (
                 <Link 
                   key={service.name}
                   to="/register"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex items-start gap-5 p-5 rounded-2xl border border-zinc-100 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50 hover:border-brand-500/30 hover:bg-white dark:hover:bg-dark-card transition-all group"
+                  className={clsx(
+                    "flex items-start gap-5 p-5 rounded-2xl border border-zinc-100 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50 hover:border-brand-500/30 hover:bg-white dark:hover:bg-dark-card transition-all group opacity-0 animate-fade-in-scale",
+                    idx === 0 ? "delay-100" : idx === 1 ? "delay-200" : idx === 2 ? "delay-300" : "delay-500"
+                  )}
                 >
                   <div className="w-12 h-12 shrink-0 rounded-xl bg-white dark:bg-dark-card shadow-sm border border-zinc-100 dark:border-dark-border flex items-center justify-center text-brand-500 text-xl group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white transition-all duration-500">
                     {service.icon}
@@ -153,11 +164,11 @@ export default function Landing() {
               ))}
             </div>
 
-            <div className="mt-10 pt-8 border-t border-zinc-100 dark:border-dark-border text-center">
+            <div className="mt-10 pt-8 border-t border-zinc-100 dark:border-dark-border text-center opacity-0 animate-fade-in-scale delay-500">
               <Link 
                 to="/register"
                 onClick={() => setIsModalOpen(false)}
-                className="inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold hover:underline"
+                className="inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold hover:gap-4 transition-all"
               >
                 Book a service today <FiArrowRight />
               </Link>

@@ -32,7 +32,7 @@ class InvoiceController extends Controller
     /**
      * Display a listing of invoices.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $query = Invoice::with(['pet.species', 'pet.breed', 'items']);
@@ -41,6 +41,10 @@ class InvoiceController extends Controller
             $query->whereHas('pet', function ($q) use ($ownerId) {
                 $q->where('owner_id', $ownerId);
             });
+        }
+
+        if ($request->has('pet_id')) {
+            $query->where('pet_id', $request->pet_id);
         }
 
         $invoices = $query->orderBy('created_at', 'desc')->get();
