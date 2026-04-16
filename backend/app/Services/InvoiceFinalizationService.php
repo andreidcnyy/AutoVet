@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Jobs\RefreshInventoryForecast;
 use App\Models\Invoice;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
+use App\Models\InventoryUsageHistory;
 use App\Models\Admin;
 use App\Events\LowStockDetected;
 use App\Traits\HasInternalNotifications;
@@ -23,15 +25,19 @@ class InvoiceFinalizationService
      */
     public function finalizeInvoice(Invoice $invoice)
     {
-        DB::transaction(function () use ($invoice) {
+        $affectedInventoryIds = [];
+
+        DB::transaction(function () use ($invoice, &$affectedInventoryIds) {
             // Check if status is valid and stock not already deducted
             if ($invoice->stock_deducted) {
                 return; // Already deducted
             }
-            
+
             if ($invoice->status !== 'Finalized' && $invoice->status !== 'Paid' && $invoice->status !== 'Partially Paid') {
                 return; // We only deduct when it reaches these states
             }
+
+            $usageDate = now()->toDateString();
 
             // Loop through items
             foreach ($invoice->items as $item) {
@@ -48,7 +54,7 @@ class InvoiceFinalizationService
                     }
 
                     // If it's a service and we have logic for consumables, we'd check that here.
-                    // For now, any item with an inventory_id attached is treated as needing deduction 
+                    // For now, any item with an inventory_id attached is treated as needing deduction
                     // if it's explicitly billed as a product OR if it's a linked consumable.
 
                     if ($inventoryItem->stock_level < $item->qty) {
@@ -70,6 +76,21 @@ class InvoiceFinalizationService
                         'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
                     ]);
 
+                    // Record clean sale-based usage history (skip if already inserted for this invoice item)
+                    InventoryUsageHistory::firstOrCreate(
+                        ['invoice_item_id' => $item->id],
+                        [
+                            'inventory_id' => $inventoryItem->id,
+                            'invoice_id'   => $invoice->id,
+                            'quantity_used' => $item->qty,
+                            'usage_date'   => $usageDate,
+                            'source_type'  => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
+                            'unit_price'   => $item->unit_price ?? $inventoryItem->selling_price,
+                        ]
+                    );
+
+                    $affectedInventoryIds[] = $inventoryItem->id;
+
                     // Internal admin notification for stock deduction
                     $this->createInternalNotification(
                         'StockAdjustment',
@@ -84,7 +105,7 @@ class InvoiceFinalizationService
                     }
                 }
             }
-            
+
             $invoice->stock_deducted = true;
             $invoice->save();
 
@@ -96,5 +117,24 @@ class InvoiceFinalizationService
                 ['invoice_id' => $invoice->id]
             );
         });
+
+        // Dispatch forecast refresh outside the transaction to avoid latency impact.
+        // Wrapped in try/catch so a forecasting failure (e.g. Python error in sync mode)
+        // never surfaces as an invoice finalization error.
+        $uniqueIds = array_values(array_unique($affectedInventoryIds));
+        if (!empty($uniqueIds)) {
+            try {
+                RefreshInventoryForecast::dispatch($uniqueIds);
+                \Illuminate\Support\Facades\Log::info(
+                    '[FORECAST JOB DISPATCHED] Invoice finalized. Forecast refresh queued.',
+                    ['invoice_id' => $invoice->id, 'inventory_ids' => $uniqueIds]
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error(
+                    '[FORECAST JOB DISPATCH FAILED] Non-fatal. Invoice finalization succeeded.',
+                    ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]
+                );
+            }
+        }
     }
 }

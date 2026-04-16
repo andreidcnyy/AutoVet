@@ -101,7 +101,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('inventory/low-stock',     [InventoryController::class, 'lowStock']);
     Route::get('inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
     Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
-    Route::get('inventory/{inventory}/forecast', [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
+    Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
+    Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
+    Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
     Route::apiResource('inventory',       InventoryController::class);
 
     Route::apiResource('invoices',        InvoiceController::class);

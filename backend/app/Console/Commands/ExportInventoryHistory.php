@@ -3,85 +3,88 @@
 namespace App\Console\Commands;
 
 use App\Models\Inventory;
+use App\Models\InventoryUsageHistory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage; // Added this line
+use Illuminate\Support\Facades\Storage;
 
 class ExportInventoryHistory extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'app:export-inventory-history {inventory_id} {--days=30 : Number of days of history to export}';
+    protected $description = 'Exports a daily stock-depletion curve from verified sales usage history to CSV for AI forecasting.';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Exports historical inventory transactions for a given inventory item to CSV.';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): int
     {
-        $inventoryId = $this->argument('inventory_id');
-        $days = $this->option('days');
+        $inventoryId = (int) $this->argument('inventory_id');
+        $days        = (int) $this->option('days');
 
         $inventory = Inventory::find($inventoryId);
-
         if (!$inventory) {
             $this->error("Inventory item with ID {$inventoryId} not found.");
             return Command::FAILURE;
         }
 
-        $startDate = now()->subDays($days);
+        $startDate = now()->subDays($days)->toDateString();
 
-        // Fetch transactions for the inventory item
-        // Assuming 'transactions' is a relationship defined in the Inventory model
-        $transactions = $inventory->transactions()
-            ->where('created_at', '>=', $startDate)
-            ->orderBy('created_at')
-            ->get();
+        // Pull ONLY forecasting-safe source types (retail_sale, service_consumable).
+        // This explicitly excludes any non-sale rows that may have been written
+        // by future code paths, ensuring the Python script receives a clean signal.
+        $usageRows = InventoryUsageHistory::forecastingSafe()
+            ->where('inventory_id', $inventoryId)
+            ->where('usage_date', '>=', $startDate)
+            ->orderBy('usage_date')
+            ->get(['usage_date', 'quantity_used']);
 
-        if ($transactions->isEmpty()) {
-            $this->info("No transactions found for inventory item ID {$inventoryId} in the last {$days} days.");
+        if ($usageRows->isEmpty()) {
+            $this->info("No usage history found for inventory ID {$inventoryId} in the last {$days} days.");
             return Command::SUCCESS;
         }
 
-        $headers = ['date', 'stock_level'];
-        $dailyStock = [];
+        // Aggregate total quantity used per day
+        $dailyUsage = [];
+        foreach ($usageRows as $row) {
+            $date = $row->usage_date instanceof \Carbon\Carbon
+                ? $row->usage_date->toDateString()
+                : (string) $row->usage_date;
 
-        // Group by day to get the end-of-day stock level
-        foreach ($transactions as $transaction) {
-            $date = $transaction->created_at->format('Y-m-d');
-            // Keep the latest stock for the day
-            $dailyStock[$date] = $transaction->new_stock;
+            $dailyUsage[$date] = ($dailyUsage[$date] ?? 0) + (float) $row->quantity_used;
         }
+
+        // Reconstruct a running stock-level curve from current stock backwards.
+        // The Python script expects [date, stock_level] pairs (daily snapshot style).
+        // We build the curve by replaying consumption in reverse chronological order,
+        // starting from the current stock level.
+        $dates         = array_keys($dailyUsage);
+        sort($dates);
+        $currentStock  = (float) $inventory->stock_level;
+        $stockCurve    = [];
+
+        // Walk backwards from today to the oldest date to derive historical stock levels
+        $reverseDates  = array_reverse($dates);
+        $runningStock  = $currentStock;
+
+        foreach ($reverseDates as $date) {
+            $stockCurve[$date] = max(0, $runningStock);
+            $runningStock     += $dailyUsage[$date]; // add back what was used that day
+        }
+
+        // Re-sort chronologically for the CSV
+        ksort($stockCurve);
 
         $filename = "inventory_{$inventoryId}_history_{$days}_days.csv";
-        $csvPath = Storage::path($filename); // Using Storage::path to get full path
-
-        // Ensure the directory exists
-        $directory = dirname($csvPath);
-        if (!Storage::exists($directory)) {
-            Storage::makeDirectory($directory);
-        }
+        $csvPath  = Storage::path($filename);
 
         $file = fopen($csvPath, 'w');
-        fputcsv($file, $headers);
+        fputcsv($file, ['date', 'stock_level']);
 
-        foreach ($dailyStock as $date => $stockLevel) {
+        foreach ($stockCurve as $date => $stockLevel) {
             fputcsv($file, [$date, $stockLevel]);
         }
 
         fclose($file);
 
-        $this->info("Historical inventory data exported to {$csvPath}");
-        Log::info("Historical inventory data for item {$inventoryId} exported to {$csvPath}");
+        $this->info("Daily stock depletion curve exported to {$csvPath}");
+        Log::info("ExportInventoryHistory: exported {$days}-day depletion curve for inventory ID {$inventoryId} to {$csvPath}");
 
         return Command::SUCCESS;
     }

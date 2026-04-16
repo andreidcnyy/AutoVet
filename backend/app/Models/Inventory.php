@@ -14,6 +14,7 @@ class Inventory extends Model
     use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
     protected $fillable = [
         'item_name',
+        'unit',
         'code',
         'sub_details',
         'inventory_category_id',
