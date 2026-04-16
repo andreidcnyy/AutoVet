@@ -18,7 +18,7 @@ class PetController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory']);
+        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory', 'invoices']);
         
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->where('owner_id', $ownerId);
