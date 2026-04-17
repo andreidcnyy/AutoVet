@@ -28,7 +28,7 @@ export const forgotPassword = (email: string) => api.post('/password/forgot', { 
 export const resetPassword = (data: any) => api.post('/password/reset', data);
 
 // Pets
-export const getPets = () => api.get('/pets');
+export const getPets = (params?: any) => api.get('/pets', { params });
 export const createPet = (data: any) => api.post('/pets', data);
 export const updatePet = (id: number, data: any) => api.put(`/pets/${id}`, data);
 export const getSpecies = () => api.get('/species?per_page=100');
@@ -37,7 +37,7 @@ export const getPetSizeCategories = () => api.get('/pet-size-categories?per_page
 export const getWeightRanges = () => api.get('/weight-ranges?per_page=100');
 
 // Appointments
-export const getAppointments = () => api.get('/appointments');
+export const getAppointments = (params?: any) => api.get('/appointments', { params });
 export const getAppointment = (id: number) => api.get(`/appointments/${id}`);
 export const createAppointment = (data: any) => api.post('/appointments', data);
 export const cancelAppointment = (id: number) => api.put(`/appointments/${id}`, { status: 'cancelled' });
@@ -46,15 +46,15 @@ export const getVets = () => api.get('/vets');
 export const getAvailability = (date: string, vetId?: string) => api.get('/appointments/availability', { params: { date, vet_id: vetId } });
 
 // Medical Records
-export const getMedicalRecords = (petId?: number) => api.get('/medical-records' + (petId ? `?pet_id=${petId}` : ''));
+export const getMedicalRecords = (params?: any) => api.get('/medical-records', { params });
 export const getMedicalRecord = (id: number) => api.get(`/medical-records/${id}`);
 
 // Invoices
-export const getInvoices = (petId?: number) => api.get('/invoices' + (petId ? `?pet_id=${petId}` : ''));
-export const getInvoice = (id: number) => api.get(`/invoices/${id}`);
+export const getInvoices = (params?: any) => api.get('/invoices', { params });
+export const getInvoice = (id: number) => api.get(`/invoice/${id}`);
 
 // Notifications
-export const getNotifications = () => api.get('/notifications');
+export const getNotifications = (params?: any) => api.get('/notifications', { params });
 export const markNotificationAsRead = (id: number) => api.put(`/notifications/${id}`, { is_read: true });
 
 // Pet Details

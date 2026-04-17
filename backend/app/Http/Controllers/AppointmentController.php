@@ -21,7 +21,7 @@ class AppointmentController extends Controller
         $this->clientNotificationService = $clientNotificationService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $query = Appointment::with(['pet', 'service', 'vet']);
@@ -32,7 +32,25 @@ class AppointmentController extends Controller
             });
         }
 
-        return response()->json($query->orderBy('date', 'desc')->get());
+        if ($request->has('pet_id')) {
+            $query->where('pet_id', $request->pet_id);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('upcoming')) {
+            $query->where('date', '>=', now()->toDateString());
+        }
+
+        $query->orderBy('date', 'desc');
+
+        if ($request->has('per_page')) {
+            return response()->json($query->paginate($request->per_page));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

@@ -18,15 +18,22 @@ class PetController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory', 'invoices']);
+        // Removed 'invoices' and 'appointments' from eager loading in index to speed up list views
+        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory']);
         
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->where('owner_id', $ownerId);
         } elseif ($request->has('owner_id')) {
             $query->where('owner_id', $request->owner_id);
         }
+
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('per_page')) {
+            return response()->json($query->paginate($request->per_page));
+        }
         
-        return response()->json($query->orderBy('created_at', 'desc')->get());
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -92,12 +99,14 @@ class PetController extends Controller
             ]);
         }
 
-        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']), 201);
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])->append(['total_paid', 'total_due', 'last_visit', 'next_due']), 201);
     }
 
     public function show(Pet $pet)
     {
-        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices']));
+        // Explicitly load relations and append attributes for the detail view
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices'])
+            ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
 
     public function update(Request $request, Pet $pet)
@@ -172,7 +181,8 @@ class PetController extends Controller
             }
         }
 
-        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory']));
+        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])
+            ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
 
     public function destroy(Pet $pet)

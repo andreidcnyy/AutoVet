@@ -11,7 +11,7 @@ class PatientOwnerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth('admin_api')->user() ?? auth('portal_api')->user();
         \Log::info('Owners index accessed', [
@@ -25,7 +25,13 @@ class PatientOwnerController extends Controller
             $query->where('id', $user->owner?->id);
         }
 
-        return response()->json($query->orderBy('created_at', 'desc')->get());
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('per_page')) {
+            return response()->json($query->paginate($request->per_page));
+        }
+
+        return response()->json($query->get());
     }
 
     /**
