@@ -54,25 +54,25 @@ class ExportInventoryHistory extends Command
         // The Python script expects [date, stock_level] pairs (daily snapshot style).
         // We build the curve by replaying consumption in reverse chronological order,
         // starting from the current stock level.
-        $dates         = array_keys($dailyUsage);
+        $dates = array_keys($dailyUsage);
         sort($dates);
-        $currentStock  = (float) $inventory->stock_level;
-        $stockCurve    = [];
+        $currentStock = (float) $inventory->stock_level;
+        $stockCurve = [];
 
         // Walk backwards from today to the oldest date to derive historical stock levels
-        $reverseDates  = array_reverse($dates);
-        $runningStock  = $currentStock;
+        $reverseDates = array_reverse($dates);
+        $runningStock = $currentStock;
 
         foreach ($reverseDates as $date) {
             $stockCurve[$date] = max(0, $runningStock);
-            $runningStock     += $dailyUsage[$date]; // add back what was used that day
+            $runningStock += $dailyUsage[$date]; // add back what was used that day
         }
 
         // Re-sort chronologically for the CSV
         ksort($stockCurve);
 
         $filename = "inventory_{$inventoryId}_history_{$days}_days.csv";
-        $csvPath  = Storage::path($filename);
+        $csvPath = Storage::path($filename);
 
         $file = fopen($csvPath, 'w');
         fputcsv($file, ['date', 'usage']);
