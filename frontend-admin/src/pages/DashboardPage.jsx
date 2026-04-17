@@ -3,7 +3,6 @@ import InventoryAiStatusCard from "../components/dashboard/InventoryAiStatusCard
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
-import AiAppointmentIntelligence from "../components/dashboard/AiAppointmentIntelligence";
 import AiInsightPanels from "../components/dashboard/AiInsightPanels";
 import InventoryChartCard from "../components/dashboard/InventoryChartCard";
 import ErrorBoundary from "../components/ErrorBoundary";
