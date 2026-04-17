@@ -226,7 +226,8 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                                     <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.title || 'Medical Visit'}</h4>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                                        <span className="flex items-center gap-1"><FiCalendar /> {(() => {
-  const d = new Date(record.date);
+  const dateStr = record.appointment?.date || record.created_at;
+  const d = new Date(dateStr);
   return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
 })()}</span>
                                        <span className="flex items-center gap-1"><FiUser /> Dr. {record.vet?.name || 'Unknown'}</span>
@@ -273,12 +274,15 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
 </div>
                               </div>
                            </div>
-                           <div className="text-right">
+                           <div className="text-right flex flex-col items-end gap-1">
                               <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
                                 ₱{parseFloat(invoice.total).toLocaleString()}
                               </div>
+                              <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
+                                Paid: ₱{parseFloat(invoice.formatted_amount_paid || invoice.amount_paid || 0).toLocaleString()}
+                              </div>
                               <span className={clsx(
-                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
+                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit",
                                 ['paid', 'finalized'].includes(invoice.status?.toLowerCase()) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                               )}>
                                 {invoice.status}

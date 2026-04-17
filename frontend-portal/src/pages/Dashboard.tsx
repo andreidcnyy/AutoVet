@@ -266,7 +266,11 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{new Date(selectedAppointment.date).toLocaleDateString()}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{(() => {
+  const dateStr = selectedAppointment.date || selectedAppointment.created_at;
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+})()}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
