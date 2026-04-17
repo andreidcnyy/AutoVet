@@ -35,7 +35,7 @@ class InvoiceController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Invoice::with(['pet.species', 'pet.breed', 'items']);
+        $query = Invoice::with(['pet.species', 'pet.breed', 'pet.owner', 'items']);
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -47,8 +47,26 @@ class InvoiceController extends Controller
             $query->where('pet_id', $request->pet_id);
         }
 
-        $invoices = $query->orderBy('created_at', 'desc')->get();
-        return response()->json($invoices);
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhereHas('pet', function ($pq) use ($search) {
+                      $pq->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('owner', function ($oq) use ($search) {
+                            $oq->where('name', 'like', "%{$search}%");
+                        });
+                  });
+            });
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        if ($request->has('per_page')) {
+            return response()->json($query->paginate($request->per_page));
+        }
+
+        return response()->json($query->get());
     }
 
     /**

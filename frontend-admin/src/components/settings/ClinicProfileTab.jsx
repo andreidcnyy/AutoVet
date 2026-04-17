@@ -142,12 +142,12 @@ export default function ClinicProfileTab() {
         <div className="mt-6">
           <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Clinic Logo</label>
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface shrink-0">
+            <div className="h-32 w-32 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface shrink-0 shadow-sm">
               {logoValue ? (
-                <img src={logoValue} alt="Clinic Logo" className="h-full w-full object-cover" />
+                <img src={logoValue} alt="Clinic Logo" className="h-full w-full object-contain" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-zinc-400">
-                  <FiHome className="h-6 w-6" />
+                  <FiHome className="h-10 w-10" />
                 </div>
               )}
             </div>

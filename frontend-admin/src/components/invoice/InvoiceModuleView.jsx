@@ -3,6 +3,9 @@ import clsx from "clsx";
 import {
   FiCalendar,
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCreditCard,
   FiDownload,
   FiEye,
   FiPlusCircle,
@@ -231,6 +234,18 @@ function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
+  
+  const [activeTab, setActiveTab] = useState("new"); // "new" or "history"
+  const [invoices, setInvoices] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 10
+  });
+
   const [items, setItems] = useState([]);
   const [discountVal, setDiscountVal] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
@@ -258,6 +273,61 @@ function InvoiceModuleView() {
 
   const [inventory, setInventory] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
+
+  const fetchInvoices = async (page = 1, search = searchQuery, signal = null) => {
+    if (!user?.token) return;
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/invoices?per_page=10&page=${page}&search=${encodeURIComponent(search)}`, {
+        signal,
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.data) {
+        // Paginated response
+        setInvoices(data.data);
+        setPagination({
+          currentPage: data.current_page,
+          lastPage: data.last_page,
+          total: data.total,
+          perPage: data.per_page
+        });
+      } else {
+        // Direct array response (fallback)
+        setInvoices(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch invoices:", err);
+      toast.error("Failed to load invoice history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchInvoices(pagination.currentPage);
+    }
+  }, [activeTab, user?.token]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (activeTab !== "history") return;
+    
+    const controller = new AbortController();
+    const handler = setTimeout(() => {
+      fetchInvoices(1, searchQuery, controller.signal); // Always reset to page 1 on search
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+      controller.abort();
+    };
+  }, [searchQuery]);
 
   const filteredAppointments = useMemo(() => {
     if (!appointmentSearch) return appointments;
@@ -666,640 +736,881 @@ function InvoiceModuleView() {
     }
   };
 
-  return (
-    <div className="card-shell overflow-hidden p-0">
-      <div className={clsx(
-        "grid grid-cols-1 lg:h-[calc(100vh-11rem)]",
-        isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]"
-      )}>
-        {!isPreviewMode && (
-          <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-zinc-200 dark:border-dark-border">
-            <div className="shrink-0 border-b border-zinc-200 dark:border-dark-border p-5">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
-              <div className="mt-2 flex items-center gap-3">
-                <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">New Invoice</h2>
-                <span className={clsx(
-                  "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-                  (status === "Finalized" || status === "Paid") 
-                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" 
-                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
-                )}>
-                  {status}
-                </span>
-              </div>
-            </div>
+  const Pagination = () => {
+    if (pagination.lastPage <= 1) return null;
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 mb-6 dark:border-dark-border dark:bg-dark-card shadow-sm">
+          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+              Showing <span className="text-zinc-900 dark:text-zinc-50">{Math.min((pagination.currentPage - 1) * pagination.perPage + 1, pagination.total)}-{Math.min(pagination.currentPage * pagination.perPage, pagination.total)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.total}</span> invoices
+          </div>
+          
+          <div className="flex items-center gap-2">
+              <button
+                  onClick={() => fetchInvoices(pagination.currentPage - 1)}
+                  disabled={pagination.currentPage === 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <FiChevronLeft className="h-5 w-5" />
+              </button>
+              
+              <div className="flex items-center gap-1.5">
+                  {[...Array(pagination.lastPage)].map((_, i) => {
+                    const pageNum = i + 1;
+                    // Simple logic to show current page and a few around it
+                    if (
+                      pagination.lastPage > 7 &&
+                      pageNum !== 1 &&
+                      pageNum !== pagination.lastPage &&
+                      (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1)
+                    ) {
+                      if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
+                        return <span key={pageNum} className="px-1 text-zinc-400">...</span>;
+                      }
+                      return null;
+                    }
 
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
-              <section>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Patient Details</h3>
-                <div className="space-y-3">
-                  <div className="relative">
-                    <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                    <select
-                      value={selectedOwnerId}
-                      onChange={(e) => {
-                        const oId = e.target.value;
-                        setSelectedOwnerId(oId);
-                        setSelectedPatientId(""); // reset pet
-                        setPatientDetails(null);
-                        setAppointments([]);
-                        
-                        if (oId) {
-                          const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === oId.toString());
-                          if (ownerPets.length === 1) {
-                            // Auto select the only pet
-                            const onlyPet = ownerPets[0];
-                            handlePatientSelect({ target: { value: onlyPet.id.toString() } });
-                          }
-                        }
-                      }}
-                      className="h-11 w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
-                      disabled={status === "Finalized"}
-                    >
-                      <option value="">Select an owner...</option>
-                      {owners.map(o => (
-                        <option key={o.id} value={o.id}>
-                          {o.name}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      value={selectedPatientId}
-                      onChange={handlePatientSelect}
-                      disabled={!selectedOwnerId || status === "Finalized"}
-                      className={clsx(
-                        "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
-                        getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
-                      )}
-                    >
-                      <option value="">Select a pet...</option>
-                      {(Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} — {p.species?.name || "Unknown"}
-                        </option>
-                      ))}
-                    </select>
-                    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                    {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Select Appointment</label>
-                    <div className="relative">
+                    return (
                       <button
-                        type="button"
-                        onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
-                        disabled={!selectedPatientId || status === "Finalized"}
+                          key={pageNum}
+                          onClick={() => fetchInvoices(pageNum)}
+                          className={clsx(
+                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                              pagination.currentPage === pageNum
+                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                          )}
+                      >
+                          {pageNum}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <button
+                  onClick={() => fetchInvoices(pagination.currentPage + 1)}
+                  disabled={pagination.currentPage === pagination.lastPage}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+              >
+                  <FiChevronRight className="h-5 w-5" />
+              </button>
+          </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-dark-border">
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-4 border-b border-zinc-200 dark:border-dark-border px-6 py-4 bg-zinc-50/50 dark:bg-dark-surface/30">
+        <button
+          onClick={() => setActiveTab("new")}
+          className={clsx(
+            "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+            activeTab === "new"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          New Invoice
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={clsx(
+            "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+            activeTab === "history"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          Invoice History
+        </button>
+      </div>
+
+      {activeTab === "new" ? (
+        <div className={clsx(
+          "grid grid-cols-1 lg:h-[calc(100vh-16rem)]",
+          isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]"
+        )}>
+          {!isPreviewMode && (
+            <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-zinc-200 dark:border-dark-border">
+              <div className="shrink-0 border-b border-zinc-200 dark:border-dark-border p-5">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">New Invoice</h2>
+                  <span className={clsx(
+                    "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+                    (status === "Finalized" || status === "Paid") 
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" 
+                      : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
+                  )}>
+                    {status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
+                <section>
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Patient Details</h3>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                      <select
+                        value={selectedOwnerId}
+                        onChange={(e) => {
+                          const oId = e.target.value;
+                          setSelectedOwnerId(oId);
+                          setSelectedPatientId(""); // reset pet
+                          setPatientDetails(null);
+                          setAppointments([]);
+                          
+                          if (oId) {
+                            const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === oId.toString());
+                            if (ownerPets.length === 1) {
+                              // Auto select the only pet
+                              const onlyPet = ownerPets[0];
+                              handlePatientSelect({ target: { value: onlyPet.id.toString() } });
+                            }
+                          }
+                        }}
+                        className="h-11 w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
+                        disabled={status === "Finalized"}
+                      >
+                        <option value="">Select an owner...</option>
+                        {owners.map(o => (
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                    </div>
+
+                    <div className="relative">
+                      <select
+                        value={selectedPatientId}
+                        onChange={handlePatientSelect}
+                        disabled={!selectedOwnerId || status === "Finalized"}
                         className={clsx(
-                          "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
-                          isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                          "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                          getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
                         )}
                       >
-                        <div className="flex items-center gap-2 truncate">
-                          <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400" />
-                          <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
-                            {selectedAppointmentId 
-                              ? appointments.find(a => a.id.toString() === selectedAppointmentId)?.date 
-                                ? `${formatDate(appointments.find(a => a.id.toString() === selectedAppointmentId).date)} - ${appointments.find(a => a.id.toString() === selectedAppointmentId).title || appointments.find(a => a.id.toString() === selectedAppointmentId).service?.name}`
-                                : "Selected Appointment"
-                              : "Choose an appointment..."
-                            }
-                          </span>
-                        </div>
-                        <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", isApptDropdownOpen && "rotate-180")} />
-                      </button>
+                        <option value="">Select a pet...</option>
+                        {(Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} — {p.species?.name || "Unknown"}
+                          </option>
+                        ))}
+                      </select>
+                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                      {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
+                    </div>
 
-                      {isApptDropdownOpen && (
-                        <div className="absolute left-0 top-full z-[60] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
-                          <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
-                            <div className="relative">
-                              <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                              <input 
-                                type="text"
-                                placeholder="Search date or title..."
-                                value={appointmentSearch}
-                                onChange={(e) => setAppointmentSearch(e.target.value)}
-                                autoFocus
-                                className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                              />
-                              {appointmentSearch && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Select Appointment</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
+                          disabled={!selectedPatientId || status === "Finalized"}
+                          className={clsx(
+                            "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                            isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400" />
+                            <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
+                              {selectedAppointmentId 
+                                ? appointments.find(a => a.id.toString() === selectedAppointmentId)?.date 
+                                  ? `${formatDate(appointments.find(a => a.id.toString() === selectedAppointmentId).date)} - ${appointments.find(a => a.id.toString() === selectedAppointmentId).title || appointments.find(a => a.id.toString() === selectedAppointmentId).service?.name}`
+                                  : "Selected Appointment"
+                                : "Choose an appointment..."
+                              }
+                            </span>
+                          </div>
+                          <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", isApptDropdownOpen && "rotate-180")} />
+                        </button>
+
+                        {isApptDropdownOpen && (
+                          <div className="absolute left-0 top-full z-[60] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
+                            <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
+                              <div className="relative">
+                                <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                <input 
+                                  type="text"
+                                  placeholder="Search date or title..."
+                                  value={appointmentSearch}
+                                  onChange={(e) => setAppointmentSearch(e.target.value)}
+                                  autoFocus
+                                  className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                                />
+                                {appointmentSearch && (
+                                  <button
+                                    onClick={() => setAppointmentSearch("")}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    <FiX className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
+                              {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
                                 <button
-                                  onClick={() => setAppointmentSearch("")}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                                  key={appt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAppointmentId(appt.id.toString());
+                                    setIsApptDropdownOpen(false);
+                                    setAppointmentSearch("");
+                                  }}
+                                  className={clsx(
+                                    "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                                    selectedAppointmentId === appt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
+                                  )}
                                 >
-                                  <FiX className="h-3 w-3" />
+                                  <div className="flex justify-between items-center">
+                                    <span>{formatDate(appt.date)}</span>
+                                    <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
+                                  </div>
+                                  <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
                                 </button>
+                              )) : (
+                                <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
+                                  No appointments found
+                                </div>
                               )}
                             </div>
                           </div>
-                          
-                          <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
-                            {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
-                              <button
-                                key={appt.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedAppointmentId(appt.id.toString());
-                                  setIsApptDropdownOpen(false);
-                                  setAppointmentSearch("");
-                                }}
-                                className={clsx(
-                                  "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
-                                  selectedAppointmentId === appt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
-                                )}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span>{formatDate(appt.date)}</span>
-                                  <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
-                                </div>
-                                <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
-                              </button>
-                            )) : (
-                              <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
-                                No appointments found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
-                  </div>
-
-                   {patientDetails && (
-                    <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3 text-sm">
-                      <div className="mb-3 flex items-center justify-between">
-                         <strong className="text-zinc-700 dark:text-zinc-300">Weight Override (kg)</strong>
-                         <input 
-                            type="number" 
-                            step="any" 
-                            value={currentWeight} 
-                            placeholder="0.0"
-                            onChange={(e) => {
-                               setCurrentWeight(e.target.value);
-                               // Force price recalculation for items in the list?
-                               // For simplicity, we just update the state and newly added items will use it.
-                            }}
-                            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
-                         />
-                      </div>
-                      <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
-                      <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
-                      <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
-                      <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Address:</strong> {
-                        [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip_code].filter(Boolean).join(", ") || "N/A"
-                      }</p>
-                      <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
-                      {patientDetails.date_of_birth && (
-                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Age:</strong> {(() => {
-                          const dob = new Date(patientDetails.date_of_birth);
-                          const diff = Date.now() - dob.getTime();
-                          const ageDate = new Date(diff);
-                          return Math.abs(ageDate.getUTCFullYear() - 1970);
-                        })()} yrs</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Services &amp; Meds</h3>
-
-
-                <div className="grid grid-cols-[1fr_54px_80px_auto] gap-2 items-center">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search or add service..."
-                      value={serviceInput}
-                      onChange={handleServiceChange}
-                      onFocus={() => setIsDropdownOpen(true)}
-                      onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          manuallyAddItem();
-                          setIsDropdownOpen(false);
-                        }
-                      }}
-                      disabled={status === "Finalized"}
-                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
-                    />
-                    {serviceInput && (
-                      <button
-                        onClick={() => {
-                          setServiceInput("");
-                          setSelectedService(null);
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
-                      >
-                        <FiX className="h-4 w-4" />
-                      </button>
-                    )}
-                    {isDropdownOpen && (
-                      <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
-                        {Object.keys(groupedItems).length > 0 ? (
-                          Object.entries(groupedItems).map(([category, svcs]) => (
-                            <div key={category} className="mb-2 last:mb-0">
-                              <div className="bg-zinc-50 dark:bg-dark-surface px-2 py-1 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 rounded-md">
-                                {category}
-                              </div>
-                              <ul className="mt-1 space-y-1">
-                                {svcs.map((item) => (
-                                  <li key={`${item.type}-${item.id}`}>
-                                    <button
-                                      type="button"
-                                      onMouseDown={(e) => e.preventDefault()}
-                                      onClick={() => selectItemFromDropdown(item)}
-                                      className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-dark-surface"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span className={clsx(
-                                          "h-1.5 w-1.5 rounded-full",
-                                          item.type === 'inventory' ? "bg-emerald-500" : "bg-emerald-500"
-                                        )} />
-                                        <span>{item.name}</span>
-                                      </div>
-                                      <span className="text-zinc-400 dark:text-zinc-500">{currency(item.price)}</span>
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                            {services.length === 0 && inventory.length === 0 ? "No services or products found." : "No matching items."}
-                          </div>
-                        )}
-                        {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
-                           <div className="mt-2 border-t border-zinc-100 dark:border-dark-border pt-2 text-center">
-                              <p className="text-xs text-zinc-500 mb-1 dark:text-zinc-500">Create new item</p>
-                              <button
-                                type="button"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
-                                className="w-full text-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                              >
-                                + Add &quot;{serviceInput}&quot;
-                              </button>
-                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                  <input
-                    type="number"
-                    min="1"
-                    value={qtyInput}
-                    onChange={(e) => setQtyInput(e.target.value)}
-                    disabled={status === "Finalized"}
-                    className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
-                  />
-                  <div className="relative w-full">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400">₱</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={priceInput}
-                      onChange={(e) => setPriceInput(e.target.value)}
-                      disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
-                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
-                    disabled={!serviceInput || status === "Finalized"}
-                    className="h-11 w-full rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                  >
-                    Add
-                  </button>
-                </div>
+                      {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
+                    </div>
 
-                <div className="mt-3 space-y-2">
-                  {items.length > 0 ? items.map((item) => (
-                    <article key={item.id} className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                            <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
-                            {item.name}
-                            <span className={clsx(
-                              "ml-2 text-[10px] uppercase px-1.5 py-0.5 rounded-md font-bold",
-                              item.item_type === 'inventory' ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700"
-                            )}>
-                              {item.item_type === 'inventory' ? 'Product' : 'Service'}
-                            </span>
-                          </p>
-                          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{item.notes}</p>
+                    {patientDetails && (
+                      <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3 text-sm">
+                        <div className="mb-3 flex items-center justify-between">
+                          <strong className="text-zinc-700 dark:text-zinc-300">Weight Override (kg)</strong>
+                          <input 
+                              type="number" 
+                              step="any" 
+                              value={currentWeight} 
+                              placeholder="0.0"
+                              onChange={(e) => {
+                                setCurrentWeight(e.target.value);
+                                // Force price recalculation for items in the list?
+                                // For simplicity, we just update the state and newly added items will use it.
+                              }}
+                              className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
+                          />
                         </div>
-                        <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                      </div>
-
-                      {item.warning ? (
-                        <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                          {item.warning}
-                        </span>
-                      ) : null}
-                    </article>
-                  )) : (
-                    <p className="pt-4 text-center text-sm text-zinc-400">No items added yet.</p>
-                  )}
-                </div>
-              </section>
-            </div>
-
-            <div className="shrink-0 space-y-4 border-t border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-              <section className="space-y-3">
-                {/* Tax and Discount removed as per user request */}
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-zinc-600 dark:text-zinc-300">Note to Client</label>
-                  <textarea
-                    rows={2}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    disabled={status === "Finalized"}
-                    placeholder="Visible on the invoice..."
-                    className="w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
-                  />
-                </div>
-              </section>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button
-                  onClick={resetForm}
-                  className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => submitInvoice("Draft")}
-                  disabled={status !== "Draft"}
-                  className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2.5 text-sm font-semibold text-emerald-700 disabled:opacity-50 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-                >
-                  Save Draft
-                </button>
-              </div>
-            </div>
-          </aside>
-        )}
-
-        <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
-            <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
-              <button 
-                onClick={() => setIsPreviewMode(!isPreviewMode)}
-                className={clsx(
-                  "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
-                  isPreviewMode ? "bg-emerald-600 text-white" : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface"
-                )}
-              >
-                <FiEye className="h-4 w-4" />
-                {isPreviewMode ? "Exit Preview" : "Preview Mode"}
-              </button>
-              <span>Invoice Status: <b className="text-zinc-700 dark:text-zinc-300">{status}</b></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => window.print()}
-                className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
-              >
-                <FiPrinter className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => {
-                  if (items.length === 0) {
-                    toast.error("Add items before downloading PDF.");
-                    return;
-                  }
-                  const invoiceData = {
-                    invoice_number: "DRAFT-" + Date.now(),
-                    subtotal,
-                    tax_rate: 12.00,
-                    discount_value: discountVal,
-                    discount_type: discountType,
-                    total: totalDue,
-                    notes_to_client: notes,
-                    items: items
-                  };
-                  generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
-                }}
-                className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
-              >
-                <FiDownload className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => submitInvoice("Finalized")}
-                disabled={status !== "Draft"}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-              >
-                <FiSend className="h-4 w-4" />
-                Finalize &amp; Send
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 text-left">
-            <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
-              <header className="flex flex-row items-start justify-between gap-4 sm:gap-6">
-                <div className="flex-1 min-w-0 pr-2 sm:pr-4">
-                  <p className="inline-flex items-center gap-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    {clinicSettings?.clinic_logo ? (
-                      <img src={clinicSettings.clinic_logo} alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <span className="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shrink-0">
-                        <LuPawPrint className="h-4 w-4" />
-                      </span>
-                    )}
-                    <span className="truncate">{clinicSettings?.clinic_name || "AutoVet Clinic"}</span>
-                  </p>
-                  <div className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400 truncate whitespace-normal">
-                    {clinicSettings?.address && (
-                      <p className="mb-0.5">{clinicSettings.address}</p>
-                    )}
-                    {(clinicSettings?.primary_email || clinicSettings?.phone_number) && (
-                      <p className="mb-0.5">
-                        {[clinicSettings.phone_number, clinicSettings.primary_email].filter(Boolean).join(" • ")}
-                      </p>
-                    )}
-                    {clinicSettings?.clinic_tax_id && <p>Tax ID: {clinicSettings.clinic_tax_id}</p>}
-                  </div>
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <p className="text-3xl font-light tracking-wide text-zinc-300 dark:text-zinc-600">INVOICE</p>
-                  <p className="mt-1.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">#VB-{new Date().getFullYear()}-{String(new Date().getMonth() + 1).padStart(2, '0')}-0000</p>
-                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Date: {new Date().toLocaleDateString()}</p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Due: Upon Receipt</p>
-                </div>
-              </header>
-
-              <section className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[1.2fr_0.8fr]">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Bill To</p>
-                  {patientDetails ? (
-                    <>
-                      <p className="mt-2 text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50">{patientDetails?.owner?.name || "Guest Client"}</p>
-                      <div className="mt-2 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        <p>{patientDetails?.owner?.address || "No address provided"}</p>
-                        <p>{patientDetails?.owner?.email}</p>
-                        <p>{patientDetails?.owner?.phone}</p>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500 italic">No patient selected</p>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Patient</p>
-                  {patientDetails ? (
-                    <div className="mt-2 flex items-center gap-3">
-                      <img
-                        src={patientDetails.photo ? getActualPetImageUrl(patientDetails.photo) : getPetImageUrl(patientDetails.species?.name, patientDetails.breed?.name)}
-                        alt={patientDetails.name}
-                        className="h-10 w-10 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
-                      />
-                      <div>
-                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{patientDetails.name}</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {patientDetails?.species?.name || "Unknown"} • {patientDetails?.breed?.name || "Unknown"}
-                          {patientDetails.date_of_birth && ` • ${(() => {
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Address:</strong> {
+                          [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip_code].filter(Boolean).join(", ") || "N/A"
+                        }</p>
+                        <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
+                        {patientDetails.date_of_birth && (
+                          <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Age:</strong> {(() => {
                             const dob = new Date(patientDetails.date_of_birth);
                             const diff = Date.now() - dob.getTime();
                             const ageDate = new Date(diff);
                             return Math.abs(ageDate.getUTCFullYear() - 1970);
-                          })()} yrs`}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500 italic">Select to view pet details</p>
-                  )}
-                </div>
-              </section>
-
-              <section className="mt-8 border-y border-zinc-200 dark:border-dark-border py-3">
-                <div className="grid grid-cols-[1fr_60px_100px_100px] text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                  <p>Description</p>
-                  <p className="text-right">Qty</p>
-                  <p className="text-right">Unit Price</p>
-                  <p className="text-right">Amount</p>
-                </div>
-
-                <div className="mt-3 space-y-3">
-                  {items.filter(item => !item.is_hidden).map((item) => (
-                    <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-zinc-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{item.name}</p>
-                          <span className={clsx(
-                            "text-[8px] uppercase px-1 rounded-sm font-bold border",
-                            item.item_type === 'inventory' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-emerald-200 text-emerald-600 bg-emerald-50"
-                          )}>
-                            {item.item_type === 'inventory' ? 'PROD' : 'SERV'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{item.notes}</p>
-                      </div>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.qty}
-                        onChange={(e) => updateItem(item.id, "qty", e.target.value)}
-                        disabled={status !== "Draft"}
-                        className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
-                        disabled={status !== "Draft"}
-                        className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
-                      />
-                      <div className="flex items-center justify-end gap-3">
-                        <p className="text-right text-sm font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                        {status === "Draft" && (
-                          <button 
-                            onClick={() => removeItem(item.id)} 
-                            className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all"
-                            title="Remove item"
-                          >
-                            <FiX className="w-4 h-4" />
-                          </button>
+                          })()} yrs</p>
                         )}
                       </div>
-                    </div>
-                  ))}
-                  {items.length === 0 && (
-                     <p className="py-4 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No line items added yet.</p>
-                  )}
-                </div>
-              </section>
+                    )}
+                  </div>
+                </section>
 
-              <section className="mt-6 ml-auto w-full max-w-sm space-y-2">
-                <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
-                  <span>Subtotal</span>
-                  <span>{currency(subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
-                  <span>VAT (12%)</span>
-                  <span>{currency(taxAmount)}</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between border-t border-zinc-200 dark:border-dark-border pt-3">
-                  <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Total Due</span>
-                  <span className="text-2xl font-bold text-emerald-600">{currency(totalDue)}</span>
-                </div>
+                <section>
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Services &amp; Meds</h3>
 
-                <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Record Payment</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      disabled={status !== "Draft"}
-                      className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
-                    >
-                      <option value="">Select Method...</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
+
+                  <div className="grid grid-cols-[1fr_54px_80px_auto] gap-2 items-center">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
+                      <input
+                        type="text"
+                        placeholder="Search or add service..."
+                        value={serviceInput}
+                        onChange={handleServiceChange}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            manuallyAddItem();
+                            setIsDropdownOpen(false);
+                          }
+                        }}
+                        disabled={status === "Finalized"}
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
+                      />
+                      {serviceInput && (
+                        <button
+                          onClick={() => {
+                            setServiceInput("");
+                            setSelectedService(null);
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
+                        >
+                          <FiX className="h-4 w-4" />
+                        </button>
+                      )}
+                      {isDropdownOpen && (
+                        <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
+                          {Object.keys(groupedItems).length > 0 ? (
+                            Object.entries(groupedItems).map(([category, svcs]) => (
+                              <div key={category} className="mb-2 last:mb-0">
+                                <div className="bg-zinc-50 dark:bg-dark-surface px-2 py-1 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 rounded-md">
+                                  {category}
+                                </div>
+                                <ul className="mt-1 space-y-1">
+                                  {svcs.map((item) => (
+                                    <li key={`${item.type}-${item.id}`}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => selectItemFromDropdown(item)}
+                                        className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-dark-surface"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className={clsx(
+                                            "h-1.5 w-1.5 rounded-full",
+                                            item.type === 'inventory' ? "bg-emerald-500" : "bg-emerald-500"
+                                          )} />
+                                          <span>{item.name}</span>
+                                        </div>
+                                        <span className="text-zinc-400 dark:text-zinc-500">{currency(item.price)}</span>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                              {services.length === 0 && inventory.length === 0 ? "No services or products found." : "No matching items."}
+                            </div>
+                          )}
+                          {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
+                            <div className="mt-2 border-t border-zinc-100 dark:border-dark-border pt-2 text-center">
+                                <p className="text-xs text-zinc-500 mb-1 dark:text-zinc-500">Create new item</p>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                                  className="w-full text-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                                >
+                                  + Add &quot;{serviceInput}&quot;
+                                </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      value={qtyInput}
+                      onChange={(e) => setQtyInput(e.target.value)}
+                      disabled={status === "Finalized"}
+                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                    />
+                    <div className="relative w-full">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400">₱</span>
                       <input
                         type="number"
                         min="0"
-                        value={amountPaid}
-                        onChange={(e) => setAmountPaid(Number(e.target.value))}
-                        disabled={status !== "Draft"}
-                        placeholder="Amount Paid"
-                        className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                        value={priceInput}
+                        onChange={(e) => setPriceInput(e.target.value)}
+                        disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
                       />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                      disabled={!serviceInput || status === "Finalized"}
+                      className="h-11 w-full rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                    >
+                      Add
+                    </button>
                   </div>
-                </div>
-              </section>
 
-              <footer className="mt-12 border-t border-zinc-200 dark:border-dark-border pt-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Notes to Client</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300 whitespace-pre-wrap">
-                  {notes || "No additional notes provided."}
-                </p>
-                <p className="mt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">Powered by Pet Wellness Systems</p>
-              </footer>
-            </article>
+                  <div className="mt-3 space-y-2">
+                    {items.length > 0 ? items.map((item) => (
+                      <article key={item.id} className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                              <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
+                              {item.name}
+                              <span className={clsx(
+                                "ml-2 text-[10px] uppercase px-1.5 py-0.5 rounded-md font-bold",
+                                item.item_type === 'inventory' ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700"
+                              )}>
+                                {item.item_type === 'inventory' ? 'Product' : 'Service'}
+                              </span>
+                            </p>
+                            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{item.notes}</p>
+                          </div>
+                          <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                        </div>
+
+                        {item.warning ? (
+                          <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                            {item.warning}
+                          </span>
+                        ) : null}
+                      </article>
+                    )) : (
+                      <p className="pt-4 text-center text-sm text-zinc-400">No items added yet.</p>
+                    )}
+                  </div>
+                </section>
+              </div>
+
+              <div className="shrink-0 space-y-4 border-t border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-5 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+                <section className="space-y-3">
+                  {/* Tax and Discount removed as per user request */}
+
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-zinc-600 dark:text-zinc-300">Note to Client</label>
+                    <textarea
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      disabled={status === "Finalized"}
+                      placeholder="Visible on the invoice..."
+                      className="w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
+                    />
+                  </div>
+                </section>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    onClick={resetForm}
+                    className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-dark-card px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => submitInvoice("Draft")}
+                    disabled={status !== "Draft"}
+                    className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2.5 text-sm font-semibold text-emerald-700 disabled:opacity-50 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                  >
+                    Save Draft
+                  </button>
+                </div>
+              </div>
+            </aside>
+          )}
+
+          <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
+              <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
+                <button 
+                  onClick={() => setIsPreviewMode(!isPreviewMode)}
+                  className={clsx(
+                    "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
+                    isPreviewMode ? "bg-emerald-600 text-white" : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface"
+                  )}
+                >
+                  <FiEye className="h-4 w-4" />
+                  {isPreviewMode ? "Exit Preview" : "Preview Mode"}
+                </button>
+                <span>Invoice Status: <b className="text-zinc-700 dark:text-zinc-300">{status}</b></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
+                >
+                  <FiPrinter className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (items.length === 0) {
+                      toast.error("Add items before downloading PDF.");
+                      return;
+                    }
+                    const invoiceData = {
+                      invoice_number: "DRAFT-" + Date.now(),
+                      subtotal,
+                      tax_rate: 12.00,
+                      discount_value: discountVal,
+                      discount_type: discountType,
+                      total: totalDue,
+                      notes_to_client: notes,
+                      items: items
+                    };
+                    generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
+                  }}
+                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
+                >
+                  <FiDownload className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => submitInvoice("Finalized")}
+                  disabled={status !== "Draft"}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  <FiSend className="h-4 w-4" />
+                  Finalize &amp; Send
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 text-left">
+              <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
+                <header className="flex flex-row items-start justify-between gap-4 sm:gap-6">
+                  <div className="flex-1 min-w-0 pr-2 sm:pr-4">
+                    <p className="inline-flex items-center gap-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                      {clinicSettings?.clinic_logo ? (
+                        <img src={clinicSettings.clinic_logo} alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <span className="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shrink-0">
+                          <LuPawPrint className="h-4 w-4" />
+                        </span>
+                      )}
+                      <span className="truncate">{clinicSettings?.clinic_name || "AutoVet Clinic"}</span>
+                    </p>
+                    <div className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400 truncate whitespace-normal">
+                      {clinicSettings?.address && (
+                        <p className="mb-0.5">{clinicSettings.address}</p>
+                      )}
+                      {(clinicSettings?.primary_email || clinicSettings?.phone_number) && (
+                        <p className="mb-0.5">
+                          {[clinicSettings.phone_number, clinicSettings.primary_email].filter(Boolean).join(" • ")}
+                        </p>
+                      )}
+                      {clinicSettings?.clinic_tax_id && <p>Tax ID: {clinicSettings.clinic_tax_id}</p>}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className="text-3xl font-light tracking-wide text-zinc-300 dark:text-zinc-600">INVOICE</p>
+                    <p className="mt-1.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">#VB-{new Date().getFullYear()}-{String(new Date().getMonth() + 1).padStart(2, '0')}-0000</p>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Date: {new Date().toLocaleDateString()}</p>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Due: Upon Receipt</p>
+                  </div>
+                </header>
+
+                <section className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[1.2fr_0.8fr]">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Bill To</p>
+                    {patientDetails ? (
+                      <>
+                        <p className="mt-2 text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50">{patientDetails?.owner?.name || "Guest Client"}</p>
+                        <div className="mt-2 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+                          <p>{patientDetails?.owner?.address || "No address provided"}</p>
+                          <p>{patientDetails?.owner?.email}</p>
+                          <p>{patientDetails?.owner?.phone}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500 italic">No patient selected</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Patient</p>
+                    {patientDetails ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        <img
+                          src={patientDetails.photo ? getActualPetImageUrl(patientDetails.photo) : getPetImageUrl(patientDetails.species?.name, patientDetails.breed?.name)}
+                          alt={patientDetails.name}
+                          className="h-10 w-10 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{patientDetails.name}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {patientDetails?.species?.name || "Unknown"} • {patientDetails?.breed?.name || "Unknown"}
+                            {patientDetails.date_of_birth && ` • ${(() => {
+                              const dob = new Date(patientDetails.date_of_birth);
+                              const diff = Date.now() - dob.getTime();
+                              const ageDate = new Date(diff);
+                              return Math.abs(ageDate.getUTCFullYear() - 1970);
+                            })()} yrs`}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500 italic">Select to view pet details</p>
+                    )}
+                  </div>
+                </section>
+
+                <section className="mt-8 border-y border-zinc-200 dark:border-dark-border py-3">
+                  <div className="grid grid-cols-[1fr_60px_100px_100px] text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                    <p>Description</p>
+                    <p className="text-right">Qty</p>
+                    <p className="text-right">Unit Price</p>
+                    <p className="text-right">Amount</p>
+                  </div>
+
+                  <div className="mt-3 space-y-3">
+                    {items.filter(item => !item.is_hidden).map((item) => (
+                      <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-zinc-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{item.name}</p>
+                            <span className={clsx(
+                              "text-[8px] uppercase px-1 rounded-sm font-bold border",
+                              item.item_type === 'inventory' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-emerald-200 text-emerald-600 bg-emerald-50"
+                            )}>
+                              {item.item_type === 'inventory' ? 'PROD' : 'SERV'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">{item.notes}</p>
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => updateItem(item.id, "qty", e.target.value)}
+                          disabled={status !== "Draft"}
+                          className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
+                          disabled={status !== "Draft"}
+                          className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
+                        />
+                        <div className="flex items-center justify-end gap-3">
+                          <p className="text-right text-sm font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                          {status === "Draft" && (
+                            <button 
+                              onClick={() => removeItem(item.id)} 
+                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all"
+                              title="Remove item"
+                            >
+                              <FiX className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {items.length === 0 && (
+                      <p className="py-4 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No line items added yet.</p>
+                    )}
+                  </div>
+                </section>
+
+                <section className="mt-6 ml-auto w-full max-w-sm space-y-2">
+                  <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
+                    <span>Subtotal</span>
+                    <span>{currency(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
+                    <span>VAT (12%)</span>
+                    <span>{currency(taxAmount)}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-zinc-200 dark:border-dark-border pt-3">
+                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Total Due</span>
+                    <span className="text-2xl font-bold text-emerald-600">{currency(totalDue)}</span>
+                  </div>
+
+                  <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Record Payment</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        disabled={status !== "Draft"}
+                        className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                      >
+                        <option value="">Select Method...</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                      </select>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={amountPaid}
+                          onChange={(e) => setAmountPaid(Number(e.target.value))}
+                          disabled={status !== "Draft"}
+                          placeholder="Amount Paid"
+                          className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <footer className="mt-12 border-t border-zinc-200 dark:border-dark-border pt-6">
+                  <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Notes to Client</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300 whitespace-pre-wrap">
+                    {notes || "No additional notes provided."}
+                  </p>
+                  <p className="mt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">Powered by Pet Wellness Systems</p>
+                </footer>
+              </article>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Invoice History</h2>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Review all invoices generated by the system.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="relative w-72">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search invoice, patient, owner..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        fetchInvoices(1);
+                      }
+                    }}
+                    className="w-full pl-10 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery("");
+                        fetchInvoices(1, "");
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <button 
+                  onClick={() => fetchInvoices(pagination.currentPage)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all"
+                >
+                  {historyLoading ? "Refreshing..." : "Refresh List"}
+                </button>
+              </div>
+            </div>
+
+            <Pagination />
+
+            {historyLoading ? (
+              <div className="flex h-64 items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-emerald-600" />
+                  <p className="text-sm font-bold text-zinc-500">Loading history...</p>
+                </div>
+              </div>
+            ) : invoices.length > 0 ? (
+              <div className="grid gap-4">
+                {invoices.map((inv) => (
+                  <article 
+                    key={inv.id}
+                    className="group relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-dark-surface flex items-center justify-center border border-zinc-100 dark:border-dark-border shrink-0">
+                        <FiCreditCard className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{inv.invoice_number}</span>
+                          <span className={clsx(
+                            "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                            inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
+                            inv.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700' :
+                            inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
+                            'bg-zinc-100 text-zinc-600'
+                          )}>
+                            {inv.status}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
+                          Patient: {inv.pet?.name || "N/A"}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-zinc-500 font-medium">
+                          <span className="flex items-center gap-1.5"><FiCalendar className="w-3.5 h-3.5" /> {formatDate(inv.created_at)}</span>
+                          <span className="flex items-center gap-1.5"><LuPawPrint className="w-3.5 h-3.5" /> {inv.pet?.owner?.name || "N/A"}</span>
+                          <span className="flex items-center gap-1.5"><FiPlusCircle className="w-3.5 h-3.5" /> {inv.items?.length || 0} Items</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-zinc-100 dark:border-dark-border pt-4 md:pt-0">
+                      <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-0.5">Total Amount</p>
+                        <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{currency(inv.total)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => generateInvoicePDF(inv, inv.pet, clinicSettings)}
+                          className="p-2.5 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all"
+                          title="Download PDF"
+                        >
+                          <FiDownload className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            // Populate form for viewing/editing if possible
+                            // For now, let's just show a toast or preview
+                            setItems(inv.items.map(i => ({
+                              ...i,
+                              id: i.id,
+                              unitPrice: i.unit_price,
+                              indicator: "bg-emerald-400"
+                            })));
+                            setSelectedPatientId(inv.pet_id.toString());
+                            setSelectedOwnerId(inv.pet?.owner_id?.toString() || "");
+                            setPatientDetails(inv.pet);
+                            setNotes(inv.notes_to_client || "");
+                            setStatus(inv.status);
+                            setAmountPaid(inv.amount_paid);
+                            setPaymentMethod(inv.payment_method || "");
+                            setActiveTab("new");
+                            setIsPreviewMode(true);
+                          }}
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
+                        >
+                          <FiEye className="w-4 h-4" /> View Details
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+                <div className="mt-6">
+                  <Pagination />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-96 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-white/50 dark:bg-dark-card/50 p-12 text-center">
+                <div className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-dark-surface flex items-center justify-center mb-4">
+                  <FiCreditCard className="w-10 h-10 text-zinc-300" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Invoices Found</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">You haven&apos;t generated any invoices yet. Start by creating a new one in the &quot;New Invoice&quot; tab.</p>
+                <button 
+                  onClick={() => setActiveTab("new")}
+                  className="mt-6 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  Create Your First Invoice
+                </button>
+              </div>
+            )}
           </div>
-        </section>
-      </div>
+        </div>
+      )}
+
       <ManualSendModal 
         isOpen={isSendModalOpen} 
         onClose={() => setIsSendModalOpen(false)} 
