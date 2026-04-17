@@ -104,14 +104,9 @@ class Pet extends Model
         $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
 
         return $invoices
-            ->whereIn('status', ['Paid', 'Partially Paid'])
+            ->whereIn('status', ['Paid', 'Partially Paid', 'Finalized'])
             ->sum(function($invoice) {
-                if ($invoice->status === 'Paid') {
-                    // For "Paid" status, if amount_paid is 0, we treat it as fully paid (total)
-                    // This handles mock data where status is Paid but amount_paid was not set.
-                    return (float) ($invoice->amount_paid > 0 ? $invoice->amount_paid : $invoice->total);
-                }
-                return (float) $invoice->amount_paid;
+                return (float) $invoice->formatted_amount_paid;
             });
     }
 

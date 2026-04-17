@@ -13,7 +13,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getPetSizeCategories, getWeightRanges, createPet, getBreeds } from '../api';
-import { getAgeGroup } from '../utils/petAgeGroups';
+import { getAgeGroup, calculateAgeDisplay } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
 
 const petSchema = z.object({
@@ -250,8 +250,13 @@ export default function AddPet() {
 
             <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Age Classification</label>
-              <div className="input-field font-bold bg-zinc-50 dark:bg-dark-surface/50 flex items-center text-zinc-500 px-4">
-                {watch("age_group") || "Enter birth date to calculate"}
+              <div className="input-field font-bold bg-zinc-50 dark:bg-dark-surface/50 flex flex-col justify-center text-zinc-500 px-4 min-h-[2.75rem]">
+                {watch("age_group") ? (
+                  <>
+                    <span>{watch("age_group")}</span>
+                    <span className="text-[10px] text-zinc-400 font-medium">{calculateAgeDisplay(dobValue)}</span>
+                  </>
+                ) : "Enter birth date to calculate"}
               </div>
             </div>
           </div>

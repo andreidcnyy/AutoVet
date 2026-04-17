@@ -42,8 +42,8 @@ use App\Models\Owner;
 
 Route::post('/login',           [AuthController::class, 'login']);
 Route::post('/register',        [AuthController::class, 'register']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
+Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
 
 // Test endpoint to check API status
 Route::get('/status', function () {

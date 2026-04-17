@@ -78,7 +78,9 @@ const toneDotStyles = {
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -856,7 +858,7 @@ function InvoiceTab({ invoices }) {
                     {inv.status}
                   </span>                </td>
                 <td className="px-4 py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {formatCurrency(inv.amount_paid)}
+                  {formatCurrency(inv.formatted_amount_paid || inv.amount_paid)}
                 </td>
               </tr>
             ))}

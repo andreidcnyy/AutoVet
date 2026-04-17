@@ -64,7 +64,7 @@
                         </td>
                         <td style="text-align: right;">
                             <div class="label">Status</div>
-                            <div class="val" style="color: {{ $invoice->status === 'Paid' ? '#10b981' : '#f59e0b' }}">{{ $invoice->status }}</div>
+                            <div class="val" style="color: {{ in_array($invoice->status, ['Paid', 'Finalized']) ? '#10b981' : '#f59e0b' }}">{{ $invoice->status }}</div>
                         </td>
                     </tr>
                 </table>

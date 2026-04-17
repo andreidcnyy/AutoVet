@@ -678,7 +678,12 @@ function InvoiceModuleView() {
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
               <div className="mt-2 flex items-center gap-3">
                 <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">New Invoice</h2>
-                <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                <span className={clsx(
+                  "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+                  (status === "Finalized" || status === "Paid") 
+                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" 
+                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
+                )}>
                   {status}
                 </span>
               </div>

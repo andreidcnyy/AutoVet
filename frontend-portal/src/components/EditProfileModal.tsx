@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getProfile, updateProfile } from '../api';
+import { getProfile, updateProfile, forgotPassword } from '../api';
 import { 
   FiUser, 
   FiMail, 
@@ -11,7 +11,8 @@ import {
   FiCheckCircle, 
   FiAlertCircle,
   FiX,
-  FiSave
+  FiSave,
+  FiLock
 } from 'react-icons/fi';
 import { PH_LOCATION_DATA } from '../utils/phLocationData';
 import clsx from 'clsx';
@@ -87,6 +88,29 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
       setAvailableCities([]);
     }
   }, [selectedProvince]);
+
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  const handleResetPassword = async () => {
+    const email = watch("email");
+    if (!email) {
+      setError("Email is required for password reset.");
+      return;
+    }
+    
+    setIsResetting(true);
+    setResetMessage(null);
+    setError(null);
+    try {
+      await forgotPassword(email);
+      setResetMessage("A password reset link has been sent to your email.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to send reset link.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const onProfileSubmit = async (data: ProfileForm) => {
     setError(null);
@@ -233,6 +257,36 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                       </select>
                     </div>
                  </div>
+              </div>
+
+              <div className="h-px bg-zinc-100 dark:bg-dark-border" />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
+                      <FiLock className="text-brand-500" /> Account Security
+                    </h3>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Manage your password and security</p>
+                  </div>
+                </div>
+
+                {resetMessage && (
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 text-sm font-bold animate-in slide-in-from-top-2">
+                    <FiCheckCircle className="w-5 h-5 shrink-0" />
+                    {resetMessage}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={isResetting}
+                  className="flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <FiMail className="w-4 h-4" />
+                  {isResetting ? "Sending Request..." : "Send Password Reset Email"}
+                </button>
               </div>
 
               <div className="pt-4">

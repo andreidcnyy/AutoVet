@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getPets, getAppointments, getNotifications } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
+import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import clsx from 'clsx';
 
 export default function Dashboard() {
@@ -99,10 +100,13 @@ export default function Dashboard() {
                         <FiHeart className="w-8 h-8 text-zinc-300 dark:text-zinc-600 group-hover:scale-110 transition-transform" />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-zinc-800 dark:text-zinc-100 text-lg truncate">{pet.name}</h3>
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 capitalize truncate">
+                    <div className="flex-1 min-w-0 text-left">
+                      <h3 className="font-bold text-zinc-800 dark:text-zinc-100 text-lg truncate leading-tight">{pet.name}</h3>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 truncate mt-0.5">
                         {pet.breed?.name || pet.species?.name || 'Unknown Breed'}
+                      </p>
+                      <p className="text-xs font-bold text-zinc-400 mt-1 flex items-center gap-1">
+                        <FiClock className="w-3 h-3" /> {calculateAgeDisplay(pet.date_of_birth)}
                       </p>
                     </div>
                     <button 
@@ -189,7 +193,10 @@ export default function Dashboard() {
                         <div className="text-right shrink-0">
                           <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
                             <FiCalendar className="w-3 h-3 text-zinc-400" />
-                            {new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {(() => {
+  const d = new Date(appt.date);
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+})()}
                           </div>
                           <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
                             <FiClock className="w-3 h-3" />

@@ -125,7 +125,10 @@ export default function Appointments() {
                       </div>
                       <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 hover:text-brand-500 transition-colors">Patient: {appt.pet?.name}</h3>
                       <div className="flex items-center gap-4 mt-2 text-sm text-zinc-500 font-medium">
-                        <span className="flex items-center gap-1.5"><FiCalendar className="w-4 h-4" /> {new Date(appt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span className="flex items-center gap-1.5"><FiCalendar className="w-4 h-4" /> {(() => {
+  const d = new Date(appt.date);
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+})()}</span>
                         <span className="flex items-center gap-1.5"><FiClock className="w-4 h-4" /> {appt.time?.substring(0, 5) || '00:00'}</span>
                       </div>
                     </div>

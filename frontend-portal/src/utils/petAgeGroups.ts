@@ -20,6 +20,36 @@ export const calculateAgeInMonths = (dateOfBirth: string) => {
 };
 
 /**
+ * Calculates the human-readable age of a pet.
+ */
+export const calculateAgeDisplay = (dateOfBirth: string) => {
+    if (!dateOfBirth) return 'N/A';
+    
+    const birth = new Date(dateOfBirth);
+    const now = new Date();
+    
+    if (isNaN(birth.getTime()) || birth > now) return 'N/A';
+    
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+    
+    if (years === 0) {
+        return `${months} ${months === 1 ? 'month' : 'months'} old`;
+    }
+    
+    if (months === 0) {
+        return `${years} ${years === 1 ? 'year' : 'years'} old`;
+    }
+    
+    return `${years}y ${months}m old`;
+};
+
+/**
  * Determines the age group label based on species and age in months.
  */
 export const getAgeGroup = (speciesName: string | undefined, dateOfBirth: string) => {

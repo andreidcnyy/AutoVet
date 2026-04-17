@@ -15,6 +15,7 @@ import {
 import { LuPawPrint } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { getActualPetImageUrl } from '../utils/petImages';
+import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import clsx from 'clsx';
 
 interface PetProfileModalProps {
@@ -131,6 +132,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                        <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-white border border-white/20">
                          {pet.age_group || 'Adult'}
                        </span>
+                       <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-white border border-white/20">
+                         {calculateAgeDisplay(pet.date_of_birth)}
+                       </span>
                     </div>
                   </div>
                   <div className="shrink-0">
@@ -221,7 +225,10 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                                     <div className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{record.type || 'Consultation'}</div>
                                     <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.title || 'Medical Visit'}</h4>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
-                                       <span className="flex items-center gap-1"><FiCalendar /> {new Date(record.date).toLocaleDateString()}</span>
+                                       <span className="flex items-center gap-1"><FiCalendar /> {(() => {
+  const d = new Date(record.date);
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+})()}</span>
                                        <span className="flex items-center gap-1"><FiUser /> Dr. {record.vet?.name || 'Unknown'}</span>
                                     </div>
                                  </div>
@@ -258,7 +265,12 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                               <div>
                                  <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
-                                 <div className="text-xs text-zinc-500">{new Date(invoice.created_at).toLocaleDateString()}</div>
+                                 <div className="text-xs text-zinc-500">
+  {(() => {
+    const d = new Date(invoice.created_at);
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+  })()}
+</div>
                               </div>
                            </div>
                            <div className="text-right">
@@ -267,7 +279,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                               </div>
                               <span className={clsx(
                                 "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
-                                invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                ['paid', 'finalized'].includes(invoice.status?.toLowerCase()) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                               )}>
                                 {invoice.status}
                               </span>
