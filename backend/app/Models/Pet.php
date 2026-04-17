@@ -96,7 +96,9 @@ class Pet extends Model
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
 
-    protected $appends = ['total_paid', 'total_due', 'last_visit', 'next_due'];
+    protected $appends = [
+        // 'total_paid', 'total_due', 'last_visit', 'next_due' // Removed because they are slow in lists
+    ];
 
     public function getTotalPaidAttribute()
     {
@@ -106,7 +108,7 @@ class Pet extends Model
         return $invoices
             ->whereIn('status', ['Paid', 'Partially Paid', 'Finalized'])
             ->sum(function($invoice) {
-                return (float) $invoice->formatted_amount_paid;
+                return (float) ($invoice->formatted_amount_paid ?? $invoice->amount_paid ?? 0);
             });
     }
 
@@ -159,8 +161,15 @@ class Pet extends Model
     // Accessor for last visit
     public function getLastVisitAttribute()
     {
+        if ($this->relationLoaded('appointments')) {
+            return $this->appointments
+                ->where('date', '<', now()->toDateString())
+                ->sortByDesc('date')
+                ->first()?->date ?? 'No past visits';
+        }
+
         return $this->appointments()
-            ->where('date', '<', now())
+            ->where('date', '<', now()->toDateString())
             ->orderBy('date', 'desc')
             ->value('date') ?? 'No past visits';
     }
@@ -168,8 +177,15 @@ class Pet extends Model
     // Accessor for next due
     public function getNextDueAttribute()
     {
+        if ($this->relationLoaded('appointments')) {
+            return $this->appointments
+                ->where('date', '>=', now()->toDateString())
+                ->sortBy('date')
+                ->first()?->date ?? 'None scheduled';
+        }
+
         return $this->appointments()
-            ->where('date', '>=', now())
+            ->where('date', '>=', now()->toDateString())
             ->orderBy('date', 'asc')
             ->value('date') ?? 'None scheduled';
     }

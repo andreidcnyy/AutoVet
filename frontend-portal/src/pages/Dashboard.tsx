@@ -26,11 +26,20 @@ export default function Dashboard() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const fetchData = () => {
-    Promise.all([getPets(), getAppointments(), getNotifications()])
+    Promise.all([
+      getPets(), 
+      getAppointments({ upcoming: true }), 
+      getNotifications()
+    ])
       .then(([petsRes, apptsRes, notifRes]) => {
-        setPets(petsRes.data);
-        setAppointments(apptsRes.data);
-        setNotifications(notifRes.data.filter((n: any) => !n.read_at).slice(0, 3));
+        // Handle both direct array and paginated response { data: [] }
+        const petsData = Array.isArray(petsRes.data) ? petsRes.data : petsRes.data.data || [];
+        const apptsData = Array.isArray(apptsRes.data) ? apptsRes.data : apptsRes.data.data || [];
+        const notifData = Array.isArray(notifRes.data) ? notifRes.data : notifRes.data.data || [];
+
+        setPets(petsData);
+        setAppointments(apptsData);
+        setNotifications(notifData.filter((n: any) => !n.read_at).slice(0, 3));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
