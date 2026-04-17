@@ -37,15 +37,23 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
       setLoading(true);
       Promise.all([
         getPet(petId),
-        getMedicalRecords(petId),
-        getInvoices(petId)
+        getMedicalRecords({ pet_id: petId }),
+        getInvoices({ pet_id: petId })
       ])
       .then(([petRes, medicalRes, invoiceRes]) => {
-        setPet(petRes.data);
-        setMedicalRecords(medicalRes.data);
-        setInvoices(invoiceRes.data);
+        // Handle potentially nested data { data: { ... } } or { ... }
+        const petData = petRes.data.data || petRes.data;
+        const medicalData = Array.isArray(medicalRes.data) ? medicalRes.data : medicalRes.data.data || [];
+        const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data.data || [];
+
+        setPet(petData);
+        setMedicalRecords(medicalData);
+        setInvoices(invoiceData);
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error("PetProfileModal Fetch Error:", err);
+        setPet(null);
+      })
       .finally(() => setLoading(false));
     } else {
       setPet(null);

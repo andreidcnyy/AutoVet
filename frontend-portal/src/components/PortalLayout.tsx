@@ -5,6 +5,7 @@ import { getNotifications } from '../api';
 import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiCreditCard } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
+import Chatbot from './Chatbot';
 import logo from '../assets/logo.png';
 
 interface LayoutProps {
@@ -139,10 +140,13 @@ export default function PortalLayout({ children }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 relative">
           <div className="max-w-6xl mx-auto">
             {children}
           </div>
+
+          {/* Chatbot integrated globally within the portal */}
+          <Chatbot />
         </div>
       </main>
 

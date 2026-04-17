@@ -38,7 +38,7 @@ date,visits,revenue,stock_level,is_holiday,month,day_name
 2024-02-06,6,7170,364,0,2,Tuesday
 2024-02-07,9,6120,361,0,2,Wednesday
 2024-02-08,7,8890,358,0,2,Thursday
-2024-02-09,7,7644,356,0,2,Friday
+2024-02-09,7,7644,356,0,2,Friday    
 2024-02-10,12,8556,352,0,2,Saturday
 2024-02-11,13,19409,347,0,2,Sunday
 2024-02-12,6,6684,344,0,2,Monday

@@ -48,17 +48,23 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="border-b border-zinc-200 p-6 dark:border-dark-border">
+        <div className="border-b border-zinc-200 p-8 dark:border-dark-border">
           <div className="flex flex-col items-center text-center">
-            {clinic.logo ? (
-              <img src={clinic.logo} alt="Clinic Logo" className="mb-3 h-14 w-14 rounded-xl object-contain" />
-            ) : (
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-600/20 dark:text-emerald-400">
-                <LuPawPrint className="h-7 w-7" />
-              </div>
-            )}
-            <div>
-              <p className="text-lg font-bold leading-tight text-zinc-900 dark:text-zinc-50">{clinic.name}</p>
+            <div className="relative mb-4 h-32 w-32 shrink-0">
+              {clinic.logo ? (
+                <img 
+                  src={clinic.logo} 
+                  alt="Clinic Logo" 
+                  className="h-full w-full rounded-2xl object-contain shadow-xl shadow-emerald-500/10 transition-all duration-500" 
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-600/20 dark:text-emerald-400 shadow-inner">
+                  <LuPawPrint className="h-16 w-16" />
+                </div>
+              )}
+            </div>
+            <div className="px-2">
+              <p className="text-xl font-black leading-tight tracking-tight text-zinc-900 dark:text-zinc-50">{clinic.name}</p>
               {clinic.subtitle && (
                 <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">{clinic.subtitle}</p>
               )}
