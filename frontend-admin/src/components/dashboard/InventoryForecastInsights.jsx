@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
 import { LuSparkles, LuTriangleAlert, LuCircleCheck, LuActivity, LuRefreshCw } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export default function InventoryForecastInsights() {
   const [forecasts, setForecasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const toast = useToast();
 
   const fetchForecasts = async (isManual = false) => {
     if (!user?.token) return;
@@ -35,7 +36,36 @@ export default function InventoryForecastInsights() {
     // Listen for global refresh events (e.g., from Invoice completion)
     const handleGlobalRefresh = () => {
       // Small delay to allow the background job to start processing
-      setTimeout(() => fetchForecasts(true), 1500);
+      setTimeout(async () => {
+        setRefreshing(true);
+        try {
+          const headers = { 
+            'Authorization': `Bearer ${user.token}`,
+            'Accept': 'application/json'
+          };
+          const res = await fetch('/api/dashboard/inventory-forecast', { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setForecasts(data);
+            
+            // Find most critical item to show in a toast
+            const urgentItem = data.find(i => i.forecast_status === 'Critical') || data.find(i => i.forecast_status === 'Reorder Soon');
+            if (urgentItem) {
+              const msg = urgentItem.forecast_status === 'Critical' 
+                ? `${urgentItem.item_name} may run out in ${urgentItem.days_until_stockout || 'few'} days!`
+                : `${urgentItem.item_name} usage is increasing. Reorder soon.`;
+              
+              toast.info(msg, 6000);
+            } else {
+              toast.success("AI Analysis Complete: Inventory levels are healthy.");
+            }
+          }
+        } catch (err) {
+          console.error("Forecast notification error:", err);
+        } finally {
+          setRefreshing(false);
+        }
+      }, 3500); // 3.5s delay to ensure Laravel queue has finished the AI processing
     };
 
     window.addEventListener('inventory-forecast-refresh', handleGlobalRefresh);
@@ -93,7 +123,7 @@ export default function InventoryForecastInsights() {
             <LuSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Inventory Forecast Insights</h3>
+            <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">AI Forecast Update</h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">AutoVet AI Model (Linear Regression) • {forecasts.length > 0 ? `Updated ${forecasts[0].last_forecasted}` : 'Datasets synchronized'}</p>
           </div>
         </div>

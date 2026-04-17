@@ -113,7 +113,16 @@ class InventoryForecastController extends Controller
             'generated_at'               => $forecast->generated_at,
             'model_used'                 => $forecast->model_used,
             'notes'                      => $forecast->notes,
-            'prediction_status'          => 'OK',
+            'message'                    => $forecast->notes ?? 'AI forecast successfully retrieved.',
+            'prediction_status'          => $forecast->prediction_source === 'dataset' 
+                                            ? 'Using dataset-based prediction' 
+                                            : ($forecast->forecast_status === 'Insufficient Data' ? 'Insufficient Data' : 'Synced Dataset Insight'),
+            'average_daily_consumption'  => $forecast->average_daily_consumption,
+            'predicted_daily_sales'      => $forecast->predicted_daily_sales,
+            'predicted_weekly_sales'     => $forecast->predicted_weekly_sales,
+            'predicted_monthly_sales'    => $forecast->predicted_monthly_sales,
+            'estimated_monthly_revenue'  => $forecast->estimated_monthly_revenue,
+            'prediction_source'          => $forecast->prediction_source
         ]);
     }
 }

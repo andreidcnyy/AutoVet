@@ -554,6 +554,10 @@ class DashboardController extends Controller
                 } elseif ($notif->type === 'InvoiceFinalized') {
                     $iconName = 'FiFileText';
                     $tone = 'success';
+                } elseif ($notif->type === 'AiForecastUpdate') {
+                    $iconName = 'FiActivity';
+                    $status = $notif->data['status'] ?? 'Safe';
+                    $tone = ($status === 'Critical') ? 'danger' : (($status === 'Reorder Soon') ? 'warning' : 'info');
                 }
 
                 $notifications[] = [

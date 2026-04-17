@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { FiBell, FiCheck, FiFilter, FiArrowLeft, FiTrash2 } from "react-icons/fi";
+import { 
+  FiBell, FiCheck, FiFilter, FiArrowLeft, FiTrash2, 
+  FiAlertTriangle, FiPackage, FiPlusCircle, FiInfo, FiActivity, FiFileText, FiCalendar 
+} from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
@@ -9,7 +12,19 @@ const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
   info: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
   success: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  warning: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
   neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
+};
+const iconMap = {
+  FiBell: FiBell,
+  FiAlertTriangle: FiAlertTriangle,
+  FiPackage: FiPackage,
+  FiPlusCircle: FiPlusCircle,
+  FiCheck: FiCheck,
+  FiInfo: FiInfo,
+  FiActivity: FiActivity,
+  FiFileText: FiFileText,
+  FiCalendar: FiCalendar,
 };
 
 function NotificationHistoryPage() {
@@ -169,14 +184,19 @@ function NotificationHistoryPage() {
                     !notif.read_at && "bg-emerald-50/30 dark:bg-emerald-900/5"
                   )}
                 >
-                  <div
-                    className={clsx(
-                      "mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-                      iconToneStyles[notif.type] || iconToneStyles.neutral
-                    )}
-                  >
-                    <FiBell className="h-5 w-5" />
-                  </div>
+                  {(() => {
+                    const Icon = iconMap[notif.iconName] || FiBell;
+                    return (
+                      <div
+                        className={clsx(
+                          "mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+                          iconToneStyles[notif.tone] || iconToneStyles.neutral
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    );
+                  })()}
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <h4 className={clsx("text-lg font-bold leading-tight", !notif.read_at ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400")}>

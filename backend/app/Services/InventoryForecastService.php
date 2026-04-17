@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\HasInternalNotifications;
 
 class InventoryForecastService
 {
+    use HasInternalNotifications;
     /**
      * Generate a forecast on-demand (returns array, does NOT persist).
      * Used by the dashboard/API for live reads.
@@ -76,9 +78,29 @@ class InventoryForecastService
         }
 
         $result = $this->runPythonForecast($inventory, $historyDays);
-        if ($result && !isset($result['error'])) {
+        if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
             $this->saveForecast($inventoryId, $result, $triggerSource);
             return $result;
+        }
+
+        // Live data returned Insufficient Data (e.g. few unique daily points) — try dataset fallback
+        Log::info("[FORECAST FALLBACK] Inventory ID {$inventoryId}: live data insufficient, trying dataset CSV.");
+
+        $datasetPath = base_path('storage/datasets/inventory.csv');
+        if (file_exists($datasetPath)) {
+            $datasetResult = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
+            if ($datasetResult && isset($datasetResult['prediction_status'])
+                && $datasetResult['prediction_status'] !== 'Insufficient Data'
+                && $datasetResult['prediction_status'] !== 'No Data'
+                && !isset($datasetResult['error'])
+            ) {
+                $datasetResult['prediction_status'] = 'Using dataset-based prediction';
+                $datasetResult['message']           = 'Prediction generated from historical dataset (live data has too few daily movement points).';
+                $this->saveForecast($inventoryId, $datasetResult, $triggerSource);
+                Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: dataset fallback returned result.");
+                return $datasetResult;
+            }
+            Log::info("[FORECAST FALLBACK MISS] Inventory ID {$inventoryId}: dataset also insufficient.");
         }
 
         return $insufficientDataResponse;
@@ -116,9 +138,11 @@ class InventoryForecastService
                 $datasetPath = base_path('storage/datasets/inventory.csv');
                 if (file_exists($datasetPath)) {
                     $result = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
-                    if ($result && !isset($result['error'])) {
+                    if ($result && isset($result['prediction_status']) && $result['prediction_status'] !== 'Insufficient Data' && $result['prediction_status'] !== 'No Data') {
                         $result['prediction_status'] = 'Using dataset-based prediction';
+                        $result['message']           = 'Prediction generated from historical dataset fallback.';
                         $this->saveForecast($inventoryId, $result, $triggerSource);
+                        Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: Dataset fallback used (usageCount < 3).");
                         return;
                     }
                 }
@@ -134,8 +158,25 @@ class InventoryForecastService
 
             Log::info("[FORECAST STARTED] Processing AI model for Inventory ID {$inventoryId} ({$usageCount} records). Trigger: {$triggerSource}");
             $result = $this->runPythonForecast($inventory, $historyDays);
-            if ($result === null) {
-                Log::warning("[FORECAST FAILED] Inventory ID {$inventoryId}: Python script returned no result or failed.");
+
+            // Handle unique days < 3 case from Live Python
+            if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') === 'Insufficient Data') {
+                Log::info("[FORECAST FALLBACK] Inventory ID {$inventoryId}: live data unique points insufficient, trying dataset CSV.");
+                $datasetPath = base_path('storage/datasets/inventory.csv');
+                if (file_exists($datasetPath)) {
+                    $datasetResult = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
+                    if ($datasetResult && isset($datasetResult['prediction_status']) && $datasetResult['prediction_status'] !== 'Insufficient Data' && $datasetResult['prediction_status'] !== 'No Data') {
+                        $datasetResult['prediction_status'] = 'Using dataset-based prediction';
+                        $datasetResult['message']           = 'Prediction generated from historical dataset fallback (live data too few unique days).';
+                        $this->saveForecast($inventoryId, $datasetResult, $triggerSource);
+                        Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: Dataset fallback used (live points insufficient).");
+                        return;
+                    }
+                }
+            }
+
+            if ($result === null || isset($result['error'])) {
+                Log::warning("[FORECAST FAILED] Inventory ID {$inventoryId}: Python script failed or returned null.");
                 return;
             }
 
@@ -184,6 +225,43 @@ class InventoryForecastService
             'predicted_monthly_sales'   => $forecastResult['predicted_monthly_sales'] ?? null,
             'estimated_monthly_revenue' => $estimatedRevenue,
         ]);
+
+        // Generate AI Forecast Notification
+        $this->generateAiNotification($inventory, $forecastResult);
+    }
+
+    /**
+     * Generate a user-friendly AI insight notification.
+     */
+    protected function generateAiNotification(Inventory $inventory, array $result): void
+    {
+        $status = $result['forecast_status'] ?? 'Safe';
+        $days = $result['days_until_stockout'] ?? null;
+        $itemName = $inventory->item_name;
+        
+        $message = "AI Update: '{$itemName}' is currently stable.";
+        
+        if ($status === 'Critical') {
+            $message = "Critical: '{$itemName}' may run out in " . ($days ?? 'less than 7') . " days. Immediate reorder recommended.";
+        } elseif ($status === 'Reorder Soon') {
+            $message = "Advisory: '{$itemName}' is depleting. Reorder suggested within " . ($days ?? '14') . " days.";
+        }
+
+        if (isset($result['predicted_weekly_sales']) && $result['predicted_weekly_sales'] > 0) {
+            $message .= " Weekly sales forecast: ₱" . number_format($result['predicted_weekly_sales'], 2) . ".";
+        }
+
+        $this->createInternalNotification(
+            'AiForecastUpdate',
+            'AI Forecast Update',
+            $message,
+            [
+                'inventory_id' => $inventory->id,
+                'status' => $status,
+                'days' => $days,
+                'predicted_weekly_sales' => $result['predicted_weekly_sales'] ?? 0
+            ]
+        );
     }
 
     /**

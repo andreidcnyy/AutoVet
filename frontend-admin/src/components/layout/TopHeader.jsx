@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX, 
-  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo 
+  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity 
 } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
@@ -18,6 +18,7 @@ const iconMap = {
   FiPlusCircle: FiPlusCircle,
   FiCheck: FiCheck,
   FiInfo: FiInfo,
+  FiActivity: FiActivity,
   FiCalendar: FiPlusCircle, // Fallback for calendar icons
   FiFileText: FiInfo,       // Fallback for invoice icons
 };
@@ -26,6 +27,7 @@ const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
   info: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
   success: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+  warning: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
   neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 

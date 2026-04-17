@@ -48,7 +48,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 setAiForecastData({
                     ...data,
                     is_background_refreshing: isVeryRecent && data.trigger_source !== 'manual',
-                    prediction_status: data.prediction_status === 'OK' ? 'Synced Dataset Insight' : data.prediction_status,
+                    prediction_status: data.prediction_status,
                     last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null
                 });
             }
@@ -367,26 +367,30 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                          </span>
                       </div>
                       <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
-                    {aiForecastData.prediction_status === "Forecast Available" ? (
-                      <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">{aiForecastData.predicted_stockout_date}</span></>
-                    ) : aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (
-                      <span className="text-rose-600 dark:text-rose-400">{aiForecastData.message}</span>
+                    {aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (
+                      <span className="text-rose-600 dark:text-rose-400">{aiForecastData.message || aiForecastData.notes}</span>
+                    ) : aiForecastData.predicted_stockout_date ? (
+                      <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">
+                        {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span></>
                     ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400">{aiForecastData.message}</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{aiForecastData.message || aiForecastData.notes}</span>
                     )}
                   </p>
-                  {aiForecastData.prediction_status === "Forecast Available" && (
+                  {aiForecastData.predicted_stockout_date && (
                     <>
                       <p className="text-sm text-zinc-600 dark:text-zinc-300">
                         Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
                       </p>
                       <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase">Model Confidence</p>
-                          <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
-                            {(aiForecastData.lr_r2 * 100).toFixed(1)}%
-                          </p>
-                        </div>
+                        {(aiForecastData.confidence_score != null || aiForecastData.lr_r2 != null) && (
+                          <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase">Model Confidence</p>
+                            <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
+                              {((aiForecastData.confidence_score ?? aiForecastData.lr_r2) * 100).toFixed(1)}%
+                            </p>
+                          </div>
+                        )}
                         <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
                           <p className="text-[10px] font-bold text-zinc-400 uppercase">Avg Daily Usage</p>
                           <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
@@ -394,9 +398,11 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                           </p>
                         </div>
                       </div>
-                      <p className="text-[10px] text-zinc-400 italic mt-1">
-                        Model: scikit-learn LinearRegression
-                      </p>
+                      {aiForecastData.prediction_status === "Using dataset-based prediction" && (
+                        <p className="text-[10px] text-purple-500 dark:text-purple-400 italic mt-1">
+                          Using dataset-based prediction
+                        </p>
+                      )}
                     </>
                   )}
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
