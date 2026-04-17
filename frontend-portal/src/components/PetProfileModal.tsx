@@ -4,7 +4,7 @@ import {
   FiX,
   FiCalendar, 
   FiFileText, 
-  FiDollarSign, 
+  FiCreditCard, 
   FiActivity,
   FiInfo,
   FiUser,
@@ -60,7 +60,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical History', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiDollarSign },
+    { id: 'invoices', label: 'Billing', icon: FiCreditCard },
   ];
 
   return (
@@ -226,7 +226,8 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                                     <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.title || 'Medical Visit'}</h4>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                                        <span className="flex items-center gap-1"><FiCalendar /> {(() => {
-  const d = new Date(record.date);
+  const dateStr = record.appointment?.date || record.created_at;
+  const d = new Date(dateStr);
   return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
 })()}</span>
                                        <span className="flex items-center gap-1"><FiUser /> Dr. {record.vet?.name || 'Unknown'}</span>
@@ -260,7 +261,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                         <div key={invoice.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
                            <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
-                                 <FiDollarSign className="w-6 h-6" />
+                                 <FiCreditCard className="w-6 h-6" />
                               </div>
                               <div>
                                  <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
@@ -273,12 +274,15 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
 </div>
                               </div>
                            </div>
-                           <div className="text-right">
+                           <div className="text-right flex flex-col items-end gap-1">
                               <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
                                 ₱{parseFloat(invoice.total).toLocaleString()}
                               </div>
+                              <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
+                                Paid: ₱{parseFloat(invoice.formatted_amount_paid || invoice.amount_paid || 0).toLocaleString()}
+                              </div>
                               <span className={clsx(
-                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
+                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit",
                                 ['paid', 'finalized'].includes(invoice.status?.toLowerCase()) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                               )}>
                                 {invoice.status}

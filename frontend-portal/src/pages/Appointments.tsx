@@ -62,8 +62,8 @@ export default function Appointments() {
     try {
       await cancelAppointment(id);
       fetchAppointments();
-    } catch (err) {
-      alert("Failed to cancel appointment.");
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to cancel appointment.");
     }
   };
 
@@ -265,6 +265,18 @@ export default function Appointments() {
                     </div>
                   )}
                 </div>
+
+                {selectedAppointment.status === 'pending' && (
+                  <button 
+                    onClick={() => {
+                      handleCancel(selectedAppointment.id);
+                      setIsDetailsOpen(false);
+                    }}
+                    className="w-full h-14 rounded-2xl border-2 border-rose-100 text-rose-600 font-bold uppercase tracking-widest hover:bg-rose-50 transition-all mb-3 flex items-center justify-center gap-2"
+                  >
+                    <FiXCircle className="w-5 h-5" /> Cancel Appointment
+                  </button>
+                )}
 
                 <button 
                   onClick={() => setIsDetailsOpen(false)}

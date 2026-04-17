@@ -71,7 +71,7 @@ class AppointmentPolicy
 
         if (method_exists($user, 'isOwner') && $user->isOwner()) {
             // Owners can only cancel their own future appointments
-            return $user->owner?->id === $appointment->pet?->owner_id && $appointment->appointment_date > now();
+            return $user->owner?->id === $appointment->pet?->owner_id && $appointment->date >= now()->toDateString();
         }
 
         return false;

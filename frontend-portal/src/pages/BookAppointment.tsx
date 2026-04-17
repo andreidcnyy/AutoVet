@@ -94,9 +94,14 @@ export default function BookAppointment() {
         setServices(servRes.data);
         setVets(vetsRes.data);
         setAppointments(apptsRes.data);
+
+        // Auto-select if only one pet
+        if (petsRes.data.length === 1) {
+          setValue("pet_id", petsRes.data[0].id.toString());
+        }
       })
       .catch(console.error);
-  }, []);
+  }, [setValue]);
 
   const handleDayClick = (entry: any) => {
     if (!entry.inMonth) return;
@@ -109,7 +114,14 @@ export default function BookAppointment() {
     setIsViewMode(false);
     setValue("date", entry.dateString);
     setValue("time", "");
-    setValue("pet_id", "");
+    
+    // Auto-select if only one pet, otherwise reset
+    if (pets.length === 1) {
+      setValue("pet_id", pets[0].id.toString());
+    } else {
+      setValue("pet_id", "");
+    }
+
     setValue("service_id", "");
     setValue("vet_id", "");
     setValue("notes", "");

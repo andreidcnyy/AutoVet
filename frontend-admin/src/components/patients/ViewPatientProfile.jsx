@@ -566,8 +566,42 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 /* ──────────────── Overview Tab ──────────────── */
 
 function OverviewTab({ patient, onOpenOwner }) {
+  const owner = patient.owner;
+  const hasOwner = owner && typeof owner === 'object' && owner.id;
+
   return (
     <div className="space-y-6">
+      {/* 0. Owner Quick Info - Absolute Top */}
+      <div className="rounded-2xl bg-emerald-600 p-6 text-white shadow-lg shadow-emerald-600/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md text-2xl shadow-inner">
+               👤
+             </div>
+             <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100 opacity-80">Registered Owner / Client</p>
+               <h3 className="text-2xl font-black truncate max-w-[300px]" title={hasOwner ? owner.name : "Unassigned"}>
+                 {hasOwner ? owner.name : "No Owner Assigned"}
+               </h3>
+               {hasOwner && (
+                 <div className="mt-1 flex items-center gap-3 text-xs font-bold text-emerald-50">
+                    {owner.phone && <span className="flex items-center gap-1"><FiPhone className="h-3 w-3" /> {owner.phone}</span>}
+                    {owner.email && <span className="flex items-center gap-1"><FiMail className="h-3 w-3" /> {owner.email}</span>}
+                 </div>
+               )}
+             </div>
+          </div>
+          {hasOwner && (
+            <button
+              onClick={() => onOpenOwner(owner.id)}
+              className="rounded-xl bg-white px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-sm transition-all hover:bg-emerald-50 active:scale-95"
+            >
+              View Client Profile
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
         <img
@@ -612,56 +646,6 @@ function OverviewTab({ patient, onOpenOwner }) {
         <InfoCard icon={LuPill} iconColor="text-emerald-500" title="Medication" value={patient.medication} />
         <InfoCard icon={FiClipboard} iconColor="text-amber-500" title="Notes" value={patient.notes} />
       </div>
-
-      {/* Owner details */}
-      <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-dark-border dark:bg-dark-surface">
-        <h4 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          <FiUser className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-          Owner Information
-        </h4>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <div className="flex items-center gap-3">
-              <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-                {patient.owner?.name}
-              </p>
-              {patient.owner?.id && (
-                <button
-                  onClick={onOpenOwner}
-                  className="rounded-lg bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-100 transition dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
-                >
-                  View Profile
-                </button>
-              )}
-            </div>
-            {patient.owner?.phone && (
-              <p className="mt-2 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                <FiPhone className="h-4 w-4 text-zinc-400" />
-                {patient.owner.phone}
-              </p>
-            )}
-            {patient.owner?.email && (
-              <p className="mt-1 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                <FiMail className="h-4 w-4 text-zinc-400" />
-                {patient.owner.email}
-              </p>
-            )}
-          </div>
-          {patient.owner?.address && (
-            <div className="flex items-start gap-2">
-              <FiMapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-400" />
-              <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                <p>{patient.owner.address}</p>
-                <p>
-                  {patient.owner.city}
-                  {patient.owner.province ? `, ${patient.owner.province}` : ""}{" "}
-                  {patient.owner.zip}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* Download PDF */}
       <div className="flex gap-3">
@@ -899,7 +883,7 @@ function InvoiceTab({ invoices }) {
             { label: "Invoice Number", value: selectedInv.invoice_number || `INV-${selectedInv.id}` },
             { label: "Date", value: formatDate(selectedInv.created_at) },
             { label: "Status", value: selectedInv.status },
-            { label: "Amount Paid", value: formatCurrency(selectedInv.amount_paid) },
+            { label: "Amount Paid", value: formatCurrency(selectedInv.formatted_amount_paid || selectedInv.amount_paid) },
             { label: "Notes", value: selectedInv.notes || "None" }
           ]}
         />
@@ -1286,9 +1270,6 @@ function MedicalRecordModal({
   setSelectedVetId
 }) {
   const isEdit = !!record;
-  // If user is Staff (not Admin/Vet), it's view-only.
-  // OR if we explicitly opened in View mode.
-  // Admins and Vets should be able to edit.
   const isViewOnly = isStaff || isViewOnlyMode;
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
   
@@ -1312,11 +1293,9 @@ function MedicalRecordModal({
     
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
-    // Attach values from state
     data.appointment_id = selectedAppointmentId;
-    data.vet_id = selectedVetId; // Attach the vet ID
+    data.vet_id = selectedVetId;
     
-    // Clear previous errors
     clearErrors();
     onSave(data, setLaravelErrors);
   };
@@ -1332,7 +1311,6 @@ function MedicalRecordModal({
         </div>
         <div className="overflow-y-auto p-6">
           <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
-             {/* Vet and Appointment Selectors */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
                  <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Attending Veterinarian</label>
@@ -1358,7 +1336,6 @@ function MedicalRecordModal({
 
                <div>
                  <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Link to Appointment (Required)</label>
-                 
                  <div className="relative">
                     <button
                       type="button"
@@ -1405,7 +1382,6 @@ function MedicalRecordModal({
                             )}
                           </div>
                         </div>
-                        
                         <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
                           {filteredAppointments.length > 0 ? filteredAppointments.map(apt => (
                             <button

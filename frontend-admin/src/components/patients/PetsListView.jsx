@@ -217,24 +217,32 @@ function PetsListView() {
                             </div>
                         </div>
 
-                        <div className="mt-5">
-                            <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 group-hover:text-emerald-600 transition-colors">{pet.name}</h3>
-                            <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">{pet.breed?.name || pet.species?.name || "Unknown Breed"}</p>
+                        <div className="mt-5 space-y-1">
+                            <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 group-hover:text-emerald-600 transition-colors truncate" title={pet.name}>
+                                {pet.name}
+                            </h3>
+                            <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400 truncate" title={pet.breed?.name || pet.species?.name || "Unknown Breed"}>
+                                {pet.breed?.name || pet.species?.name || "Unknown Breed"}
+                            </p>
                         </div>
 
-                        <div className="mt-6 flex items-center justify-between border-t border-zinc-50 pt-4 dark:border-dark-border">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-50 dark:bg-dark-surface">
+                        <div className="mt-6 flex items-center justify-between border-t border-zinc-50 pt-4 dark:border-dark-border gap-4">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-50 dark:bg-dark-surface">
                                     <FiUser className="h-4 w-4 text-zinc-400" />
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Owner</p>
-                                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate">{pet.owner?.name}</p>
+                                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 truncate" title={pet.owner?.name}>
+                                        {pet.owner?.name}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Total Paid</p>
-                                <p className="text-xs font-black text-emerald-600">₱{Number(pet.total_paid || 0).toLocaleString()}</p>
+                            <div className="text-right shrink-0">
+                                <p className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 leading-none mb-1">Age</p>
+                                <p className="text-xs font-black text-emerald-600 whitespace-nowrap">
+                                    {getAge(pet.date_of_birth)}
+                                </p>
                             </div>
                         </div>
                     </div>

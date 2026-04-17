@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications } from '../api';
-import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiCreditCard } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
 import logo from '../assets/logo.png';
@@ -23,7 +23,7 @@ export default function PortalLayout({ children }: LayoutProps) {
     { name: 'Register Pet', path: '/add-pet', icon: FiPlusCircle },
     { name: 'Book Visit', path: '/book', icon: FiCalendar },
     { name: 'Visit History', path: '/appointments', icon: FiClock },
-    { name: 'Invoice', path: '/invoices', icon: FiDollarSign },
+    { name: 'Invoice', path: '/invoices', icon: FiCreditCard },
     { name: 'Notifications', path: '/notifications', icon: FiBell, badge: unreadCount },
   ];
 
