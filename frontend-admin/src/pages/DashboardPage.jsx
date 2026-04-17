@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import InventoryAiStatusCard from "../components/dashboard/InventoryAiStatusCard";
+import InventoryForecastInsights from "../components/dashboard/InventoryForecastInsights";
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
@@ -91,9 +91,9 @@ function DashboardPage() {
           <ErrorBoundary label="Inventory Consumption">
             <InventoryChartCard />
           </ErrorBoundary>
-          <ErrorBoundary label="Inventory AI Status">
-            <InventoryAiStatusCard />
-          </ErrorBoundary>
+          {/* <ErrorBoundary label="Inventory Forecast Insights">
+            <InventoryForecastInsights />
+          </ErrorBoundary> */}
         </div>
         <div className="space-y-6">
           <RecentNotificationsCard 

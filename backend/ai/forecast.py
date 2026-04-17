@@ -30,18 +30,35 @@ def forecast_stockout(csv_filepath, min_stock_level):
     try:
         # Load CSV and treat empty strings as NaN
         df = pd.read_csv(csv_filepath, dtype={'stock_level': 'float64'})
+        
+        if df.empty:
+            return {"error": "CSV file is empty."}
+
+        # Target item filtering by code if requested and column exists
+        target_code = next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--code=')), None)
+        if target_code and 'code' in df.columns:
+            df = df[df['code'].astype(str) == target_code]
+            if df.empty:
+                return {"error": f"No data found for code {target_code} in dataset."}
+
     except FileNotFoundError:
         return {"error": f"CSV file not found at {csv_filepath}"}
     except Exception as e:
         return {"error": f"Error reading CSV file: {e}"}
 
-    if df.empty:
-        return {"error": "No data in CSV file to forecast."}
+    # 2. Normalize columns
+    col_map = {
+        'usage_date': 'date',
+        'ending_stock': 'stock_level',
+        'stock_level': 'stock_level',
+        'date': 'date'
+    }
+    df = df.rename(columns={k: v for k, v in col_map.items() if k in df.columns})
 
     # Validate required columns
     required_cols = ['date', 'stock_level']
     if not all(col in df.columns for col in required_cols):
-        return {"error": f"CSV must contain the following columns: {', '.join(required_cols)}"}
+        return {"error": f"CSV must contain the following columns: {', '.join(required_cols)} (Found: {', '.join(df.columns)})"}
 
     # Clean data
     # Convert dates and drop invalid ones
@@ -63,8 +80,13 @@ def forecast_stockout(csv_filepath, min_stock_level):
     df = df.sort_values(by=['date'])
     df = df.groupby('date', as_index=False).last()
 
-    if len(df) < 2:
-        return {"error": "Not enough unique data points (at least 2 required) to perform forecasting. Try with more history."}
+    if len(df) < 3:
+        return {
+            "prediction_status": "Insufficient Data",
+            "forecast_status": "Insufficient Data",
+            "message": f"Only {len(df)} unique data points found. At least 3 required for a valid trend.",
+            "average_daily_consumption": 0
+        }
 
     # Calculate differences between consecutive records
     df['days_diff'] = df['date'].diff().dt.days
@@ -80,19 +102,21 @@ def forecast_stockout(csv_filepath, min_stock_level):
     # If stock is already at or below min_stock_level
     if last_stock <= min_stock_level:
         return {
-            "prediction_status": "Stockout Imminent/Occurred",
-            "message": f"Current stock ({last_stock}) is at or below minimum stock level ({min_stock_level}).",
-            "last_recorded_stock": last_stock,
-            "last_recorded_date": last_date.strftime('%Y-%m-%d')
+            "prediction_status": "Critical",
+            "forecast_status": "Critical",
+            "message": "Stock is currently at or below minimum level.",
+            "predicted_stockout_date": last_date.strftime('%Y-%m-%d'),
+            "days_until_stockout": 0,
+            "average_daily_consumption": 0
         }
 
     # Calculate average daily consumption
     if consumptions.empty:
         return {
-            "prediction_status": "No Stockout Predicted",
-            "message": "No historical consumption (stock decrease) observed.",
-            "last_recorded_stock": last_stock,
-            "last_recorded_date": last_date.strftime('%Y-%m-%d')
+            "prediction_status": "No Movement",
+            "forecast_status": "Safe",
+            "message": "No consumption history detected.",
+            "average_daily_consumption": 0
         }
 
     total_consumption = abs(consumptions['stock_diff'].sum())
@@ -100,21 +124,20 @@ def forecast_stockout(csv_filepath, min_stock_level):
 
     if total_days_consuming <= 0:
         return {
-            "prediction_status": "No Stockout Predicted",
-            "message": "Invalid time difference for consumption.",
-            "last_recorded_stock": last_stock,
-            "last_recorded_date": last_date.strftime('%Y-%m-%d')
+            "prediction_status": "Error",
+            "forecast_status": "Insufficient Data",
+            "message": "Time interval logic error in consumption data.",
+            "average_daily_consumption": 0
         }
 
     average_daily_consumption = total_consumption / total_days_consuming
 
     if average_daily_consumption == 0:
         return {
-            "prediction_status": "No Stockout Predicted",
-            "message": "Average daily consumption is zero based on historical data.",
-            "last_recorded_stock": last_stock,
-            "last_recorded_date": last_date.strftime('%Y-%m-%d'),
-            "average_daily_consumption": round(average_daily_consumption, 2)
+            "prediction_status": "Safe",
+            "forecast_status": "Safe",
+            "message": "No consumption rate measured.",
+            "average_daily_consumption": 0
         }
 
     # Predict stockout days based on current stock
@@ -123,43 +146,46 @@ def forecast_stockout(csv_filepath, min_stock_level):
 
     predicted_date_to_min = last_date + timedelta(days=predicted_days_to_min)
 
-    # Scikit-learn LinearRegression model
-    X = np.arange(len(df)).reshape(-1, 1)  # day index as feature
+    # Scikit-learn LinearRegression for explainability (shows trend)
+    X = np.arange(len(df)).reshape(-1, 1)
     y = df['stock_level'].values
     model = LinearRegression()
     model.fit(X, y)
-    lr_slope = round(float(model.coef_[0]), 4)
-    lr_intercept = round(float(model.intercept_), 4)
     lr_r2 = round(float(r2_score(y, model.predict(X))), 4)
-    predicted_next = round(float(model.predict([[len(df)]])[0]), 2)
+
+    # Determine status based on days remaining
+    if predicted_days_to_min < 7:
+        forecast_status = "Critical"
+    elif predicted_days_to_min < 14:
+        forecast_status = "Reorder Soon"
+    else:
+        forecast_status = "Safe"
 
     # For sanity, limit forecast to max 5 years
     if predicted_days_to_min > 365 * 5:
          return {
-            "prediction_status": "No Stockout Predicted",
-            "message": "Predicted stockout is over 5 years away.",
-            "last_recorded_stock": last_stock,
-            "last_recorded_date": last_date.strftime('%Y-%m-%d'),
-            "average_daily_consumption": round(average_daily_consumption, 2)
+            "prediction_status": "Safe",
+            "forecast_status": "Safe",
+            "message": "Stockout is over 5 years away.",
+            "average_daily_consumption": round(average_daily_consumption, 2),
+            "days_until_stockout": 1825,
+            "predicted_stockout_date": (last_date + timedelta(days=1825)).strftime('%Y-%m-%d'),
         }
 
     return {
-        "prediction_status": "Forecast Available",
+        "prediction_status": "Success",
+        "forecast_status": forecast_status,
         "predicted_stockout_date": predicted_date_to_min.strftime('%Y-%m-%d'),
         "days_until_stockout": predicted_days_to_min,
         "current_stock": last_stock,
         "min_stock_level": min_stock_level,
         "average_daily_consumption": round(average_daily_consumption, 2),
-        "last_recorded_date": last_date.strftime('%Y-%m-%d'),
-        "lr_slope": lr_slope,
-        "lr_intercept": lr_intercept,
-        "lr_r2": lr_r2,
-        "lr_predicted_next_stock": predicted_next,
+        "confidence_score": lr_r2,
         "ml_algorithm": "scikit-learn LinearRegression"
     }
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print(json.dumps({"error": "Usage: python forecast.py <csv_filepath> <min_stock_level>"}))
         sys.exit(1)
 

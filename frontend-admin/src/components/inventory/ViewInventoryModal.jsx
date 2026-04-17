@@ -33,6 +33,32 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       setIsEditing(false);
       setAiForecastData(null); // Clear previous forecast data when modal opens
       
+      // Fetch latest SAVED forecast (dataset insights)
+      setIsLoadingForecast(true);
+      fetch(`/api/inventory/${product.id}/forecast/saved`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.prediction_status !== 'No Forecast Available') {
+                // Determine if it's currently "Updating" based on timestamp or status
+                const isVeryRecent = (new Date() - new Date(data.generated_at)) < 15000; // 15s
+                
+                // Map saved data to match the component's expected structure
+                setAiForecastData({
+                    ...data,
+                    is_background_refreshing: isVeryRecent && data.trigger_source !== 'manual',
+                    prediction_status: data.prediction_status === 'OK' ? 'Synced Dataset Insight' : data.prediction_status,
+                    last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null
+                });
+            }
+            setIsLoadingForecast(false);
+        })
+        .catch(err => {
+            console.error(err);
+            setIsLoadingForecast(false);
+        });
+
       // Fetch transaction history
       setIsLoadingTx(true);
       fetch(`/api/inventory/${product.id}/transactions`, {
@@ -306,23 +332,41 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
                 <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
               </h4>
+              {aiForecastData.is_background_refreshing && (
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 flex items-center gap-2 dark:border-emerald-800 dark:bg-emerald-900/20">
+                    <LuSparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        System is currently refreshing this forecast in the background...
+                    </p>
+                </div>
+              )}
               {aiForecastData.error ? (
                 <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
               ) : aiForecastData.prediction_status === "Insufficient Data" ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
-                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    {aiForecastData.message}
-                  </p>
-                  <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
-                    Record stock movements or invoice this item to enable AI forecasting.
-                  </p>
-                  <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold tracking-tight">
-                    Current: {aiForecastData.current_stock} | Min: {aiForecastData.min_stock_level}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        {aiForecastData.message}
+                      </p>
+                      <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
+                        Record stock movements or invoice this item to enable AI forecasting.
+                      </p>
+                      <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold tracking-tight">
+                        Current: {aiForecastData.current_stock} | Min: {aiForecastData.min_stock_level}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
+                         <span className={clsx(
+                           "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm",
+                           aiForecastData.prediction_status.toLowerCase().includes("dataset") 
+                             ? "bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800" 
+                             : "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800"
+                         )}>
+                           {aiForecastData.prediction_status}
+                         </span>
+                      </div>
+                      <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
                     {aiForecastData.prediction_status === "Forecast Available" ? (
                       <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">{aiForecastData.predicted_stockout_date}</span></>
                     ) : aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (

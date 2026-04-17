@@ -11,112 +11,63 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use App\Services\InventoryForecastService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Artisan;
+
 class DashboardController extends Controller
 {
+    protected $inventoryForecastService;
+
+    public function __construct(InventoryForecastService $inventoryForecastService)
+    {
+        $this->inventoryForecastService = $inventoryForecastService;
+    }
+
     /**
      * Get detailed AI analysis for a specific inventory item or general stock.
      */
-    public function getInventoryForecast()
+    /**
+     * Get AI inventory forecasting insights for the clinic.
+     * Returns a list of items with their latest saved forecasts.
+     */
+    public function getInventoryForecasts(): JsonResponse
     {
-        $item = Inventory::orderByRaw('(stock_level - min_stock_level) ASC')->first();
-
-        if (!$item) {
-            return response()->json(['message' => 'No inventory items found.'], 404);
-        }
-
-        $monthsToFetch = 6;
-        $timeline = [];
-        $now = Carbon::now()->startOfMonth();
-        $startMonth = $now->copy()->subMonths($monthsToFetch - 1);
-        
-        for ($i = 0; $i < $monthsToFetch; $i++) {
-            $timeline[] = ['date' => $startMonth->copy()->addMonths($i)];
-        }
-
-        $usageRecords = InvoiceItem::whereHas('invoice', function($q) {
-                $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
+        // 1. Fetch inventories that either have forecasts or are low stock
+        // We prioritize these for the dashboard insights panel.
+        $items = Inventory::with(['latestForecast'])
+            ->leftJoin('inventory_forecasts', function ($join) {
+                $join->on('inventories.id', '=', 'inventory_forecasts.inventory_id')
+                     ->on('inventory_forecasts.id', '=', DB::raw('(SELECT id FROM inventory_forecasts WHERE inventory_id = inventories.id ORDER BY generated_at DESC LIMIT 1)'));
             })
-            ->where('inventory_id', $item->id)
-            ->where('created_at', '>=', $startMonth)
-            ->select(
-                DB::raw('YEAR(created_at) as year'),
-                DB::raw('MONTH(created_at) as month'),
-                DB::raw('SUM(qty) as total_qty')
-            )
-            ->groupBy('year', 'month')
+            ->select('inventories.*')
+            ->orderByRaw('CASE WHEN inventory_forecasts.forecast_status = "Critical" THEN 1 WHEN inventory_forecasts.forecast_status = "Low" THEN 2 ELSE 3 END')
+            ->orderByRaw('(inventories.stock_level - inventories.min_stock_level) ASC')
+            ->limit(10)
             ->get();
 
-        $actualData = [];
-        foreach ($usageRecords as $u) {
-            $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
-            $actualData[$key] = (float) $u->total_qty;
-        }
-
-        $months = [];
-        $usage = [];
-        
-        $xValues = [];
-        $yValues = [];
-
-        foreach ($timeline as $index => $t) {
-            $key = $t['date']->format('Y-m');
-            $months[] = $t['date']->format('M');
+        $forecasts = $items->map(function ($item) {
+            $f = $item->latestForecast;
             
-            $val = $actualData[$key] ?? 0;
-            $usage[] = $val;
-            
-            $xValues[] = $index;
-            $yValues[] = $val;
-        }
+            return [
+                'id' => $item->id,
+                'code' => $item->code,
+                'item_name' => $item->item_name,
+                'current_stock' => (int) $item->stock_level,
+                'min_stock_level' => (int) $item->min_stock_level,
+                'average_daily_usage' => $f ? (float) $f->average_daily_consumption : 0,
+                'days_until_stockout' => $f ? $f->days_until_stockout : null,
+                'predicted_stockout_date' => $f ? ($f->predicted_stockout_date ? $f->predicted_stockout_date->format('Y-m-d') : null) : null,
+                'forecast_status' => $f ? $f->forecast_status : 'Insufficient Data',
+                'predicted_daily_sales' => $f ? (float) $f->predicted_daily_sales : 0,
+                'predicted_weekly_sales' => $f ? (float) $f->predicted_weekly_sales : 0,
+                'predicted_monthly_sales' => $f ? (float) $f->predicted_monthly_sales : 0,
+                'last_forecasted' => $f ? $f->generated_at->diffForHumans() : 'Never',
+                'notes' => $f ? $f->notes : 'No forecast data collected yet.'
+            ];
+        });
 
-        // Simple Linear Regression
-        $n = count($xValues);
-        $sumX = array_sum($xValues);
-        $sumY = array_sum($yValues);
-        $sumXY = 0;
-        $sumX2 = 0;
-        for ($i = 0; $i < $n; $i++) {
-            $sumXY += ($xValues[$i] * $yValues[$i]);
-            $sumX2 += ($xValues[$i] * $xValues[$i]);
-        }
-        $denominator = ($n * $sumX2) - ($sumX * $sumX);
-        $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
-        $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
-
-        $forecast = max(0, round(($m * $n) + $b, 1));
-        $months[] = $now->copy()->addMonths(1)->format('M');
-
-        $growth = 0;
-        if (count($usage) >= 2) {
-            $lastIndex = count($usage) - 1;
-            $prev = $usage[$lastIndex - 1];
-            $curr = $usage[$lastIndex];
-            if ($prev > 0) {
-                $growth = (($curr - $prev) / $prev) * 100;
-            }
-        }
-        $growthLabel = ($growth >= 0 ? '+' : '') . round($growth, 1) . '% vs last month';
-
-        $stockoutWarning = '';
-        if ($item->stock_level < $forecast && $forecast > 0) {
-            $daysLeft = max(1, round(($item->stock_level / $forecast) * 30));
-            $stockoutWarning = " Based on the next month's forecasted usage of {$forecast} units, {$item->item_name} is projected to run out in approximately {$daysLeft} days.";
-        } else {
-            $stockoutWarning = " Current stock level is sufficient to meet the forecasted usage of {$forecast} units for next month.";
-        }
-
-        return response()->json([
-            'item_name' => $item->item_name,
-            'recommended_stock' => $item->min_stock_level * 2,
-            'current_stock' => $item->stock_level,
-            'growth_label' => $growthLabel,
-            'analysis' => "Analyzed the last 6 months of sales data." . $stockoutWarning,
-            'chart_data' => [
-                'months' => $months,
-                'usage' => $usage,
-                'forecast' => $forecast
-            ]
-        ]);
+        return response()->json($forecasts);
     }
 
     /**
@@ -761,5 +712,22 @@ class DashboardController extends Controller
             ],
             'insights' => $aiInsights,
         ]);
+    }
+    public function runForecastSync(): JsonResponse
+    {
+        try {
+            // Trigger the sync command in the background via queue
+            Artisan::queue('app:sync-ai-dataset-forecasts');
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'AI Forecast computation started successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to start AI Forecast: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

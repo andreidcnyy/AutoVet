@@ -21,11 +21,12 @@ class RefreshInventoryForecast implements ShouldQueue
     /**
      * @param array<int> $inventoryIds
      */
-    public function __construct(private array $inventoryIds)
-    {
-        // Dedicated queue so forecast jobs never block normal app jobs.
-        // Run with: php artisan queue:work --queue=forecasting,default
-        $this->onQueue('forecasting');
+    public function __construct(
+        private array $inventoryIds,
+        private string $triggerSource = 'manual'
+    ) {
+        // This job now runs on the 'default' queue for simpler worker management.
+        // You can still scale by running: php artisan queue:work --queue=default
     }
 
     public function handle(InventoryForecastService $forecastService): void
@@ -39,7 +40,8 @@ class RefreshInventoryForecast implements ShouldQueue
             }
 
             try {
-                $forecastService->refreshAndSaveForecast($inventoryId);
+                // Use 365 days for the capstone demo so AI has enough deep pattern history
+                $forecastService->refreshAndSaveForecast($inventoryId, 365, $this->triggerSource);
             } catch (\Throwable $e) {
                 Log::error("[FORECAST FAILED] inventory ID {$inventoryId}: " . $e->getMessage(), [
                     'inventory_id' => $inventoryId,

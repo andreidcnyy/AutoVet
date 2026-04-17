@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\Admin;
+use App\Jobs\RefreshInventoryForecast;
 use App\Traits\HasInternalNotifications;
 
 class InventoryController extends Controller
@@ -21,7 +22,7 @@ class InventoryController extends Controller
 
     public function index()
     {
-        return response()->json(Inventory::with('inventoryCategory')->get());
+        return response()->json(Inventory::with(['inventoryCategory', 'latestForecast'])->get());
     }
 
     public function lowStock(Request $request)
@@ -79,6 +80,9 @@ class InventoryController extends Controller
             );
         }
 
+        // Trigger initial forecast refresh (Part 1.2)
+        RefreshInventoryForecast::dispatch([$item->id], 'manual');
+
         return response()->json($item->load('inventoryCategory'), 201);
     }
 
@@ -135,6 +139,9 @@ class InventoryController extends Controller
                     ['inventory_id' => $inventory->id]
                 );
             }
+
+            // Trigger forecast refresh when stock level changes (Part 1.2)
+            RefreshInventoryForecast::dispatch([$inventory->id], 'stock_update');
         }
 
         return response()->json($inventory->load('inventoryCategory'));

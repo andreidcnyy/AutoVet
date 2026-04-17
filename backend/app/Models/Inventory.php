@@ -56,6 +56,16 @@ class Inventory extends Model
         return $this->belongsTo(InventoryCategory::class, 'inventory_category_id');
     }
 
+    public function forecasts()
+    {
+        return $this->hasMany(InventoryForecast::class);
+    }
+
+    public function latestForecast()
+    {
+        return $this->hasOne(InventoryForecast::class)->latestOfMany('generated_at');
+    }
+
     /**
      * Determine if this inventory item has only its auto-created initial stock transaction.
      */

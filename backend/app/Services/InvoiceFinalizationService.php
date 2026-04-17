@@ -118,21 +118,23 @@ class InvoiceFinalizationService
             );
         });
 
-        // Dispatch forecast refresh outside the transaction to avoid latency impact.
-        // Wrapped in try/catch so a forecasting failure (e.g. Python error in sync mode)
-        // never surfaces as an invoice finalization error.
-        $uniqueIds = array_values(array_unique($affectedInventoryIds));
-        if (!empty($uniqueIds)) {
+        // Collect IDs to refresh even if already deducted, ensuring re-saves can trigger a forecast update.
+        $affectedInventoryIds = array_unique(array_merge(
+            $affectedInventoryIds,
+            $invoice->items->pluck('inventory_id')->filter()->toArray()
+        ));
+
+        if (!empty($affectedInventoryIds)) {
             try {
-                RefreshInventoryForecast::dispatch($uniqueIds);
+                RefreshInventoryForecast::dispatch($affectedInventoryIds, 'invoice_finalization');
                 \Illuminate\Support\Facades\Log::info(
-                    '[FORECAST JOB DISPATCHED] Invoice finalized. Forecast refresh queued.',
-                    ['invoice_id' => $invoice->id, 'inventory_ids' => $uniqueIds]
+                    '[QUEUE DISPATCHED] AI Inventory Forecast Refresh queued on "default" queue.',
+                    ['invoice_number' => $invoice->invoice_number, 'inventory_count' => count($affectedInventoryIds)]
                 );
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error(
-                    '[FORECAST JOB DISPATCH FAILED] Non-fatal. Invoice finalization succeeded.',
-                    ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]
+                    '[QUEUE DISPATCH FAILED] AI Forecast could not be queued.',
+                    ['invoice_number' => $invoice->invoice_number, 'error' => $e->getMessage()]
                 );
             }
         }

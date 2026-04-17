@@ -25,10 +25,8 @@ class ExportInventoryHistory extends Command
         }
 
         $startDate = now()->subDays($days)->toDateString();
+        $today = now()->toDateString();
 
-        // Pull ONLY forecasting-safe source types (retail_sale, service_consumable).
-        // This explicitly excludes any non-sale rows that may have been written
-        // by future code paths, ensuring the Python script receives a clean signal.
         $usageRows = InventoryUsageHistory::forecastingSafe()
             ->where('inventory_id', $inventoryId)
             ->where('usage_date', '>=', $startDate)
@@ -36,12 +34,14 @@ class ExportInventoryHistory extends Command
             ->get(['usage_date', 'quantity_used']);
 
         if ($usageRows->isEmpty()) {
-            $this->info("No usage history found for inventory ID {$inventoryId} in the last {$days} days.");
-            return Command::SUCCESS;
+            $this->info("No usage history found for inventory ID {$inventoryId} in the last {$days} days. Outputting flat curve.");
         }
 
         // Aggregate total quantity used per day
         $dailyUsage = [];
+        $dailyUsage[$today] = 0; // ensure boundary exists
+        $dailyUsage[$startDate] = 0; // ensure boundary exists
+
         foreach ($usageRows as $row) {
             $date = $row->usage_date instanceof \Carbon\Carbon
                 ? $row->usage_date->toDateString()
@@ -51,15 +51,12 @@ class ExportInventoryHistory extends Command
         }
 
         // Reconstruct a running stock-level curve from current stock backwards.
-        // The Python script expects [date, stock_level] pairs (daily snapshot style).
-        // We build the curve by replaying consumption in reverse chronological order,
-        // starting from the current stock level.
         $dates = array_keys($dailyUsage);
         sort($dates);
         $currentStock = (float) $inventory->stock_level;
         $stockCurve = [];
 
-        // Walk backwards from today to the oldest date to derive historical stock levels
+        // Walk backwards from today to the oldest date
         $reverseDates = array_reverse($dates);
         $runningStock = $currentStock;
 
@@ -75,7 +72,7 @@ class ExportInventoryHistory extends Command
         $csvPath = Storage::path($filename);
 
         $file = fopen($csvPath, 'w');
-        fputcsv($file, ['date', 'usage']);
+        fputcsv($file, ['date', 'stock_level']);
 
         foreach ($stockCurve as $date => $stockLevel) {
             fputcsv($file, [$date, $stockLevel]);

@@ -12,7 +12,7 @@ const UNIT_OPTIONS = ["", "piece", "vial", "bottle", "tablet", "pack", "box", "d
 const inventorySchema = z.object({
   inventory_category_id: z.coerce.number().min(1, "Category is required"),
   item_name: z.string().min(1, "Item name is required").max(255),
-  code: z.string().max(100).optional().or(z.literal("")),
+  code: z.string().min(1, "Unique code is required for AI forecasting").max(100),
   stock_level: z.coerce.number().min(0, "Quantity must be 0 or more"),
   unit: z.string().min(1, "Unit is required"),
   min_stock_level: z.coerce.number().min(0, "Alert threshold must be 0 or more"),
@@ -260,14 +260,18 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                            Item Code
+                            Item Code *
                         </label>
                         <input
                             type="text"
                             {...register("code")}
                             className={getInputClass(errors.code)}
-                            placeholder="e.g., MED-001"
+                            placeholder="e.g., MED-001 (Match Dataset Code)"
                         />
+                        <div className="flex items-start gap-1.5 mt-1">
+                            <FiInfo className="mt-0.5 shrink-0 text-zinc-400 h-3 w-3" />
+                            <p className="text-[10px] text-zinc-400">Used for stable AI forecasting mapping.</p>
+                        </div>
                         {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code.message}</p>}
                     </div>
                 </div>

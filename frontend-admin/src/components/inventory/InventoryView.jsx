@@ -69,6 +69,8 @@ function InventoryView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
+  const [updatingIds, setUpdatingIds] = useState(new Set());
+
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -111,28 +113,36 @@ function InventoryView() {
 
   const handleForecast = async () => {
     setIsSimulating(true);
-    setShowAiAside(false);
     
     try {
-      const response = await fetch("/api/dashboard/inventory-forecast", {
+      // 1. Trigger the sync command on the backend
+      const syncResponse = await fetch("/api/dashboard/run-forecast", {
+        method: "POST",
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         }
       });
-      if (!response.ok) throw new Error("Failed to fetch forecast");
-      const data = await response.json();
-      setAiForecastData(data);
       
-      setInventoryRows(prev => prev.map(row => 
-        row.item_name === data.item_name ? { ...row, aiForecastData: data } : row
-      ));
+      if (!syncResponse.ok) throw new Error("Failed to start sync");
       
-      // Simulate analysis delay
-      setTimeout(() => {
+      // 2. Poll/Wait a moment for background processing and refresh inventory
+      // For the demo, we'll wait 2 seconds and then refresh the whole list
+      setTimeout(async () => {
+        const response = await fetch("/api/inventory", {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user.token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setInventoryRows(data);
+          toast.success("AI Forecast computation complete. Insights updated.");
+        }
         setIsSimulating(false);
-        setShowAiAside(true);
-      }, 1500);
+      }, 3000);
+
     } catch (err) {
       toast.error("AI Analysis failed. Please check your data.");
       setIsSimulating(false);
@@ -149,7 +159,61 @@ function InventoryView() {
       prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item))
     );
     setViewedProduct(updatedProduct);
+    
+    // Part 5.1: Track this item as "Updating" for AI Forecast polling
+    setUpdatingIds(prev => new Set(prev).add(updatedProduct.id));
   };
+
+  // Part 5.1: Background Polling for AI Forecast updates
+  useEffect(() => {
+    if (updatingIds.size === 0) return;
+
+    const pollInterval = setInterval(async () => {
+      const idsToPoll = Array.from(updatingIds);
+      try {
+        const response = await fetch("/api/inventory?ids=" + idsToPoll.join(','), {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          }
+        });
+        
+        if (response.ok) {
+          const updatedItems = await response.json();
+          let allFresh = true;
+          
+          setInventoryRows(prev => prev.map(item => {
+            const found = updatedItems.find(ui => ui.id === item.id);
+            if (found) {
+                const oldGen = item.latest_forecast?.generated_at;
+                const newGen = found.latest_forecast?.generated_at;
+                
+                // If generated_at changed, or we have a forecast where we didn't before
+                if (newGen !== oldGen) {
+                    setUpdatingIds(curr => {
+                        const next = new Set(curr);
+                        next.delete(item.id);
+                        return next;
+                    });
+                    return found;
+                }
+                allFresh = false;
+                return item;
+            }
+            return item;
+          }));
+
+          if (allFresh && updatingIds.size > 0) {
+             // If we found all items but none were "fresh" yet, we keep polling
+          }
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [updatingIds, user?.token]);
 
   const handleDeleteProduct = async (product) => {
     if (!window.confirm(`Archive: recoverable within 30 days.\nAre you sure you want to archive ${product.item_name}?`)) return;
@@ -487,18 +551,25 @@ function InventoryView() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {row.aiForecastData?.prediction_status === 'Forecast Available' ? (
+                        {updatingIds.has(row.id) ? (
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 animate-pulse uppercase tracking-wider">
+                            <LuSparkles className="h-3 w-3 animate-spin" />
+                            Refreshing...
+                          </div>
+                        ) : row.latest_forecast ? (
                           <button
-                            onClick={() => { setAiForecastData(row.aiForecastData); setShowAiAside(true); }}
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              row.aiForecastData.days_until_stockout <= 14
-                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
-                                : row.aiForecastData.days_until_stockout <= 30
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            }`}
+                            onClick={() => { setAiForecastData({ ...row.latest_forecast, item_name: row.item_name }); setShowAiAside(true); }}
+                            className={clsx(
+                              "rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider",
+                              row.latest_forecast.forecast_status === 'Critical'
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'
+                                : row.latest_forecast.forecast_status === 'Reorder Soon'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                            )}
                           >
-                            {row.aiForecastData.days_until_stockout}d left
+                            {row.latest_forecast.forecast_status}
+                            <span className="ml-1 opacity-60">({row.latest_forecast.days_until_stockout}d)</span>
                           </button>
                         ) : (
                           <span className="text-xs text-zinc-400 dark:text-zinc-600">—</span>

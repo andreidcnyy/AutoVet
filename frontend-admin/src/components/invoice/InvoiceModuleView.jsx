@@ -657,6 +657,13 @@ function InvoiceModuleView() {
 
       if (finalStatus !== "Draft") {
         setStatus(actualStatus);
+        
+        // Visibility sequence for AI workflow defense
+        setTimeout(() => toast.info("Inventory usage captured."), 800);
+        setTimeout(() => toast.info("AI Forecast refresh triggered..."), 1600);
+        
+        // Broadcast event for dashboard listeners
+        window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
       } else {
         resetForm();
       }
