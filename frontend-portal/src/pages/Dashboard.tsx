@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getPets, getAppointments, getNotifications } from '../api';
+import { getPets, getAppointments, getNotifications, cancelAppointment } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
@@ -55,6 +55,17 @@ export default function Dashboard() {
   const handleDetailsClick = (appt: any) => {
     setSelectedAppointment(appt);
     setIsDetailsOpen(true);
+  };
+
+  const handleCancel = async (id: number) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+    try {
+      await cancelAppointment(id);
+      fetchData();
+      setIsDetailsOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to cancel appointment.");
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading your dashboard...</div>;
@@ -318,6 +329,15 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
+
+                {selectedAppointment.status === 'pending' && (
+                  <button 
+                    onClick={() => handleCancel(selectedAppointment.id)}
+                    className="w-full h-14 rounded-2xl border-2 border-rose-100 text-rose-600 font-bold uppercase tracking-widest hover:bg-rose-50 transition-all mb-3 flex items-center justify-center gap-2"
+                  >
+                    <FiXCircle className="w-5 h-5" /> Cancel Appointment
+                  </button>
+                )}
 
                 <button 
                   onClick={() => setIsDetailsOpen(false)}

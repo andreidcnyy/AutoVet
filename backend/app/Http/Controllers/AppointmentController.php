@@ -157,17 +157,17 @@ class AppointmentController extends Controller
 
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
-            'date' => 'required|date',
-            'time' => 'required|date_format:H:i',
+            'date' => 'sometimes|required|date',
+            'time' => 'sometimes|required|date_format:H:i',
             'category' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
             'status' => 'nullable|string|in:pending,completed,cancelled',
-            'pet_id' => 'required|exists:pets,id',
-            'service_id' => 'required|exists:services,id',
+            'pet_id' => 'sometimes|required|exists:pets,id',
+            'service_id' => 'sometimes|required|exists:services,id',
             'vet_id' => 'nullable|exists:admins,id',
         ]);
 
-        if (!empty($validated['vet_id'])) {
+        if (!empty($validated['vet_id']) && !empty($validated['date']) && !empty($validated['time'])) {
             $dayOfWeek = date('l', strtotime($validated['date']));
             $schedule = VetSchedule::where('user_id', $validated['vet_id'])
                             ->where('day_of_week', $dayOfWeek)
@@ -212,16 +212,18 @@ class AppointmentController extends Controller
         }
 
         // Check for double booking for this pet
-        $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
-                                            ->where('date', $validated['date'])
-                                            ->where('time', $validated['time'])
-                                            ->where('id', '!=', $appointment->id)
-                                            ->first();
-        if ($existingPetAppointment) {
-            return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
+        if (!empty($validated['pet_id']) && !empty($validated['date']) && !empty($validated['time'])) {
+            $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
+                                                ->where('date', $validated['date'])
+                                                ->where('time', $validated['time'])
+                                                ->where('id', '!=', $appointment->id)
+                                                ->first();
+            if ($existingPetAppointment) {
+                return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
+            }
         }
 
-        if (empty($validated['title'])) {
+        if (!empty($validated['service_id']) && empty($validated['title'])) {
             $service = \App\Models\Service::find($validated['service_id']);
             $validated['title'] = $service ? $service->name : 'General Consultation';
         }
