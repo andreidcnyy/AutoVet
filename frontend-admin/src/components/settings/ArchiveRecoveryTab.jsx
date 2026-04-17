@@ -10,7 +10,6 @@ const ARCHIVE_TYPES = [
   { id: "services", label: "Services" },
   { id: "inventories", label: "Inventory" },
   { id: "admins", label: "Users" },
-  { id: "cms", label: "CMS Content" },
 ];
 
 export default function ArchiveRecoveryTab() {
