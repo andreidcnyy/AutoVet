@@ -16,7 +16,7 @@ class ExportInventoryHistory extends Command
     public function handle(): int
     {
         $inventoryId = (int) $this->argument('inventory_id');
-        $days        = (int) $this->option('days');
+        $days = (int) $this->option('days');
 
         $inventory = Inventory::find($inventoryId);
         if (!$inventory) {
@@ -75,7 +75,7 @@ class ExportInventoryHistory extends Command
         $csvPath  = Storage::path($filename);
 
         $file = fopen($csvPath, 'w');
-        fputcsv($file, ['date', 'stock_level']);
+        fputcsv($file, ['date', 'usage']);
 
         foreach ($stockCurve as $date => $stockLevel) {
             fputcsv($file, [$date, $stockLevel]);

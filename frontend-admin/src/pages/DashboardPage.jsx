@@ -3,6 +3,10 @@ import InventoryAiStatusCard from "../components/dashboard/InventoryAiStatusCard
 import MetricCard from "../components/dashboard/MetricCard";
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import AiSalesForecastCard from "../components/dashboard/AiSalesForecastCard";
+import AiAppointmentIntelligence from "../components/dashboard/AiAppointmentIntelligence";
+import AiInsightPanels from "../components/dashboard/AiInsightPanels";
+import InventoryChartCard from "../components/dashboard/InventoryChartCard";
+import ErrorBoundary from "../components/ErrorBoundary";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { useAuth } from "../context/AuthContext";
@@ -71,18 +75,28 @@ function DashboardPage() {
           {apiStatus.message}
         </div>
       )}
+      
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">
         {metrics.map((card) => (
-          <MetricCard key={card.id} card={card} />
+          <MetricCard key={card.id || card.title} card={card} />
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8 space-y-6">
-          {!isStaff && <AiSalesForecastCard />}
-          <InventoryAiStatusCard />
+      <section className="grid grid-cols-1 gap-6 2xl:grid-cols-[2fr_1fr]">
+        <div className="space-y-6">
+          {!isStaff && (
+            <ErrorBoundary label="Sales Forecast">
+              <AiSalesForecastCard />
+            </ErrorBoundary>
+          )}
+          <ErrorBoundary label="Inventory Consumption">
+            <InventoryChartCard />
+          </ErrorBoundary>
+          <ErrorBoundary label="Inventory AI Status">
+            <InventoryAiStatusCard />
+          </ErrorBoundary>
         </div>
-        <div className="lg:col-span-4 space-y-6">
+        <div className="space-y-6">
           <RecentNotificationsCard 
             items={mappedNotifications} 
             onMarkAllRead={markAllAsRead}
