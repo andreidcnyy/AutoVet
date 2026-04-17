@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
-import { ROLES } from "../../constants/roles";
+import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 
 const statusStyles = {
   "Low Stock": "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
@@ -25,7 +25,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [historyDays, setHistoryDays] = useState(30); // Selection for forecast history range
 
   const { user } = useAuth();
-  const isAdmin = user?.role === ROLES.ADMIN;
+  const isAdmin = VET_AND_ADMIN.includes(user?.role);
 
   useEffect(() => {
     if (isOpen && product) {

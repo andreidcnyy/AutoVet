@@ -8,7 +8,7 @@ import {
   primaryNavigation,
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
-import { ROLES } from "../constants/roles";
+import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 
 function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -51,7 +51,7 @@ function AppLayout() {
 
   // Redundant loading/user check removed as ProtectedRoute guards the entire layout.
 
-  if (isMaintenance && user?.role !== ROLES.ADMIN) {
+  if (isMaintenance && !VET_AND_ADMIN.includes(user?.role)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-6 text-center dark:bg-dark-bg">
         <div className="mb-4 rounded-full bg-amber-100 p-4 dark:bg-amber-900/30">

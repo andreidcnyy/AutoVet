@@ -1,6 +1,8 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase } from "react-icons/fi";
+import { useAuth } from "../../context/AuthContext";
+import { ROLES, ADMIN_ONLY, VET_AND_ADMIN, ALL_ROLES } from "../../constants/roles";
 
 import ClinicProfileTab from "./ClinicProfileTab";
 import UserManagementTab from "./UserManagementTab";
@@ -16,28 +18,35 @@ import VetScheduleTab from "./VetScheduleTab";
 import NotificationTemplatesManager from "../notifications/NotificationTemplatesManager";
 
 const tabs = [
-  { id: "clinic", label: "Clinic Profile", icon: FiHome },
-  { id: "data", label: "Master Data", icon: FiSettings },
-  { id: "services", label: "Service Management", icon: FiBriefcase },
-  { id: "species", label: "Species & Breeds", icon: FiHome },
-  { id: "users", label: "Users / Roles", icon: FiUsers },
-  { id: "schedule", label: "Vet Schedule", icon: FiBriefcase },
-  { id: "system", label: "System & AI Preferences", icon: FiSettings },
-  { id: "audit", label: "System Audit Logs", icon: FiActivity },
-  { id: "backup", label: "Backup & Restore", icon: FiDatabase },
-  { id: "archive", label: "Archive & Recovery", icon: FiArchive },
-  { id: "client_notifications", label: "Notification Templates", icon: FiSettings },
+  { id: "clinic", label: "Clinic Profile", icon: FiHome, allowedRoles: VET_AND_ADMIN },
+  { id: "data", label: "Master Data", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
+  { id: "services", label: "Service Management", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
+  { id: "species", label: "Species & Breeds", icon: FiHome, allowedRoles: VET_AND_ADMIN },
+  { id: "users", label: "Users / Roles", icon: FiUsers, allowedRoles: VET_AND_ADMIN },
+  { id: "schedule", label: "Vet Schedule", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
+  { id: "system", label: "System & AI Preferences", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
+  { id: "audit", label: "System Audit Logs", icon: FiActivity, allowedRoles: VET_AND_ADMIN },
+  { id: "backup", label: "Backup & Restore", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
+  { id: "archive", label: "Archive & Recovery", icon: FiArchive, allowedRoles: VET_AND_ADMIN },
+  { id: "client_notifications", label: "Notification Templates", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
 ];
 
 function Settings() {
-  const [activeTab, setActiveTab] = useState("data");
+  const { user } = useAuth();
+  
+  const filteredTabs = useMemo(() => {
+    if (!user?.role) return [];
+    return tabs.filter(tab => tab.allowedRoles.includes(user.role));
+  }, [user]);
+
+  const [activeTab, setActiveTab] = useState(filteredTabs[0]?.id || "data");
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
       <aside className="sticky top-24 h-fit space-y-4">
         <div className="card-shell p-2">
           <nav className="space-y-1">
-            {tabs.map((tab) => {
+            {filteredTabs.map((tab) => {
               const Icon = tab.icon;
               const active = tab.id === activeTab;
               return (

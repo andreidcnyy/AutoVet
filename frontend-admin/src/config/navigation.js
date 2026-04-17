@@ -7,7 +7,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
-import { ROLES, ALL_ROLES, ADMIN_ONLY } from "../constants/roles";
+import { ROLES, ALL_ROLES, ADMIN_ONLY, VET_AND_ADMIN } from "../constants/roles";
 import logo from "../assets/logo.png";
 
 export const primaryNavigation = [
@@ -19,7 +19,7 @@ export const primaryNavigation = [
 ];
 
 export const bottomNavigation = [
-  { id: "maintenance", label: "Maintenance", path: "/settings", icon: FiSettings, allowedRoles: ADMIN_ONLY },
+  { id: "maintenance", label: "Maintenance", path: "/settings", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
 ];
 
 export const clinicInfo = {

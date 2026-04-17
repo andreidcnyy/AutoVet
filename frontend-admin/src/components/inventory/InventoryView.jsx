@@ -17,7 +17,7 @@ import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 import { useAuth } from "../../context/AuthContext";
-import { ROLES } from "../../constants/roles";
+import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 
 const categoryIcons = {
   Medicines: LuPill,
@@ -75,7 +75,7 @@ function InventoryView() {
   const itemsPerPage = 5;
 
   const { user } = useAuth();
-  const isAdmin = user?.role === ROLES.ADMIN;
+  const isAdmin = VET_AND_ADMIN.includes(user?.role);
 
   useEffect(() => {
     const fetchInventory = async () => {

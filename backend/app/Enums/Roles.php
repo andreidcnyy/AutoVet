@@ -20,7 +20,7 @@ enum Roles: string
      */
     public static function adminRoles(): array
     {
-        return [self::ADMIN->value];
+        return [self::ADMIN->value, self::VETERINARIAN->value];
     }
 
     /**
