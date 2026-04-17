@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getInvoices, getPets, getSettings } from '../api';
 import { 
-  FiDollarSign, 
+  FiCreditCard, 
   FiFileText, 
   FiArrowLeft,
   FiFilter,

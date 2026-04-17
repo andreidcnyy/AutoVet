@@ -4,7 +4,7 @@ import {
   FiX,
   FiCalendar, 
   FiFileText, 
-  FiDollarSign, 
+  FiCreditCard, 
   FiActivity,
   FiInfo,
   FiUser,
@@ -60,7 +60,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical History', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiDollarSign },
+    { id: 'invoices', label: 'Billing', icon: FiCreditCard },
   ];
 
   return (
@@ -261,7 +261,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                         <div key={invoice.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
                            <div className="flex items-center gap-4">
                               <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
-                                 <FiDollarSign className="w-6 h-6" />
+                                 <FiCreditCard className="w-6 h-6" />
                               </div>
                               <div>
                                  <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
