@@ -131,6 +131,9 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::create($validated);
 
+        // Broadcast appointment creation
+        event(new \App\Events\AppointmentCreated($appointment));
+
         // Create internal notification for admins
         $this->createInternalNotification(
             'AppointmentPending',

@@ -18,7 +18,7 @@ trait HasInternalNotifications
      */
     protected function createInternalNotification(string $type, string $title, string $message, array $data = null, int $userId = null)
     {
-        return Notification::create([
+        $notification = Notification::create([
             'type' => $type,
             'title' => $title,
             'message' => $message,
@@ -26,5 +26,10 @@ trait HasInternalNotifications
             'user_id' => $userId,
             'read_at' => null,
         ]);
+
+        // Broadcast notification creation
+        event(new \App\Events\NotificationCreated($notification));
+
+        return $notification;
     }
 }

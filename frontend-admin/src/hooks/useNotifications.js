@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import echo from '../utils/echo';
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -9,6 +10,24 @@ export function useNotifications() {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const toast = useToast();
+
+  const handleNewNotification = useCallback((notification) => {
+    setNotifications(prev => [notification, ...prev]);
+    setUnreadCount(prev => prev + 1);
+
+    if (notification.type === 'AiForecastUpdate' && toast.aiForecast) {
+        let parsedData = {};
+        try {
+            parsedData = typeof notification.data === 'string' ? JSON.parse(notification.data) : (notification.data || {});
+        } catch (e) {
+             // ignore
+        }
+        toast.aiForecast(parsedData);
+    } else {
+        toast.info(notification.message, { title: notification.title });
+    }
+    prevNotificationIds.current.add(notification.id);
+  }, [toast]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.token) return;
@@ -25,22 +44,7 @@ export function useNotifications() {
         const data = await res.json();
         setNotifications(data);
         setUnreadCount(data.length);
-
-        // Check for new AiForecastUpdate notifications
-        data.forEach(notification => {
-            if (!prevNotificationIds.current.has(notification.id)) {
-                if (notification.type === 'AiForecastUpdate' && toast.aiForecast) {
-                    let parsedData = {};
-                    try {
-                        parsedData = typeof notification.data === 'string' ? JSON.parse(notification.data) : (notification.data || {});
-                    } catch (e) {
-                         // ignore
-                    }
-                    toast.aiForecast(parsedData);
-                }
-                prevNotificationIds.current.add(notification.id);
-            }
-        });
+        data.forEach(n => prevNotificationIds.current.add(n.id));
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -48,6 +52,29 @@ export function useNotifications() {
       setIsLoading(false);
     }
   }, [user?.token]);
+
+  useEffect(() => {
+    fetchNotifications();
+
+    if (user?.token) {
+        const channel = echo.private('admin.notifications')
+            .listen('.notification.created', (e) => {
+                handleNewNotification(e.notification);
+            });
+
+        if (user.id) {
+            echo.private(`notifications.${user.id}`)
+                .listen('.notification.created', (e) => {
+                    handleNewNotification(e.notification);
+                });
+        }
+
+        return () => {
+            echo.leave('admin.notifications');
+            if (user.id) echo.leave(`notifications.${user.id}`);
+        };
+    }
+  }, [user?.token, user?.id, fetchNotifications, handleNewNotification]);
 
   const markAllAsRead = async () => {
     if (!user?.token) return;

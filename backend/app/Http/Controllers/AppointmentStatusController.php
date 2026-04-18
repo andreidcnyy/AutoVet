@@ -25,6 +25,9 @@ class AppointmentStatusController extends Controller
         $appointment->status = 'approved';
         $appointment->save();
 
+        // Broadcast status update
+        event(new \App\Events\AppointmentStatusUpdated($appointment));
+
         // Internal admin notification
         $this->createInternalNotification(
             'AppointmentApproved',
@@ -58,6 +61,9 @@ class AppointmentStatusController extends Controller
     {
         $appointment->status = 'declined';
         $appointment->save();
+
+        // Broadcast status update
+        event(new \App\Events\AppointmentStatusUpdated($appointment));
 
         // Internal admin notification
         $this->createInternalNotification(

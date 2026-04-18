@@ -2,27 +2,26 @@
 
 namespace App\Events;
 
+use App\Models\Notification;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Inventory;
 
-class LowStockDetected implements ShouldBroadcast
+class NotificationCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $inventoryItem;
+    public $notification;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Inventory $inventoryItem)
+    public function __construct(Notification $notification)
     {
-        $this->inventoryItem = $inventoryItem;
+        $this->notification = $notification;
     }
 
     /**
@@ -32,8 +31,16 @@ class LowStockDetected implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
+        if ($this->notification->user_id) {
+            // Specific user notification
+            return [
+                new PrivateChannel('notifications.' . $this->notification->user_id),
+            ];
+        }
+
+        // General admin notification channel
         return [
-            new PrivateChannel('admin.inventory'),
+            new PrivateChannel('admin.notifications'),
         ];
     }
 
@@ -42,6 +49,6 @@ class LowStockDetected implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'inventory.low_stock';
+        return 'notification.created';
     }
 }

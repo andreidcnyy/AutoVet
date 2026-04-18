@@ -65,6 +65,9 @@ class InvoiceFinalizationService
                     $inventoryItem->stock_level -= $item->qty;
                     $inventoryItem->save();
 
+                    // Broadcast inventory update
+                    event(new \App\Events\InventoryUpdated($inventoryItem));
+
                     // Log the transaction
                     InventoryTransaction::create([
                         'inventory_id' => $inventoryItem->id,

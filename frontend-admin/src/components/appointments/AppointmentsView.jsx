@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 import {
   FiPlusCircle,
   FiClock,
@@ -209,7 +210,25 @@ function AppointmentsView() {
       .then(res => res.json())
       .then(data => setAiForecast(data))
       .catch(() => { });
-  }, [user?.token]);
+
+    // Real-time listeners
+    const channel = echo.private('admin.appointments')
+      .listen('.appointment.created', (e) => {
+        setAppointments(prev => [e.appointment, ...prev]);
+        toast.info(`New Appointment: ${e.appointment.pet?.name || 'Unknown Pet'}`);
+      })
+      .listen('.appointment.status.updated', (e) => {
+        setAppointments(prev => prev.map(a => a.id === e.appointment.id ? e.appointment : a));
+        if (selectedAppointment?.id === e.appointment.id) {
+          setSelectedAppointment(e.appointment);
+        }
+        toast.info(`Appointment Updated: ${e.appointment.pet?.name} is now ${e.appointment.status}`);
+      });
+
+    return () => {
+      echo.leave('admin.appointments');
+    };
+  }, [user?.token, selectedAppointment?.id, toast]);
 
   const handleReviewHints = () => {
     if (aiForecast) {

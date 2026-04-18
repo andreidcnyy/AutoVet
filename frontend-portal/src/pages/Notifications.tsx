@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getNotifications, markNotificationAsRead } from '../api';
+import echo from '../utils/echo';
 import { 
   FiBell, 
   FiCheck, 
@@ -29,6 +30,21 @@ export default function Notifications() {
 
   useEffect(() => {
     fetchNotifications();
+
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.id) {
+            const channel = echo.private(`notifications.${user.id}`)
+                .listen('.notification.created', (e: any) => {
+                    setNotifications(prev => [e.notification, ...prev]);
+                });
+
+            return () => {
+                echo.leave(`notifications.${user.id}`);
+            };
+        }
+    }
   }, []);
 
   const handleMarkRead = async (id: number) => {

@@ -1,6 +1,7 @@
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../../context/ToastContext";
+import echo from "../../utils/echo";
 import {
   FiAlertTriangle,
   FiBarChart2,
@@ -104,7 +105,22 @@ function InventoryView() {
       }
     };
     fetchInventory();
-  }, [user?.token]);
+
+    // Real-time listener
+    const channel = echo.private('admin.inventory')
+      .listen('.inventory.updated', (e) => {
+        setInventoryRows(prev => prev.map(item => item.id === e.inventory.id ? { ...item, ...e.inventory } : item));
+        toast.info(`Inventory Updated: ${e.inventory.item_name} stock is now ${e.inventory.stock_level}`);
+      })
+      .listen('.inventory.low_stock', (e) => {
+        setInventoryRows(prev => prev.map(item => item.id === e.inventoryItem.id ? { ...item, ...e.inventoryItem } : item));
+        toast.warning(`Low Stock Alert: ${e.inventoryItem.item_name} is running low!`);
+      });
+
+    return () => {
+      echo.leave('admin.inventory');
+    };
+  }, [user?.token, toast]);
 
   // Reset to page 1 when filter changes
   useEffect(() => {

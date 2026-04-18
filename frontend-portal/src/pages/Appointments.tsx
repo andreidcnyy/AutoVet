@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAppointments, cancelAppointment } from '../api';
+import echo from '../utils/echo';
 import { 
   FiCalendar, 
   FiClock, 
@@ -55,7 +56,22 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchAppointments();
-  }, []);
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.id) {
+        const channel = echo.private(`client.appointments.${user.id}`)
+            .listen('.appointment.status.updated', (e: any) => {
+                setAppointments(prev => prev.map(a => a.id === e.appointment.id ? e.appointment : a));
+                if (selectedAppointment?.id === e.appointment.id) {
+                    setSelectedAppointment(e.appointment);
+                }
+            });
+
+        return () => {
+            echo.leave(`client.appointments.${user.id}`);
+        };
+    }
+  }, [selectedAppointment?.id]);
 
   const handleCancel = async (id: number) => {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
