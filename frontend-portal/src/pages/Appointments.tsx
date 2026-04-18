@@ -71,7 +71,7 @@ export default function Appointments() {
             echo.leave(`client.appointments.${user.id}`);
         };
     }
-  }, [selectedAppointment?.id]);
+  }, []);
 
   const handleCancel = async (id: number) => {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;

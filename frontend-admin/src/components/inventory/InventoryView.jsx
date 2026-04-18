@@ -120,7 +120,7 @@ function InventoryView() {
     return () => {
       echo.leave('admin.inventory');
     };
-  }, [user?.token, toast]);
+  }, [user?.token]);
 
   // Reset to page 1 when filter changes
   useEffect(() => {

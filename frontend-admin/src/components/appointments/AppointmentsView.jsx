@@ -167,49 +167,23 @@ function AppointmentsView() {
       "Authorization": `Bearer ${user.token}`
     };
 
-    fetch("/api/owners", { headers })
-      .then((res) => res.json())
-      .then((data) => setOwners(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching owners:", err));
-
-    fetch("/api/pets", { headers })
-      .then((res) => res.json())
-      .then((data) => setPets(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching pets:", err));
-
-    fetch("/api/services", { headers })
-      .then((res) => res.json())
-      .then((data) => setServices(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching services:", err));
-
-    fetch("/api/vets", { headers })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setVets(data);
-        } else {
-          setVets([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching vets:", err);
-        setVets([]);
-      });
-
-    fetch("/api/settings", { headers })
-      .then(res => res.json())
-      .then(data => {
-        const inv = data.inventory_categories ? JSON.parse(data.inventory_categories) : [];
-        const svc = data.service_categories ? JSON.parse(data.service_categories) : [];
-        setCategories([...new Set([...inv, ...svc])]);
-      })
-      .catch(() => setCategories([]));
-
-    // Fetch initial AI forecast
-    fetch("/api/dashboard/appointment-forecast", { headers })
-      .then(res => res.json())
-      .then(data => setAiForecast(data))
-      .catch(() => { });
+    Promise.all([
+      fetch("/api/owners", { headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/pets", { headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/services", { headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/vets", { headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/settings", { headers }).then(r => r.json()).catch(() => ({})),
+      fetch("/api/dashboard/appointment-forecast", { headers }).then(r => r.json()).catch(() => null),
+    ]).then(([ownersData, petsData, servicesData, vetsData, settingsData, forecastData]) => {
+      setOwners(Array.isArray(ownersData) ? ownersData : []);
+      setPets(Array.isArray(petsData) ? petsData : []);
+      setServices(Array.isArray(servicesData) ? servicesData : []);
+      setVets(Array.isArray(vetsData) ? vetsData : []);
+      const inv = settingsData.inventory_categories ? JSON.parse(settingsData.inventory_categories) : [];
+      const svc = settingsData.service_categories ? JSON.parse(settingsData.service_categories) : [];
+      setCategories([...new Set([...inv, ...svc])]);
+      if (forecastData) setAiForecast(forecastData);
+    });
 
     // Real-time listeners
     const channel = echo.private('admin.appointments')
@@ -228,7 +202,7 @@ function AppointmentsView() {
     return () => {
       echo.leave('admin.appointments');
     };
-  }, [user?.token, selectedAppointment?.id, toast]);
+  }, [user?.token]);
 
   const handleReviewHints = () => {
     if (aiForecast) {
