@@ -14,13 +14,18 @@ function createPath(points) {
     .join(" ");
 }
 
-function InventoryChartCard() {
+function InventoryChartCard({ initialData }) {
   const [activeRange, setActiveRange] = useState("6 Months");
-  const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [source, setSource] = useState("live");
+  const [data, setData] = useState(initialData?.data || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
+  const [source, setSource] = useState(initialData?.prediction_source || "live");
 
   useEffect(() => {
+    // Skip fetch if we have initialData and it's for the default range
+    if (initialData && activeRange === "6 Months") {
+      return;
+    }
+
     setIsLoading(true);
     fetch(`/api/dashboard/inventory-consumption?range=${activeRange}`)
       .then(res => res.json())

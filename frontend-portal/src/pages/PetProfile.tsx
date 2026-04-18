@@ -82,7 +82,7 @@ function PetProfile() {
         <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
           <div className="w-32 h-32 rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-dark-border shadow-xl flex items-center justify-center overflow-hidden">
              {pet.photo ? (
-               <img src={`/storage/${pet.photo}`} alt={pet.name} className="w-full h-full object-cover" />
+               <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
              ) : (
                <LuPawPrint className="w-12 h-12 text-zinc-300" />
              )}

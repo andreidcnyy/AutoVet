@@ -84,6 +84,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // Dashboard & Metrics
     // -----------------------------------------------------------------------
+    Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
+    Route::get('/portal/overview',                 [DashboardController::class, 'getPortalOverview']);
     Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
     Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
     Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markNotificationsRead']);

@@ -94,6 +94,7 @@ class DashboardMockSeeder extends Seeder
                 [
                     'inventory_category_id' => $medCategory->id ?? 1,
                     'sku' => 'MED-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
+                    'code' => 'MED-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
                     'stock_level' => rand(5, 50),
                     'min_stock_level' => 10,
                     'price' => rand(50, 200),

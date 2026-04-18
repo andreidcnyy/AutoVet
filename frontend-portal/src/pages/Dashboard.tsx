@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPets, getAppointments, getNotifications, cancelAppointment } from '../api';
+import { getPortalOverview, cancelAppointment } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
@@ -26,16 +26,14 @@ export default function Dashboard() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const fetchData = () => {
-    Promise.all([
-      getPets(), 
-      getAppointments({ upcoming: true }), 
-      getNotifications()
-    ])
-      .then(([petsRes, apptsRes, notifRes]) => {
-        // Handle both direct array and paginated response { data: [] }
-        const petsData = Array.isArray(petsRes.data) ? petsRes.data : petsRes.data.data || [];
-        const apptsData = Array.isArray(apptsRes.data) ? apptsRes.data : apptsRes.data.data || [];
-        const notifData = Array.isArray(notifRes.data) ? notifRes.data : notifRes.data.data || [];
+    getPortalOverview()
+      .then((res: any) => {
+        const data = res.data;
+        
+        // Handle pets (re-use existing logic for data extraction)
+        const petsData = Array.isArray(data.pets) ? data.pets : data.pets.data || [];
+        const apptsData = Array.isArray(data.appointments) ? data.appointments : data.appointments.data || [];
+        const notifData = Array.isArray(data.notifications) ? data.notifications : data.notifications.data || [];
 
         setPets(petsData);
         setAppointments(apptsData);

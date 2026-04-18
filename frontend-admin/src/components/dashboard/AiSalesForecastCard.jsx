@@ -16,21 +16,26 @@ function createPath(points) {
         .join(" ");
 }
 
-function AiSalesForecastCard() {
+function AiSalesForecastCard({ initialData }) {
     const { user } = useAuth();
     const [activeRange, setActiveRange] = useState("6 Months");
-    const [data, setData] = useState([]);
-    const [model, setModel] = useState(null);
-    const [insights, setInsights] = useState([]);
-    const [isDataset, setIsDataset] = useState(false);
-    const [predictionSource, setPredictionSource] = useState("live");
-    const [isLoading, setIsLoading] = useState(true);
+    const [data, setData] = useState(initialData?.data || []);
+    const [model, setModel] = useState(initialData?.model || null);
+    const [insights, setInsights] = useState(initialData?.insights || []);
+    const [isDataset, setIsDataset] = useState(!!initialData?.is_dataset_prediction);
+    const [predictionSource, setPredictionSource] = useState(initialData?.prediction_source || "live");
+    const [isLoading, setIsLoading] = useState(!initialData);
 
     // Planning Mode States
     const [isPlanningMode, setIsPlanningMode] = useState(false);
     const [demandAdjustment, setDemandAdjustment] = useState(0); // Percentage change
 
     useEffect(() => {
+        // Skip fetch if we have initialData and it's for the default range
+        if (initialData && activeRange === "6 Months") {
+            return;
+        }
+
         setIsLoading(true);
         fetch(`/api/dashboard/sales-forecast?range=${activeRange}`, {
             headers: {

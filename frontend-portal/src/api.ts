@@ -27,8 +27,12 @@ export const logout = () => api.post('/logout');
 export const forgotPassword = (email: string) => api.post('/password/forgot', { email });
 export const resetPassword = (data: any) => api.post('/password/reset', data);
 
+// Dashboard
+export const getPortalOverview = () => api.get('/portal/overview');
+
 // Pets
 export const getPets = (params?: any) => api.get('/pets', { params });
+export const getPet = (id: number) => api.get(`/pets/${id}`);
 export const createPet = (data: any) => api.post('/pets', data);
 export const updatePet = (id: number, data: any) => api.put(`/pets/${id}`, data);
 export const getSpecies = () => api.get('/species?per_page=100');
@@ -56,9 +60,6 @@ export const getInvoice = (id: number) => api.get(`/invoice/${id}`);
 // Notifications
 export const getNotifications = (params?: any) => api.get('/notifications', { params });
 export const markNotificationAsRead = (id: number) => api.put(`/notifications/${id}`, { is_read: true });
-
-// Pet Details
-export const getPet = (id: number) => api.get(`/pets/${id}`);
 
 // Profile
 export const getProfile = () => api.get('/profile');

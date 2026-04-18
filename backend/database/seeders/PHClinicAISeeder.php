@@ -45,6 +45,7 @@ class PHClinicAISeeder extends Seeder
             [
                 'item_name' => 'Parvo Vaccine (AI Sample)',
                 'inventory_category_id' => $medCategory->id,
+                'code' => 'VAC-PARVO-AI',
                 'stock_level' => 500,
                 'min_stock_level' => 100,
                 'price' => 450,

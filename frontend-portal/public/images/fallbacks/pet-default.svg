@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pet">
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="#f0f4f8"/>
+  <!-- Paw print — large central pad -->
+  <ellipse cx="50" cy="60" rx="18" ry="15" fill="#8b9dc0"/>
+  <!-- Toe pads -->
+  <ellipse cx="32" cy="42" rx="8" ry="9" fill="#8b9dc0"/>
+  <ellipse cx="50" cy="37" rx="8" ry="9" fill="#8b9dc0"/>
+  <ellipse cx="68" cy="42" rx="8" ry="9" fill="#8b9dc0"/>
+  <!-- Inner pad details -->
+  <ellipse cx="50" cy="62" rx="10" ry="8" fill="#6a7db0"/>
+</svg>

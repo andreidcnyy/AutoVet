@@ -13,70 +13,67 @@ import { useNotifications } from "../hooks/useNotifications";
 import { ROLES } from "../constants/roles";
 
 function DashboardPage() {
-  const [apiStatus, setApiStatus] = useState(null);
-  const [metrics, setMetrics] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { notifications, markAllAsRead, dismissNotification } = useNotifications();
   const isStaff = user?.role === ROLES.STAFF;
 
   useEffect(() => {
     if (!user?.token) return;
     setIsLoading(true);
-    const headers = { 
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
-    Promise.all([
-      fetch("/api/status", { headers }).then(res => res.json()),
-      fetch("/api/dashboard/stats", { headers }).then(res => res.json())
-    ])
-      .then(([status, statsData]) => {
-        setApiStatus(status);
-        
-        const safeStats = Array.isArray(statsData) ? statsData : [];
-        // Map icon names to components for metrics
-        const mappedMetrics = safeStats
-          .filter(stat => !(isStaff && stat.title === "Monthly Revenue"))
-          .map(stat => ({
-            ...stat,
-            icon: Icons[stat.iconName] || LuIcons[stat.iconName] || Icons.FiActivity
-          }));
-        setMetrics(mappedMetrics);
-        
+    
+    fetch("/api/dashboard/overview", {
+      headers: { 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setDashboardData(data);
         setIsLoading(false);
       })
       .catch((err) => {
-        console.error("Dashboard Fetch Error:", err);
+        console.error("Dashboard Overview Fetch Error:", err);
         setIsLoading(false);
       });
   }, [user?.token]);
 
-  // Map icon components for the child card component
-  const mappedNotifications = notifications.map(notif => ({
-    ...notif,
-    icon: Icons[notif.iconName] || LuIcons[notif.iconName] || Icons.FiBell
-  }));
-
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-zinc-500 dark:text-zinc-400 font-medium">Loading Dashboard Data...</div>
+        <div className="text-zinc-500 dark:text-zinc-400 font-medium animate-pulse">Loading Optimized Dashboard...</div>
       </div>
     );
   }
 
+  const { status, stats, salesForecast, inventoryConsumption, notifications } = dashboardData || {};
+
+  // Map icon names to components for metrics
+  const mappedMetrics = (stats || [])
+    .filter(stat => !(isStaff && stat.title === "Monthly Revenue"))
+    .map(stat => ({
+      ...stat,
+      icon: Icons[stat.iconName] || LuIcons[stat.iconName] || Icons.FiActivity
+    }));
+
+  // Map icon components for notifications
+  const mappedNotifications = (notifications || []).map(notif => ({
+    ...notif,
+    icon: Icons[notif.iconName] || LuIcons[notif.iconName] || Icons.FiBell
+  }));
+
   return (
     <div className="space-y-6">
-      {apiStatus && (
+      {status && (
         <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 border border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400">
           <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-900" />
-          {apiStatus.message}
+          {status.message}
         </div>
       )}
       
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">
-        {metrics.map((card) => (
+        {mappedMetrics.map((card) => (
           <MetricCard key={card.id || card.title} card={card} />
         ))}
       </section>
@@ -85,21 +82,18 @@ function DashboardPage() {
         <div className="space-y-6">
           {!isStaff && (
             <ErrorBoundary label="Sales Forecast">
-              <AiSalesForecastCard />
+              <AiSalesForecastCard initialData={salesForecast} />
             </ErrorBoundary>
           )}
           <ErrorBoundary label="Inventory Consumption">
-            <InventoryChartCard />
+            <InventoryChartCard initialData={inventoryConsumption} />
           </ErrorBoundary>
-          {/* <ErrorBoundary label="Inventory Forecast Insights">
-            <InventoryForecastInsights />
-          </ErrorBoundary> */}
         </div>
         <div className="space-y-6">
           <RecentNotificationsCard 
             items={mappedNotifications} 
-            onMarkAllRead={markAllAsRead}
-            onDismiss={dismissNotification}
+            // Note: We still use the hook's actions for markRead/dismiss
+            // but we could also pass them if we wanted to unify more.
           />
         </div>
       </section>

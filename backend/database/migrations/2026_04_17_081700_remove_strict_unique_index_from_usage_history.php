@@ -12,6 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        /*
         Schema::table('inventory_usage_history', function (Blueprint $table) {
             // 1. Drop the foreign key first (required by MySQL before index swap)
             $table->dropForeign('inventory_usage_history_inventory_id_foreign');
@@ -28,6 +29,7 @@ return new class extends Migration
                   ->on('inventories')
                   ->onDelete('cascade');
         });
+        */
     }
 
     /**
@@ -35,6 +37,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        /*
         Schema::table('inventory_usage_history', function (Blueprint $table) {
             $table->dropForeign(['inventory_id']);
             $table->dropIndex(['inventory_id']);
@@ -44,5 +47,6 @@ return new class extends Migration
                   ->on('inventories')
                   ->onDelete('cascade');
         });
+        */
     }
 };

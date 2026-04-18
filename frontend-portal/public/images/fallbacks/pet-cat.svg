@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Cat">
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="#f0e8f8"/>
+  <!-- Pointed ears -->
+  <polygon points="26,20 36,48 18,46" fill="#9b7ab5"/>
+  <polygon points="74,20 64,48 82,46" fill="#9b7ab5"/>
+  <!-- Inner ears -->
+  <polygon points="27,24 35,45 22,44" fill="#c9a8dc"/>
+  <polygon points="73,24 65,45 78,44" fill="#c9a8dc"/>
+  <!-- Head -->
+  <circle cx="50" cy="54" r="24" fill="#b08cc8"/>
+  <!-- Eyes -->
+  <ellipse cx="41" cy="50" rx="5" ry="6" fill="#1a0a3d"/>
+  <ellipse cx="59" cy="50" rx="5" ry="6" fill="#1a0a3d"/>
+  <circle cx="42" cy="48.5" r="1.5" fill="white"/>
+  <circle cx="60" cy="48.5" r="1.5" fill="white"/>
+  <!-- Nose -->
+  <polygon points="50,57 47,60 53,60" fill="#7b4fa6"/>
+  <!-- Mouth -->
+  <path d="M47 60 Q50 62.5 53 60" stroke="#7b4fa6" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <!-- Whisker dots -->
+  <circle cx="37" cy="59" r="1.8" fill="#8f6ab0"/>
+  <circle cx="63" cy="59" r="1.8" fill="#8f6ab0"/>
+  <circle cx="35" cy="55" r="1.5" fill="#8f6ab0"/>
+  <circle cx="65" cy="55" r="1.5" fill="#8f6ab0"/>
+</svg>

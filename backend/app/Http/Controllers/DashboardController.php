@@ -25,12 +25,61 @@ class DashboardController extends Controller
         $this->inventoryForecastService = $inventoryForecastService;
     }
 
+    public function getPortalOverview(Request $request)
+    {
+        $userId = $request->user()?->id;
+
+        return response()->json(Cache::remember("portal_overview_{$userId}", 60, function () use ($request) {
+            $petController = app(\App\Http\Controllers\PetController::class);
+            $apptController = app(\App\Http\Controllers\AppointmentController::class);
+            
+            // Re-use existing controller logic to respect traits and filters
+            $pets = $petController->index($request)->original;
+            
+            $apptRequest = new Request(['upcoming' => true]);
+            $apptRequest->setUserResolver(fn() => $request->user());
+            $appointments = $apptController->index($apptRequest)->original;
+            
+            $notifications = $this->getNotifications($request)->original;
+
+            return [
+                'pets' => $pets,
+                'appointments' => $appointments,
+                'notifications' => $notifications,
+            ];
+        }));
+    }
+
+    public function getOverview(Request $request)
+    {
+        $userId = $request->user()?->id;
+        $range = $request->query('range', '6 Months');
+        $monthsToFetch = $range == 'Year' ? 12 : 6;
+
+        return response()->json(Cache::remember("dashboard_overview_{$userId}_{$monthsToFetch}", 300, function () use ($request, $range, $monthsToFetch) {
+            return [
+                'status' => [
+                    'message' => 'AutoVet Laravel API is up and running!',
+                    'database' => 'connected',
+                    'environment' => app()->environment(),
+                    'timestamp' => now()->toIso8601String(),
+                ],
+                'stats' => $this->getStats()->original,
+                'salesForecast' => $this->getSalesForecast($request)->original,
+                'inventoryConsumption' => $this->getInventoryConsumption($request)->original,
+                'notifications' => $this->getNotifications($request)->original,
+                'inventoryForecast' => $this->getInventoryForecast()->original,
+                'appointmentForecast' => $this->getAppointmentForecast()->original,
+            ];
+        }));
+    }
+
     /**
      * Get detailed AI analysis for a specific inventory item or general stock.
      */
     public function getInventoryForecast()
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_inventory_forecast', 300, function () {
+        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_inventory_forecast', 3600, function () {
             // Find the most critical inventory item based on highest risk saved forecast
             $savedForecast = \App\Models\InventoryForecast::with('inventory')
                 ->orderByRaw("FIELD(forecast_status, 'Critical', 'Reorder Soon', 'Safe', 'Insufficient Data')")
@@ -372,7 +421,7 @@ class DashboardController extends Controller
     public function getInventoryConsumption(Request $request)
     {
         $range = $request->query('range', 6);
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_inventory_consumption_{$range}", 300, function () use ($range) {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_inventory_consumption_{$range}", 3600, function () use ($range) {
             $monthsToFetch = $range == 'Year' ? 12 : 6;
             $futureMonths = 2;
 
@@ -625,7 +674,7 @@ class DashboardController extends Controller
         $rangeParam = $request->query('range', '6 Months');
         $monthsToFetch = $rangeParam == 'Year' ? 12 : 6;
 
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_sales_forecast_{$monthsToFetch}", 300, function () use ($monthsToFetch) {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_sales_forecast_{$monthsToFetch}", 3600, function () use ($monthsToFetch) {
             $now = Carbon::now()->startOfMonth();
             $timeline = [];
             

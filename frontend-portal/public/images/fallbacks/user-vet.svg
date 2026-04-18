@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Veterinarian">
+  <!-- Background -->
+  <circle cx="50" cy="50" r="50" fill="#e8f8f0"/>
+  <!-- Body / coat -->
+  <path d="M22 100 Q22 72 50 68 Q78 72 78 100 Z" fill="#ffffff" stroke="#b0d8c0" stroke-width="1.5"/>
+  <!-- Head -->
+  <circle cx="50" cy="38" r="18" fill="#f5d0b8"/>
+  <!-- Stethoscope -->
+  <path d="M38 65 Q35 75 42 78 Q50 80 50 72" stroke="#2d8a5e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="50" cy="72" r="4" fill="#2d8a5e"/>
+  <!-- Medical cross on coat -->
+  <rect x="46" y="78" width="8" height="3" rx="1" fill="#2d8a5e"/>
+  <rect x="48" y="76" width="4" height="7" rx="1" fill="#2d8a5e"/>
+  <!-- Eyes -->
+  <circle cx="43" cy="36" r="2.5" fill="#4a3020"/>
+  <circle cx="57" cy="36" r="2.5" fill="#4a3020"/>
+  <!-- Smile -->
+  <path d="M43 43 Q50 47 57 43" stroke="#c08060" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>
