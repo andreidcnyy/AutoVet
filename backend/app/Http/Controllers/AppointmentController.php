@@ -67,12 +67,21 @@ class AppointmentController extends Controller
             'pet_id' => 'required|exists:pets,id',
             'service_id' => 'required|exists:services,id',
             'vet_id' => 'nullable|exists:admins,id',
+        ], [
+            'service_id.required' => 'Please select a specific service category (Consultation, Grooming, etc.) for forecasting.',
+            'pet_id.required' => 'A pet must be selected for the appointment.'
         ]);
+
+        $service = \App\Models\Service::find($validated['service_id']);
 
         // Default title to service name if not provided
         if (empty($validated['title'])) {
-            $service = \App\Models\Service::find($validated['service_id']);
             $validated['title'] = $service ? $service->name : 'General Consultation';
+        }
+
+        // Always sync category from the selected service for forecast reliability
+        if ($service && empty($validated['category'])) {
+            $validated['category'] = $service->category;
         }
 
         // Validate vet schedule if vet_id is provided
@@ -183,7 +192,16 @@ class AppointmentController extends Controller
             'pet_id' => 'sometimes|required|exists:pets,id',
             'service_id' => 'sometimes|required|exists:services,id',
             'vet_id' => 'nullable|exists:admins,id',
+        ], [
+            'service_id.required' => 'A service type is required for accurate डिमांड forecasting.'
         ]);
+
+        if (isset($validated['service_id'])) {
+            $service = \App\Models\Service::find($validated['service_id']);
+            if ($service && empty($validated['category'])) {
+                $validated['category'] = $service->category;
+            }
+        }
 
         if (!empty($validated['vet_id']) && !empty($validated['date']) && !empty($validated['time'])) {
             $dayOfWeek = date('l', strtotime($validated['date']));
