@@ -81,21 +81,38 @@ function InventoryView() {
   const { user } = useAuth();
   const isAdmin = VET_AND_ADMIN.includes(user?.role);
 
+  const INVENTORY_CACHE_KEY = 'inventory_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
   useEffect(() => {
-    const fetchInventory = async () => {
-      if (!user?.token) return;
-      try {
-        const data = await api.get('/api/inventory');
+    if (!user?.token) return;
+
+    // Show cached data immediately
+    try {
+      const cached = JSON.parse(localStorage.getItem(INVENTORY_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setInventoryRows(cached.data);
+        const uniqueCats = [...new Set(cached.data.map(item => item.inventory_category?.name).filter(Boolean))];
+        setCategories(uniqueCats);
+        setIsLoading(false);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
+
+    api.get('/api/inventory', { signal: controller.signal })
+      .then((data) => {
+        if (!Array.isArray(data)) return;
         setInventoryRows(data);
         const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
         setCategories(uniqueCats);
-      } catch (error) {
-        console.error("Failed to fetch inventory:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchInventory();
+        try { localStorage.setItem(INVENTORY_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
+        console.error("Failed to fetch inventory:", err);
+      })
+      .finally(() => setIsLoading(false));
 
     // Real-time listener
     const channel = echo.private('admin.inventory')
@@ -109,6 +126,7 @@ function InventoryView() {
       });
 
     return () => {
+      controller.abort();
       echo.leave('admin.inventory');
     };
   }, [user?.token]);

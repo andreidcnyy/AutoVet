@@ -15,18 +15,10 @@ function DashboardPage() {
   const isStaff = user?.role === ROLES.STAFF;
   const enabled = !!user?.token;
 
-  const { data: stats, isLoading: statsLoading } = useApi(['dashboard-stats'], '/api/dashboard/stats', { enabled });
-  const { data: notifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000 });
-  const { data: salesForecast } = useApi(['dashboard-sales-forecast'], '/api/dashboard/sales-forecast', { enabled: enabled && !isStaff });
-  const { data: inventoryConsumption } = useApi(['dashboard-inventory-consumption'], '/api/dashboard/inventory-consumption', { enabled });
-
-  if (statsLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-zinc-500 dark:text-zinc-400 font-medium animate-pulse">Loading dashboard...</div>
-      </div>
-    );
-  }
+  const { data: stats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { enabled, cacheKey: 'dashboard_stats_cache' });
+  const { data: notifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
+  const { data: salesForecast } = useApi(['dashboard-sales-forecast'], '/api/dashboard/sales-forecast', { enabled: enabled && !isStaff, cacheKey: 'dashboard_sales_forecast_cache' });
+  const { data: inventoryConsumption } = useApi(['dashboard-inventory-consumption'], '/api/dashboard/inventory-consumption', { enabled, cacheKey: 'dashboard_inventory_consumption_cache' });
 
   const mappedMetrics = (Array.isArray(stats) ? stats : [])
     .filter(stat => !(isStaff && stat.title === "Monthly Revenue"))

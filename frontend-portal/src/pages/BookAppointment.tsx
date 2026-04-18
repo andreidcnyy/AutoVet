@@ -87,21 +87,42 @@ export default function BookAppointment() {
     }
   }, [selectedDate, selectedVetId, isViewMode]);
 
+  const CACHE_KEY = 'portal_book_appointments_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+  const [formDataLoaded, setFormDataLoaded] = useState(false);
+
+  // Load calendar appointments immediately with cache
   useEffect(() => {
-    Promise.all([getPets(), getServices(), getVets(), getAppointments()])
-      .then(([petsRes, servRes, vetsRes, apptsRes]) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setAppointments(cached.data);
+      }
+    } catch (_) {}
+
+    getAppointments()
+      .then(res => {
+        setAppointments(res.data);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: res.data, ts: Date.now() })); } catch (_) {}
+      })
+      .catch(console.error);
+  }, []);
+
+  // Lazy-load form data only when booking drawer first opens
+  useEffect(() => {
+    if (!isDrawerOpen || formDataLoaded) return;
+    Promise.all([getPets(), getServices(), getVets()])
+      .then(([petsRes, servRes, vetsRes]) => {
         setPets(petsRes.data);
         setServices(servRes.data);
         setVets(vetsRes.data);
-        setAppointments(apptsRes.data);
-
-        // Auto-select if only one pet
+        setFormDataLoaded(true);
         if (petsRes.data.length === 1) {
           setValue("pet_id", petsRes.data[0].id.toString());
         }
       })
       .catch(console.error);
-  }, [setValue]);
+  }, [isDrawerOpen, formDataLoaded, setValue]);
 
   const handleDayClick = (entry: any) => {
     if (!entry.inMonth) return;

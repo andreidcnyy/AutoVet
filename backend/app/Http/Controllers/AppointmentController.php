@@ -24,7 +24,12 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Appointment::with(['pet', 'service', 'vet']);
+        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'pet_id', 'service_id', 'vet_id')
+            ->with([
+                'pet:id,name,owner_id',
+                'service:id,name',
+                'vet:id,name',
+            ]);
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {

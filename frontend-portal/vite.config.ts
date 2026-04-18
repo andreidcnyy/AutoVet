@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5174,
     proxy: {
-      '/app': {
+      '^/app/': {
         target: 'ws://127.0.0.1:8080',
         ws: true,
         changeOrigin: true,

@@ -27,28 +27,39 @@ export default function Appointments() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  const CACHE_KEY = 'portal_appointments_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const sortAppointments = (data: any[]) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return [...data].sort((a, b) => {
+      const dateA = new Date(a.date); dateA.setHours(0, 0, 0, 0);
+      const dateB = new Date(b.date); dateB.setHours(0, 0, 0, 0);
+      const isA_Past = dateA < now;
+      const isB_Past = dateB < now;
+      if (isA_Past && !isB_Past) return 1;
+      if (!isA_Past && isB_Past) return -1;
+      if (!isA_Past && !isB_Past) return dateA.getTime() - dateB.getTime();
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
   const fetchAppointments = () => {
-    setLoading(true);
+    // Show cached data immediately
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setAppointments(cached.data);
+        setLoading(false);
+      }
+    } catch (_) {}
+
     getAppointments()
       .then(res => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-
-        const sorted = [...res.data].sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          dateA.setHours(0, 0, 0, 0);
-          dateB.setHours(0, 0, 0, 0);
-
-          const isA_Past = dateA < now;
-          const isB_Past = dateB < now;
-
-          if (isA_Past && !isB_Past) return 1;
-          if (!isA_Past && isB_Past) return -1;
-          if (!isA_Past && !isB_Past) return dateA.getTime() - dateB.getTime();
-          return dateB.getTime() - dateA.getTime();
-        });
+        const sorted = sortAppointments(res.data);
         setAppointments(sorted);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: sorted, ts: Date.now() })); } catch (_) {}
       })
       .catch(console.error)
       .finally(() => setLoading(false));

@@ -157,20 +157,38 @@ export default function Dashboard() {
                 Recent Alerts
               </h2>
               <div className="space-y-2">
-                {notifications.map(n => (
-                  <div 
-                    key={n.id} 
-                    onClick={() => navigate('/notifications')}
-                    className="group flex items-start gap-3 p-4 rounded-2xl bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-500/20 cursor-pointer hover:shadow-md transition-all animate-in slide-in-from-right-4 duration-300"
-                  >
-                    <div className="mt-1 w-2 h-2 rounded-full bg-brand-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-zinc-800 dark:text-zinc-100 truncate">{n.title}</p>
-                      <p className="text-[10px] text-zinc-500 line-clamp-1">{n.message}</p>
+                {notifications.map(n => {
+                  const Icon = n.iconName === 'FiCheckCircle' ? FiCheckCircle : 
+                               n.iconName === 'FiAlertCircle' ? FiAlertCircle :
+                               n.iconName === 'FiFileText' ? FiCreditCard :
+                               n.iconName === 'FiClock' ? FiClock :
+                               n.iconName === 'FiPlusCircle' ? FiPlusCircle : FiBell;
+                  
+                  const toneClasses = n.tone === 'success' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                                    n.tone === 'danger' ? 'bg-rose-50 text-rose-500 border-rose-100' :
+                                    n.tone === 'warning' ? 'bg-amber-50 text-amber-500 border-amber-100' :
+                                    'bg-brand-50 text-brand-500 border-brand-100';
+
+                  return (
+                    <div 
+                      key={n.id} 
+                      onClick={() => navigate(n.id.startsWith('invoice') ? '/invoices' : '/notifications')}
+                      className={clsx(
+                        "group flex items-start gap-3 p-4 rounded-2xl border cursor-pointer hover:shadow-md transition-all animate-in slide-in-from-right-4 duration-300",
+                        toneClasses
+                      )}
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold truncate">{n.title}</p>
+                        <p className="text-[10px] opacity-80 line-clamp-1">{n.message}</p>
+                      </div>
+                      <FiChevronRight className="mt-1 w-3 h-3 opacity-40 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <FiChevronRight className="mt-1 w-3 h-3 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

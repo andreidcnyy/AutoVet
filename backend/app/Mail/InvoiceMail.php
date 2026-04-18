@@ -8,6 +8,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+use Illuminate\Mail\Mailables\Attachment;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class InvoiceMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -21,7 +24,16 @@ class InvoiceMail extends Mailable
     public function __construct($invoice, $clinic = null)
     {
         $this->invoice = $invoice;
-        $this->clinic = $clinic ?: \App\Models\Setting::first();
+        if (!$clinic) {
+            $settings = \App\Models\Setting::all()->pluck('value', 'key');
+            $this->clinic = (object)[
+                'clinic_name' => $settings['clinic_name'] ?? config('app.name'),
+                'address' => $settings['clinic_address'] ?? '',
+                'phone_number' => $settings['clinic_phone'] ?? '',
+            ];
+        } else {
+            $this->clinic = $clinic;
+        }
     }
 
     /**
@@ -51,6 +63,14 @@ class InvoiceMail extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        $pdf = Pdf::loadView('emails.invoice', [
+            'invoice' => $this->invoice,
+            'clinic' => $this->clinic
+        ]);
+
+        return [
+            Attachment::fromData(fn () => $pdf->output(), 'Invoice-' . ($this->invoice->invoice_number ?? $this->invoice->id) . '.pdf')
+                ->withMime('application/pdf'),
+        ];
     }
 }

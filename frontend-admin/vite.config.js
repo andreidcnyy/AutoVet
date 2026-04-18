@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/app": {
+      "^/app/": {
         target: "ws://127.0.0.1:8080",
         ws: true,
         changeOrigin: true,
@@ -49,7 +49,7 @@ export default defineConfig({
   preview: {
     port: 4173,
     proxy: {
-      "/app": {
+      "^/app/": {
         target: "ws://127.0.0.1:8080",
         ws: true,
         changeOrigin: true,

@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Cache;
 use App\Services\InventoryForecastService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
+use App\Traits\IdentifiesPortalOwner;
+use App\Models\ClientNotification;
 
 class DashboardController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     protected $inventoryForecastService;
 
     public function __construct(InventoryForecastService $inventoryForecastService)
@@ -573,15 +577,113 @@ class DashboardController extends Controller
      */
     public function getNotifications(Request $request)
     {
-        $userId = $request->user()?->id;
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_notifications_{$userId}", 60, function () use ($request) {
+        $user = $request->user();
+        if (!$user) return response()->json([]);
+        
+        $userId = $user->id;
+
+        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_notifications_{$userId}", 60, function () use ($request, $user) {
+            if ($user->isOwner()) {
+                $ownerId = $this->getPortalOwnerId();
+                if (!$ownerId) return [];
+
+                $notifications = [];
+
+                // 1. Fetch from ClientNotification
+                $dbNotifications = ClientNotification::where('owner_id', $ownerId)
+                    ->whereNull('read_at')
+                    ->latest()
+                    ->limit(5)
+                    ->get();
+
+                foreach ($dbNotifications as $notif) {
+                    $iconName = 'FiBell';
+                    $tone = 'info';
+
+                    $titleLower = strtolower($notif->title);
+                    if (str_contains($titleLower, 'approved')) {
+                        $iconName = 'FiCheckCircle';
+                        $tone = 'success';
+                    } elseif (str_contains($titleLower, 'declined') || str_contains($titleLower, 'cancelled')) {
+                        $iconName = 'FiAlertCircle';
+                        $tone = 'danger';
+                    } elseif (str_contains($titleLower, 'invoice')) {
+                        $iconName = 'FiFileText';
+                        $tone = 'success';
+                    } elseif (str_contains($titleLower, 'reminder')) {
+                        $iconName = 'FiClock';
+                        $tone = 'warning';
+                    }
+
+                    $notifications[] = [
+                        'id' => 'notif-' . $notif->id,
+                        'db_id' => $notif->id,
+                        'iconName' => $iconName,
+                        'tone' => $tone,
+                        'title' => $notif->title,
+                        'message' => $notif->message,
+                        'time' => $notif->created_at->diffForHumans(),
+                        'created_at' => $notif->created_at->toDateTimeString()
+                    ];
+                }
+
+                // 2. Virtual: Overdue follow-ups
+                $overdueFollowups = \App\Models\MedicalRecord::whereHas('pet', function($q) use ($ownerId) {
+                        $q->where('owner_id', $ownerId);
+                    })
+                    ->whereNotNull('follow_up_date')
+                    ->where('follow_up_date', '<', now()->toDateString())
+                    ->with('pet')
+                    ->get();
+                
+                foreach ($overdueFollowups as $record) {
+                    $notifications[] = [
+                        'id' => 'followup-' . $record->id,
+                        'db_id' => $record->id,
+                        'iconName' => 'FiPlusCircle',
+                        'tone' => 'danger',
+                        'title' => 'Follow-up Overdue',
+                        'message' => "{$record->pet->name} is overdue for a follow-up visit (since " . $record->follow_up_date->format('M d') . ").",
+                        'time' => $record->follow_up_date->diffForHumans(),
+                        'created_at' => $record->follow_up_date->toDateTimeString()
+                    ];
+                }
+
+                // 3. Virtual: Unpaid Invoices
+                $unpaidInvoices = \App\Models\Invoice::whereHas('pet', function($q) use ($ownerId) {
+                        $q->where('owner_id', $ownerId);
+                    })
+                    ->whereIn('status', ['Finalized', 'Partially Paid'])
+                    ->with('pet')
+                    ->get();
+
+                foreach ($unpaidInvoices as $invoice) {
+                    $notifications[] = [
+                        'id' => 'invoice-' . $invoice->id,
+                        'db_id' => $invoice->id,
+                        'iconName' => 'FiCreditCard',
+                        'tone' => 'warning',
+                        'title' => 'Payment Due',
+                        'message' => "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has a pending balance.",
+                        'time' => $invoice->created_at->diffForHumans(),
+                        'created_at' => $invoice->created_at->toDateTimeString()
+                    ];
+                }
+
+                // Sort by created_at desc
+                usort($notifications, function($a, $b) {
+                    return strcmp($b['created_at'], $a['created_at']);
+                });
+
+                return array_slice($notifications, 0, 8);
+            }
+
+            // Admin Logic
             $query = \App\Models\Notification::whereNull('read_at')->orderBy('created_at', 'desc');
             
-            if ($request->user()) {
-                $query->where(function ($q) use ($request) {
-                    $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
-                });
-            }
+            $query->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
 
             $dbNotifications = $query->limit(8)->get();
             $notifications = [];
