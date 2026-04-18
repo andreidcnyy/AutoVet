@@ -17,7 +17,8 @@ import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPag
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
-  ALL_ROLES
+  ALL_ROLES,
+  VET_AND_ADMIN
 } from "../constants/roles";
 
 import RouterErrorElement from "../components/RouterErrorElement";
@@ -120,7 +121,7 @@ export const router = createBrowserRouter([
       {
         path: "settings",
         element: (
-          <ProtectedRoute allowedRoles={ADMIN_ONLY}>
+          <ProtectedRoute allowedRoles={VET_AND_ADMIN}>
             <SettingsPage />
           </ProtectedRoute>
         ),

@@ -181,9 +181,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
 
     // -----------------------------------------------------------------------
-    // User Management — Admin only
+    // User Management — Admin & Vet Access
     // -----------------------------------------------------------------------
-    Route::group(['middleware' => 'role:' . Roles::ADMIN->value], function () {
+    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
         Route::apiResource('users', UserController::class);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
     });

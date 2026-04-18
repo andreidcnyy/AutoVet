@@ -33,22 +33,22 @@ const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { min
  * Converts an image URL to a base64 data URI.
  */
 async function getBase64ImageFromUrl(imageUrl) {
-    const res = await fetch(imageUrl);
-    const blob = await res.blob();
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = () => reject("Failed to convert image to base64");
-        reader.readAsDataURL(blob);
-    });
+  const res = await fetch(imageUrl);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject("Failed to convert image to base64");
+    reader.readAsDataURL(blob);
+  });
 }
 
 const formatDate = (date) => {
   if (!date) return "N/A";
   try {
-     return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   } catch (e) {
-     return "N/A";
+    return "N/A";
   }
 };
 
@@ -59,7 +59,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   const pageH = doc.internal.pageSize.getHeight();
 
   // 1. Light Theme Background (White)
-  doc.setFillColor(255, 255, 255); 
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, "F");
 
   let y = 15;
@@ -78,7 +78,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.text(clinic?.clinic_name || "AutoVet Clinic", 34, y + 8);
-  
+
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139); // zinc-500
@@ -88,7 +88,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   // Invoice/Receipt Title (Right Aligned)
   const isPaid = invoiceData.status === 'Paid' || (invoiceData.amount_paid >= invoiceData.total && invoiceData.total > 0);
   const docTitle = isPaid ? "RECEIPT" : "INVOICE";
-  
+
   doc.setTextColor(203, 213, 225); // Light zinc
   doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
@@ -99,7 +99,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.text(`${isPaid ? 'Receipt' : 'Invoice'} #${invoiceData.invoice_number || "VB-2026-000"}`, pageW - 14, y + 18, { align: "right" });
   doc.setTextColor(100, 116, 139);
   doc.text(`Date: ${invoiceData.created_at ? new Date(invoiceData.created_at).toLocaleDateString() : new Date().toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
-  
+
   if (isPaid) {
     doc.text(`Payment: ${invoiceData.payment_method || 'Cash'}`, pageW - 14, y + 28, { align: "right" });
   } else {
@@ -114,11 +114,11 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.text("BILL TO", 14, y);
-  
+
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(12);
   doc.text(patient?.owner?.name || "Guest Client", 14, y + 7);
-  
+
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
@@ -130,7 +130,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   const patientCardX = 110;
   doc.setFillColor(248, 250, 252); // zinc-50 (Very light gray)
   doc.roundedRect(patientCardX - 4, y - 4, 90, 32, 4, 4, "F");
-  
+
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
@@ -140,9 +140,9 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
     const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name);
     if (photoUrl && !photoUrl.endsWith(".svg")) {
       try {
-          const base64 = await getBase64ImageFromUrl(photoUrl);
-          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 10, 10);
-      } catch(e){
+        const base64 = await getBase64ImageFromUrl(photoUrl);
+        doc.addImage(base64, 'JPEG', patientCardX, y + 5, 10, 10);
+      } catch (e) {
         console.error("PDF Patient Image error:", e);
       }
     }
@@ -174,7 +174,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
       fontSize: 8,
     },
     columnStyles: {
-      0: { halign: 'left' }, 
+      0: { halign: 'left' },
       1: { halign: 'right', cellWidth: 20 },
       2: { halign: 'right', cellWidth: 30 },
       3: { halign: 'right', cellWidth: 35 },
@@ -194,12 +194,12 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   const totalsX = pageW - 14;
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
-  
+
   // Subtotal
   doc.text("Subtotal", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
   doc.text(pdfCurrency(invoiceData.subtotal), totalsX, y, { align: "right" });
-  
+
   // Fixed VAT 12%
   y += 6;
   doc.setFontSize(9);
@@ -244,7 +244,7 @@ function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
-  
+
   const [activeTab, setActiveTab] = useState("new"); // "new" or "history"
   const [invoices, setInvoices] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -298,7 +298,7 @@ function InvoiceModuleView() {
         }
       });
       const data = await response.json();
-      
+
       if (data.data) {
         // Paginated response
         setInvoices(data.data);
@@ -329,7 +329,7 @@ function InvoiceModuleView() {
   // Debounced search effect
   useEffect(() => {
     if (activeTab !== "history") return;
-    
+
     const controller = new AbortController();
     const handler = setTimeout(() => {
       fetchInvoices(1, searchQuery, controller.signal); // Always reset to page 1 on search
@@ -349,11 +349,11 @@ function InvoiceModuleView() {
       const rawDate = appt.date.toLowerCase();
       const title = (appt.title || "").toLowerCase();
       const serviceName = (appt.service?.name || "").toLowerCase();
-      
-      return formatted.includes(term) || 
-             rawDate.includes(term) || 
-             title.includes(term) || 
-             serviceName.includes(term);
+
+      return formatted.includes(term) ||
+        rawDate.includes(term) ||
+        title.includes(term) ||
+        serviceName.includes(term);
     });
   }, [appointments, appointmentSearch]);
 
@@ -426,7 +426,7 @@ function InvoiceModuleView() {
       return;
     }
     const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
-    
+
     // Simply use the raw patient data, the UI will access nested properties
     setPatientDetails(patientData);
     setCurrentWeight(patientData?.weight || "");
@@ -508,24 +508,24 @@ function InvoiceModuleView() {
 
   const groupedItems = useMemo(() => {
     const term = serviceInput.toLowerCase();
-    
-    const filteredServices = (Array.isArray(services) ? services : []).filter(s => 
-      s.name.toLowerCase().includes(term) || 
+
+    const filteredServices = (Array.isArray(services) ? services : []).filter(s =>
+      s.name.toLowerCase().includes(term) ||
       (s.category && s.category.toLowerCase().includes(term))
     ).map(s => ({ ...s, type: 'service' }));
 
-    const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(i => 
-      i.item_name.toLowerCase().includes(term) || 
-          i.sku?.toLowerCase().includes(term) ||
-          i.code?.toLowerCase().includes(term) ||
-          i.category?.toLowerCase().includes(term)
-      ).map(i => ({ 
-      ...i, 
-      name: i.item_name, 
+    const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(i =>
+      i.item_name.toLowerCase().includes(term) ||
+      i.sku?.toLowerCase().includes(term) ||
+      i.code?.toLowerCase().includes(term) ||
+      i.category?.toLowerCase().includes(term)
+    ).map(i => ({
+      ...i,
+      name: i.item_name,
       sku: i.sku || i.code || "N/A",
-      price: i.selling_price || 0, 
+      price: i.selling_price || 0,
       stock: i.stock_level || 0,
-      type: 'inventory' 
+      type: 'inventory'
     }));
 
     const all = [...filteredServices, ...filteredInventory];
@@ -543,17 +543,17 @@ function InvoiceModuleView() {
       const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === patientDetails.size_category_id);
       if (rule) return Number(rule.price);
     }
-    
+
     if (service.pricing_type === "weight_based" && currentWeight !== "") {
       const petWeight = Number(currentWeight);
       const petSpeciesId = patientDetails?.species_id;
-      
-      const range = weightRanges.find(r => 
+
+      const range = weightRanges.find(r =>
         (Number(r.species_id) === Number(petSpeciesId)) &&
-        Number(r.min_weight) <= petWeight && 
+        Number(r.min_weight) <= petWeight &&
         (r.max_weight === null || Number(r.max_weight) >= petWeight)
       );
-      
+
       if (range && range.size_category_id) {
         // NEW mapping: weight_based rules now use basis_type 'size' and the size_category_id from the range
         const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === range.size_category_id);
@@ -579,7 +579,7 @@ function InvoiceModuleView() {
     const val = e.target.value;
     setServiceInput(val);
     setIsDropdownOpen(true);
-    
+
     // Check services first
     const matchedService = services.find(s => s.name.toLowerCase() === val.toLowerCase());
     if (matchedService) {
@@ -604,7 +604,7 @@ function InvoiceModuleView() {
     if (!serviceInput) return;
     const price = Number(priceInput) || 0;
     const qty = Number(qtyInput) || 1;
-    
+
     let itemName = serviceInput;
     let itemType = selectedService?.type || 'service';
     let serviceId = itemType === 'service' ? selectedService?.id : null;
@@ -616,18 +616,18 @@ function InvoiceModuleView() {
       const availableStock = selectedService.stock_level || selectedService.stock || 0;
       if (qty > availableStock) {
         toast.warning(`${qty} units of '${itemName}' requested, but only ${availableStock} in stock. Proceeding anyway...`, {
-            duration: 5000,
-            icon: '⚠️'
+          duration: 5000,
+          icon: '⚠️'
         });
       }
     }
 
     if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
-       itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
+      itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
     } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && currentWeight !== "") {
-       itemName = `${serviceInput} (${currentWeight}kg)`;
+      itemName = `${serviceInput} (${currentWeight}kg)`;
     }
-      
+
     const newItem = {
       id: `li-${Date.now()}`,
       name: itemName,
@@ -642,7 +642,7 @@ function InvoiceModuleView() {
       indicator: itemType === 'inventory' ? "bg-amber-400" : "bg-emerald-400",
     };
     setItems((prev) => [...prev, newItem]);
-    
+
     // Clean up
     setServiceInput("");
     setQtyInput(1);
@@ -673,7 +673,9 @@ function InvoiceModuleView() {
     setItems([]);
     setDiscountVal(0);
     setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
+    setSelectedOwnerId("");
     setSelectedPatientId("");
+    setSelectedAppointmentId("");
     setPatientDetails(null);
     setStatus("Draft");
     setAmountPaid(0);
@@ -734,8 +736,8 @@ function InvoiceModuleView() {
     try {
       const response = await fetch("/api/invoices", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
+        headers: {
+          "Content-Type": "application/json",
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
@@ -762,10 +764,10 @@ function InvoiceModuleView() {
       if (finalStatus !== "Draft") {
         setStatus(actualStatus);
         setInvoiceId(result.id);
-        
+
         // Visibility sequence for AI workflow defense
         setTimeout(() => toast.info("Analyzing AI Inventory Impact...", 3000), 1000);
-        
+
         // Broadcast event for dashboard listeners
         window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
       } else {
@@ -818,7 +820,7 @@ function InvoiceModuleView() {
       setStatus(updated.status);
       setAmountPaid(updated.amount_paid);
       toast.success("Payment recorded successfully!");
-      
+
       // Refresh history list if needed
       fetchInvoices(pagination.currentPage);
     } catch (err) {
@@ -832,60 +834,60 @@ function InvoiceModuleView() {
     if (pagination.lastPage <= 1) return null;
     return (
       <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 mb-6 dark:border-dark-border dark:bg-dark-card shadow-sm">
-          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-              Showing <span className="text-zinc-900 dark:text-zinc-50">{Math.min((pagination.currentPage - 1) * pagination.perPage + 1, pagination.total)}-{Math.min(pagination.currentPage * pagination.perPage, pagination.total)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.total}</span> invoices
-          </div>
-          
-          <div className="flex items-center gap-2">
-              <button
-                  onClick={() => fetchInvoices(pagination.currentPage - 1)}
-                  disabled={pagination.currentPage === 1}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-              >
-                  <FiChevronLeft className="h-5 w-5" />
-              </button>
-              
-              <div className="flex items-center gap-1.5">
-                  {[...Array(pagination.lastPage)].map((_, i) => {
-                    const pageNum = i + 1;
-                    // Simple logic to show current page and a few around it
-                    if (
-                      pagination.lastPage > 7 &&
-                      pageNum !== 1 &&
-                      pageNum !== pagination.lastPage &&
-                      (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1)
-                    ) {
-                      if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
-                        return <span key={pageNum} className="px-1 text-zinc-400">...</span>;
-                      }
-                      return null;
-                    }
+        <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+          Showing <span className="text-zinc-900 dark:text-zinc-50">{Math.min((pagination.currentPage - 1) * pagination.perPage + 1, pagination.total)}-{Math.min(pagination.currentPage * pagination.perPage, pagination.total)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.total}</span> invoices
+        </div>
 
-                    return (
-                      <button
-                          key={pageNum}
-                          onClick={() => fetchInvoices(pageNum)}
-                          className={clsx(
-                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                              pagination.currentPage === pageNum
-                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                          )}
-                      >
-                          {pageNum}
-                      </button>
-                    );
-                  })}
-              </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchInvoices(pagination.currentPage - 1)}
+            disabled={pagination.currentPage === 1}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+          >
+            <FiChevronLeft className="h-5 w-5" />
+          </button>
 
-              <button
-                  onClick={() => fetchInvoices(pagination.currentPage + 1)}
-                  disabled={pagination.currentPage === pagination.lastPage}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-              >
-                  <FiChevronRight className="h-5 w-5" />
-              </button>
+          <div className="flex items-center gap-1.5">
+            {[...Array(pagination.lastPage)].map((_, i) => {
+              const pageNum = i + 1;
+              // Simple logic to show current page and a few around it
+              if (
+                pagination.lastPage > 7 &&
+                pageNum !== 1 &&
+                pageNum !== pagination.lastPage &&
+                (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1)
+              ) {
+                if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
+                  return <span key={pageNum} className="px-1 text-zinc-400">...</span>;
+                }
+                return null;
+              }
+
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => fetchInvoices(pageNum)}
+                  className={clsx(
+                    "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                    pagination.currentPage === pageNum
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                      : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                  )}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
           </div>
+
+          <button
+            onClick={() => fetchInvoices(pagination.currentPage + 1)}
+            disabled={pagination.currentPage === pagination.lastPage}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+          >
+            <FiChevronRight className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     );
   };
@@ -931,8 +933,8 @@ function InvoiceModuleView() {
                   <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">New Invoice</h2>
                   <span className={clsx(
                     "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-                    (status === "Finalized" || status === "Paid") 
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" 
+                    (status === "Finalized" || status === "Paid")
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700"
                       : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
                   )}>
                     {status}
@@ -954,7 +956,7 @@ function InvoiceModuleView() {
                           setSelectedPatientId(""); // reset pet
                           setPatientDetails(null);
                           setAppointments([]);
-                          
+
                           if (oId) {
                             const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === oId.toString());
                             if (ownerPets.length === 1) {
@@ -1013,8 +1015,8 @@ function InvoiceModuleView() {
                           <div className="flex items-center gap-2 truncate">
                             <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400" />
                             <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
-                              {selectedAppointmentId 
-                                ? appointments.find(a => a.id.toString() === selectedAppointmentId)?.date 
+                              {selectedAppointmentId
+                                ? appointments.find(a => a.id.toString() === selectedAppointmentId)?.date
                                   ? `${formatDate(appointments.find(a => a.id.toString() === selectedAppointmentId).date)} - ${appointments.find(a => a.id.toString() === selectedAppointmentId).title || appointments.find(a => a.id.toString() === selectedAppointmentId).service?.name}`
                                   : "Selected Appointment"
                                 : "Choose an appointment..."
@@ -1029,7 +1031,7 @@ function InvoiceModuleView() {
                             <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
                               <div className="relative">
                                 <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                <input 
+                                <input
                                   type="text"
                                   placeholder="Search date or title..."
                                   value={appointmentSearch}
@@ -1047,7 +1049,7 @@ function InvoiceModuleView() {
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
                               {filteredAppointments.length > 0 ? filteredAppointments.slice(0, 50).map(appt => (
                                 <button
@@ -1085,17 +1087,17 @@ function InvoiceModuleView() {
                       <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3 text-sm">
                         <div className="mb-3 flex items-center justify-between">
                           <strong className="text-zinc-700 dark:text-zinc-300">Weight Override (kg)</strong>
-                          <input 
-                              type="number" 
-                              step="any" 
-                              value={currentWeight} 
-                              placeholder="0.0"
-                              onChange={(e) => {
-                                setCurrentWeight(e.target.value);
-                                // Force price recalculation for items in the list?
-                                // For simplicity, we just update the state and newly added items will use it.
-                              }}
-                              className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
+                          <input
+                            type="number"
+                            step="any"
+                            value={currentWeight}
+                            placeholder="0.0"
+                            onChange={(e) => {
+                              setCurrentWeight(e.target.value);
+                              // Force price recalculation for items in the list?
+                              // For simplicity, we just update the state and newly added items will use it.
+                            }}
+                            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
                           />
                         </div>
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
@@ -1220,15 +1222,15 @@ function InvoiceModuleView() {
                           )}
                           {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && !inventory.find(i => i.item_name.toLowerCase() === serviceInput.toLowerCase()) && (
                             <div className="mt-3 border-t border-zinc-100 dark:border-dark-border pt-4">
-                                <button
-                                  type="button"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
-                                  className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
-                                >
-                                  <FiPlusCircle className="w-4 h-4" />
-                                  Add "{serviceInput}" as Service
-                                </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                                className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
+                              >
+                                <FiPlusCircle className="w-4 h-4" />
+                                Add "{serviceInput}" as Service
+                              </button>
                             </div>
                           )}
                         </div>
@@ -1293,7 +1295,7 @@ function InvoiceModuleView() {
                           <div className="text-right">
                             <p className="text-xl font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
                             {status === "Draft" && (
-                              <button 
+                              <button
                                 onClick={() => removeItem(item.id)}
                                 className="mt-2 p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
                               >
@@ -1359,7 +1361,7 @@ function InvoiceModuleView() {
           <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
-                <button 
+                <button
                   onClick={() => setIsPreviewMode(!isPreviewMode)}
                   className={clsx(
                     "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
@@ -1415,7 +1417,7 @@ function InvoiceModuleView() {
                       amount_paid: amountPaid,
                       payment_method: paymentMethod
                     };
-                    
+
                     if (status === "Paid" || status === "Finalized" || status === "Partially Paid") {
                       generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
                     } else {
@@ -1426,9 +1428,9 @@ function InvoiceModuleView() {
                   className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-600/10 active:scale-95 transition-all"
                 >
                   <FiSend className="h-4 w-4" />
-                  {status === "Paid" ? "Download Receipt" : 
-                   (status === "Finalized" || status === "Partially Paid") ? "Download Invoice" : 
-                   "Finalize & Generate Invoice"}
+                  {status === "Paid" ? "Download Receipt" :
+                    (status === "Finalized" || status === "Partially Paid") ? "Download Invoice" :
+                      "Finalize & Generate Invoice"}
                 </button>
               </div>
             </div>
@@ -1535,8 +1537,8 @@ function InvoiceModuleView() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                             {item.sku && <span className="text-[10px] text-zinc-400 font-mono">[{item.sku}]</span>}
-                             <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{item.notes}</p>
+                            {item.sku && <span className="text-[10px] text-zinc-400 font-mono">[{item.sku}]</span>}
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{item.notes}</p>
                           </div>
                         </div>
                         <input
@@ -1554,8 +1556,8 @@ function InvoiceModuleView() {
                         <div className="flex items-center justify-end gap-3 px-1">
                           <p className="text-right text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
                           {status === "Draft" && (
-                            <button 
-                              onClick={() => removeItem(item.id)} 
+                            <button
+                              onClick={() => removeItem(item.id)}
                               className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm"
                               title="Remove item"
                             >
@@ -1589,70 +1591,70 @@ function InvoiceModuleView() {
                   </div>
 
                   <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4">
-                  {/* Record Payment Section - Only for Finalized/Partially Paid */}
-                  {(status === "Finalized" || status === "Partially Paid") && (
-                    <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 flex items-center gap-2">
-                        <FiCreditCard className="w-3 h-3" /> Record Payment
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    {/* Record Payment Section - Only for Finalized/Partially Paid */}
+                    {(status === "Finalized" || status === "Partially Paid") && (
+                      <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 flex items-center gap-2">
+                          <FiCreditCard className="w-3 h-3" /> Record Payment
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                          >
+                            <option value="">Select Method...</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                          </select>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={amountPaid}
+                              onChange={(e) => setAmountPaid(Number(e.target.value))}
+                              placeholder="Amount Paid"
+                              className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleRecordPaymentUpdate}
+                          disabled={isRecordingPayment}
+                          className="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                         >
-                          <option value="">Select Method...</option>
-                          <option value="Cash">Cash</option>
-                          <option value="Bank Transfer">Bank Transfer</option>
-                        </select>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={amountPaid}
-                            onChange={(e) => setAmountPaid(Number(e.target.value))}
-                            placeholder="Amount Paid"
-                            className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
-                          />
-                        </div>
+                          {isRecordingPayment ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                          ) : <FiCheck className="w-4 h-4" />}
+                          {isRecordingPayment ? "Processing..." : "Confirm & Record Payment"}
+                        </button>
                       </div>
-                      <button
-                        onClick={handleRecordPaymentUpdate}
-                        disabled={isRecordingPayment}
-                        className="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                      >
-                        {isRecordingPayment ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                        ) : <FiCheck className="w-4 h-4" />}
-                        {isRecordingPayment ? "Processing..." : "Confirm & Record Payment"}
-                      </button>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Receipt Details Section - Only for Paid */}
-                  {status === "Paid" && (
-                    <div className="mt-6 border-t border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-900/30 rounded-2xl p-4 animate-in zoom-in-95 duration-300">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Payment Receipt</p>
-                        <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Fully Paid</span>
+                    {/* Receipt Details Section - Only for Paid */}
+                    {status === "Paid" && (
+                      <div className="mt-6 border-t border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-900/30 rounded-2xl p-4 animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Payment Receipt</p>
+                          <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Fully Paid</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-500">Method</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{paymentMethod || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-500">Amount Paid</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{currency(amountPaid)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-500">Date</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{new Date().toLocaleDateString()}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Method</span>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{paymentMethod || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Amount Paid</span>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{currency(amountPaid)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-500">Date</span>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{new Date().toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </section>
 
@@ -1702,7 +1704,7 @@ function InvoiceModuleView() {
                     </button>
                   )}
                 </div>
-                <button 
+                <button
                   onClick={() => fetchInvoices(pagination.currentPage)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all"
                 >
@@ -1723,7 +1725,7 @@ function InvoiceModuleView() {
             ) : invoices.length > 0 ? (
               <div className="grid gap-4">
                 {invoices.map((inv) => (
-                  <article 
+                  <article
                     key={inv.id}
                     className="group relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300"
                   >
@@ -1736,13 +1738,13 @@ function InvoiceModuleView() {
                           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{inv.invoice_number}</span>
                           <span className={clsx(
                             "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
-                             inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
-                             inv.status === 'Finalized' || inv.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700' :
-                             inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
-                             'bg-zinc-100 text-zinc-600'
-                           )}>
-                             {inv.status === 'Finalized' ? 'Unpaid Invoice' : inv.status === 'Paid' ? 'Payment Receipt' : inv.status}
-                           </span>
+                            inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
+                              inv.status === 'Finalized' || inv.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700' :
+                                inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
+                                  'bg-zinc-100 text-zinc-600'
+                          )}>
+                            {inv.status === 'Finalized' ? 'Unpaid Invoice' : inv.status === 'Paid' ? 'Payment Receipt' : inv.status}
+                          </span>
                         </div>
                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
                           Patient: {inv.pet?.name || "N/A"}
@@ -1761,7 +1763,7 @@ function InvoiceModuleView() {
                         <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{currency(inv.total)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button 
+                        <button
                           onClick={() => generateInvoicePDF(inv, inv.pet, clinicSettings)}
                           className="p-2.5 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all"
                           title={inv.status === 'Paid' ? "Download Receipt" : "Download Invoice"}
@@ -1769,7 +1771,7 @@ function InvoiceModuleView() {
                           <FiDownload className="w-5 h-5" />
                         </button>
                         {inv.status !== 'Paid' && inv.status !== 'Cancelled' && (
-                          <button 
+                          <button
                             onClick={() => {
                               setItems(inv.items.map(i => ({
                                 ...i,
@@ -1794,7 +1796,7 @@ function InvoiceModuleView() {
                             <FiCreditCard className="w-5 h-5" />
                           </button>
                         )}
-                        <button 
+                        <button
                           onClick={() => {
                             // Populate form for viewing/editing if possible
                             // For now, let's just show a toast or preview
@@ -1834,7 +1836,7 @@ function InvoiceModuleView() {
                 </div>
                 <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Invoices Found</h3>
                 <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">You haven&apos;t generated any invoices yet. Start by creating a new one in the &quot;New Invoice&quot; tab.</p>
-                <button 
+                <button
                   onClick={() => setActiveTab("new")}
                   className="mt-6 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
                 >
@@ -1846,9 +1848,9 @@ function InvoiceModuleView() {
         </div>
       )}
 
-      <ManualSendModal 
-        isOpen={isSendModalOpen} 
-        onClose={() => setIsSendModalOpen(false)} 
+      <ManualSendModal
+        isOpen={isSendModalOpen}
+        onClose={() => setIsSendModalOpen(false)}
         owner={patientDetails?.owner}
         relatedObject={{
           id: selectedAppointmentId, // We might need the actual invoice ID if saved

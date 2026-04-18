@@ -42,7 +42,7 @@ class ArchiveController extends Controller
             $query->with('deleter:id,name,email');
         }
 
-        $items = $query->orderBy('deleted_at', 'desc')->get();
+        $items = $query->orderBy('deleted_at', 'desc')->paginate(20);
         return response()->json($items);
     }
 

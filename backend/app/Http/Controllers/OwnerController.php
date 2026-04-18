@@ -57,7 +57,7 @@ class OwnerController extends Controller
 
     public function show(Owner $owner)
     {
-        return response()->json($owner->load('pets.species', 'pets.breed'));
+        return response()->json($owner->load('pets.species', 'pets.breed', 'pets.invoices'));
     }
 
     public function update(Request $request, Owner $owner)
