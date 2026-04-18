@@ -16,22 +16,21 @@ export function useNotifications() {
     setUnreadCount(prev => prev + 1);
 
     if (notification.type === 'AiForecastUpdate' && toast.aiForecast) {
-        let parsedData = {};
-        try {
-            parsedData = typeof notification.data === 'string' ? JSON.parse(notification.data) : (notification.data || {});
-        } catch (e) {
-             // ignore
-        }
-        toast.aiForecast(parsedData);
+      let parsedData = {};
+      try {
+        parsedData = typeof notification.data === 'string'
+          ? JSON.parse(notification.data)
+          : (notification.data || {});
+      } catch (e) { /* ignore */ }
+      toast.aiForecast(parsedData);
     } else {
-        toast.info(notification.message, { title: notification.title });
+      toast.info(notification.message, { title: notification.title });
     }
     prevNotificationIds.current.add(notification.id);
   }, [toast]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.token) return;
-    
     setIsLoading(true);
     try {
       const res = await fetch('/api/dashboard/notifications', {
@@ -54,31 +53,33 @@ export function useNotifications() {
   }, [user?.token]);
 
   useEffect(() => {
+    if (!user?.token) return;
+
     fetchNotifications();
 
-    if (user?.token) {
-        const channel = echo.private('admin.notifications')
-            .listen('.notification.created', (e) => {
-                handleNewNotification(e.notification);
-            });
+    echo.private('admin.notifications')
+      .listen('.notification.created', (e) => {
+        handleNewNotification(e.notification);
+      });
 
-        if (user.id) {
-            echo.private(`notifications.${user.id}`)
-                .listen('.notification.created', (e) => {
-                    handleNewNotification(e.notification);
-                });
-        }
-
-        return () => {
-            echo.leave('admin.notifications');
-            if (user.id) echo.leave(`notifications.${user.id}`);
-        };
+    if (user.id) {
+      echo.private(`notifications.${user.id}`)
+        .listen('.notification.created', (e) => {
+          handleNewNotification(e.notification);
+        });
     }
+
+    const interval = setInterval(fetchNotifications, 120000);
+
+    return () => {
+      echo.leave('admin.notifications');
+      if (user.id) echo.leave(`notifications.${user.id}`);
+      clearInterval(interval);
+    };
   }, [user?.token, user?.id, fetchNotifications, handleNewNotification]);
 
   const markAllAsRead = async () => {
     if (!user?.token) return;
-    
     try {
       const res = await fetch('/api/dashboard/notifications/mark-all-read', {
         method: 'POST',
@@ -100,7 +101,6 @@ export function useNotifications() {
 
   const dismissNotification = async (id) => {
     if (!user?.token) return;
-    
     try {
       const res = await fetch(`/api/dashboard/notifications/${id}/dismiss`, {
         method: 'POST',
@@ -117,13 +117,6 @@ export function useNotifications() {
       console.error('Failed to dismiss notification:', error);
     }
   };
-
-  useEffect(() => {
-    fetchNotifications();
-    // Optional: Refresh every 2 minutes
-    const interval = setInterval(fetchNotifications, 120000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
 
   return {
     notifications,

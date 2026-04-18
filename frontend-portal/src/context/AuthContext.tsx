@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { destroyEcho } from "../utils/echo";
 
 interface AuthContextType {
   user: any;
@@ -23,14 +24,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Try to load user from localStorage
     const stored = localStorage.getItem("user");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Robustness check: Ensure token exists in flattened structure
         if (parsed && (parsed.token || (parsed.user && parsed.user.token))) {
-          // If nested, flatten it (similar to admin migration)
           const userData = parsed.token ? parsed : { ...parsed.user, token: parsed.user.token };
           setUser(sanitizeUser(userData));
         } else {
@@ -66,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    destroyEcho();
     setUser(null);
     localStorage.removeItem("user");
   };

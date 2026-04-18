@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { destroyEcho } from "../utils/echo";
 
 const AuthContext = createContext();
 
@@ -16,12 +17,10 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // Try to load user from localStorage
     const stored = localStorage.getItem("user");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Robustness check: Ensure token exists in flattened structure
         if (parsed && (parsed.token || (parsed.user && parsed.user.token))) {
           const userData = parsed.token ? parsed : { ...parsed.user, token: parsed.user.token };
           setUser(sanitizeUser(userData));
@@ -38,7 +37,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (data) => {
-    // Safety check: Never set an error object as a user
     if (data && (data.error || (data.message && !data.token))) {
       console.error("AuthContext: Attempted to login with error data", data);
       return;
@@ -49,6 +47,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    destroyEcho();
     setUser(null);
     localStorage.removeItem("user");
   };
