@@ -640,11 +640,18 @@ function InvoiceModuleView() {
     setItems([]);
     setDiscountVal(0);
     setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
+    setSelectedOwnerId("");
     setSelectedPatientId("");
+    setSelectedAppointmentId("");
     setPatientDetails(null);
     setStatus("Draft");
     setAmountPaid(0);
     setPaymentMethod("");
+    setCurrentWeight("");
+    setServiceInput("");
+    setPriceInput(50);
+    setQtyInput(1);
+    setSelectedService(null);
   };
 
   const submitInvoice = async (finalStatus) => {
@@ -724,12 +731,7 @@ function InvoiceModuleView() {
       }
 
       toast.success(`Invoice ${finalStatus === "Draft" ? "saved as draft" : "finalized"} successfully.`);
-
-      if (finalStatus !== "Draft") {
-        setStatus(actualStatus);
-      } else {
-        resetForm();
-      }
+      resetForm();
     } catch (err) {
       toast.error(err.message || "Failed to save invoice");
       console.error(err);
