@@ -14,6 +14,8 @@ import {
   FiSend,
   FiBell,
   FiX,
+  FiAlertTriangle,
+  FiCheck,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
@@ -83,18 +85,26 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.text(clinic?.address || "", 34, y + 13);
   doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 34, y + 17);
 
-  // Invoice Title (Right Aligned)
-  doc.setTextColor(203, 213, 225); // Light zinc for the word "INVOICE"
+  // Invoice/Receipt Title (Right Aligned)
+  const isPaid = invoiceData.status === 'Paid' || (invoiceData.amount_paid >= invoiceData.total && invoiceData.total > 0);
+  const docTitle = isPaid ? "RECEIPT" : "INVOICE";
+  
+  doc.setTextColor(203, 213, 225); // Light zinc
   doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", pageW - 14, y + 10, { align: "right" });
+  doc.text(docTitle, pageW - 14, y + 10, { align: "right" });
 
   doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
-  doc.text(`#${invoiceData.invoice_number || "VB-2026-000"}`, pageW - 14, y + 18, { align: "right" });
+  doc.text(`${isPaid ? 'Receipt' : 'Invoice'} #${invoiceData.invoice_number || "VB-2026-000"}`, pageW - 14, y + 18, { align: "right" });
   doc.setTextColor(100, 116, 139);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
-  doc.text(`Due: Upon Receipt`, pageW - 14, y + 28, { align: "right" });
+  doc.text(`Date: ${invoiceData.created_at ? new Date(invoiceData.created_at).toLocaleDateString() : new Date().toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
+  
+  if (isPaid) {
+    doc.text(`Payment: ${invoiceData.payment_method || 'Cash'}`, pageW - 14, y + 28, { align: "right" });
+  } else {
+    doc.text(`Due: Upon Receipt`, pageW - 14, y + 28, { align: "right" });
+  }
 
   y = 55;
 
@@ -227,7 +237,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setTextColor(148, 163, 184);
   doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
 
-  doc.save(`Invoice_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
+  doc.save(`${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
 
 function InvoiceModuleView() {
@@ -263,6 +273,8 @@ function InvoiceModuleView() {
   const [clinicSettings, setClinicSettings] = useState(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
+  const [invoiceId, setInvoiceId] = useState(null);
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [appointmentSearch, setAppointmentSearch] = useState("");
 
@@ -503,17 +515,23 @@ function InvoiceModuleView() {
     ).map(s => ({ ...s, type: 'service' }));
 
     const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(i => 
-      i.is_billable && (
-        i.item_name.toLowerCase().includes(term) || 
-        i.sku?.toLowerCase().includes(term) ||
-        i.category?.toLowerCase().includes(term)
-      )
-    ).map(i => ({ ...i, name: i.item_name, price: i.selling_price, type: 'inventory' }));
+      i.item_name.toLowerCase().includes(term) || 
+          i.sku?.toLowerCase().includes(term) ||
+          i.code?.toLowerCase().includes(term) ||
+          i.category?.toLowerCase().includes(term)
+      ).map(i => ({ 
+      ...i, 
+      name: i.item_name, 
+      sku: i.sku || i.code || "N/A",
+      price: i.selling_price || 0, 
+      stock: i.stock_level || 0,
+      type: 'inventory' 
+    }));
 
     const all = [...filteredServices, ...filteredInventory];
 
     return all.reduce((acc, item) => {
-      const cat = item.type === 'service' ? (item.category || "Services") : (item.category || "Products");
+      const cat = item.type === 'service' ? (item.category || "Services") : (item.category || "Inventory Products");
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(item);
       return acc;
@@ -571,7 +589,7 @@ function InvoiceModuleView() {
     }
 
     // Check inventory
-    const matchedInv = inventory.find(i => i.item_name.toLowerCase() === val.toLowerCase() && i.is_billable);
+    const matchedInv = inventory.find(i => i.item_name.toLowerCase() === val.toLowerCase());
     if (matchedInv) {
       setPriceInput(matchedInv.selling_price || 0);
       setSelectedService({ ...matchedInv, name: matchedInv.item_name, type: 'inventory' });
@@ -590,7 +608,19 @@ function InvoiceModuleView() {
     let itemName = serviceInput;
     let itemType = selectedService?.type || 'service';
     let serviceId = itemType === 'service' ? selectedService?.id : null;
-    let inventoryId = itemType === 'inventory' ? selectedService?.id : null;
+    let inventoryId = itemType === 'inventory' ? (selectedService?.id || selectedService?.inventory_id) : null;
+    let itemSku = selectedService?.sku || selectedService?.code || "";
+
+    // Stock Validation for inventory items
+    if (itemType === 'inventory' && selectedService) {
+      const availableStock = selectedService.stock_level || selectedService.stock || 0;
+      if (qty > availableStock) {
+        toast.warning(`${qty} units of '${itemName}' requested, but only ${availableStock} in stock. Proceeding anyway...`, {
+            duration: 5000,
+            icon: '⚠️'
+        });
+      }
+    }
 
     if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
        itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
@@ -601,19 +631,22 @@ function InvoiceModuleView() {
     const newItem = {
       id: `li-${Date.now()}`,
       name: itemName,
+      sku: itemSku,
       item_type: itemType,
       service_id: serviceId,
       inventory_id: inventoryId,
-      notes: itemType === 'inventory' ? "Inventory Product" : "Service",
+      notes: itemType === 'inventory' ? `Product [${itemSku || 'N/A'}]` : "Service",
       qty: qty,
       unitPrice: price,
       amount: price * qty,
-      indicator: itemType === 'inventory' ? "bg-emerald-400" : "bg-emerald-400",
+      indicator: itemType === 'inventory' ? "bg-amber-400" : "bg-emerald-400",
     };
     setItems((prev) => [...prev, newItem]);
+    
+    // Clean up
     setServiceInput("");
     setQtyInput(1);
-    setPriceInput(50);
+    setPriceInput(0);
     setSelectedService(null);
   };
 
@@ -645,6 +678,7 @@ function InvoiceModuleView() {
     setStatus("Draft");
     setAmountPaid(0);
     setPaymentMethod("");
+    setInvoiceId(null);
   };
 
   const submitInvoice = async (finalStatus) => {
@@ -716,17 +750,18 @@ function InvoiceModuleView() {
           setLaravelErrors(errorData);
           toast.error("Validation error. Please check specified fields.");
         } else {
-          // Extract specific error if backend provided it
           const detail = errorData.error || errorData.message || "Failed to save invoice";
           throw new Error(detail);
         }
         return;
       }
 
+      const result = await response.json();
       toast.success(`Invoice ${finalStatus === "Draft" ? "saved as draft" : "finalized"} successfully.`);
 
       if (finalStatus !== "Draft") {
         setStatus(actualStatus);
+        setInvoiceId(result.id);
         
         // Visibility sequence for AI workflow defense
         setTimeout(() => toast.info("Analyzing AI Inventory Impact...", 3000), 1000);
@@ -739,6 +774,57 @@ function InvoiceModuleView() {
     } catch (err) {
       toast.error(err.message || "Failed to save invoice");
       console.error(err);
+    }
+  };
+
+  const handleRecordPaymentUpdate = async () => {
+    if (!invoiceId) return;
+    if (!paymentMethod) {
+      toast.error("Please select a payment method.");
+      return;
+    }
+    if (amountPaid <= 0) {
+      toast.error("Please enter a valid payment amount.");
+      return;
+    }
+
+    setIsRecordingPayment(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          status: "Finalized", // Controller will auto-promote to Paid/Partially Paid
+          amount_paid: amountPaid,
+          payment_method: paymentMethod,
+          subtotal: subtotal,
+          discount_type: discountType,
+          discount_value: discountVal,
+          tax_rate: 12.00,
+          total: totalDue
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to record payment");
+      }
+
+      const updated = await response.json();
+      setStatus(updated.status);
+      setAmountPaid(updated.amount_paid);
+      toast.success("Payment recorded successfully!");
+      
+      // Refresh history list if needed
+      fetchInvoices(pagination.currentPage);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsRecordingPayment(false);
     }
   };
 
@@ -1067,30 +1153,55 @@ function InvoiceModuleView() {
                         </button>
                       )}
                       {isDropdownOpen && (
-                        <div className="absolute left-0 top-full mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-2 shadow-lg z-50">
+                        <div className="absolute left-0 top-full mt-1 max-h-[400px] w-[500px] md:w-[650px] overflow-y-auto rounded-2xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-3 shadow-2xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                           {Object.keys(groupedItems).length > 0 ? (
                             Object.entries(groupedItems).map(([category, svcs]) => (
-                              <div key={category} className="mb-2 last:mb-0">
-                                <div className="bg-zinc-50 dark:bg-dark-surface px-2 py-1 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 rounded-md">
-                                  {category}
+                              <div key={category} className="mb-4 last:mb-0">
+                                <div className="flex items-center gap-2 mb-2 px-2">
+                                  <div className="h-4 w-1 bg-emerald-500 rounded-full" />
+                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                                    {category}
+                                  </span>
                                 </div>
-                                <ul className="mt-1 space-y-1">
+                                <ul className="space-y-1">
                                   {svcs.map((item) => (
                                     <li key={`${item.type}-${item.id}`}>
                                       <button
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => selectItemFromDropdown(item)}
-                                        className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-dark-surface"
+                                        className="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-zinc-50 dark:hover:bg-dark-surface border border-transparent hover:border-zinc-100 dark:hover:border-dark-border"
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <span className={clsx(
-                                            "h-1.5 w-1.5 rounded-full",
-                                            item.type === 'inventory' ? "bg-emerald-500" : "bg-emerald-500"
-                                          )} />
-                                          <span>{item.name}</span>
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className={clsx(
+                                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-xs uppercase transition-colors",
+                                            item.type === 'inventory' ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                          )}>
+                                            {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p className="truncate font-bold text-zinc-900 dark:text-zinc-100">{item.name}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                              {item.sku && (
+                                                <span className="text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-dark-surface dark:text-zinc-500 px-1.5 py-0.5 rounded leading-none">
+                                                  {item.sku}
+                                                </span>
+                                              )}
+                                              {item.type === 'inventory' && (
+                                                <span className={clsx(
+                                                  "text-[10px] font-bold px-1.5 py-0.5 rounded leading-none",
+                                                  item.stock > 10 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
+                                                )}>
+                                                  Stock: {item.stock}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
                                         </div>
-                                        <span className="text-zinc-400 dark:text-zinc-500">{currency(item.price)}</span>
+                                        <div className="text-right shrink-0">
+                                          <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.price)}</p>
+                                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tight">Price</p>
+                                        </div>
                                       </button>
                                     </li>
                                   ))}
@@ -1098,20 +1209,25 @@ function InvoiceModuleView() {
                               </div>
                             ))
                           ) : (
-                            <div className="p-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                              {services.length === 0 && inventory.length === 0 ? "No services or products found." : "No matching items."}
+                            <div className="py-12 flex flex-col items-center justify-center text-center">
+                              <div className="h-12 w-12 rounded-full bg-zinc-50 dark:bg-dark-surface flex items-center justify-center mb-3">
+                                <FiSearch className="text-zinc-300 w-6 h-6" />
+                              </div>
+                              <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">
+                                {services.length === 0 && inventory.length === 0 ? "No data available." : "No matching items."}
+                              </p>
                             </div>
                           )}
-                          {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
-                            <div className="mt-2 border-t border-zinc-100 dark:border-dark-border pt-2 text-center">
-                                <p className="text-xs text-zinc-500 mb-1 dark:text-zinc-500">Create new item</p>
+                          {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && !inventory.find(i => i.item_name.toLowerCase() === serviceInput.toLowerCase()) && (
+                            <div className="mt-3 border-t border-zinc-100 dark:border-dark-border pt-4">
                                 <button
                                   type="button"
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
-                                  className="w-full text-center text-sm font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                                  className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
                                 >
-                                  + Add &quot;{serviceInput}&quot;
+                                  <FiPlusCircle className="w-4 h-4" />
+                                  Add "{serviceInput}" as Service
                                 </button>
                             </div>
                           )}
@@ -1147,34 +1263,58 @@ function InvoiceModuleView() {
                     </button>
                   </div>
 
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-4 space-y-3">
                     {items.length > 0 ? items.map((item) => (
-                      <article key={item.id} className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                              <span className={`inline-block h-2 w-2 rounded-full ${item.indicator}`} />
-                              {item.name}
+                      <article key={item.id} className="group relative rounded-2xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-4 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
                               <span className={clsx(
-                                "ml-2 text-[10px] uppercase px-1.5 py-0.5 rounded-md font-bold",
-                                item.item_type === 'inventory' ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700"
+                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider border",
+                                item.item_type === 'inventory' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
                               )}>
-                                {item.item_type === 'inventory' ? 'Product' : 'Service'}
+                                {item.item_type === 'inventory' ? 'Inventory Item' : 'Clinical Service'}
                               </span>
+                              {item.sku && (
+                                <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest bg-zinc-50 dark:bg-dark-surface px-1.5 py-0.5 rounded border border-zinc-100 dark:border-dark-border">
+                                  {item.sku}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-base font-bold text-zinc-900 dark:text-zinc-50 truncate leading-tight">
+                              {item.name}
                             </p>
-                            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{item.notes}</p>
+                            <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                              <span className="flex items-center gap-1">Qty: <b className="text-zinc-900 dark:text-zinc-200">{item.qty}</b></span>
+                              <span className="h-1 w-1 rounded-full bg-zinc-300" />
+                              <span>{currency(item.unitPrice)}/ea</span>
+                            </div>
                           </div>
-                          <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                          <div className="text-right">
+                            <p className="text-xl font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                            {status === "Draft" && (
+                              <button 
+                                onClick={() => removeItem(item.id)}
+                                className="mt-2 p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <FiX className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {item.warning ? (
-                          <span className="mt-2 inline-block rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700 animate-pulse">
+                            <FiAlertTriangle className="h-3 w-3 shrink-0" />
                             {item.warning}
-                          </span>
+                          </div>
                         ) : null}
                       </article>
                     )) : (
-                      <p className="pt-4 text-center text-sm text-zinc-400">No items added yet.</p>
+                      <div className="py-12 flex flex-col items-center justify-center text-center opacity-50">
+                        <LuPawPrint className="h-10 w-10 text-zinc-300 mb-2" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">No items added yet</p>
+                      </div>
                     )}
                   </div>
                 </section>
@@ -1261,12 +1401,34 @@ function InvoiceModuleView() {
                   <FiDownload className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => submitInvoice("Finalized")}
-                  disabled={status !== "Draft"}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  onClick={() => {
+                    const invoiceData = {
+                      invoice_number: "INV-" + Date.now(),
+                      status: status,
+                      subtotal,
+                      tax_rate: 12.00,
+                      discount_value: discountVal,
+                      discount_type: discountType,
+                      total: totalDue,
+                      notes_to_client: notes,
+                      items: items,
+                      amount_paid: amountPaid,
+                      payment_method: paymentMethod
+                    };
+                    
+                    if (status === "Paid" || status === "Finalized" || status === "Partially Paid") {
+                      generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
+                    } else {
+                      submitInvoice("Finalized");
+                    }
+                  }}
+                  disabled={status === "Cancelled"}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-600/10 active:scale-95 transition-all"
                 >
                   <FiSend className="h-4 w-4" />
-                  Finalize &amp; Send
+                  {status === "Paid" ? "Download Receipt" : 
+                   (status === "Finalized" || status === "Partially Paid") ? "Download Invoice" : 
+                   "Finalize & Generate Invoice"}
                 </button>
               </div>
             </div>
@@ -1361,18 +1523,21 @@ function InvoiceModuleView() {
 
                   <div className="mt-3 space-y-3">
                     {items.filter(item => !item.is_hidden).map((item) => (
-                      <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-2 border-b border-zinc-100 dark:border-dark-border pb-3 last:border-0 last:pb-0">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{item.name}</p>
+                      <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-4 border-b border-zinc-100 dark:border-dark-border pb-4 last:border-0 last:pb-0">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{item.name}</p>
                             <span className={clsx(
-                              "text-[8px] uppercase px-1 rounded-sm font-bold border",
-                              item.item_type === 'inventory' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-emerald-200 text-emerald-600 bg-emerald-50"
+                              "text-[8px] uppercase px-1.5 py-0.5 rounded-sm font-black border tracking-wider",
+                              item.item_type === 'inventory' ? "border-amber-200 text-amber-600 bg-amber-50" : "border-emerald-200 text-emerald-600 bg-emerald-50"
                             )}>
                               {item.item_type === 'inventory' ? 'PROD' : 'SERV'}
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">{item.notes}</p>
+                          <div className="flex items-center gap-2">
+                             {item.sku && <span className="text-[10px] text-zinc-400 font-mono">[{item.sku}]</span>}
+                             <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{item.notes}</p>
+                          </div>
                         </div>
                         <input
                           type="number"
@@ -1380,33 +1545,31 @@ function InvoiceModuleView() {
                           value={item.qty}
                           onChange={(e) => updateItem(item.id, "qty", e.target.value)}
                           disabled={status !== "Draft"}
-                          className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
+                          className="w-full bg-transparent text-right text-sm font-bold text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
                         />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(item.id, "unitPrice", e.target.value)}
-                          disabled={status !== "Draft"}
-                          className="w-full bg-transparent text-right text-sm text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
-                        />
-                        <div className="flex items-center justify-end gap-3">
-                          <p className="text-right text-sm font-semibold text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                        <div className="text-right">
+                          <p className="text-sm text-zinc-700 dark:text-zinc-300">{currency(item.unitPrice)}</p>
+                          <p className="text-[10px] text-zinc-400 uppercase font-bold">Rate</p>
+                        </div>
+                        <div className="flex items-center justify-end gap-3 px-1">
+                          <p className="text-right text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
                           {status === "Draft" && (
                             <button 
                               onClick={() => removeItem(item.id)} 
-                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all"
+                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm"
                               title="Remove item"
                             >
-                              <FiX className="w-4 h-4" />
+                              <FiX className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
                       </div>
                     ))}
                     {items.length === 0 && (
-                      <p className="py-4 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No line items added yet.</p>
+                      <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-zinc-100 rounded-2xl">
+                        <FiCreditCard className="w-10 h-10 text-zinc-200 mb-2" />
+                        <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No line items added</p>
+                      </div>
                     )}
                   </div>
                 </section>
@@ -1426,31 +1589,70 @@ function InvoiceModuleView() {
                   </div>
 
                   <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Record Payment</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        disabled={status !== "Draft"}
-                        className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                  {/* Record Payment Section - Only for Finalized/Partially Paid */}
+                  {(status === "Finalized" || status === "Partially Paid") && (
+                    <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 flex items-center gap-2">
+                        <FiCreditCard className="w-3 h-3" /> Record Payment
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                        >
+                          <option value="">Select Method...</option>
+                          <option value="Cash">Cash</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={amountPaid}
+                            onChange={(e) => setAmountPaid(Number(e.target.value))}
+                            placeholder="Amount Paid"
+                            className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRecordPaymentUpdate}
+                        disabled={isRecordingPayment}
+                        className="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                       >
-                        <option value="">Select Method...</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                      </select>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={amountPaid}
-                          onChange={(e) => setAmountPaid(Number(e.target.value))}
-                          disabled={status !== "Draft"}
-                          placeholder="Amount Paid"
-                          className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
-                        />
+                        {isRecordingPayment ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                        ) : <FiCheck className="w-4 h-4" />}
+                        {isRecordingPayment ? "Processing..." : "Confirm & Record Payment"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Receipt Details Section - Only for Paid */}
+                  {status === "Paid" && (
+                    <div className="mt-6 border-t border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-900/30 rounded-2xl p-4 animate-in zoom-in-95 duration-300">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Payment Receipt</p>
+                        <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Fully Paid</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-zinc-500">Method</span>
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{paymentMethod || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-zinc-500">Amount Paid</span>
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{currency(amountPaid)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-zinc-500">Date</span>
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{new Date().toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
+                  )}
                   </div>
                 </section>
 
@@ -1534,13 +1736,13 @@ function InvoiceModuleView() {
                           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{inv.invoice_number}</span>
                           <span className={clsx(
                             "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
-                            inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
-                            inv.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700' :
-                            inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
-                            'bg-zinc-100 text-zinc-600'
-                          )}>
-                            {inv.status}
-                          </span>
+                             inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
+                             inv.status === 'Finalized' || inv.status === 'Partially Paid' ? 'bg-amber-100 text-amber-700' :
+                             inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
+                             'bg-zinc-100 text-zinc-600'
+                           )}>
+                             {inv.status === 'Finalized' ? 'Unpaid Invoice' : inv.status === 'Paid' ? 'Payment Receipt' : inv.status}
+                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
                           Patient: {inv.pet?.name || "N/A"}
@@ -1562,10 +1764,36 @@ function InvoiceModuleView() {
                         <button 
                           onClick={() => generateInvoicePDF(inv, inv.pet, clinicSettings)}
                           className="p-2.5 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all"
-                          title="Download PDF"
+                          title={inv.status === 'Paid' ? "Download Receipt" : "Download Invoice"}
                         >
                           <FiDownload className="w-5 h-5" />
                         </button>
+                        {inv.status !== 'Paid' && inv.status !== 'Cancelled' && (
+                          <button 
+                            onClick={() => {
+                              setItems(inv.items.map(i => ({
+                                ...i,
+                                id: i.id,
+                                unitPrice: i.unit_price,
+                                indicator: "bg-emerald-400"
+                              })));
+                              setSelectedPatientId(inv.pet_id.toString());
+                              setPatientDetails(inv.pet);
+                              setNotes(inv.notes_to_client || "");
+                              setStatus(inv.status);
+                              setAmountPaid(inv.amount_paid || 0);
+                              setPaymentMethod(inv.payment_method || "Cash");
+                              setInvoiceId(inv.id);
+                              setActiveTab("new");
+                              setIsPreviewMode(true);
+                              toast.info(`Ready to record payment for ${inv.invoice_number}`);
+                            }}
+                            className="p-2.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all border border-amber-100"
+                            title="Record Payment"
+                          >
+                            <FiCreditCard className="w-5 h-5" />
+                          </button>
+                        )}
                         <button 
                           onClick={() => {
                             // Populate form for viewing/editing if possible
@@ -1583,6 +1811,7 @@ function InvoiceModuleView() {
                             setStatus(inv.status);
                             setAmountPaid(inv.amount_paid);
                             setPaymentMethod(inv.payment_method || "");
+                            setInvoiceId(inv.id);
                             setActiveTab("new");
                             setIsPreviewMode(true);
                           }}

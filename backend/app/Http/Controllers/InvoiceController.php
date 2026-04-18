@@ -166,7 +166,7 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Recalculate total based on backend rules
+            // Determine status logic based on backend rules
             $discount = ($validated['discount_type'] === 'percentage') 
                 ? $calculatedSubtotal * ($validated['discount_value'] / 100) 
                 : $validated['discount_value'];
@@ -177,11 +177,19 @@ class InvoiceController extends Controller
             $tax = round($taxable * 0.12, 2); 
             $calculatedTotal = round($taxable + $tax, 2);
 
+            // Refined status logic: If finalized but fully paid, mark as Paid (Receipt mode)
+            $finalStatus = $validated['status'];
+            if ($finalStatus === 'Finalized' && $validated['amount_paid'] >= $calculatedTotal) {
+                $finalStatus = 'Paid';
+            } else if ($finalStatus === 'Finalized' && $validated['amount_paid'] > 0) {
+                $finalStatus = 'Partially Paid';
+            }
+
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
                 'pet_id' => $validated['pet_id'],
                 'appointment_id' => $validated['appointment_id'],
-                'status' => $validated['status'],
+                'status' => $finalStatus,
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],
@@ -199,7 +207,7 @@ class InvoiceController extends Controller
             $invoice->load('items');
             $this->finalizationService->finalizeInvoice($invoice);
 
-            if ($invoice->status === 'Finalized') {
+            if (in_array($invoice->status, ['Finalized', 'Paid'])) {
                 try {
                     $owner = $invoice->pet->owner;
                     if ($owner) {

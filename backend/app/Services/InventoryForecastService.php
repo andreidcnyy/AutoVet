@@ -21,89 +21,153 @@ class InventoryForecastService
      */
     public function getStockoutForecast(int $inventoryId, int $historyDays = 30, string $triggerSource = 'manual'): array
     {
-        $inventory = Inventory::find($inventoryId);
+        try {
+            $inventory = Inventory::find($inventoryId);
 
-        if (!$inventory) {
-            return ['error' => 'Inventory item not found.'];
-        }
-
-        $insufficientDataResponse = [
-            'prediction_status' => 'Insufficient Data',
-            'message'           => 'Not enough sales history. At least 3 verified usage records are needed to generate a forecast.',
-            'current_stock'     => $inventory->stock_level,
-            'min_stock_level'   => $inventory->min_stock_level,
-            'item_name'         => $inventory->item_name,
-        ];
-
-        // Require at least 3 verified sale rows (forecasting-safe sources only)
-        $usageCount = InventoryUsageHistory::forecastingSafe()
-            ->where('inventory_id', $inventoryId)
-            ->count();
-            
-        if ($usageCount < 3) {
-            // FALLBACK 1: Active dataset check
-            $datasetPath = base_path('storage/datasets/inventory.csv');
-            if (file_exists($datasetPath)) {
-                $result = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
-                
-                // If Python found data in the CSV, return it as "Dataset Prediction"
-                if ($result && isset($result['prediction_status']) && $result['prediction_status'] !== 'Insufficient Data' && $result['prediction_status'] !== 'No Data') {
-                    $result['prediction_status'] = 'Using dataset-based prediction';
-                    $result['message']           = "This prediction is generated from the historical dataset provided for your system defense.";
-                    $this->saveForecast($inventoryId, $result, $triggerSource);
-                    return $result;
-                }
+            if (!$inventory) {
+                Log::error("[AI-ERROR] Inventory item not found for ID: {$inventoryId}");
+                return ['error' => 'Inventory item not found.'];
             }
 
-            // FALLBACK 2: Check if a saved forecast exists from a previous dataset sync
+            // Pre-validation: Require item code for dataset mapping
+            if (!$inventory->code) {
+                Log::warning("[AI-VALIDATION] Item '{$inventory->item_name}' (ID: {$inventoryId}) is missing a unique code. Cannot map to AI datasets.");
+                return [
+                    'prediction_status' => 'Monitoring',
+                    'message'           => 'Unique item code missing. Please update the product code to enable AI insights.',
+                    'current_stock'     => $inventory->stock_level,
+                    'item_name'         => $inventory->item_name,
+                ];
+            }
+
+            $insufficientDataResponse = [
+                'prediction_status' => 'Insufficient Data',
+                'message'           => 'Not enough sales history. At least 3 verified usage records are needed to generate a forecast.',
+                'current_stock'     => $inventory->stock_level,
+                'min_stock_level'   => $inventory->min_stock_level,
+                'item_name'         => $inventory->item_name,
+            ];
+
+            // Require at least 3 verified sale rows (forecasting-safe sources only)
+            $usageCount = InventoryUsageHistory::forecastingSafe()
+                ->where('inventory_id', $inventoryId)
+                ->count();
+                
+            if ($usageCount < 3) {
+                // FALLBACK 1: Active dataset check
+                $datasetPath = base_path('storage/datasets/inventory.csv');
+                if (file_exists($datasetPath)) {
+                    $result = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
+                    
+                    // If Python found data in the CSV, return it as "Dataset Prediction"
+                    if ($result && isset($result['prediction_status']) && $result['prediction_status'] !== 'Insufficient Data' && $result['prediction_status'] !== 'No Data') {
+                        $result['prediction_status'] = 'Using dataset-guided prediction';
+                        $result['message']           = "Historical dataset is used to estimate demand behavior. Final stockout date is based on current live stock.";
+                        $this->saveForecast($inventoryId, $result, $triggerSource);
+                        return $result;
+                    }
+                }
+
+                // FALLBACK 2: Check if a saved forecast exists from a previous dataset sync
+                $saved = $this->getLatestSavedForecast($inventoryId);
+                if ($saved && $saved->average_daily_consumption > 0) {
+                    $currentStock = $inventory->stock_level;
+                    $minStock = $inventory->min_stock_level ?? 0;
+                    $avgDaily = $saved->average_daily_consumption;
+                    
+                    $daysLeft = ($currentStock > $minStock) 
+                        ? ceil(($currentStock - $minStock) / $avgDaily) 
+                        : 0;
+                    
+                    $predictedDate = now()->addDays($daysLeft);
+
+                    return [
+                        'prediction_status' => 'Synced Dataset Insight',
+                        'forecast_status'   => ($daysLeft < 7) ? 'Critical' : (($daysLeft < 14) ? 'Reorder Soon' : 'Safe'),
+                        'message'           => "Based on historical average consumption, adjusted for your current stock level.",
+                        'current_stock'     => $currentStock,
+                        'min_stock_level'   => $minStock,
+                        'item_name'         => $inventory->item_name,
+                        'days_until_stockout' => $daysLeft,
+                        'predicted_stockout_date' => $predictedDate->format('Y-m-d'),
+                        'average_daily_consumption' => $avgDaily,
+                        'predicted_daily_sales' => $saved->predicted_daily_sales ?? 0,
+                        'predicted_weekly_sales' => $saved->predicted_weekly_sales ?? 0,
+                        'predicted_monthly_sales' => $saved->predicted_monthly_sales ?? 0,
+                        'last_recorded_date' => $saved->generated_at->format('Y-m-d H:i'),
+                        'is_live_recalculated' => true
+                    ];
+                }
+                return $insufficientDataResponse;
+            }
+
+            $result = $this->runPythonForecast($inventory, $historyDays);
+            if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
+                $this->saveForecast($inventoryId, $result, $triggerSource);
+                return $result;
+            }
+
+            // Live data returned Insufficient Data (e.g. few unique daily points) — try dataset fallback
+            Log::info("[AI-FALLBACK] Inventory ID {$inventoryId}: live data insufficient, trying dataset CSV.");
+
+            $datasetPath = base_path('storage/datasets/inventory.csv');
+            if (file_exists($datasetPath)) {
+                $datasetResult = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
+                if ($datasetResult && isset($datasetResult['prediction_status'])
+                    && $datasetResult['prediction_status'] !== 'Insufficient Data'
+                    && $datasetResult['prediction_status'] !== 'No Data'
+                    && !isset($datasetResult['error'])
+                ) {
+                    $datasetResult['prediction_status'] = 'Using dataset-guided prediction';
+                    $datasetResult['message']           = 'Historical dataset is used to estimate demand behavior (live data has too few daily movement points). Final stockout date is based on current live stock.';
+                    $this->saveForecast($inventoryId, $datasetResult, $triggerSource);
+                    Log::info("[AI-FALLBACK-SUCCESS] Inventory ID {$inventoryId}: dataset fallback returned result.");
+                    return $datasetResult;
+                }
+                Log::info("[AI-FALLBACK-MISS] Inventory ID {$inventoryId}: dataset also insufficient.");
+            }
+            // FALLBACK 2: Check if a saved forecast exists from previous runs/syncs
             $saved = $this->getLatestSavedForecast($inventoryId);
-            if ($saved) {
+            if ($saved && $saved->average_daily_consumption > 0) {
+                // Determine days/date relative to LIVE stock
+                $currentStock = $inventory->stock_level;
+                $minStock = $inventory->min_stock_level ?? 0;
+                $avgDaily = $saved->average_daily_consumption;
+
+                $daysLeft = ($currentStock > $minStock) 
+                    ? ceil(($currentStock - $minStock) / $avgDaily) 
+                    : 0;
+                
+                $predictedDate = now()->addDays($daysLeft);
+
                 return [
                     'prediction_status' => 'Synced Dataset Insight',
-                    'forecast_status'   => $saved->forecast_status ?: 'Safe',
-                    'message'           => "Based on the latest synchronized dataset.",
-                    'current_stock'     => $inventory->stock_level,
-                    'min_stock_level'   => $inventory->min_stock_level,
+                    'forecast_status'   => ($daysLeft < 7) ? 'Critical' : (($daysLeft < 14) ? 'Reorder Soon' : 'Safe'),
+                    'message'           => "Based on the latest synchronized dataset, adjusted for your current stock level.",
+                    'current_stock'     => $currentStock,
+                    'min_stock_level'   => $minStock,
                     'item_name'         => $inventory->item_name,
-                    'days_until_stockout' => $saved->days_until_stockout ?? 0,
-                    'predicted_stockout_date' => $saved->predicted_stockout_date ? $saved->predicted_stockout_date->format('Y-m-d') : null,
-                    'average_daily_consumption' => $saved->average_daily_consumption ?? 0,
+                    'days_until_stockout' => $daysLeft,
+                    'predicted_stockout_date' => $predictedDate->format('Y-m-d'),
+                    'average_daily_consumption' => $avgDaily,
                     'predicted_daily_sales' => $saved->predicted_daily_sales ?? 0,
                     'predicted_weekly_sales' => $saved->predicted_weekly_sales ?? 0,
                     'predicted_monthly_sales' => $saved->predicted_monthly_sales ?? 0,
                     'last_recorded_date' => $saved->generated_at->format('Y-m-d H:i'),
+                    'is_live_recalculated' => true
                 ];
             }
+
             return $insufficientDataResponse;
+            
+        } catch (\Throwable $e) {
+            Log::error("[AI-EXCEPTION] Error during live forecast for item {$inventoryId}: " . $e->getMessage());
+            return [
+                'prediction_status' => 'Monitoring',
+                'message' => 'Forecast system is currently analyzing trends. Check back soon.',
+                'error' => $e->getMessage()
+            ];
         }
-
-        $result = $this->runPythonForecast($inventory, $historyDays);
-        if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
-            $this->saveForecast($inventoryId, $result, $triggerSource);
-            return $result;
-        }
-
-        // Live data returned Insufficient Data (e.g. few unique daily points) — try dataset fallback
-        Log::info("[FORECAST FALLBACK] Inventory ID {$inventoryId}: live data insufficient, trying dataset CSV.");
-
-        $datasetPath = base_path('storage/datasets/inventory.csv');
-        if (file_exists($datasetPath)) {
-            $datasetResult = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
-            if ($datasetResult && isset($datasetResult['prediction_status'])
-                && $datasetResult['prediction_status'] !== 'Insufficient Data'
-                && $datasetResult['prediction_status'] !== 'No Data'
-                && !isset($datasetResult['error'])
-            ) {
-                $datasetResult['prediction_status'] = 'Using dataset-based prediction';
-                $datasetResult['message']           = 'Prediction generated from historical dataset (live data has too few daily movement points).';
-                $this->saveForecast($inventoryId, $datasetResult, $triggerSource);
-                Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: dataset fallback returned result.");
-                return $datasetResult;
-            }
-            Log::info("[FORECAST FALLBACK MISS] Inventory ID {$inventoryId}: dataset also insufficient.");
-        }
-
-        return $insufficientDataResponse;
     }
 
     /**
@@ -125,7 +189,13 @@ class InventoryForecastService
         try {
             $inventory = Inventory::find($inventoryId);
             if (!$inventory) {
-                Log::warning("InventoryForecastService: inventory ID {$inventoryId} not found.");
+                Log::warning("[AI-ERROR] Inventory ID {$inventoryId} not found in database.");
+                return;
+            }
+
+            // Pre-validation: Require item code for background forecast
+            if (!$inventory->code) {
+                Log::info("[AI-SKIPPED] Item '{$inventory->item_name}' (ID: {$inventoryId}) skipped - needs code mapping.");
                 return;
             }
 
@@ -142,12 +212,12 @@ class InventoryForecastService
                         $result['prediction_status'] = 'Using dataset-based prediction';
                         $result['message']           = 'Prediction generated from historical dataset fallback.';
                         $this->saveForecast($inventoryId, $result, $triggerSource);
-                        Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: Dataset fallback used (usageCount < 3).");
+                        Log::info("[AI-REFRESH-SUCCESS] Inventory ID {$inventoryId}: Dataset fallback used.");
                         return;
                     }
                 }
 
-                Log::info("[FORECAST STATUS] Inventory ID {$inventoryId} has insufficient history and no matching dataset. Marking as Insufficient Data.");
+                Log::info("[AI-REFRESH-STATUS] Inventory ID {$inventoryId} insufficient history and no mapping found.");
                 $this->saveForecast($inventoryId, [
                     'prediction_status' => 'Insufficient Data',
                     'forecast_status' => 'Insufficient Data',
@@ -156,37 +226,32 @@ class InventoryForecastService
                 return;
             }
 
-            Log::info("[FORECAST STARTED] Processing AI model for Inventory ID {$inventoryId} ({$usageCount} records). Trigger: {$triggerSource}");
+            Log::info("[AI-REFRESH-START] Processing item ID {$inventoryId} ({$usageCount} records).");
             $result = $this->runPythonForecast($inventory, $historyDays);
 
             // Handle unique days < 3 case from Live Python
             if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') === 'Insufficient Data') {
-                Log::info("[FORECAST FALLBACK] Inventory ID {$inventoryId}: live data unique points insufficient, trying dataset CSV.");
                 $datasetPath = base_path('storage/datasets/inventory.csv');
                 if (file_exists($datasetPath)) {
                     $datasetResult = $this->runPythonForecast($inventory, $historyDays, $datasetPath);
                     if ($datasetResult && isset($datasetResult['prediction_status']) && $datasetResult['prediction_status'] !== 'Insufficient Data' && $datasetResult['prediction_status'] !== 'No Data') {
-                        $datasetResult['prediction_status'] = 'Using dataset-based prediction';
-                        $datasetResult['message']           = 'Prediction generated from historical dataset fallback (live data too few unique days).';
+                        $datasetResult['prediction_status'] = 'Using dataset-guided prediction';
+                        $datasetResult['message']           = 'Historical dataset is used to estimate demand behavior.';
                         $this->saveForecast($inventoryId, $datasetResult, $triggerSource);
-                        Log::info("[FORECAST FALLBACK SUCCESS] Inventory ID {$inventoryId}: Dataset fallback used (live points insufficient).");
+                        Log::info("[AI-REFRESH-FALLBACK] Inventory ID {$inventoryId}: Dataset fallback used.");
                         return;
                     }
                 }
             }
 
             if ($result === null || isset($result['error'])) {
-                Log::warning("[FORECAST FAILED] Inventory ID {$inventoryId}: Python script failed or returned null.");
+                Log::warning("[AI-REFRESH-FAILED] Inventory ID {$inventoryId}: Model execution error.");
                 return;
             }
 
             $this->saveForecast($inventoryId, $result, $triggerSource);
-            Log::info("[FORECAST COMPLETED] Inventory ID {$inventoryId}: results saved.", [
-                'days_until_stockout'      => $result['days_until_stockout'] ?? null,
-                'predicted_stockout_date'  => $result['predicted_stockout_date'] ?? null,
-                'model_used'               => $result['model_used'] ?? 'python_forecast',
-                'trigger'                  => $triggerSource
-            ]);
+        } catch (\Throwable $e) {
+            Log::error("[AI-REFRESH-EXCEPTION] Inventory ID {$inventoryId}: " . $e->getMessage());
         } finally {
             Cache::forget($lockKey);
         }
@@ -200,11 +265,12 @@ class InventoryForecastService
         $inventory = Inventory::find($inventoryId);
         $unitPrice = $inventory ? ($inventory->selling_price ?? 0) : 0;
         
-        $monthlySales = $forecastResult['predicted_monthly_sales'] ?? 0;
+        $avgDaily = $forecastResult['average_daily_consumption'] ?? 0;
+        $monthlySales = $avgDaily * 30; // Enforce: est_monthly_need corresponds to daily usage rate
         $estimatedRevenue = $monthlySales * $unitPrice;
 
         $isDataset = (isset($forecastResult['prediction_status']) && 
-                     ($forecastResult['prediction_status'] === 'Using dataset-based prediction' || 
+                     ($forecastResult['prediction_status'] === 'Using dataset-guided prediction' || 
                       strpos($forecastResult['prediction_status'], 'Dataset') !== false));
 
         InventoryForecast::create([
@@ -248,7 +314,8 @@ class InventoryForecastService
         }
 
         if (isset($result['predicted_weekly_sales']) && $result['predicted_weekly_sales'] > 0) {
-            $message .= " Weekly sales forecast: ₱" . number_format($result['predicted_weekly_sales'], 2) . ".";
+             // Use revenue formatting directly since weekly sales in inventory typically means units*price or just units depending on script
+            $message .= " Weekly usage rate: " . number_format($result['predicted_weekly_sales'], 2) . " projected.";
         }
 
         $this->createInternalNotification(
@@ -257,9 +324,12 @@ class InventoryForecastService
             $message,
             [
                 'inventory_id' => $inventory->id,
+                'item_name' => $itemName,
                 'status' => $status,
                 'days' => $days,
-                'predicted_weekly_sales' => $result['predicted_weekly_sales'] ?? 0
+                'average_daily_consumption' => $result['average_daily_consumption'] ?? 0,
+                'predicted_weekly_sales' => $result['predicted_weekly_sales'] ?? 0,
+                'predicted_monthly_sales' => $result['predicted_monthly_sales'] ?? 0
             ]
         );
     }
@@ -390,7 +460,9 @@ class InventoryForecastService
                 . ' ' . escapeshellarg($pythonScriptPath)
                 . ' ' . escapeshellarg($csvPath)
                 . ' ' . escapeshellarg($minStockLevel)
-                . ' ' . escapeshellarg("--code={$inventoryCode}");
+                . ' ' . escapeshellarg("--code={$inventoryCode}")
+                . ' ' . escapeshellarg("--current_stock={$inventory->stock_level}")
+                . ' ' . escapeshellarg("--history_days={$historyDays}");
 
             $process = Process::run($command);
 
@@ -422,5 +494,158 @@ class InventoryForecastService
                 Storage::delete($csvFilename);
             }
         }
+    }
+
+    /**
+     * Run the sales_forecast.py script against a global dataset (e.g. sales.csv)
+     */
+    public function runGlobalSalesForecast(string $datasetRelativePath, string $mode = 'revenue', int $range = 6): ?array
+    {
+        $datasetPath = base_path($datasetRelativePath);
+        if (!file_exists($datasetPath)) {
+            Log::error("InventoryForecastService: Dataset not found for global sales forecast at {$datasetPath}.");
+            return null;
+        }
+
+        $salesScriptPath = base_path('ai/sales_forecast.py');
+        if (!file_exists($salesScriptPath)) {
+            Log::error("InventoryForecastService: sales_forecast.py not found at {$salesScriptPath}.");
+            return null;
+        }
+
+        $pythonExecutable = env('PYTHON_BIN_PATH')
+            ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
+
+        $command = $pythonExecutable
+            . ' ' . escapeshellarg($salesScriptPath)
+            . ' ' . escapeshellarg($datasetPath)
+            . ' ' . escapeshellarg("--mode={$mode}")
+            . ' ' . escapeshellarg("--range={$range}");
+
+        $process = Process::run($command);
+
+        if ($process->failed()) {
+            Log::error("InventoryForecastService: Global sales forecast script failed: " . $process->errorOutput());
+            return null;
+        }
+
+        $result = json_decode($process->output(), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error("InventoryForecastService: JSON decode error in global sales forecast: " . json_last_error_msg());
+            return null;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Run batch forecast for multiple items in a single process.
+     */
+    public function runBatchForecast(array $inventoryIds, int $historyDays = 365, string $triggerSource = 'manual'): void
+    {
+        $batchId = uniqid('forecast_batch_');
+        $totalItems = count($inventoryIds);
+        $this->updateBatchProgress($batchId, 0, $totalItems, 'Preparing inventory data...');
+
+        try {
+            $itemsToProcess = [];
+            foreach ($inventoryIds as $id) {
+                $inventory = Inventory::find($id);
+                if ($inventory && $inventory->code) {
+                    $itemsToProcess[] = [
+                        'id' => $inventory->id,
+                        'code' => $inventory->code,
+                        'min_stock_level' => $inventory->min_stock_level,
+                        'current_stock' => $inventory->stock_level,
+                        'history_days' => $historyDays
+                    ];
+                }
+            }
+
+            if (empty($itemsToProcess)) {
+                $this->updateBatchProgress($batchId, 100, 0, 'No items found with valid codes for analysis.');
+                return;
+            }
+
+            // Write temporary JSON input for Python
+            $tempDir = storage_path('app/temp');
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            
+            $inputPath = $tempDir . "/batch_input_{$batchId}.json";
+            file_put_contents($inputPath, json_encode($itemsToProcess));
+
+            $this->updateBatchProgress($batchId, 15, $totalItems, 'Executing AI Batch Model...');
+
+            $pythonExecutable = env('PYTHON_BIN_PATH')
+                ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
+            $scriptPath = base_path('ai/batch_forecast.py');
+            $datasetPath = base_path('storage/datasets/inventory.csv');
+
+            $command = $pythonExecutable
+                . ' ' . escapeshellarg($scriptPath)
+                . ' ' . escapeshellarg($datasetPath)
+                . ' ' . escapeshellarg($inputPath);
+
+            // Using long timeout for batch process
+            $process = Process::path(base_path())->timeout(300)->run($command);
+
+            if ($process->failed()) {
+                throw new \Exception("Batch Python script failed: " . $process->errorOutput());
+            }
+
+            $allResults = json_decode($process->output(), true);
+            if (!$allResults || isset($allResults['error'])) {
+                $errorMsg = $allResults['error'] ?? 'Invalid JSON output from AI script.';
+                throw new \Exception($errorMsg);
+            }
+
+            $this->updateBatchProgress($batchId, 70, $totalItems, 'Syncing results to database...');
+
+            $successCount = 0;
+            foreach ($allResults as $inventoryId => $result) {
+                if (isset($result['error']) || ($result['prediction_status'] ?? '') === 'Error') {
+                    Log::warning("Batch forecast item failure ID {$inventoryId}: " . ($result['error'] ?? 'Unknown error'));
+                    continue;
+                }
+                
+                $this->saveForecast((int)$inventoryId, $result, $triggerSource);
+                $successCount++;
+            }
+
+            // Cleanup
+            if (file_exists($inputPath)) {
+                @unlink($inputPath);
+            }
+            
+            $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
+            Log::info("[AI-BATCH-SUCCESS] Processed {$totalItems} items, saved {$successCount} results.");
+
+            // Clear relevant caches
+            Cache::forget('dashboard_inventory_forecast');
+            Cache::forget('dashboard_stats');
+            Cache::forget('dashboard_inventory_consumption_6');
+            Cache::forget('dashboard_inventory_consumption_12');
+
+        } catch (\Throwable $e) {
+            Log::error("[AI-BATCH-ERROR] " . $e->getMessage());
+            $this->updateBatchProgress($batchId, 0, $totalItems, 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update progress status in cache for frontend polling.
+     */
+    protected function updateBatchProgress(string $batchId, int $percent, int $total, string $message): void
+    {
+        Cache::put("forecast_batch_status", [
+            'batch_id' => $batchId,
+            'percent' => $percent,
+            'total' => $total,
+            'message' => $message,
+            'updated_at' => now()->toDateTimeString(),
+            'is_running' => $percent < 100 && !str_starts_with($message, 'Error')
+        ], 600);
     }
 }

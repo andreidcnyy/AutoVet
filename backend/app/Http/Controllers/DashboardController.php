@@ -10,6 +10,7 @@ use App\Models\InvoiceItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 use App\Services\InventoryForecastService;
 use Illuminate\Http\JsonResponse;
@@ -30,104 +31,53 @@ class DashboardController extends Controller
     public function getInventoryForecast()
     {
         $data = \Illuminate\Support\Facades\Cache::remember('dashboard_inventory_forecast', 300, function () {
+            // Find the most critical inventory item based on highest risk saved forecast
+            $savedForecast = \App\Models\InventoryForecast::with('inventory')
+                ->orderByRaw("FIELD(forecast_status, 'Critical', 'Reorder Soon', 'Safe', 'Insufficient Data')")
+                ->orderBy('days_until_stockout', 'ASC')
+                ->first();
+
+            if ($savedForecast && $savedForecast->inventory) {
+                $item = $savedForecast->inventory;
+                $forecastStatus = $savedForecast->forecast_status;
+
+                $analysisMessage = "AI Insight: " . ($savedForecast->notes ?? "Model indicates a {$forecastStatus} status.");
+                if ($savedForecast->prediction_source === 'dataset') {
+                    $analysisMessage .= " (Dataset Prediction Active)";
+                }
+
+                $growthLabel = "Avg: " . round($savedForecast->average_daily_consumption, 1) . " unit/day";
+
+                return [
+                    'item_name' => $item->item_name,
+                    'recommended_stock' => $savedForecast->suggested_reorder_quantity ?? ($item->min_stock_level * 2),
+                    'current_stock' => $item->stock_level,
+                    'growth_label' => $growthLabel,
+                    'analysis' => $analysisMessage,
+                    'prediction_status' => $savedForecast->prediction_source === 'dataset' ? 'Using dataset-based prediction' : 'Live Sync',
+                    'average_daily_consumption' => $savedForecast->average_daily_consumption,
+                    'days_until_stockout' => $savedForecast->days_until_stockout,
+                    'chart_data' => null // Can be populated if chart is strictly required
+                ];
+            }
+
+            // Fallback if no forecast exists: pick item with lowest stock
             $item = Inventory::orderByRaw('(stock_level - min_stock_level) ASC')->first();
 
             if (!$item) {
                 return null;
             }
 
-            $monthsToFetch = 6;
-            $timeline = [];
-            $now = Carbon::now()->startOfMonth();
-            $startMonth = $now->copy()->subMonths($monthsToFetch - 1);
-            
-            for ($i = 0; $i < $monthsToFetch; $i++) {
-                $timeline[] = ['date' => $startMonth->copy()->addMonths($i)];
-            }
-
-            $usageRecords = InvoiceItem::whereHas('invoice', function($q) {
-                    $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
-                })
-                ->where('inventory_id', $item->id)
-                ->where('created_at', '>=', $startMonth)
-                ->select(
-                    DB::raw('YEAR(created_at) as year'),
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('SUM(qty) as total_qty')
-                )
-                ->groupBy('year', 'month')
-                ->get();
-
-            $actualData = [];
-            foreach ($usageRecords as $u) {
-                $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
-                $actualData[$key] = (float) $u->total_qty;
-            }
-
-            $months = [];
-            $usage = [];
-            
-            $xValues = [];
-            $yValues = [];
-
-            foreach ($timeline as $index => $t) {
-                $key = $t['date']->format('Y-m');
-                $months[] = $t['date']->format('M');
-                
-                $val = $actualData[$key] ?? 0;
-                $usage[] = $val;
-                
-                $xValues[] = $index;
-                $yValues[] = $val;
-            }
-
-            // Simple Linear Regression
-            $n = count($xValues);
-            $sumX = array_sum($xValues);
-            $sumY = array_sum($yValues);
-            $sumXY = 0;
-            $sumX2 = 0;
-            for ($i = 0; $i < $n; $i++) {
-                $sumXY += ($xValues[$i] * $yValues[$i]);
-                $sumX2 += ($xValues[$i] * $xValues[$i]);
-            }
-            $denominator = ($n * $sumX2) - ($sumX * $sumX);
-            $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
-            $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
-
-            $forecast = max(0, round(($m * $n) + $b, 1));
-            $months[] = $now->copy()->addMonths(1)->format('M');
-
-            $growth = 0;
-            if (count($usage) >= 2) {
-                $lastIndex = count($usage) - 1;
-                $prev = $usage[$lastIndex - 1];
-                $curr = $usage[$lastIndex];
-                if ($prev > 0) {
-                    $growth = (($curr - $prev) / $prev) * 100;
-                }
-            }
-            $growthLabel = ($growth >= 0 ? '+' : '') . round($growth, 1) . '% vs last month';
-
-            $stockoutWarning = '';
-            if ($item->stock_level < $forecast && $forecast > 0) {
-                $daysLeft = max(1, round(($item->stock_level / $forecast) * 30));
-                $stockoutWarning = " Based on the next month's forecasted usage of {$forecast} units, {$item->item_name} is projected to run out in approximately {$daysLeft} days.";
-            } else {
-                $stockoutWarning = " Current stock level is sufficient to meet the forecasted usage of {$forecast} units for next month.";
-            }
-
             return [
                 'item_name' => $item->item_name,
                 'recommended_stock' => $item->min_stock_level * 2,
                 'current_stock' => $item->stock_level,
-                'growth_label' => $growthLabel,
-                'analysis' => "Analyzed the last 6 months of sales data." . $stockoutWarning,
-                'chart_data' => [
-                    'months' => $months,
-                    'usage' => $usage,
-                    'forecast' => $forecast
-                ]
+                'growth_label' => 'No Data',
+                'analysis' => "No AI forecast records found for this item yet. Record sales to activate.",
+                'prediction_status' => 'Insufficient Data',
+                'average_daily_consumption' => 0,
+                'days_until_stockout' => null,
+                'chart_data' => null
             ];
         });
 
@@ -451,9 +401,45 @@ class DashboardController extends Controller
                 ->get();
 
             $actualData = [];
-            foreach ($usage as $u) {
-                $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
-                $actualData[$key] = (float) $u->total_qty;
+            $isDataset = false;
+
+            if ($usage->count() > 0) {
+                foreach ($usage as $u) {
+                    $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
+                    $actualData[$key] = (float) $u->total_qty;
+                }
+            } else {
+                // Dataset Fallback
+                $datasetPath = base_path('storage/datasets/inventory.csv');
+                if (file_exists($datasetPath)) {
+                    $handle = fopen($datasetPath, 'r');
+                    $header = fgetcsv($handle);
+                    
+                    // Column indices: index 3 is usage_date, index 4 is quantity_used
+                    while (($row = fgetcsv($handle)) !== FALSE) {
+                        try {
+                            $dateStr = $row[3];
+                            $qtyUsed = (float)($row[4] ?? 0);
+                            
+                            // Expected format: DD/MM/YYYY
+                            $date = Carbon::createFromFormat('d/m/Y', $dateStr);
+                            $key = $date->format('Y-m');
+                            
+                            if (!isset($actualData[$key])) {
+                                $actualData[$key] = 0;
+                            }
+                            $actualData[$key] += $qtyUsed;
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+                    }
+                    fclose($handle);
+                    
+                    // Only flag as dataset if we actually got data
+                    if (!empty($actualData)) {
+                        $isDataset = true;
+                    }
+                }
             }
 
             // Linear Regression
@@ -462,8 +448,26 @@ class DashboardController extends Controller
             foreach ($timeline as $index => $item) {
                 if (!$item['is_future']) {
                     $key = $item['date']->format('Y-m');
+                    // If using dataset, we might need to map to the historical months if the timeline is modern
+                    // But usually the dataset contains data for specific years.
+                    // If the clinic is "new", the timeline is current months. 
+                    // If the dataset is from 2025 and it's 2026, we should probably return the "best fit" from dataset or just the fixed labels.
+                    // For the demo, if actualData has keys, we use them.
                     $val = $actualData[$key] ?? 0;
                     
+                    // If fallback is on, but the keys don't match the current timeline (e.g. dataset is old),
+                    // we pick the "last available" N months from the dataset to show *something* on the chart.
+                    if ($isDataset && $val == 0) {
+                        // Attempt to find ANY data in the dataset to fill the chart
+                        // For demo purposes, we'll map the dataset's available months to the chart's indices
+                        $allKeys = array_keys($actualData);
+                        sort($allKeys);
+                        $targetMonthKey = $allKeys[($index % count($allKeys))] ?? null;
+                        if ($targetMonthKey) {
+                            $val = $actualData[$targetMonthKey];
+                        }
+                    }
+
                     $xValues[] = $index;
                     $yValues[] = $val;
                 }
@@ -482,21 +486,26 @@ class DashboardController extends Controller
             $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
             $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
 
-            $results = [];
+            $results = [
+                'data' => [],
+                'is_dataset_prediction' => $isDataset,
+                'prediction_source' => $isDataset ? 'dataset' : 'live'
+            ];
+
             foreach ($timeline as $index => $item) {
                 $key = $item['date']->format('Y-m');
                 $forecastValue = max(0, ($m * $index) + $b);
 
                 if ($item['is_future']) {
-                    $results[] = [
+                    $results['data'][] = [
                         'month' => $item['date']->format('M'),
                         'actual' => null,
                         'forecast' => round($forecastValue, 1)
                     ];
                 } else {
-                    $val = $actualData[$key] ?? 0;
+                    $val = isset($yValues[$index]) ? $yValues[$index] : 0;
 
-                    $results[] = [
+                    $results['data'][] = [
                         'month' => $item['date']->format('M'),
                         'actual' => $val,
                         'forecast' => round($forecastValue, 1)
@@ -613,39 +622,29 @@ class DashboardController extends Controller
      */
     public function getSalesForecast(Request $request)
     {
-        $range = $request->query('range', 6);
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_sales_forecast_{$range}", 300, function () use ($range) {
-            $monthsToFetch = $range == 'Year' ? 12 : 6;
-            $futureMonths = 2; // Predict next 2 months
+        $rangeParam = $request->query('range', '6 Months');
+        $monthsToFetch = $rangeParam == 'Year' ? 12 : 6;
 
-            // Generate the last N months and next 2 months for the timeline
-            $timeline = [];
+        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_sales_forecast_{$monthsToFetch}", 300, function () use ($monthsToFetch) {
             $now = Carbon::now()->startOfMonth();
+            $timeline = [];
             
-            $startMonth = $now->copy()->subMonths($monthsToFetch - 1);
-            
-            for ($i = 0; $i < $monthsToFetch; $i++) {
-                $timeline[] = [
-                    'date' => $startMonth->copy()->addMonths($i),
-                    'is_future' => false
-                ];
+            // Generate historical month slots
+            for ($i = ($monthsToFetch - 1); $i >= 0; $i--) {
+                $timeline[] = ['date' => $now->copy()->subMonths($i), 'is_future' => false];
             }
-            
-            for ($i = 1; $i <= $futureMonths; $i++) {
-                $timeline[] = [
-                    'date' => $now->copy()->addMonths($i),
-                    'is_future' => true
-                ];
+            // Generate future forecast slots
+            for ($i = 1; $i <= 2; $i++) {
+                $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
             }
 
-            // Fetch actual revenue data grouped by month
             $invoices = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
-                ->where('created_at', '>=', $startMonth)
                 ->select(
                     DB::raw('YEAR(created_at) as year'),
                     DB::raw('MONTH(created_at) as month'),
                     DB::raw('SUM(total) as total_revenue')
                 )
+                ->where('created_at', '>=', $now->copy()->subMonths(12)) // Training window is always up to 12m
                 ->groupBy('year', 'month')
                 ->orderBy('year')
                 ->orderBy('month')
@@ -657,110 +656,92 @@ class DashboardController extends Controller
                 $actualData[$key] = (float) $inv->total_revenue;
             }
 
-            // Prepare data for Linear Regression
-            $xValues = [];
-            $yValues = [];
-            $n = 0;
-
-            foreach ($timeline as $index => $item) {
-                if (!$item['is_future']) {
-                    $key = $item['date']->format('Y-m');
-                    $val = $actualData[$key] ?? 0;
-                    
-                    $xValues[] = $index;
-                    $yValues[] = $val;
-                    $n++;
-                }
+            $modelDataPoints = []; 
+            foreach ($actualData as $key => $val) {
+                if ($val > 0) $modelDataPoints[] = $val;
             }
 
-            // Not enough data to run regression meaningfully
-            if ($n < 2) {
+            $nLiveMonths = count($modelDataPoints);
+
+            // Level 2: Dataset Fallback if live data is insufficient (< 2 months of history)
+            if ($nLiveMonths < 2) {
+                $datasetResult = $this->inventoryForecastService->runGlobalSalesForecast('storage/datasets/sales.csv', 'revenue', $monthsToFetch);
+                
+                if ($datasetResult && isset($datasetResult['chart_data'])) {
+                    $aiInsights = [
+                        ['type' => 'info', 'text' => $datasetResult['trend_description'] ?? "Using dataset-based prediction while clinic history builds."],
+                    ];
+                    
+                    if ($datasetResult['model']['slope'] > 0) {
+                        $aiInsights[] = ['type' => 'success', 'text' => "Historical data shows a healthy growth trend of +₱" . number_format($datasetResult['model']['slope'], 0) . "/month."];
+                    }
+
+                    Log::info("[AI SALES FORECAST] Fallback used. Source: Dataset. R2: {$datasetResult['model']['r2']} Slope: {$datasetResult['model']['slope']}");
+                    
+                    return [
+                        'data' => $datasetResult['chart_data'],
+                        'model' => array_merge($datasetResult['model'], [
+                            'algorithm' => 'Historical Regression (Dataset Fallback)',
+                            'prediction_source' => 'dataset_fallback',
+                            'last_updated' => now()->toDateTimeString(),
+                            'ai_predicted_monthly_revenue' => $datasetResult['model']['next_forecast'] ?? 0
+                        ]),
+                        'insights' => $aiInsights,
+                        'is_dataset_prediction' => true,
+                        'prediction_source' => 'dataset'
+                    ];
+                }
+
                 return [
                     'data' => [],
                     'model' => null,
-                    'insights' => [
-                        ['type' => 'info', 'text' => 'Not enough invoice data yet to run the forecast model. Record at least 2 months of sales to activate AI forecasting.']
-                    ],
+                    'insights' => [['type' => 'info', 'text' => 'Not enough revenue history for forecasting.']]
                 ];
             }
 
-            // Simple Linear Regression: y = mx + b
+            // Level 1: Live Data Regression
+            $xValues = [];
+            $yValues = [];
+            $modelInputRaw = array_values($actualData);
+            
+            // Slice model input to match requested range if we want the slope to reflect the window
+            $slicedModelInput = array_slice($modelInputRaw, -$monthsToFetch);
+            $n = count($slicedModelInput);
+
+            for ($i = 0; $i < $n; $i++) {
+                $xValues[] = $i;
+                $yValues[] = $slicedModelInput[$i];
+            }
+
             $sumX = array_sum($xValues);
             $sumY = array_sum($yValues);
-            
-            $sumXY = 0;
-            $sumX2 = 0;
-            
+            $sumXY = 0; $sumX2 = 0;
             for ($i = 0; $i < $n; $i++) {
                 $sumXY += ($xValues[$i] * $yValues[$i]);
                 $sumX2 += ($xValues[$i] * $xValues[$i]);
             }
-
             $denominator = ($n * $sumX2) - ($sumX * $sumX);
-            
-            // If denominator is 0 (e.g., only 1 data point), m = 0
             $m = ($denominator != 0) ? (($n * $sumXY) - ($sumX * $sumY)) / $denominator : 0;
             $b = ($n != 0) ? ($sumY - ($m * $sumX)) / $n : 0;
 
-            // 1. R² calculation
             $meanY = $n > 0 ? $sumY / $n : 0;
-            $ssTot = 0;
-            foreach ($yValues as $y) {
-                $ssTot += ($y - $meanY) ** 2;
-            }
-            $ssRes = 0;
+            $ssTot = 0; $ssRes = 0;
             for ($i = 0; $i < $n; $i++) {
-                $ssRes += ($yValues[$i] - ($m * $xValues[$i] + $b)) ** 2;
+                $ssTot += pow($yValues[$i] - $meanY, 2);
+                $ssRes += pow($yValues[$i] - ($m * $xValues[$i] + $b), 2);
             }
             $r2 = ($ssTot > 0) ? round(1 - ($ssRes / $ssTot), 4) : 0;
 
-            // 2. Standard error for confidence band
-            $standardError = ($n > 2) ? round(sqrt($ssRes / ($n - 2)), 2) : 0;
-            $confidenceMargin = round($standardError * 1.5, 2);
-
-            // 3. Next month forecast value
-            $nextMonthForecast = round(max(0, ($m * $n) + $b), 2);
-
-            // 4. AI Insights array
-            $aiInsights = [];
-            if ($m > 0) {
-                $aiInsights[] = ['type' => 'success', 'text' => "Revenue is growing at +₱" . number_format(round($m), 0) . "/month. The model projects ₱" . number_format($nextMonthForecast, 0) . " next month."];
-            } elseif ($m < -1) {
-                $aiInsights[] = ['type' => 'warning', 'text' => "Revenue shows a declining trend of ₱" . number_format(abs(round($m)), 0) . "/month. Review pricing or service volume."];
-            } else {
-                $aiInsights[] = ['type' => 'info', 'text' => "Revenue trend is flat. The model needs more monthly data points to detect a growth direction."];
-            }
-
-            if ($r2 >= 0.75) {
-                $aiInsights[] = ['type' => 'success', 'text' => "Model confidence is strong (R²=" . $r2 . "). The forecast is based on consistent historical patterns."];
-            } elseif ($r2 >= 0.4) {
-                $aiInsights[] = ['type' => 'warning', 'text' => "Model confidence is moderate (R²=" . $r2 . "). Forecast accuracy improves with more historical invoice data."];
-            } else {
-                $aiInsights[] = ['type' => 'warning', 'text' => "Model is still learning (R²=" . $r2 . ")."];
-            }
-
-            $lowStock = \App\Models\Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
-            if ($lowStock > 0) {
-                $aiInsights[] = ['type' => 'danger', 'text' => $lowStock . " inventory items are critically low. Restock before peak appointment days."];
-            }
-
-            $overdueFollowups = \App\Models\MedicalRecord::whereNotNull('follow_up_date')->where('follow_up_date', '<', now()->toDateString())->count();
-            if ($overdueFollowups > 0) {
-                $aiInsights[] = ['type' => 'info', 'text' => $overdueFollowups . " pets are overdue for follow-up visits. Auto-reminders can be sent from the Notifications module."];
-            }
-
-            // Construct final data structure
+            // Generate results mapping to timeline
             $results = [];
-            
-            foreach ($timeline as $index => $item) {
-                $key = $item['date']->format('Y-m');
+            $startRelIdx = ($n - 1) - ($monthsToFetch - 1);
+
+            foreach ($timeline as $idx => $item) {
                 $monthLabel = $item['date']->format('M');
+                $key = $item['date']->format('Y-m');
                 
-                $forecastValue = ($m * $index) + $b;
-                // Ensure forecast is not negative
-                if ($forecastValue < 0) {
-                    $forecastValue = 0;
-                }
+                $modelRelIdx = $startRelIdx + $idx;
+                $forecastValue = max(0, ($m * $modelRelIdx) + $b);
 
                 if ($item['is_future']) {
                     $results[] = [
@@ -770,7 +751,6 @@ class DashboardController extends Controller
                     ];
                 } else {
                     $val = $actualData[$key] ?? 0;
-                    
                     $results[] = [
                         'month' => $monthLabel,
                         'actual' => $val,
@@ -779,21 +759,94 @@ class DashboardController extends Controller
                 }
             }
 
+            $aiInsights = [];
+            if ($m > 0) {
+                $aiInsights[] = ['type' => 'success', 'text' => "Live trends show an upward movement of +₱" . number_format(round($m), 0) . " per month."];
+            } else if ($m < -100) {
+                $aiInsights[] = ['type' => 'warning', 'text' => "Revenue shows a slight declining trend of ₱" . number_format(abs(round($m)), 0) . "/month."];
+            } else {
+                $aiInsights[] = ['type' => 'info', 'text' => "Revenue is stable based on the selected period."];
+            }
+
+            Log::info("[AI SALES FORECAST] Live data used (Range: {$monthsToFetch}m). R2: {$r2} Slope: {$m}");
+
+            $aiPredictedMonthlyRevenue = \App\Models\InventoryForecast::join('inventories', 'inventory_forecasts.inventory_id', '=', 'inventories.id')
+                ->select(\Illuminate\Support\Facades\DB::raw('SUM(inventory_forecasts.average_daily_consumption * inventories.selling_price * 30) as predicted_revenue'))
+                ->value('predicted_revenue') ?? 0;
+
             return [
                 'data' => $results,
                 'model' => [
                     'slope' => round($m, 2),
                     'intercept' => round($b, 2),
                     'r2' => $r2,
-                    'standard_error' => $standardError,
-                    'confidence_margin' => $confidenceMargin,
+                    'algorithm' => 'Linear Regression (Live)',
+                    'prediction_source' => 'live',
+                    'last_updated' => now()->toDateTimeString(),
                     'training_months' => $n,
-                    'next_month_forecast' => $nextMonthForecast,
-                    'algorithm' => 'Simple Linear Regression',
+                    'ai_predicted_monthly_revenue' => round($aiPredictedMonthlyRevenue, 2),
+                    'next_month_forecast' => round(($m * $n) + $b, 2),
+                    'config_range' => $monthsToFetch
                 ],
                 'insights' => $aiInsights,
+                'is_dataset_prediction' => false,
+                'prediction_source' => 'live'
             ];
         }));
+    }
+
+    /**
+     * Trigger a synchronous AI forecast refresh for all applicable inventory items.
+     * This iterates through items with a 'code' and runs the forecasting engine.
+     */
+    /**
+     * Trigger a background AI forecast refresh for all applicable inventory items.
+     * This dispatches a batch job to handle analysis asynchronously.
+     */
+    public function runForecastSync(): JsonResponse
+    {
+        try {
+            $inventoryIds = Inventory::whereNotNull('code')->pluck('id')->toArray();
+            
+            if (empty($inventoryIds)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No inventory items with valid codes found for AI analysis.'
+                ], 400);
+            }
+
+            // Dispatch background job
+            \App\Jobs\RefreshInventoryForecast::dispatch($inventoryIds, 'dashboard_sync');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'AI Batch Forecast started in background. The dashboard will update as processing continues.',
+                'total_items' => count($inventoryIds)
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error("[AI-CONTROLLER-ERROR] Failed to dispatch sync forecast: " . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to initiate AI analysis.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Return the current background forecast batch status for frontend polling.
+     */
+    public function getForecastStatus(): JsonResponse
+    {
+        $status = \Illuminate\Support\Facades\Cache::get('forecast_batch_status');
+        
+        return response()->json($status ?: [
+            'is_running' => false,
+            'message' => 'No active analysis in progress.',
+            'percent' => 0
+        ]);
     }
 
 }

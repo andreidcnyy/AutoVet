@@ -103,26 +103,47 @@ class InventoryForecastController extends Controller
             ]);
         }
 
+        // DYNAMIC RE-CALCULATION:
+        // Even if we use a saved record, we MUST adjust the days/dates to the LIVE stock level.
+        $currentStock = $inventory->stock_level;
+        $minStock = $inventory->min_stock_level ?? 0;
+        $avgDaily = $forecast->average_daily_consumption ?? 0;
+
+        $daysLeft = ($avgDaily > 0) 
+            ? (($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0)
+            : ($forecast->days_until_stockout ?? 0);
+        
+        $predictedDate = ($avgDaily > 0) 
+            ? now()->addDays($daysLeft)->format('Y-m-d') 
+            : ($forecast->predicted_stockout_date ? $forecast->predicted_stockout_date->format('Y-m-d') : null);
+
+        $status = ($avgDaily > 0)
+            ? (($daysLeft < 7) ? 'Critical' : (($daysLeft < 14) ? 'Reorder Soon' : 'Safe'))
+            : ($forecast->forecast_status ?? 'Safe');
+
         return response()->json([
             'inventory_id'               => $forecast->inventory_id,
             'item_name'                  => $inventory->item_name,
-            'predicted_demand'           => $forecast->predicted_demand,
-            'days_until_stockout'        => $forecast->days_until_stockout,
-            'predicted_stockout_date'    => $forecast->predicted_stockout_date,
+            'predicted_demand'           => $avgDaily,
+            'days_until_stockout'        => (int)$daysLeft,
+            'predicted_stockout_date'    => $predictedDate,
             'suggested_reorder_quantity' => $forecast->suggested_reorder_quantity,
             'generated_at'               => $forecast->generated_at,
             'model_used'                 => $forecast->model_used,
             'notes'                      => $forecast->notes,
             'message'                    => $forecast->notes ?? 'AI forecast successfully retrieved.',
+            'forecast_status'            => $status,
             'prediction_status'          => $forecast->prediction_source === 'dataset' 
                                             ? 'Using dataset-based prediction' 
                                             : ($forecast->forecast_status === 'Insufficient Data' ? 'Insufficient Data' : 'Synced Dataset Insight'),
-            'average_daily_consumption'  => $forecast->average_daily_consumption,
+            'average_daily_consumption'  => $avgDaily,
             'predicted_daily_sales'      => $forecast->predicted_daily_sales,
             'predicted_weekly_sales'     => $forecast->predicted_weekly_sales,
             'predicted_monthly_sales'    => $forecast->predicted_monthly_sales,
             'estimated_monthly_revenue'  => $forecast->estimated_monthly_revenue,
-            'prediction_source'          => $forecast->prediction_source
+            'prediction_source'          => $forecast->prediction_source,
+            'is_live_synced'             => true,
+            'current_stock'              => $currentStock
         ]);
     }
 }

@@ -69,9 +69,9 @@ function InventoryView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
+  const [forecastStatus, setForecastStatus] = useState({ percent: 0, message: "", is_running: false });
   const [updatingIds, setUpdatingIds] = useState(new Set());
 
-  
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -113,38 +113,70 @@ function InventoryView() {
 
   const handleForecast = async () => {
     setIsSimulating(true);
+    setForecastStatus({ percent: 0, message: "Initiating batch analysis...", is_running: true });
     
     try {
-      // 1. Trigger the sync command on the backend
+      // 1. Trigger the background job
       const syncResponse = await fetch("/api/dashboard/run-forecast", {
         method: "POST",
         headers: {
           "Accept": "application/json",
+          "Content-Type": "application/json",
           "Authorization": `Bearer ${user?.token}`
         }
       });
       
-      if (!syncResponse.ok) throw new Error("Failed to start sync");
+      const syncData = await syncResponse.json();
       
-      // 2. Poll/Wait a moment for background processing and refresh inventory
-      // For the demo, we'll wait 2 seconds and then refresh the whole list
-      setTimeout(async () => {
-        const response = await fetch("/api/inventory", {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${user.token}`
+      if (!syncResponse.ok) {
+        throw new Error(syncData.message || "Failed to start analysis");
+      }
+      
+      // 2. Poll for Status
+      const pollStatus = async () => {
+        try {
+          const statusRes = await fetch("/api/dashboard/forecast-status", {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": `Bearer ${user?.token}`
+            }
+          });
+          
+          if (statusRes.ok) {
+            const data = await statusRes.json();
+            setForecastStatus(data);
+            
+            if (data.is_running) {
+              // Still running, wait and poll again
+              setTimeout(pollStatus, 2000);
+            } else {
+              // Processing complete or failed
+              setIsSimulating(false);
+              
+              // Refresh inventory to show new results
+              const response = await fetch("/api/inventory", {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": `Bearer ${user.token}`
+                }
+              });
+              if (response.ok) {
+                setInventoryRows(await response.json());
+                toast.success(data.message || "AI Analysis complete.");
+              }
+            }
           }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setInventoryRows(data);
-          toast.success("AI Forecast computation complete. Insights updated.");
+        } catch (pollErr) {
+          console.error("Polling error:", pollErr);
+          setIsSimulating(false);
         }
-        setIsSimulating(false);
-      }, 3000);
+      };
+
+      pollStatus();
 
     } catch (err) {
-      toast.error("AI Analysis failed. Please check your data.");
+      console.error("[AI-FORECAST-UI-ERROR]", err);
+      toast.error(err.message || "AI Analysis failed to start.");
       setIsSimulating(false);
     }
   };
@@ -320,7 +352,7 @@ function InventoryView() {
         </article>
       </section>
 
-      {isAdmin && (
+      {false && isAdmin && (
         <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <LuSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
@@ -663,13 +695,26 @@ function InventoryView() {
       />
 
       {isSimulating && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex w-[320px] transform items-center gap-4 rounded-xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-1 ring-zinc-200 dark:bg-dark-card dark:ring-dark-border animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-            <LuSparkles className="h-5 w-5 animate-pulse" />
+        <div className="fixed bottom-6 right-6 z-[9999] flex w-[320px] flex-col gap-3 rounded-xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-1 ring-zinc-200 dark:bg-dark-card dark:ring-dark-border animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <LuSparkles className="h-5 w-5 animate-pulse" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+                {forecastStatus.message || "Running AI Forecast..."}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                {forecastStatus.percent}% complete
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Running AI Forecast simulation...</p>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Analyzing historical patterns</p>
+          
+          <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+              style={{ width: `${forecastStatus.percent}%` }}
+            />
           </div>
         </div>
       )}

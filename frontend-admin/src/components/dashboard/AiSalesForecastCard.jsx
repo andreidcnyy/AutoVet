@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FiCircle } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
@@ -22,7 +22,13 @@ function AiSalesForecastCard() {
     const [data, setData] = useState([]);
     const [model, setModel] = useState(null);
     const [insights, setInsights] = useState([]);
+    const [isDataset, setIsDataset] = useState(false);
+    const [predictionSource, setPredictionSource] = useState("live");
     const [isLoading, setIsLoading] = useState(true);
+
+    // Planning Mode States
+    const [isPlanningMode, setIsPlanningMode] = useState(false);
+    const [demandAdjustment, setDemandAdjustment] = useState(0); // Percentage change
 
     useEffect(() => {
         setIsLoading(true);
@@ -34,8 +40,11 @@ function AiSalesForecastCard() {
         })
             .then(res => res.json())
             .then(fetchedData => {
-                const { data: forecastData, model: modelData, insights: insightData } = fetchedData;
+                const { data: forecastData, model: modelData, insights: insightData, is_dataset_prediction, prediction_source } = fetchedData;
                 
+                setIsDataset(!!is_dataset_prediction);
+                setPredictionSource(prediction_source || "live");
+
                 if (Array.isArray(forecastData) && forecastData.length === 0 && modelData?.training_months === 0) {
                     setData([]);
                     setModel(null);
@@ -54,19 +63,16 @@ function AiSalesForecastCard() {
     }, [activeRange, user?.token]);
 
     const safeData = Array.isArray(data) ? data : [];
+    const isActuallyPlanning = isPlanningMode && demandAdjustment !== 0;
     
     // Calculate chart bounds
     const allValues = safeData.flatMap((entry) => {
         const vals = [entry.actual, entry.forecast];
-        if (model?.confidence_margin) {
-            vals.push(entry.forecast + model.confidence_margin);
-            vals.push(entry.forecast - model.confidence_margin);
-        }
         return vals;
-    }).filter((value) => value !== null);
+    }).filter((value) => value !== null && !isNaN(value));
 
     const min = allValues.length ? Math.min(...allValues) * 0.9 : 0;
-    const max = allValues.length ? Math.max(...allValues) * 1.1 : 100;
+    const max = allValues.length ? Math.max(...allValues) * 1.1 : 10000;
     const span = Math.max(max - min, 1);
 
     const xStep = safeData.length > 1 ? (WIDTH - PADDING_X * 2) / (safeData.length - 1) : 0;
@@ -77,21 +83,14 @@ function AiSalesForecastCard() {
         y: toY(entry.forecast),
     }));
 
+    const adjustedPoints = safeData.map((entry, index) => ({
+        x: PADDING_X + xStep * index,
+        y: toY(entry.forecast * (1 + demandAdjustment / 100)),
+    }));
+
     const actualPoints = safeData
         .map((entry, index) => (entry.actual === null ? null : { x: PADDING_X + xStep * index, y: toY(entry.actual) }))
         .filter(Boolean);
-
-    // Confidence Band Calculation
-    const upperPoints = forecastPoints.map((p, i) => ({ x: p.x, y: toY(safeData[i].forecast + (model?.confidence_margin ?? 0)) }));
-    const lowerPoints = [...forecastPoints].reverse().map((p, i) => {
-        const originalIndex = safeData.length - 1 - i;
-        return { x: p.x, y: toY(safeData[originalIndex].forecast - (model?.confidence_margin ?? 0)) };
-    });
-
-    const bandPath = (model && model.confidence_margin) 
-        ? 'M' + upperPoints.map(p => p.x.toFixed(1)+','+p.y.toFixed(1)).join(' L') + 
-          ' L' + lowerPoints.map(p => p.x.toFixed(1)+','+p.y.toFixed(1)).join(' L') + ' Z'
-        : "";
 
     const latestActualPoint = actualPoints.length > 0 ? actualPoints[actualPoints.length - 1] : null;
     const latestActualValue = safeData.filter((entry) => entry.actual !== null).at(-1)?.actual;
@@ -109,11 +108,25 @@ function AiSalesForecastCard() {
 
             {/* 1. HEADER ROW */}
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3 relative z-10">
-                <div>
-                    <h3 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                        <LuSparkles className="text-emerald-500 w-6 h-6" />
-                        AI Sales Forecast
-                    </h3>
+                <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                            <LuSparkles className="text-emerald-500 w-6 h-6" />
+                            AI Sales Forecast
+                        </h3>
+                        {/* Prediction Source Badge */}
+                        {!isLoading && model && (
+                             <span className={clsx(
+                                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset",
+                                isDataset 
+                                    ? "bg-amber-100 text-amber-700 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30" 
+                                    : "bg-emerald-100 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-500/30"
+                            )}>
+                                <span className={clsx("h-1.5 w-1.5 rounded-full", isDataset ? "bg-amber-500" : "bg-emerald-500")} />
+                                {isDataset ? "Dataset Fallback" : "Live Prediction"}
+                            </span>
+                        )}
+                    </div>
                     <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">Projected revenue based on historical clinic data and seasonal trends.</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-zinc-100 p-1 dark:bg-dark-surface">
@@ -142,20 +155,84 @@ function AiSalesForecastCard() {
                 </div>
             </div>
 
+            {/* PLANNING MODE CONTROLS */}
+            {!isLoading && model && (
+                <div className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-900/30 dark:bg-indigo-900/10 relative z-10">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                                <LuSparkles className="h-5 w-5 animate-pulse" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-300">Strategic Planning Mode</h4>
+                                <p className="text-xs text-indigo-600 dark:text-indigo-400">Adjust the AI forecast based on expected demand changes.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-2">
+                             <div className="flex items-center gap-3 mr-4">
+                                <span className="text-xs font-bold text-indigo-400">Expected Change:</span>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        className="h-10 w-28 rounded-xl border border-indigo-200 bg-white px-4 pr-8 text-sm font-bold text-indigo-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-indigo-800 dark:bg-zinc-900 dark:text-white"
+                                        placeholder="0"
+                                        value={demandAdjustment || ''}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setDemandAdjustment(isNaN(val) ? 0 : val);
+                                            setIsPlanningMode(true);
+                                        }}
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-indigo-400">%</span>
+                                </div>
+                             </div>
+
+                            {isPlanningMode && (
+                                <button 
+                                    onClick={() => {
+                                        setIsPlanningMode(false);
+                                        setDemandAdjustment(0);
+                                    }}
+                                    className="h-10 rounded-xl bg-white px-4 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-50 transition-colors shadow-sm dark:bg-zinc-900 dark:border-rose-900/30"
+                                >
+                                    Reset to AI Baseline
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 2. MODEL METRIC STRIP */}
             {model && (
                 <div className="mb-3 flex flex-wrap gap-2 relative z-10">
-                    <div className="rounded-full px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-dark-border">
-                        Next month: ₱{model.next_month_forecast.toLocaleString('en-PH')}
+                    {isActuallyPlanning && (
+                        <div className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 animate-pulse">
+                            <LuSparkles className="w-3 h-3" />
+                            PLANNING MODE ACTIVE ({demandAdjustment > 0 ? '+' : ''}{demandAdjustment}%)
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shadow-sm">
+                        <LuSparkles className="w-3 h-3" />
+                        AI Baseline Monthly: ₱{(model.ai_predicted_monthly_revenue ?? 0).toLocaleString('en-PH')}
                     </div>
+                    
+                    {isActuallyPlanning ? (
+                         <div className="rounded-full px-3 py-1.5 text-xs font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-sm">
+                            Planned Forecast: ₱{Math.round(model.next_month_forecast * (1 + demandAdjustment / 100)).toLocaleString('en-PH')}
+                        </div>
+                    ) : (
+                        <div className="rounded-full px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-dark-border">
+                            Next month (Trend): ₱{(model.next_month_forecast || 0).toLocaleString('en-PH')}
+                        </div>
+                    )}
+
                     <div className="rounded-full px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-dark-border">
                         Growth/mo: {model.slope >= 0 ? '+' : ''}₱{Math.round(model.slope).toLocaleString('en-PH')}
                     </div>
                     <div className="rounded-full px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-dark-border">
                         R² accuracy: {model.r2}
-                    </div>
-                    <div className="rounded-full px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-dark-border">
-                        Training data: {model.training_months} months
                     </div>
                 </div>
             )}
@@ -174,19 +251,28 @@ function AiSalesForecastCard() {
             )}
 
             {/* 4. LEGEND ROW */}
-            <div className="mb-4 flex flex-wrap items-center gap-6 text-sm font-medium text-zinc-700 dark:text-zinc-300 relative z-10">
-                <span className="inline-flex items-center gap-2">
-                    <FiCircle className="h-3.5 w-3.5 fill-emerald-500 text-emerald-500" />
-                    Actual Revenue
-                </span>
-                <span className="inline-flex items-center gap-2">
-                    <FiCircle className="h-3.5 w-3.5 fill-zinc-300 text-zinc-400 dark:fill-zinc-500 dark:text-zinc-500" />
-                    AI Prediction
-                </span>
-                <span className="inline-flex items-center gap-2">
-                    <div className="h-3.5 w-3.5 bg-violet-400/30 border border-dashed border-violet-400" />
-                    Confidence Band
-                </span>
+            <div className="mb-4 flex flex-wrap items-center justify-between relative z-10">
+                <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <span className="inline-flex items-center gap-2">
+                        <FiCircle className="h-3.5 w-3.5 fill-emerald-500 text-emerald-500" />
+                        Actual Revenue
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                        <FiCircle className="h-3.5 w-3.5 fill-zinc-300 text-zinc-400 dark:fill-zinc-500 dark:text-zinc-500" />
+                        AI Baseline
+                    </span>
+                    {isActuallyPlanning && (
+                        <span className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                            <FiCircle className="h-3.5 w-3.5 fill-indigo-600 text-indigo-600 shadow-sm" />
+                            Adjusted Forecast
+                        </span>
+                    )}
+                </div>
+                {isDataset && (
+                    <span className="text-xs italic text-amber-600 dark:text-amber-400 font-medium animate-pulse">
+                        * Training on historical CSV data
+                    </span>
+                )}
             </div>
 
             {/* 5. SVG CHART AREA */}
@@ -217,12 +303,12 @@ function AiSalesForecastCard() {
                             />
                         ))}
 
-                        {/* Confidence Band Polygon */}
-                        {bandPath && (
-                            <path d={bandPath} fill="#a78bfa" fillOpacity="0.15" stroke="none" />
+                        <path d={createPath(forecastPoints)} className="fill-none stroke-zinc-400 dark:stroke-zinc-600" strokeWidth="2" strokeDasharray="6 6" />
+                        
+                        {isActuallyPlanning && (
+                             <path d={createPath(adjustedPoints)} className="fill-none stroke-indigo-500 transition-all duration-500" strokeWidth="4" strokeLinecap="round" />
                         )}
 
-                        <path d={createPath(forecastPoints)} className="fill-none stroke-violet-400 dark:stroke-violet-400" strokeWidth="2.5" strokeDasharray="8 8" />
                         <path d={createPath(actualPoints)} className="fill-none stroke-emerald-500" strokeWidth="4" strokeLinecap="round" />
 
                         {latestActualPoint && (
@@ -239,9 +325,9 @@ function AiSalesForecastCard() {
 
                         {lastForecastPoint && (
                             <g transform={`translate(${lastForecastPoint.x - 45}, ${lastForecastPoint.y + 15})`}>
-                                <rect width="90" height="24" rx="6" fill="#7c3aed" />
+                                <rect width="90" height="24" rx="6" className={isActuallyPlanning ? "fill-zinc-400" : "fill-indigo-600"} />
                                 <text x="45" y="16" textAnchor="middle" fill="white" className="text-[10px] font-bold">
-                                    ₱{Math.round(lastForecastValue / 1000)}k est.
+                                    ₱{Math.round(lastForecastValue / 1000)}k {isActuallyPlanning ? 'base' : 'est.'}
                                 </text>
                             </g>
                         )}
@@ -250,9 +336,15 @@ function AiSalesForecastCard() {
             </div>
 
             {/* 6. MONTH LABELS ROW */}
-            <div className="mt-4 grid gap-3 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400 relative z-10" style={{ gridTemplateColumns: `repeat(${safeData.length || 7}, minmax(0, 1fr))` }}>
+            <div 
+                className={clsx(
+                    "mt-4 grid gap-1 text-center font-medium text-zinc-500 dark:text-zinc-400 relative z-10",
+                    safeData.length > 8 ? "text-[10px]" : "text-sm"
+                )} 
+                style={{ gridTemplateColumns: `repeat(${safeData.length || 7}, minmax(0, 1fr))` }}
+            >
                 {safeData.map((entry, i) => (
-                    <span key={i}>{entry.month}</span>
+                    <span key={i} className="truncate px-0.5">{entry.month}</span>
                 ))}
             </div>
 
@@ -284,9 +376,20 @@ function AiSalesForecastCard() {
 
             {/* 8. MODEL METADATA FOOTER */}
             {model && (
-                <p className="mt-3 text-[10px] text-zinc-400 dark:text-zinc-600 relative z-10 text-center">
-                    {model.algorithm} · Last trained on invoice data · slope m={model.slope} · intercept b={Math.round(model.intercept)} · R²={model.r2}
-                </p>
+                <div className="mt-4 border-t border-zinc-100 dark:border-dark-border pt-4 relative z-10">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide uppercase">
+                         <div className="flex items-center gap-4">
+                            <span>Algorithm: {model.algorithm}</span>
+                            <span>Slope: {model.slope}</span>
+                            <span>R²: {model.r2}</span>
+                            {isActuallyPlanning && <span className="text-indigo-600 font-bold tracking-normal">* Manual adjustment applied</span>}
+                         </div>
+                         <div className="flex items-center gap-1 italic">
+                            <span>Model last updated:</span>
+                            <span>{model.last_updated}</span>
+                         </div>
+                    </div>
+                </div>
             )}
 
         </section>

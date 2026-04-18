@@ -50,7 +50,7 @@ export default function InventoryAiStatusCard() {
         <LuSparkles className="h-6 w-6 text-emerald-500" />
         <h3 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Inventory AI Status</h3>
       </div>
-      <p className="text-base text-zinc-500 dark:text-zinc-400 mb-6 relative z-10">Real-time analysis of your most critical inventory items using linear regression.</p>
+      <p className="text-base text-zinc-500 dark:text-zinc-400 mb-6 relative z-10">Real-time analysis of your most critical inventory items using demand forecasting models.</p>
       
       {!inventoryData ? (
         <div className="py-12 text-center relative z-10">
@@ -58,9 +58,20 @@ export default function InventoryAiStatusCard() {
         </div>
       ) : (
         <div className="relative z-10">
-          <div className="mb-6">
-            <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Most Critical Item</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.item_name ?? '—'}</p>
+          <div className="mb-6 flex justify-between items-start">
+            <div>
+                <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Most Critical Item</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.item_name ?? '—'}</p>
+            </div>
+            {inventoryData.prediction_status && (
+              <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                inventoryData.prediction_status === 'Using dataset-based prediction'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+              }`}>
+                {inventoryData.prediction_status}
+              </span>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -76,11 +87,16 @@ export default function InventoryAiStatusCard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse" />
               {inventoryData.growth_label ?? 'Stable Demand'}
             </span>
+            {inventoryData.days_until_stockout !== null && (
+               <span className="inline-flex items-center px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-900/30 text-xs font-bold text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                 Est. Stockout: {inventoryData.days_until_stockout} days
+               </span>
+            )}
           </div>
           
           <div className="p-5 rounded-2xl bg-zinc-900 dark:bg-zinc-800 text-zinc-100 shadow-xl">

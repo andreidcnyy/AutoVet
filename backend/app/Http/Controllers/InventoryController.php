@@ -58,6 +58,19 @@ class InventoryController extends Controller
             $validatedData['sub_details']
         );
 
+        if (array_key_exists('price', $validatedData)) {
+            $validatedData['cost_price'] = $validatedData['price'];
+            unset($validatedData['price']);
+        }
+        if (array_key_exists('is_billable', $validatedData)) {
+            $validatedData['is_sellable'] = $validatedData['is_billable'];
+            unset($validatedData['is_billable']);
+        }
+        if (array_key_exists('is_consumable', $validatedData)) {
+            $validatedData['is_service_usable'] = $validatedData['is_consumable'];
+            unset($validatedData['is_consumable']);
+        }
+
         $item = Inventory::create($validatedData);
 
         if ($item->stock_level > 0) {
@@ -108,6 +121,19 @@ class InventoryController extends Controller
 
         $oldStock = $inventory->stock_level;
         $newStock = $validatedData['stock_level'];
+
+        if (array_key_exists('price', $validatedData)) {
+            $validatedData['cost_price'] = $validatedData['price'];
+            unset($validatedData['price']);
+        }
+        if (array_key_exists('is_billable', $validatedData)) {
+            $validatedData['is_sellable'] = $validatedData['is_billable'];
+            unset($validatedData['is_billable']);
+        }
+        if (array_key_exists('is_consumable', $validatedData)) {
+            $validatedData['is_service_usable'] = $validatedData['is_consumable'];
+            unset($validatedData['is_consumable']);
+        }
 
         $inventory->update($validatedData);
 

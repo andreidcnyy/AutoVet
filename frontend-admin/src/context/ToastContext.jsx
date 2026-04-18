@@ -32,8 +32,9 @@ export function ToastProvider({ children }) {
     const error = useCallback((message, duration) => addToast(message, "error", duration), [addToast]);
     const warning = useCallback((message, duration) => addToast(message, "warning", duration), [addToast]);
     const info = useCallback((message, duration) => addToast(message, "info", duration), [addToast]);
+    const aiForecast = useCallback((data, duration = 6000) => addToast(data, "ai_forecast", duration), [addToast]);
 
-    const value = useMemo(() => ({ toasts, addToast, removeToast, success, error, warning, info }), [toasts, addToast, removeToast, success, error, warning, info]);
+    const value = useMemo(() => ({ toasts, addToast, removeToast, success, error, warning, info, aiForecast }), [toasts, addToast, removeToast, success, error, warning, info, aiForecast]);
 
     return (
         <ToastContext.Provider value={value}>

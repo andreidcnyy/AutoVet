@@ -22,7 +22,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null); // New state for AI forecast
   const [isLoadingForecast, setIsLoadingForecast] = useState(false); // New state for forecast loading
-  const [historyDays, setHistoryDays] = useState(30); // Selection for forecast history range
+
 
   const { user } = useAuth();
   const isAdmin = user?.role === ROLES.ADMIN;
@@ -98,7 +98,19 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // If we're editing stock level, flag the forecast as stale/recalculating locally
+    if (field === 'stock_level' || field === 'current_stock') {
+        if (aiForecastData && !aiForecastData.is_calculating_locally) {
+            setAiForecastData(prev => ({ 
+                ...prev, 
+                is_calculating_locally: true,
+                local_new_stock: value 
+            }));
+        }
+    }
   };
+
+
 
   const handleCheckboxChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: !!value }));
@@ -134,6 +146,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       toast.success("Inventory item updated successfully!");
       setIsEditing(false);
       onUpdate(updated); 
+      
+      // Auto-refresh forecast after save to sync with new stock quantity
+      handleRunForecast();
     } catch (err) {
       toast.error(err.message || "An error occurred while saving.");
     } finally {
@@ -149,7 +164,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     setIsLoadingForecast(true);
     setAiForecastData(null); // Clear previous forecast
     try {
-      const response = await fetch(`/api/inventory/${product.id}/forecast?history_days=${historyDays}`, {
+      const response = await fetch(`/api/inventory/${product.id}/forecast`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
@@ -340,6 +355,14 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     </p>
                 </div>
               )}
+              {aiForecastData.is_calculating_locally && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 flex items-center gap-2 dark:border-amber-800 dark:bg-amber-900/20">
+                    <LuSparkles className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse" />
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                        New stock level detected ({aiForecastData.local_new_stock}). Forecast will auto-sync on save.
+                    </p>
+                </div>
+              )}
               {aiForecastData.error ? (
                 <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
               ) : aiForecastData.prediction_status === "Insufficient Data" ? (
@@ -364,6 +387,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                              : "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800"
                          )}>
                            {aiForecastData.prediction_status}
+                         </span>
+                         <span className="text-[9px] font-black uppercase tracking-tighter bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                            Dynamic Prediction
                          </span>
                       </div>
                       <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
@@ -397,6 +423,22 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                             {Number(aiForecastData.average_daily_consumption || 0).toFixed(1)} units/day
                           </p>
                         </div>
+                        {aiForecastData.growth_label && (
+                           <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30">
+                             <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase">Growth Trend</p>
+                             <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                               {aiForecastData.growth_label}
+                             </p>
+                           </div>
+                        )}
+                        {aiForecastData.predicted_monthly_sales != null && (
+                           <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
+                             <p className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase">Est. Monthly Need</p>
+                             <p className="text-xs font-black text-blue-700 dark:text-blue-400">
+                               {Number(aiForecastData.predicted_monthly_sales).toFixed(0)} units
+                             </p>
+                           </div>
+                        )}
                       </div>
                       {aiForecastData.prediction_status === "Using dataset-based prediction" && (
                         <p className="text-[10px] text-purple-500 dark:text-purple-400 italic mt-1">
@@ -465,33 +507,23 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 p-6 dark:border-dark-border shrink-0 bg-white dark:bg-dark-card rounded-b-2xl">
           {isAdmin && (
             <>
-              <div className="flex flex-col items-end gap-2 mr-auto lg:mr-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase text-zinc-400">Range:</span>
-                  <select 
-                    value={historyDays}
-                    onChange={(e) => setHistoryDays(parseInt(e.target.value))}
-                    className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                  >
-                    <option value={7}>7 Days</option>
-                    <option value={30}>30 Days</option>
-                    <option value={90}>90 Days</option>
-                    <option value={180}>6 Months</option>
-                  </select>
-                  <button
-                    onClick={handleRunForecast}
-                    disabled={isLoadingForecast || isSaving}
-                    className={clsx(
-                      "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
-                      (isLoadingForecast || isSaving)
-                        ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
-                        : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
-                    )}
-                  >
-                    <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
-                    {isLoadingForecast ? "Analyzing..." : "AI Forecast"}
-                  </button>
-                </div>
+              <div className="mr-auto flex items-center gap-3 px-2">
+                <span className="text-[10px] uppercase italic text-zinc-400 font-bold tracking-tight">
+                  Forecast based on recent usage trends
+                </span>
+                <button
+                  onClick={handleRunForecast}
+                  disabled={isLoadingForecast || isSaving}
+                  className={clsx(
+                    "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
+                    (isLoadingForecast || isSaving)
+                      ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
+                  )}
+                >
+                  <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
+                  {isLoadingForecast ? "Analyzing..." : "AI Forecast"}
+                </button>
               </div>
               
               <button

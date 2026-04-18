@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevNotificationIds = useRef(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const toast = useToast();
@@ -23,7 +24,23 @@ export function useNotifications() {
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
-        setUnreadCount(data.length); // getNotifications only returns unread by default
+        setUnreadCount(data.length);
+
+        // Check for new AiForecastUpdate notifications
+        data.forEach(notification => {
+            if (!prevNotificationIds.current.has(notification.id)) {
+                if (notification.type === 'AiForecastUpdate' && toast.aiForecast) {
+                    let parsedData = {};
+                    try {
+                        parsedData = typeof notification.data === 'string' ? JSON.parse(notification.data) : (notification.data || {});
+                    } catch (e) {
+                         // ignore
+                    }
+                    toast.aiForecast(parsedData);
+                }
+                prevNotificationIds.current.add(notification.id);
+            }
+        });
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);

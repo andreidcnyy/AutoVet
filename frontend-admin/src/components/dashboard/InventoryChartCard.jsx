@@ -18,13 +18,23 @@ function InventoryChartCard() {
   const [activeRange, setActiveRange] = useState("6 Months");
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [source, setSource] = useState("live");
 
   useEffect(() => {
     setIsLoading(true);
     fetch(`/api/dashboard/inventory-consumption?range=${activeRange}`)
       .then(res => res.json())
-      .then(fetchedData => {
-        setData(fetchedData);
+      .then(response => {
+        if (response && response.data && Array.isArray(response.data)) {
+          setData(response.data);
+          setSource(response.prediction_source || "live");
+        } else if (Array.isArray(response)) {
+          setData(response);
+          setSource("live");
+        } else {
+          console.warn("Unexpected inventory consumption data format:", response);
+          setData([]);
+        }
         setIsLoading(false);
       })
       .catch(err => {
@@ -85,8 +95,19 @@ function InventoryChartCard() {
     <section className="card-shell p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Inventory Consumption</h3>
-          <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">Actual usage compared with AutoVet prediction model.</p>
+          <div className="flex items-center gap-3">
+            <h3 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Inventory Consumption</h3>
+            {source === "dataset" && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse border border-amber-200 dark:border-amber-800">
+                Dataset Fallback Active
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
+            {source === "dataset" 
+              ? "Showing historical patterns from dataset (Clinic history building)."
+              : "Actual usage compared with AutoVet prediction model."}
+          </p>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-zinc-100 p-1 dark:bg-dark-surface">
           <button

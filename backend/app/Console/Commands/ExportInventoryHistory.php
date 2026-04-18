@@ -39,8 +39,12 @@ class ExportInventoryHistory extends Command
 
         // Aggregate total quantity used per day
         $dailyUsage = [];
-        $dailyUsage[$today] = 0; // ensure boundary exists
-        $dailyUsage[$startDate] = 0; // ensure boundary exists
+        
+        // Generate a continuous span of dates to guarantee len(df) >= 3 in Python
+        $period = \Carbon\CarbonPeriod::create($startDate, $today);
+        foreach ($period as $date) {
+            $dailyUsage[$date->toDateString()] = 0;
+        }
 
         foreach ($usageRows as $row) {
             $date = $row->usage_date instanceof \Carbon\Carbon

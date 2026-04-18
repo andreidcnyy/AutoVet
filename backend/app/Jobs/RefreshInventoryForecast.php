@@ -31,23 +31,9 @@ class RefreshInventoryForecast implements ShouldQueue
 
     public function handle(InventoryForecastService $forecastService): void
     {
-        foreach ($this->inventoryIds as $inventoryId) {
-            $inventory = Inventory::find($inventoryId);
-
-            if (!$inventory) {
-                Log::warning("RefreshInventoryForecast: inventory ID {$inventoryId} not found, skipping.");
-                continue;
-            }
-
-            try {
-                // Use 365 days for the capstone demo so AI has enough deep pattern history
-                $forecastService->refreshAndSaveForecast($inventoryId, 365, $this->triggerSource);
-            } catch (\Throwable $e) {
-                Log::error("[FORECAST FAILED] inventory ID {$inventoryId}: " . $e->getMessage(), [
-                    'inventory_id' => $inventoryId,
-                    'exception'    => $e->getMessage(),
-                ]);
-            }
-        }
+        Log::info("RefreshInventoryForecast: Starting batch refresh for " . count($this->inventoryIds) . " items.");
+        
+        // We use the new batch logic to process all items in a single pass
+        $forecastService->runBatchForecast($this->inventoryIds, 365, $this->triggerSource);
     }
 }

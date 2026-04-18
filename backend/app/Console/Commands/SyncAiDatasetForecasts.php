@@ -71,7 +71,8 @@ class SyncAiDatasetForecasts extends Command
                 . ' ' . escapeshellarg($pythonScriptPath)
                 . ' ' . escapeshellarg($csvPath)
                 . ' ' . escapeshellarg($minStock)
-                . ' ' . escapeshellarg("--code={$code}");
+                . ' ' . escapeshellarg("--code={$code}")
+                . ' ' . escapeshellarg("--current_stock={$inventory->stock_level}");
 
             $process = \Illuminate\Support\Facades\Process::run($command);
 
@@ -89,6 +90,10 @@ class SyncAiDatasetForecasts extends Command
             // Also run sales forecast via service
             $salesResult = $this->runSalesForecast($code);
             $result = array_merge($result, $salesResult);
+
+            // Label correctly as dataset source (set AFTER merge to prevent overwriting)
+            $result['prediction_status'] = 'Using dataset-guided prediction';
+            $result['message']           = "Historical dataset is used to estimate demand behavior. Final stockout date is based on current live stock.";
 
             // Save forecast
             $inventoryForecastService->saveForecast($inventory->id, $result);

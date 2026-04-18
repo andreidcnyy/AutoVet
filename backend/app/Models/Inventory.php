@@ -21,13 +21,13 @@ class Inventory extends Model
         'sku',
         'stock_level',
         'status',
-        'price',
+        'cost_price',
         'selling_price',
         'supplier',
         'expiration_date',
         'min_stock_level',
-        'is_billable',
-        'is_consumable',
+        'is_sellable',
+        'is_service_usable',
         'deduct_on_finalize',
         // Archive tracking
         'deleted_by', 'restore_until',
@@ -36,10 +36,10 @@ class Inventory extends Model
     ];
 
     protected $casts = [
-        'price'                    => 'decimal:2',
+        'cost_price'               => 'decimal:2',
         'selling_price'            => 'decimal:2',
-        'is_billable'              => 'boolean',
-        'is_consumable'            => 'boolean',
+        'is_sellable'              => 'boolean',
+        'is_service_usable'        => 'boolean',
         'deduct_on_finalize'       => 'boolean',
         'expiration_date'          => 'date',
         'synced_at'                => 'datetime',
