@@ -27,7 +27,7 @@ export function useNotifications() {
       toast.info(notification.message, { title: notification.title });
     }
     prevNotificationIds.current.add(notification.id);
-  }, [toast]);
+  }, [toast.info, toast.aiForecast]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.token) return;
@@ -76,7 +76,7 @@ export function useNotifications() {
       if (user.id) echo.leave(`notifications.${user.id}`);
       clearInterval(interval);
     };
-  }, [user?.token, user?.id, fetchNotifications, handleNewNotification]);
+  }, [user?.token, user?.id]);
 
   const markAllAsRead = async () => {
     if (!user?.token) return;

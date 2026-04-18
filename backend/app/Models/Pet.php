@@ -96,14 +96,14 @@ class Pet extends Model
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
 
-    protected $appends = [];
+    protected $appends = [
+        'total_paid', 'total_due', // 'last_visit', 'next_due' // removed slow ones, but totals are needed
+    ];
 
     public function getTotalPaidAttribute()
     {
-        if (!$this->relationLoaded('invoices')) return 0;
-        
         // Use the loaded relationship if available to avoid N+1 queries
-        $invoices = $this->invoices;
+        $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
 
         return $invoices
             ->whereIn('status', ['Paid', 'Partially Paid', 'Finalized'])
@@ -114,9 +114,7 @@ class Pet extends Model
 
     public function getTotalDueAttribute()
     {
-        if (!$this->relationLoaded('invoices')) return 0;
-
-        $invoices = $this->invoices;
+        $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
         return $invoices->sum('total');
     }
 
