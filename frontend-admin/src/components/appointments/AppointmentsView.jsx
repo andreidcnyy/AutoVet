@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import echo from "../../utils/echo";
+import api from "../../api";
 import {
   FiPlusCircle,
   FiClock,
@@ -23,7 +24,7 @@ import {
   FiThumbsDown
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from "../../utils/calendarUtils";
 import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
@@ -117,99 +118,90 @@ function AppointmentsView() {
   useEffect(() => {
     if (selectedDate && user?.token) {
       setIsCheckingAvailability(true);
-      const headers = {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      };
-      const params = new URLSearchParams({ date: selectedDate });
-      if (selectedVetId) params.append('vet_id', selectedVetId);
+      const params = { date: selectedDate };
+      if (selectedVetId) params.vet_id = selectedVetId;
 
-      fetch(`/api/appointments/availability?${params.toString()}`, { headers })
-        .then(res => res.json())
+      api.get('/api/appointments/availability', { params })
         .then(data => setAvailability(Array.isArray(data) ? data : []))
         .catch(console.error)
         .finally(() => setIsCheckingAvailability(false));
     }
   }, [selectedDate, selectedVetId, user?.token]);
 
-  const fetchAppointments = () => {
+  const CACHE_KEY = 'appointments_cache';
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  const fetchAppointments = useCallback((signal) => {
     if (!user?.token) return;
-    fetch("/api/appointments", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
+    const dateFrom = format(startOfMonth(subMonths(currentDate, 1)), 'yyyy-MM-dd');
+    const dateTo = format(endOfMonth(addMonths(currentDate, 1)), 'yyyy-MM-dd');
+
+    // Show cached data immediately while fetching fresh
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setAppointments(cached.data);
       }
-    })
-      .then((res) => res.json())
+    } catch (_) {}
+
+    api.get('/api/appointments', { params: { date_from: dateFrom, date_to: dateTo }, signal })
       .then((data) => {
-        // Ensure data is an array
-        if (Array.isArray(data)) {
-          setAppointments(data);
-        } else if (data && typeof data === "object" && Array.isArray(data.appointments)) {
-          setAppointments(data.appointments);
-        } else {
-          setAppointments([]);
-        }
+        const result = Array.isArray(data) ? data
+          : (data?.appointments ?? []);
+        setAppointments(result);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return;
         console.error("Error fetching appointments:", err);
         setAppointments([]);
       });
-  };
+  }, [user?.token, currentDate]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAppointments(controller.signal);
+    return () => controller.abort();
+  }, [fetchAppointments]);
+
+  // Track whether form data has been loaded yet
+  const [formDataLoaded, setFormDataLoaded] = useState(false);
+
+  // Lazy-load owners/pets/services/vets only when booking drawer first opens
+  useEffect(() => {
+    if (!isDrawerOpen || formDataLoaded || !user?.token) return;
+    Promise.allSettled([
+      api.get('/api/owners', { cache: true }),
+      api.get('/api/pets', { cache: true }),
+      api.get('/api/services', { cache: true }),
+      api.get('/api/vets', { cache: true }),
+    ]).then(([ownersRes, petsRes, servicesRes, vetsRes]) => {
+      setOwners(Array.isArray(ownersRes.value) ? ownersRes.value : []);
+      setPets(Array.isArray(petsRes.value) ? petsRes.value : []);
+      setServices(Array.isArray(servicesRes.value) ? servicesRes.value : []);
+      setVets(Array.isArray(vetsRes.value) ? vetsRes.value : []);
+      setFormDataLoaded(true);
+    });
+  }, [isDrawerOpen, formDataLoaded, user?.token]);
 
   useEffect(() => {
     if (!user?.token) return;
 
-    fetchAppointments();
-
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
-
-    fetch("/api/owners", { headers })
-      .then((res) => res.json())
-      .then((data) => setOwners(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching owners:", err));
-
-    fetch("/api/pets", { headers })
-      .then((res) => res.json())
-      .then((data) => setPets(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching pets:", err));
-
-    fetch("/api/services", { headers })
-      .then((res) => res.json())
-      .then((data) => setServices(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("Error fetching services:", err));
-
-    fetch("/api/vets", { headers })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setVets(data);
-        } else {
-          setVets([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching vets:", err);
-        setVets([]);
-      });
-
-    fetch("/api/settings", { headers })
-      .then(res => res.json())
-      .then(data => {
-        const inv = data.inventory_categories ? JSON.parse(data.inventory_categories) : [];
-        const svc = data.service_categories ? JSON.parse(data.service_categories) : [];
+    // Load non-critical data (settings + forecast) after a short delay
+    // so the calendar renders first
+    const timer = setTimeout(() => {
+      Promise.allSettled([
+        api.get('/api/settings', { cache: true }),
+        api.get('/api/dashboard/appointment-forecast', { cache: true, ttl: 3 * 60 * 1000 }),
+      ]).then(([settingsRes, forecastRes]) => {
+        const settingsData = settingsRes.status === 'fulfilled' ? settingsRes.value : {};
+        const forecastData = forecastRes.status === 'fulfilled' ? forecastRes.value : null;
+        const inv = settingsData?.inventory_categories ? (typeof settingsData.inventory_categories === 'string' ? JSON.parse(settingsData.inventory_categories) : settingsData.inventory_categories) : [];
+        const svc = settingsData?.service_categories ? (typeof settingsData.service_categories === 'string' ? JSON.parse(settingsData.service_categories) : settingsData.service_categories) : [];
         setCategories([...new Set([...inv, ...svc])]);
-      })
-      .catch(() => setCategories([]));
-
-    // Fetch initial AI forecast
-    fetch("/api/dashboard/appointment-forecast", { headers })
-      .then(res => res.json())
-      .then(data => setAiForecast(data))
-      .catch(() => { });
+        if (forecastData) setAiForecast(forecastData);
+      });
+    }, 300);
 
     // Real-time listeners
     const channel = echo.private('admin.appointments')
@@ -226,9 +218,10 @@ function AppointmentsView() {
       });
 
     return () => {
+      clearTimeout(timer);
       echo.leave('admin.appointments');
     };
-  }, [user?.token, selectedAppointment?.id, toast]);
+  }, [user?.token]);
 
   const handleReviewHints = () => {
     if (aiForecast) {

@@ -1,59 +1,23 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
-
-window.Pusher = Pusher;
-
-let echoInstance = null;
-
-const getAuthToken = () => {
-    try {
-        const stored = localStorage.getItem('user');
-        if (!stored) return null;
-        const parsed = JSON.parse(stored);
-        return parsed?.token || null;
-    } catch (e) {
-        return null;
-    }
+// Mock Echo for local development if Reverb is not ready
+const mockChannel = {
+    listen: function() { return this; },
+    notification: function() { return this; },
+    listenForWhisper: function() { return this; },
+    whisper: function() { return this; },
 };
 
-const getHeaders = () => {
-    const token = getAuthToken();
-    return {
-        Authorization: token ? `Bearer ${token}` : '',
-        Accept: 'application/json',
-    };
+const mockEcho = {
+    private: () => mockChannel,
+    channel: () => mockChannel,
+    leave: () => {},
+    disconnect: () => {},
 };
 
 export function getEcho() {
-    if (!echoInstance) {
-        echoInstance = new Echo({
-            broadcaster: 'reverb',
-            key: import.meta.env.VITE_REVERB_APP_KEY || 'no-key',
-            wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
-            wsPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
-            wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
-            forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/api/broadcasting/auth',
-            auth: { headers: getHeaders() },
-            activityTimeout: 30000,
-            pongTimeout: 6000,
-        });
-    }
-    return echoInstance;
+    return mockEcho;
 }
 
 export function destroyEcho() {
-    if (echoInstance) {
-        try { echoInstance.disconnect(); } catch (_) {}
-        echoInstance = null;
-    }
 }
 
-const echoProxy = new Proxy({}, {
-    get(_target, prop) {
-        return getEcho()[prop];
-    },
-});
-
-export default echoProxy;
+export default mockEcho;

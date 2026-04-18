@@ -24,7 +24,12 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Appointment::with(['pet', 'service', 'vet']);
+        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'pet_id', 'service_id', 'vet_id')
+            ->with([
+                'pet:id,name,owner_id',
+                'service:id,name',
+                'vet:id,name',
+            ]);
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -42,6 +47,14 @@ class AppointmentController extends Controller
 
         if ($request->has('upcoming')) {
             $query->where('date', '>=', now()->toDateString());
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
         }
 
         $query->orderBy('date', 'desc');

@@ -35,13 +35,13 @@ class ClientNotificationService
         $subject = $this->interpolateVariables($template->subject ?? '', $variables, $owner, $relatedModel);
         $body = $this->interpolateVariables($template->body, $variables, $owner, $relatedModel);
 
-        return $this->send($owner, $channel, $body, $subject, $type, $relatedModel);
+        return $this->send($owner, $channel, $body, $subject, $type, $relatedModel, $eventKey);
     }
 
     /**
      * Send a notification directly.
      */
-    public function send(Owner $owner, string $channel, string $message, ?string $title = null, ?string $type = 'manual', $relatedModel = null)
+    public function send(Owner $owner, string $channel, string $message, ?string $title = null, ?string $type = 'manual', $relatedModel = null, ?string $eventKey = null)
     {
         $notification = ClientNotification::create([
             'owner_id' => $owner->id,
@@ -59,7 +59,26 @@ class ClientNotificationService
                 if (empty($owner->email)) {
                     throw new \Exception("Owner has no email address.");
                 }
-                Mail::to($owner->email)->send(new ClientNotificationMail($title ?? 'Notification', $message));
+
+                // Dynamically select mailer
+                $mailer = 'smtp';
+                
+                $isAppointment = ($relatedModel instanceof \App\Models\Appointment) || ($notification->related_type === 'App\Models\Appointment');
+                $isInvoice = ($relatedModel instanceof \App\Models\Invoice) || ($notification->related_type === 'App\Models\Invoice');
+
+                if ($isAppointment) {
+                    if (str_contains(strtolower($eventKey ?? ''), 'reminder') || str_contains(strtolower($title ?? ''), 'reminder')) {
+                        $mailer = 'reminder';
+                    } else {
+                        $mailer = 'appointment';
+                    }
+                } elseif ($isInvoice) {
+                    $mailer = 'invoice';
+                }
+
+                \Log::info("Sending email via [{$mailer}] mailer to [{$owner->email}] for event [{$eventKey}] with title [{$title}]");
+
+                Mail::mailer($mailer)->to($owner->email)->send(new ClientNotificationMail($title ?? 'Notification', $message));
             } elseif ($channel === 'sms') {
                 if (empty($owner->phone)) {
                     throw new \Exception("Owner has no phone number.");
@@ -92,7 +111,7 @@ class ClientNotificationService
         $clinic = \App\Models\Setting::first();
         $invoice->load(['items', 'pet.owner']);
         
-        Mail::to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, $clinic));
+        Mail::mailer('invoice')->to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, $clinic));
 
         return ClientNotification::create([
             'owner_id' => $owner->id,

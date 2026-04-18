@@ -949,7 +949,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
   const fetchRecords = () => {
     if (!user?.token) return;
-    fetch(`/api/medical-records?pet_id=${patient.id}`, {
+    return fetch(`/api/medical-records?pet_id=${patient.id}`, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -968,7 +968,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
   const fetchAppointments = () => {
     if (!user?.token) return;
-    fetch(`/api/appointments?pet_id=${patient.id}`, {
+    return fetch(`/api/appointments?pet_id=${patient.id}`, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -988,7 +988,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
   const fetchVets = () => {
     if (!user?.token) return;
-    fetch("/api/vets", { // Changed from /api/users/vets
+    return fetch("/api/vets", { // Changed from /api/users/vets
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -1003,9 +1003,11 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   };
 
   useEffect(() => {
-    fetchRecords();
-    fetchAppointments();
-    fetchVets();
+    Promise.all([
+      fetchRecords(),
+      fetchAppointments(),
+      fetchVets(),
+    ]);
   }, [patient.id]);
 
   const onSave = (record, setErrors) => {

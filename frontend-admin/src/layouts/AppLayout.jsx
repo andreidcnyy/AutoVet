@@ -9,6 +9,7 @@ import {
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
+import api from "../api";
 
 function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,13 +23,7 @@ function AppLayout() {
 
   React.useEffect(() => {
     if (user && user.token) {
-      fetch("/api/settings", {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        }
-      })
-        .then((res) => res.json())
+      api.get('/api/settings', { cache: true })
         .then((data) => {
           if (data && typeof data === 'object') {
             if (data.clinic_name) {

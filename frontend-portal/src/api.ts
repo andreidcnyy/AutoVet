@@ -2,21 +2,31 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
+let _cachedToken: string | null = null;
+let _cachedTokenRaw: string | null = null;
+
+const getToken = (): string | null => {
+  const raw = localStorage.getItem('user');
+  if (!raw) { _cachedToken = null; _cachedTokenRaw = null; return null; }
+  if (raw === _cachedTokenRaw) return _cachedToken;
+  try {
+    _cachedTokenRaw = raw;
+    _cachedToken = JSON.parse(raw)?.token ?? null;
+  } catch { _cachedToken = null; }
+  return _cachedToken;
+};
+
 // Add a request interceptor to attach the token
 api.interceptors.request.use((config) => {
-  const user = localStorage.getItem('user');
-  if (user) {
-    const parsedUser = JSON.parse(user);
-    if (parsedUser.token) {
-      config.headers.Authorization = `Bearer ${parsedUser.token}`;
-    }
-  }
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 

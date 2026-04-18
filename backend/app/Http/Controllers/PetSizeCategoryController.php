@@ -11,7 +11,7 @@ class PetSizeCategoryController extends Controller
     {
         $query = PetSizeCategory::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 

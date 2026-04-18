@@ -179,7 +179,7 @@ class AuthController extends Controller
         $resetUrl = "{$portalUrl}/reset-password?token={$token}&email={$request->email}";
 
         try {
-            Mail::to($request->email)->send(new PasswordResetMail($resetUrl));
+            Mail::mailer('forgot_password')->to($request->email)->send(new PasswordResetMail($resetUrl));
             \Log::info("Password reset email sent to {$request->email}");
         } catch (\Exception $e) {
             \Log::error("Failed to send password reset email: " . $e->getMessage());

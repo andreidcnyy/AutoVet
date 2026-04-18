@@ -11,7 +11,7 @@ class InventoryCategoryController extends Controller
     {
         $query = InventoryCategory::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 

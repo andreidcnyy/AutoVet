@@ -14,12 +14,8 @@ class PatientOwnerController extends Controller
     public function index(Request $request)
     {
         $user = auth('admin_api')->user() ?? auth('portal_api')->user();
-        \Log::info('Owners index accessed', [
-            'user_id' => $user?->id,
-            'user_type' => $user ? get_class($user) : 'null',
-        ]);
 
-        $query = Owner::with(['pets', 'user']);
+        $query = Owner::with(['pets']);
 
         if ($user instanceof \App\Models\PortalUser) {
             $query->where('id', $user->owner?->id);

@@ -11,9 +11,12 @@ class OwnerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Owner::with('pets.invoices')->orderBy('created_at', 'desc')->get());
+        if ($request->boolean('minimal')) {
+            return response()->json(Owner::select('id', 'name', 'phone', 'email')->orderBy('name')->get());
+        }
+        return response()->json(Owner::with('pets')->orderBy('created_at', 'desc')->get());
     }
 
     /**

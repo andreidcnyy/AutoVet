@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
@@ -6,6 +6,7 @@ import PetsListView from "../components/patients/PetsListView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import api from "../api";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
@@ -30,30 +31,37 @@ function PatientsPage() {
   const [zip, setZip] = useState("");
   const [availableCities, setAvailableCities] = useState([]);
 
-  const fetchOwners = () => {
-    setIsLoading(true);
-    fetch("/api/owners", {
-      headers: { 
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user?.token}`
-      }
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setOwners(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []);
+  const OWNERS_CACHE_KEY = 'patients_owners_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchOwners = useCallback((signal) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(OWNERS_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setOwners(cached.data);
         setIsLoading(false);
+      }
+    } catch (_) {}
+
+    api.get('/api/owners', { signal })
+      .then((data) => {
+        const result = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        setOwners(result);
+        try { localStorage.setItem(OWNERS_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
       })
       .catch((err) => {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error("Failed to load owner data:", err);
-        setIsLoading(false);
-      });
-  };
+      })
+      .finally(() => setIsLoading(false));
+  }, [user?.token]);
 
   useEffect(() => {
-    if (user?.token) {
-      fetchOwners();
-    }
-  }, [user?.token]);
+    if (!user?.token) return;
+    const controller = new AbortController();
+    fetchOwners(controller.signal);
+    return () => controller.abort();
+  }, [fetchOwners]);
 
   // Sync cities when province changes
   useEffect(() => {

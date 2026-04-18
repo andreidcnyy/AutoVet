@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
 import {
   FiCalendar,
@@ -25,6 +25,7 @@ import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
+import api from "../../api";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -286,9 +287,26 @@ function InvoiceModuleView() {
   const [inventory, setInventory] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
 
-  const fetchInvoices = async (page = 1, search = searchQuery, signal = null) => {
+  const INVOICES_CACHE_KEY = 'invoices_history_cache';
+  const FORM_DATA_CACHE_KEY = 'invoices_form_data_minimal_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchInvoices = useCallback(async (page = 1, search = searchQuery, signal = null) => {
     if (!user?.token) return;
     setHistoryLoading(true);
+
+    // Show cached data instantly for default view (page 1, no search)
+    if (page === 1 && !search) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(INVOICES_CACHE_KEY) || 'null');
+        if (cached && Date.now() - cached.ts < CACHE_TTL) {
+          setInvoices(cached.invoices);
+          setPagination(cached.pagination);
+          setHistoryLoading(false);
+        }
+      } catch (_) {}
+    }
+
     try {
       const response = await fetch(`/api/invoices?per_page=10&page=${page}&search=${encodeURIComponent(search)}`, {
         signal,
@@ -300,25 +318,28 @@ function InvoiceModuleView() {
       const data = await response.json();
 
       if (data.data) {
-        // Paginated response
         setInvoices(data.data);
-        setPagination({
+        const newPagination = {
           currentPage: data.current_page,
           lastPage: data.last_page,
           total: data.total,
           perPage: data.per_page
-        });
+        };
+        setPagination(newPagination);
+        if (page === 1 && !search) {
+          try { localStorage.setItem(INVOICES_CACHE_KEY, JSON.stringify({ invoices: data.data, pagination: newPagination, ts: Date.now() })); } catch (_) {}
+        }
       } else {
-        // Direct array response (fallback)
         setInvoices(Array.isArray(data) ? data : []);
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error("Failed to fetch invoices:", err);
       toast.error("Failed to load invoice history.");
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [user?.token, searchQuery]);
 
   useEffect(() => {
     if (activeTab === "history") {
@@ -360,60 +381,71 @@ function InvoiceModuleView() {
   useEffect(() => {
     if (!user?.token) return;
 
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
+    // Show cached form data instantly
+    try {
+      const cached = JSON.parse(localStorage.getItem(FORM_DATA_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        if (Array.isArray(cached.owners)) setOwners(cached.owners);
+        if (Array.isArray(cached.pets)) setPets(cached.pets);
+        if (Array.isArray(cached.services)) setServices(cached.services);
+        if (Array.isArray(cached.inventory)) setInventory(cached.inventory);
+        if (Array.isArray(cached.weightRanges)) setWeightRanges(cached.weightRanges);
+        if (cached.settings) { setClinicSettings(cached.settings); setNotes(cached.settings?.invoice_notes_template || ""); }
+      }
+    } catch (_) {}
 
-    // Fetch owners, pets, and settings on mount
+    const controller = new AbortController();
+
     Promise.all([
-      fetch("/api/owners", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
-      fetch("/api/pets", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
-      fetch("/api/settings", { headers }).then(res => res.json()).catch(() => ({})),
-      fetch("/api/services", { headers }).then(res => res.json()).catch(() => []),
-      fetch("/api/inventory", { headers }).then(res => res.json()).catch(() => [])
+      api.get('/api/owners', { params: { minimal: 1 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/pets', { params: { minimal: 1 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/settings', { signal: controller.signal }).catch(() => ({})),
+      api.get('/api/services', { signal: controller.signal }).catch(() => []),
+      api.get('/api/inventory', { signal: controller.signal }).catch(() => []),
     ])
       .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
-        // Robustness: Only set array state if data is an array, else log payload
-        if (!Array.isArray(ownersData)) {
-          console.error("Unexpected owners API response:", ownersData);
-          setOwners([]);
-        } else {
-          setOwners(ownersData);
-        }
+        const owners = Array.isArray(ownersData) ? ownersData : [];
+        const pets = Array.isArray(petsData) ? petsData : [];
+        const services = Array.isArray(servicesData) ? servicesData : [];
+        const inventory = Array.isArray(inventoryData) ? inventoryData : [];
 
-        if (!Array.isArray(petsData)) {
-          console.error("Unexpected pets API response:", petsData);
-          setPets([]);
-        } else {
-          setPets(petsData);
-        }
+        if (!Array.isArray(ownersData)) console.error("Unexpected owners API response:", ownersData);
+        if (!Array.isArray(petsData)) console.error("Unexpected pets API response:", petsData);
 
+        setOwners(owners);
+        setPets(pets);
         setClinicSettings(settingsData);
         setNotes(settingsData?.invoice_notes_template || "");
-        setServices(Array.isArray(servicesData) ? servicesData : []);
-        setInventory(Array.isArray(inventoryData) ? inventoryData : []);
+        setServices(services);
+        setInventory(inventory);
+
+        try {
+          localStorage.setItem(FORM_DATA_CACHE_KEY, JSON.stringify({ owners, pets, services, inventory, settings: settingsData, ts: Date.now() }));
+        } catch (_) {}
       })
       .catch((err) => {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error("Critical fail in Invoice initialization:", err);
         toast.error("Failed to load initial invoice data.");
       });
 
-    fetch("/api/weight-ranges", { headers })
-      .then(res => res.json())
+    api.get("/api/weight-ranges", { signal: controller.signal })
       .then(data => {
-        const ranges = data.data || data;
-        if (!Array.isArray(ranges)) {
-          console.error("Unexpected weight-ranges response:", data);
-          setWeightRanges([]);
-        } else {
-          setWeightRanges(ranges);
-        }
+        const ranges = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+        if (!ranges.length) console.error("Unexpected weight-ranges response:", data);
+        setWeightRanges(ranges);
+        try {
+          const cached = JSON.parse(localStorage.getItem(FORM_DATA_CACHE_KEY) || 'null');
+          if (cached) localStorage.setItem(FORM_DATA_CACHE_KEY, JSON.stringify({ ...cached, weightRanges: ranges, ts: Date.now() }));
+        } catch (_) {}
       })
       .catch(err => {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error("Weight ranges fetch error:", err);
         setWeightRanges([]);
       });
+
+    return () => controller.abort();
   }, [user?.token]);
 
   const handlePatientSelect = (e) => {
@@ -431,38 +463,35 @@ function InvoiceModuleView() {
     setPatientDetails(patientData);
     setCurrentWeight(patientData?.weight || "");
 
-    // Fetch appointments for this patient
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user?.token}`
+    // Fetch appointments for this patient (stale-while-revalidate)
+    const apptCacheKey = `invoice_appts_pet_${pId}`;
+    try {
+      const cached = JSON.parse(localStorage.getItem(apptCacheKey) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setAppointments(cached.data);
+      }
+    } catch (_) {}
+
+    const sortAppts = (appts) => {
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      return [...appts].sort((a, b) => {
+        const dA = new Date(a.date); dA.setHours(0, 0, 0, 0);
+        const dB = new Date(b.date); dB.setHours(0, 0, 0, 0);
+        const pA = dA < now, pB = dB < now;
+        if (pA && !pB) return 1; if (!pA && pB) return -1;
+        if (!pA && !pB) return dA - dB;
+        return dB - dA;
+      });
     };
-    fetch(`/api/appointments?pet_id=${pId}`, { headers })
+
+    fetch(`/api/appointments?pet_id=${pId}`, {
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+    })
       .then(res => res.json())
       .then(data => {
-        const appts = Array.isArray(data) ? data : [];
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-
-        const sorted = appts.sort((a, b) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          dateA.setHours(0, 0, 0, 0);
-          dateB.setHours(0, 0, 0, 0);
-
-          const isA_Past = dateA < now;
-          const isB_Past = dateB < now;
-
-          // If one is past and other is future/today
-          if (isA_Past && !isB_Past) return 1;
-          if (!isA_Past && isB_Past) return -1;
-
-          // Both are future/today: Ascending (Today -> Tomorrow)
-          if (!isA_Past && !isB_Past) return dateA - dateB;
-
-          // Both are past: Descending (Yesterday -> Day Before)
-          return dateB - dateA;
-        });
+        const sorted = sortAppts(Array.isArray(data) ? data : []);
         setAppointments(sorted);
+        try { localStorage.setItem(apptCacheKey, JSON.stringify({ data: sorted, ts: Date.now() })); } catch (_) {}
       })
       .catch(err => {
         console.error("Failed to load appointments", err);

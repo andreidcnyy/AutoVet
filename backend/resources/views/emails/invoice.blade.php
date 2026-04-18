@@ -8,7 +8,7 @@
         .invoice-card { max-width: 800px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow: hidden; }
         .header-stripe { height: 8px; background: #10b981; }
         .content { padding: 40px; }
-        .top-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .top-row { margin-bottom: 40px; }
         .brand h1 { margin: 0; font-size: 28px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: -1px; }
         .brand p { margin: 2px 0; font-size: 12px; color: #64748b; font-weight: 600; }
         .invoice-meta { text-align: right; }

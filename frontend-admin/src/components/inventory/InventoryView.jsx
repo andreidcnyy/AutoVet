@@ -19,6 +19,7 @@ import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
+import api from "../../api";
 
 const categoryIcons = {
   Medicines: LuPill,
@@ -80,31 +81,38 @@ function InventoryView() {
   const { user } = useAuth();
   const isAdmin = VET_AND_ADMIN.includes(user?.role);
 
+  const INVENTORY_CACHE_KEY = 'inventory_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
   useEffect(() => {
-    const fetchInventory = async () => {
-      if (!user?.token) return;
-      try {
-        const response = await fetch("/api/inventory", {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${user.token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setInventoryRows(data);
-          
-          // Extract unique categories for the filter
-          const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
-          setCategories(uniqueCats);
-        }
-      } catch (error) {
-        console.error("Failed to fetch inventory:", error);
-      } finally {
+    if (!user?.token) return;
+
+    // Show cached data immediately
+    try {
+      const cached = JSON.parse(localStorage.getItem(INVENTORY_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setInventoryRows(cached.data);
+        const uniqueCats = [...new Set(cached.data.map(item => item.inventory_category?.name).filter(Boolean))];
+        setCategories(uniqueCats);
         setIsLoading(false);
       }
-    };
-    fetchInventory();
+    } catch (_) {}
+
+    const controller = new AbortController();
+
+    api.get('/api/inventory', { signal: controller.signal })
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setInventoryRows(data);
+        const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
+        setCategories(uniqueCats);
+        try { localStorage.setItem(INVENTORY_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
+        console.error("Failed to fetch inventory:", err);
+      })
+      .finally(() => setIsLoading(false));
 
     // Real-time listener
     const channel = echo.private('admin.inventory')
@@ -118,9 +126,10 @@ function InventoryView() {
       });
 
     return () => {
+      controller.abort();
       echo.leave('admin.inventory');
     };
-  }, [user?.token, toast]);
+  }, [user?.token]);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -133,54 +142,22 @@ function InventoryView() {
     
     try {
       // 1. Trigger the background job
-      const syncResponse = await fetch("/api/dashboard/run-forecast", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-      
-      const syncData = await syncResponse.json();
-      
-      if (!syncResponse.ok) {
-        throw new Error(syncData.message || "Failed to start analysis");
-      }
-      
+      const syncData = await api.post('/api/dashboard/run-forecast');
+      if (syncData.status === 'error') throw new Error(syncData.message || "Failed to start analysis");
+
       // 2. Poll for Status
       const pollStatus = async () => {
         try {
-          const statusRes = await fetch("/api/dashboard/forecast-status", {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${user?.token}`
-            }
-          });
-          
-          if (statusRes.ok) {
-            const data = await statusRes.json();
-            setForecastStatus(data);
-            
-            if (data.is_running) {
-              // Still running, wait and poll again
-              setTimeout(pollStatus, 2000);
-            } else {
-              // Processing complete or failed
-              setIsSimulating(false);
-              
-              // Refresh inventory to show new results
-              const response = await fetch("/api/inventory", {
-                headers: {
-                  "Accept": "application/json",
-                  "Authorization": `Bearer ${user.token}`
-                }
-              });
-              if (response.ok) {
-                setInventoryRows(await response.json());
-                toast.success(data.message || "AI Analysis complete.");
-              }
-            }
+          const data = await api.get('/api/dashboard/forecast-status');
+          setForecastStatus(data);
+
+          if (data.is_running) {
+            setTimeout(pollStatus, 2000);
+          } else {
+            setIsSimulating(false);
+            const rows = await api.get('/api/inventory');
+            setInventoryRows(rows);
+            toast.success(data.message || "AI Analysis complete.");
           }
         } catch (pollErr) {
           console.error("Polling error:", pollErr);
@@ -219,15 +196,8 @@ function InventoryView() {
     const pollInterval = setInterval(async () => {
       const idsToPoll = Array.from(updatingIds);
       try {
-        const response = await fetch("/api/inventory?ids=" + idsToPoll.join(','), {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${user?.token}`
-          }
-        });
-        
-        if (response.ok) {
-          const updatedItems = await response.json();
+        const updatedItems = await api.get('/api/inventory', { params: { ids: idsToPoll.join(',') } });
+        if (updatedItems) {
           let allFresh = true;
           
           setInventoryRows(prev => prev.map(item => {

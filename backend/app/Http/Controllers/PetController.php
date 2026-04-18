@@ -18,9 +18,19 @@ class PetController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+
+        if ($request->boolean('minimal')) {
+            $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'weight')
+                ->with(['owner:id,name', 'species:id,name']);
+            if ($ownerId = $this->getPortalOwnerId()) {
+                $query->where('owner_id', $ownerId);
+            }
+            return response()->json($query->orderBy('name')->get());
+        }
+
         // Eager load invoices to support total_paid calculation without N+1 queries
         $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory', 'invoices']);
-        
+
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->where('owner_id', $ownerId);
         } elseif ($request->has('owner_id')) {
@@ -32,7 +42,7 @@ class PetController extends Controller
         if ($request->has('per_page')) {
             return response()->json($query->paginate($request->per_page));
         }
-        
+
         return response()->json($query->get());
     }
 

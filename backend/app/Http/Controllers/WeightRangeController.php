@@ -11,11 +11,11 @@ class WeightRangeController extends Controller
     {
         $query = WeightRange::with(['sizeCategory', 'species']);
 
-        if ($request->has('species_id')) {
+        if ($request->filled('species_id')) {
             $query->where('species_id', $request->species_id);
         }
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('label', 'like', '%' . $request->search . '%');
         }
 

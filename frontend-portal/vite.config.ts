@@ -6,23 +6,23 @@ export default defineConfig({
   server: {
     port: 5174,
     proxy: {
-      '/app': {
+      '^/app/': {
         target: 'ws://127.0.0.1:8080',
         ws: true,
         changeOrigin: true,
       },
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://autovet.test',
         changeOrigin: true,
         secure: false,
       },
       '/sanctum': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://autovet.test',
         changeOrigin: true,
         secure: false,
       },
       '/storage': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://autovet.test',
         changeOrigin: true,
         secure: false,
       },

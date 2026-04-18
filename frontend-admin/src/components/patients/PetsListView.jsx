@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -31,30 +31,43 @@ function PetsListView() {
   const [selectedPetId, setSelectedPetId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchPets = async () => {
+  const PETS_CACHE_KEY = 'patients_pets_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchPets = useCallback((signal) => {
     if (!user?.token) return;
+
     try {
-      const response = await fetch("/api/pets", {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPets(data);
+      const cached = JSON.parse(localStorage.getItem(PETS_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setPets(cached.data);
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch pets:", error);
-      toast.error("Failed to load patient records.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    } catch (_) {}
+
+    fetch("/api/pets", {
+      signal,
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        const result = Array.isArray(data) ? data : [];
+        setPets(result);
+        try { localStorage.setItem(PETS_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        console.error("Failed to fetch pets:", err);
+        toast.error("Failed to load patient records.");
+      })
+      .finally(() => setIsLoading(false));
+  }, [user?.token]);
 
   useEffect(() => {
-    fetchPets();
-  }, [user?.token]);
+    const controller = new AbortController();
+    fetchPets(controller.signal);
+    return () => controller.abort();
+  }, [fetchPets]);
 
   const filteredPets = useMemo(() => {
     return pets.filter(pet => {
@@ -272,7 +285,7 @@ function PetsListView() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         patientId={selectedPetId}
-        onRefresh={fetchPets}
+        onRefresh={() => fetchPets(new AbortController().signal)}
       />
     </div>
   );
