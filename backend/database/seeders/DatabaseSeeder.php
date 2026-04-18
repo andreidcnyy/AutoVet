@@ -17,15 +17,18 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::updateOrCreate(
-            ['email' => 'test@example.com'],
-            ['name' => 'Test User', 'password' => bcrypt('password')]
-        );
-
         $this->call([
-            AdminUserSeeder::class,
             MasterDataSeeder::class,
             MeasurementSeeder::class,
+            StandardBreedsSeeder::class,
+            InventoryListSeeder::class,
+            SettingSeeder::class,
+            NotificationTemplateSeeder::class,
+            AdminUserSeeder::class,
+            PHClinicAISeeder::class, // Run before PortalUserSeeder because it truncates owners
+            PortalUserSeeder::class,
+            ServicesSeeder::class,
+            DashboardAIForecastSeeder::class,
         ]);
     }
 }

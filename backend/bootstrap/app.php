@@ -29,12 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        });
+
         $exceptions->render(function (\Throwable $e, Request $request) {
-            // If it's an authorization error, let it be a 403
             if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
                 return response()->json([
                     'error' => 'Unauthorized',
@@ -42,7 +46,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 403);
             }
 
-            // Real 500 error handling
             if ($request->is('api/*')) {
                 return response()->json([
                     'error' => 'Server Error',

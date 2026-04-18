@@ -19,6 +19,7 @@ import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
+import api from "../../api";
 
 const categoryIcons = {
   Medicines: LuPill,
@@ -84,20 +85,10 @@ function InventoryView() {
     const fetchInventory = async () => {
       if (!user?.token) return;
       try {
-        const response = await fetch("/api/inventory", {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${user.token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setInventoryRows(data);
-          
-          // Extract unique categories for the filter
-          const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
-          setCategories(uniqueCats);
-        }
+        const data = await api.get('/api/inventory');
+        setInventoryRows(data);
+        const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
+        setCategories(uniqueCats);
       } catch (error) {
         console.error("Failed to fetch inventory:", error);
       } finally {
@@ -133,54 +124,22 @@ function InventoryView() {
     
     try {
       // 1. Trigger the background job
-      const syncResponse = await fetch("/api/dashboard/run-forecast", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-      
-      const syncData = await syncResponse.json();
-      
-      if (!syncResponse.ok) {
-        throw new Error(syncData.message || "Failed to start analysis");
-      }
-      
+      const syncData = await api.post('/api/dashboard/run-forecast');
+      if (syncData.status === 'error') throw new Error(syncData.message || "Failed to start analysis");
+
       // 2. Poll for Status
       const pollStatus = async () => {
         try {
-          const statusRes = await fetch("/api/dashboard/forecast-status", {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${user?.token}`
-            }
-          });
-          
-          if (statusRes.ok) {
-            const data = await statusRes.json();
-            setForecastStatus(data);
-            
-            if (data.is_running) {
-              // Still running, wait and poll again
-              setTimeout(pollStatus, 2000);
-            } else {
-              // Processing complete or failed
-              setIsSimulating(false);
-              
-              // Refresh inventory to show new results
-              const response = await fetch("/api/inventory", {
-                headers: {
-                  "Accept": "application/json",
-                  "Authorization": `Bearer ${user.token}`
-                }
-              });
-              if (response.ok) {
-                setInventoryRows(await response.json());
-                toast.success(data.message || "AI Analysis complete.");
-              }
-            }
+          const data = await api.get('/api/dashboard/forecast-status');
+          setForecastStatus(data);
+
+          if (data.is_running) {
+            setTimeout(pollStatus, 2000);
+          } else {
+            setIsSimulating(false);
+            const rows = await api.get('/api/inventory');
+            setInventoryRows(rows);
+            toast.success(data.message || "AI Analysis complete.");
           }
         } catch (pollErr) {
           console.error("Polling error:", pollErr);
@@ -219,15 +178,8 @@ function InventoryView() {
     const pollInterval = setInterval(async () => {
       const idsToPoll = Array.from(updatingIds);
       try {
-        const response = await fetch("/api/inventory?ids=" + idsToPoll.join(','), {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${user?.token}`
-          }
-        });
-        
-        if (response.ok) {
-          const updatedItems = await response.json();
+        const updatedItems = await api.get('/api/inventory', { params: { ids: idsToPoll.join(',') } });
+        if (updatedItems) {
           let allFresh = true;
           
           setInventoryRows(prev => prev.map(item => {

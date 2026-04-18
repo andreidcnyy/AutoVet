@@ -40,7 +40,7 @@ use App\Models\Owner;
 // Public-facing routes (Login, Registration, etc.)
 // ---------------------------------------------------------------------------
 
-Route::post('/login',           [AuthController::class, 'login']);
+Route::post('/login',           [AuthController::class, 'login'])->name('login');
 Route::post('/register',        [AuthController::class, 'register']);
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);

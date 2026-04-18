@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import echo from "../../utils/echo";
+import api from "../../api";
 import {
   FiPlusCircle,
   FiClock,
@@ -23,7 +24,7 @@ import {
   FiThumbsDown
 } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from "../../utils/calendarUtils";
 import { useToast } from "../../context/ToastContext";
 import { useForm } from "react-hook-form";
@@ -117,32 +118,22 @@ function AppointmentsView() {
   useEffect(() => {
     if (selectedDate && user?.token) {
       setIsCheckingAvailability(true);
-      const headers = {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      };
-      const params = new URLSearchParams({ date: selectedDate });
-      if (selectedVetId) params.append('vet_id', selectedVetId);
+      const params = { date: selectedDate };
+      if (selectedVetId) params.vet_id = selectedVetId;
 
-      fetch(`/api/appointments/availability?${params.toString()}`, { headers })
-        .then(res => res.json())
+      api.get('/api/appointments/availability', { params })
         .then(data => setAvailability(Array.isArray(data) ? data : []))
         .catch(console.error)
         .finally(() => setIsCheckingAvailability(false));
     }
   }, [selectedDate, selectedVetId, user?.token]);
 
-  const fetchAppointments = () => {
+  const fetchAppointments = useCallback(() => {
     if (!user?.token) return;
-    fetch("/api/appointments", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      }
-    })
-      .then((res) => res.json())
+    const dateFrom = format(startOfMonth(subMonths(currentDate, 1)), 'yyyy-MM-dd');
+    const dateTo = format(endOfMonth(addMonths(currentDate, 1)), 'yyyy-MM-dd');
+    api.get('/api/appointments', { params: { date_from: dateFrom, date_to: dateTo } })
       .then((data) => {
-        // Ensure data is an array
         if (Array.isArray(data)) {
           setAppointments(data);
         } else if (data && typeof data === "object" && Array.isArray(data.appointments)) {
@@ -155,32 +146,37 @@ function AppointmentsView() {
         console.error("Error fetching appointments:", err);
         setAppointments([]);
       });
-  };
+  }, [user?.token, currentDate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   useEffect(() => {
     if (!user?.token) return;
 
-    fetchAppointments();
+    Promise.allSettled([
+      api.get('/api/owners', { cache: true }),
+      api.get('/api/pets', { cache: true }),
+      api.get('/api/services', { cache: true }),
+      api.get('/api/vets', { cache: true }),
+      api.get('/api/settings', { cache: true }),
+      api.get('/api/dashboard/appointment-forecast', { cache: true, ttl: 3 * 60 * 1000 }),
+    ]).then(([ownersRes, petsRes, servicesRes, vetsRes, settingsRes, forecastRes]) => {
+      const ownersData = ownersRes.status === 'fulfilled' ? ownersRes.value : [];
+      const petsData = petsRes.status === 'fulfilled' ? petsRes.value : [];
+      const servicesData = servicesRes.status === 'fulfilled' ? servicesRes.value : [];
+      const vetsData = vetsRes.status === 'fulfilled' ? vetsRes.value : [];
+      const settingsData = settingsRes.status === 'fulfilled' ? settingsRes.value : {};
+      const forecastData = forecastRes.status === 'fulfilled' ? forecastRes.value : null;
 
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
-
-    Promise.all([
-      fetch("/api/owners", { headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/pets", { headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/services", { headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/vets", { headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/settings", { headers }).then(r => r.json()).catch(() => ({})),
-      fetch("/api/dashboard/appointment-forecast", { headers }).then(r => r.json()).catch(() => null),
-    ]).then(([ownersData, petsData, servicesData, vetsData, settingsData, forecastData]) => {
       setOwners(Array.isArray(ownersData) ? ownersData : []);
       setPets(Array.isArray(petsData) ? petsData : []);
       setServices(Array.isArray(servicesData) ? servicesData : []);
       setVets(Array.isArray(vetsData) ? vetsData : []);
-      const inv = settingsData.inventory_categories ? JSON.parse(settingsData.inventory_categories) : [];
-      const svc = settingsData.service_categories ? JSON.parse(settingsData.service_categories) : [];
+      
+      const inv = settingsData?.inventory_categories ? (typeof settingsData.inventory_categories === 'string' ? JSON.parse(settingsData.inventory_categories) : settingsData.inventory_categories) : [];
+      const svc = settingsData?.service_categories ? (typeof settingsData.service_categories === 'string' ? JSON.parse(settingsData.service_categories) : settingsData.service_categories) : [];
       setCategories([...new Set([...inv, ...svc])]);
       if (forecastData) setAiForecast(forecastData);
     });

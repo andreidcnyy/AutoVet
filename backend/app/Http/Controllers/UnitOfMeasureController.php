@@ -11,7 +11,7 @@ class UnitOfMeasureController extends Controller
     {
         $query = UnitOfMeasure::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%')
                   ->orWhere('abbreviation', 'like', '%' . $request->search . '%');
         }

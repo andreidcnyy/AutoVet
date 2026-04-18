@@ -44,6 +44,14 @@ class AppointmentController extends Controller
             $query->where('date', '>=', now()->toDateString());
         }
 
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+
         $query->orderBy('date', 'desc');
 
         if ($request->has('per_page')) {

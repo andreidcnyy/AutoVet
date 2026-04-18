@@ -25,6 +25,7 @@ import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
+import api from "../../api";
 
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -360,18 +361,13 @@ function InvoiceModuleView() {
   useEffect(() => {
     if (!user?.token) return;
 
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
-
     // Fetch owners, pets, and settings on mount
     Promise.all([
-      fetch("/api/owners", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
-      fetch("/api/pets", { headers }).then(res => res.json()).catch(() => ({ error: "Fetch failed" })),
-      fetch("/api/settings", { headers }).then(res => res.json()).catch(() => ({})),
-      fetch("/api/services", { headers }).then(res => res.json()).catch(() => []),
-      fetch("/api/inventory", { headers }).then(res => res.json()).catch(() => [])
+      api.get('/api/owners', { cache: true }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/pets', { cache: true }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/settings', { cache: true }).catch(() => ({})),
+      api.get('/api/services', { cache: true }).catch(() => []),
+      api.get('/api/inventory', { cache: true, ttl: 2 * 60 * 1000 }).catch(() => []),
     ])
       .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
         // Robustness: Only set array state if data is an array, else log payload
@@ -399,8 +395,7 @@ function InvoiceModuleView() {
         toast.error("Failed to load initial invoice data.");
       });
 
-    fetch("/api/weight-ranges", { headers })
-      .then(res => res.json())
+    api.get("/api/weight-ranges")
       .then(data => {
         const ranges = data.data || data;
         if (!Array.isArray(ranges)) {

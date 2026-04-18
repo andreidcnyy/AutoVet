@@ -6,6 +6,7 @@ import PetsListView from "../components/patients/PetsListView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import api from "../api";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
@@ -32,13 +33,7 @@ function PatientsPage() {
 
   const fetchOwners = () => {
     setIsLoading(true);
-    fetch("/api/owners", {
-      headers: { 
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user?.token}`
-      }
-    })
-      .then((res) => res.json())
+    api.get('/api/owners', { cache: true })
       .then((data) => {
         setOwners(Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []);
         setIsLoading(false);

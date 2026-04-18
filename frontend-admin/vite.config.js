@@ -13,17 +13,17 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: "http://autovet.test",
         changeOrigin: true,
         secure: false,
       },
       "/sanctum": {
-        target: "http://127.0.0.1:8000",
+        target: "http://autovet.test",
         changeOrigin: true,
         secure: false,
       },
       "/storage": {
-        target: "http://127.0.0.1:8000",
+        target: "http://autovet.test",
         changeOrigin: true,
         secure: false,
       },
@@ -55,11 +55,11 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: "http://autovet.test",
         changeOrigin: true,
       },
       "/storage": {
-        target: "http://127.0.0.1:8000",
+        target: "http://autovet.test",
         changeOrigin: true,
       },
     },

@@ -11,7 +11,7 @@ class SpeciesController extends Controller
     {
         $query = Species::with('breeds.defaultSizeCategory');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
