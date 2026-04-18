@@ -196,7 +196,7 @@ class AppointmentController extends Controller
             'service_id' => 'sometimes|required|exists:services,id',
             'vet_id' => 'nullable|exists:admins,id',
         ], [
-            'service_id.required' => 'A service type is required for accurate डिमांड forecasting.'
+            'service_id.required' => 'A service type is required for accurate demand forecasting.'
         ]);
 
         if (isset($validated['service_id'])) {

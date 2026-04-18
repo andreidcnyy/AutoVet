@@ -27,7 +27,7 @@ class MasterDataSeeder extends Seeder
 
         // Service Categories
         $serviceCategories = [
-            ['name' => 'Consultations', 'status' => 'Active'],
+            ['name' => 'Consultation', 'status' => 'Active'],
             ['name' => 'Surgery', 'status' => 'Active'],
             ['name' => 'Laboratory', 'status' => 'Active'],
             ['name' => 'Imaging', 'status' => 'Active'],

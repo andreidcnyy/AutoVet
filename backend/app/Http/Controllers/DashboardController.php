@@ -7,6 +7,9 @@ use App\Models\Pet;
 use App\Models\Appointment;
 use App\Models\Inventory;
 use App\Models\InvoiceItem;
+use App\Models\Service;
+use App\Models\Owner;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -848,6 +851,161 @@ class DashboardController extends Controller
      * Trigger a synchronous AI forecast refresh for all applicable inventory items.
      * This iterates through items with a 'code' and runs the forecasting engine.
      */
+    /**
+     * Get AI Service Forecast with multi-category trends.
+     */
+    public function getServiceForecast(Request $request)
+    {
+        $rangeParam = $request->query('range', '6 Months');
+        $monthsToFetch = $rangeParam == 'Year' ? 12 : 6;
+
+        return response()->json(Cache::remember("dashboard_service_forecast_{$monthsToFetch}", 300, function () use ($monthsToFetch) {
+            $now = Carbon::now()->startOfMonth();
+            $timeline = [];
+            for ($i = ($monthsToFetch - 1); $i >= 0; $i--) {
+                $timeline[] = ['date' => $now->copy()->subMonths($i), 'is_future' => false];
+            }
+            for ($i = 1; $i <= 2; $i++) {
+                $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
+            }
+
+            $majorCategories = ['Consultation', 'Grooming', 'Vaccination', 'Laboratory'];
+            $allCategories = array_merge($majorCategories, ['Others']);
+            
+            // Get all appointments (COMPLETED ONLY)
+            $appointments = Appointment::join('services', 'appointments.service_id', '=', 'services.id')
+                ->where('appointments.status', 'completed')
+                ->where('appointments.date', '>=', $now->copy()->subMonths(12)->toDateString())
+                ->select(
+                    DB::raw('YEAR(appointments.date) as year'),
+                    DB::raw('MONTH(appointments.date) as month'),
+                    'services.category',
+                    DB::raw('count(*) as count')
+                )
+                ->groupBy('year', 'month', 'services.category')
+                ->get();
+
+            $historicalData = [];
+            foreach ($appointments as $appt) {
+                $key = $appt->year . '-' . str_pad($appt->month, 2, '0', STR_PAD_LEFT);
+                $cat = in_array($appt->category, $majorCategories) ? $appt->category : 'Others';
+                
+                if (!isset($historicalData[$key][$cat])) {
+                    $historicalData[$key][$cat] = 0;
+                }
+                $historicalData[$key][$cat] += (int) $appt->count;
+            }
+
+            $chartData = [];
+            $forecastResults = [];
+            $totalForecastedServices = 0;
+            $estimatedRevenue = 0;
+
+            // Average prices per category for revenue estimation
+            // For Others, we use a general average of all services not in major categories
+            $othersAvgPrice = Service::whereNotIn('category', $majorCategories)->avg('price') ?: 500;
+            $avgPrices = Service::whereIn('category', $majorCategories)
+                ->select('category', DB::raw('AVG(price) as avg_price'))
+                ->groupBy('category')
+                ->pluck('avg_price', 'category');
+
+            foreach ($allCategories as $cat) {
+                $yValues = [];
+                foreach ($timeline as $idx => $item) {
+                    if (!$item['is_future']) {
+                        $key = $item['date']->format('Y-m');
+                        $yValues[] = $historicalData[$key][$cat] ?? 0;
+                    }
+                }
+
+                $n = count($yValues);
+                $xValues = range(0, $n - 1);
+                $sumX = array_sum($xValues);
+                $sumY = array_sum($yValues);
+                $sumXY = 0; $sumX2 = 0;
+                for ($i = 0; $i < $n; $i++) {
+                    $sumXY += ($xValues[$i] * $yValues[$i]);
+                    $sumX2 += ($xValues[$i] * $xValues[$i]);
+                }
+                $denom = ($n * $sumX2) - ($sumX * $sumX);
+                $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
+                $b = $n > 0 ? ($sumY - ($m * $sumX)) / $n : 0;
+
+                $forecastResults[$cat] = ['m' => $m, 'b' => $b, 'n' => $n];
+            }
+
+            $othersForecastTotal = 0;
+
+            foreach ($timeline as $idx => $item) {
+                $monthLabel = $item['date']->format('M');
+                $key = $item['date']->format('Y-m');
+                $point = ['month' => $monthLabel];
+
+                // Build chart data for 4 Majors ONLY
+                foreach ($majorCategories as $cat) {
+                    $model = $forecastResults[$cat];
+                    $forecastValue = max(0, ($model['m'] * $idx) + $model['b']);
+                    
+                    if ($item['is_future']) {
+                        $point[$cat] = [
+                            'actual' => null,
+                            'forecast' => round($forecastValue, 1)
+                        ];
+                        $totalForecastedServices += $forecastValue;
+                        $estimatedRevenue += $forecastValue * ($avgPrices[$cat] ?? 0);
+                    } else {
+                        $point[$cat] = [
+                            'actual' => $historicalData[$key][$cat] ?? 0,
+                            'forecast' => round($forecastValue, 1)
+                        ];
+                    }
+                }
+
+                // Internal Others Calculation
+                $othersModel = $forecastResults['Others'];
+                $othersForecastValue = max(0, ($othersModel['m'] * $idx) + $othersModel['b']);
+                if ($item['is_future']) {
+                    $totalForecastedServices += $othersForecastValue;
+                    $estimatedRevenue += $othersForecastValue * $othersAvgPrice;
+                    $othersForecastTotal += $othersForecastValue;
+                }
+
+                $chartData[] = $point;
+            }
+
+            // Summary stats
+            $totalPets = Pet::count();
+            $totalClients = Owner::count();
+            $totalAppointments = Appointment::count();
+            $apptsToday = Appointment::whereDate('date', now()->toDateString())->count();
+            $upcomingAppts = Appointment::where('date', '>', now()->toDateString())->count();
+            $cancelledAppts = Appointment::where('status', 'cancelled')->count();
+
+            return [
+                'summary' => [
+                    'total_pets' => $totalPets,
+                    'total_clients' => $totalClients,
+                    'total_appointments' => $totalAppointments,
+                    'appointments_today' => $apptsToday,
+                    'upcoming_appointments' => $upcomingAppts,
+                    'cancelled_appointments' => $cancelledAppts,
+                ],
+                'ai_forecast' => [
+                    'estimated_revenue' => round($estimatedRevenue),
+                    'estimated_customers' => round($totalForecastedServices * 0.9), // Approx 90% unique customers
+                    'total_forecasted_services' => round($totalForecastedServices),
+                    'others_forecast' => round($othersForecastTotal, 1),
+                ],
+                'chart_data' => $chartData,
+                'model_meta' => [
+                    'algorithm' => 'Multi-category Linear Regression (Hardened)',
+                    'scope' => 'Standardized Clinical Categories',
+                    'last_updated' => now()->toDateTimeString(),
+                ]
+            ];
+        }));
+    }
+
     /**
      * Trigger a background AI forecast refresh for all applicable inventory items.
      * This dispatches a batch job to handle analysis asynchronously.

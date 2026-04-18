@@ -96,6 +96,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/dashboard/run-forecast',          [DashboardController::class, 'runForecastSync']);
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
     Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
+    Route::get('/dashboard/service-forecast',      [DashboardController::class, 'getServiceForecast']);
     Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
 
     // -----------------------------------------------------------------------
