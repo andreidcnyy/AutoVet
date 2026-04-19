@@ -31,46 +31,65 @@ export default function WeightRangesManager() {
   };
   const [formData, setFormData] = useState(initialForm);
 
-  // Fetch species and size categories on mount
+  const SPECIES_CACHE_KEY = 'settings_species_cache';
+  const SIZE_CATS_CACHE_KEY = 'settings_size_cats_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  // Fetch species and size categories on mount (stale-while-revalidate)
   useEffect(() => {
     if (!user?.token) {
       setLoadingSpecies(false);
       return;
     }
-    
+
+    // Hydrate from localStorage first
+    try {
+      const specCached = JSON.parse(localStorage.getItem(SPECIES_CACHE_KEY) || 'null');
+      if (specCached && Date.now() - specCached.ts < CACHE_TTL && Array.isArray(specCached.data)) {
+        setSpecies(specCached.data);
+        if (specCached.data.length > 0) {
+          setSelectedSpecies((prev) => prev || specCached.data[0]);
+        }
+        setLoadingSpecies(false);
+      }
+      const sizeCached = JSON.parse(localStorage.getItem(SIZE_CATS_CACHE_KEY) || 'null');
+      if (sizeCached && Date.now() - sizeCached.ts < CACHE_TTL && Array.isArray(sizeCached.data)) {
+        setSizeCategories(sizeCached.data);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
     let isMounted = true;
     const init = async () => {
-      if (isMounted) setLoadingSpecies(true);
       try {
         const headers = {
           "Authorization": `Bearer ${user.token}`,
           "Accept": "application/json"
         };
-        
-        const specPromise = fetch("/api/species", { headers }).then(r => r.ok ? r.json() : null).catch(e => { console.error("Error fetching species:", e); return null; });
-        const sizePromise = fetch("/api/pet-size-categories", { headers }).then(r => r.ok ? r.json() : null).catch(e => { console.error("Error fetching sizes:", e); return null; });
-        
+
+        const specPromise = fetch("/api/species", { headers, signal: controller.signal }).then(r => r.ok ? r.json() : null).catch(e => { if (e.name !== 'AbortError') console.error("Error fetching species:", e); return null; });
+        const sizePromise = fetch("/api/pet-size-categories", { headers, signal: controller.signal }).then(r => r.ok ? r.json() : null).catch(e => { if (e.name !== 'AbortError') console.error("Error fetching sizes:", e); return null; });
+
         const [specData, sizeData] = await Promise.all([specPromise, sizePromise]);
-        
+
         if (!isMounted) return;
 
         if (specData) {
           const speciesList = Array.isArray(specData.data) ? specData.data : (Array.isArray(specData) ? specData : []);
           setSpecies(speciesList);
           if (speciesList.length > 0) {
-            setSelectedSpecies(speciesList[0]);
+            setSelectedSpecies((prev) => prev || speciesList[0]);
           }
-        } else {
-          error("Failed to load species data.");
+          try { localStorage.setItem(SPECIES_CACHE_KEY, JSON.stringify({ data: speciesList, ts: Date.now() })); } catch (_) {}
         }
-        
+
         if (sizeData) {
           const sizeList = Array.isArray(sizeData.data) ? sizeData.data : (Array.isArray(sizeData) ? sizeData : []);
           setSizeCategories(sizeList);
-        } else {
-          error("Failed to load pet size categories.");
+          try { localStorage.setItem(SIZE_CATS_CACHE_KEY, JSON.stringify({ data: sizeList, ts: Date.now() })); } catch (_) {}
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error("Initialization error:", err);
         if (isMounted) error(err.message || "Failed to load initial data");
       } finally {
@@ -78,7 +97,7 @@ export default function WeightRangesManager() {
       }
     };
     init();
-    return () => { isMounted = false; };
+    return () => { isMounted = false; controller.abort(); };
   }, [error, user?.token]);
 
   const fetchRanges = useCallback(async () => {
@@ -335,7 +354,7 @@ export default function WeightRangesManager() {
                       <td className="px-5 py-4 text-center tabular-nums">{item.max_weight || "∞"}</td>
                       <td className="px-5 py-4">
                         <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-tight text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                          {item.size_category?.name || "Unlinked"}
+                          {item?.size_category?.name || "Unlinked"}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">

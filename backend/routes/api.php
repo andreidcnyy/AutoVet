@@ -10,6 +10,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentStatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ForecastController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -44,6 +45,7 @@ Route::post('/login',           [AuthController::class, 'login'])->name('login')
 Route::post('/register',        [AuthController::class, 'register']);
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
+Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
 // Test endpoint to check API status
 Route::get('/status', function () {
@@ -88,7 +90,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/portal/overview',                 [DashboardController::class, 'getPortalOverview']);
     Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
     Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
-    Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markNotificationsRead']);
+    Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markAllRead']);
+    Route::post('/dashboard/notifications/clear-all', [DashboardController::class, 'clearAll']);
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
     Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
     Route::get('/dashboard/sales-forecast',        [DashboardController::class, 'getSalesForecast']);
@@ -98,6 +101,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
     Route::get('/dashboard/service-forecast',      [DashboardController::class, 'getServiceForecast']);
     Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
+    Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
+    Route::get('/dashboard/appointments/upcoming', [DashboardController::class, 'appointmentsUpcoming']);
+    Route::get('/dashboard/pets',                  [DashboardController::class, 'petsList']);
+    Route::get('/dashboard/clients',               [DashboardController::class, 'clientsList']);
+    Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
 
     // -----------------------------------------------------------------------
     // Core Modules
@@ -106,8 +114,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
+    // Service Forecasts
+    Route::get('/forecast/services',         [ForecastController::class, 'services']);
+    Route::get('/forecast/services/history', [ForecastController::class, 'history']);
+    Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
-
     // Inventory and Specialized Forecast
     Route::get('inventory/low-stock',     [InventoryController::class, 'lowStock']);
     Route::get('inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);

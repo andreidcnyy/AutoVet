@@ -11,40 +11,35 @@ const iconToneStyles = {
   neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 
-function RecentNotificationsCard({ items, onMarkAllRead, onDismiss }) {
+function RecentNotificationsCard({ items, onMarkAllRead, onClearAll, onDismiss }) {
   const toast = useToast();
   const navigate = useNavigate();
-
-  const handleMarkAll = () => {
-    if (onMarkAllRead) {
-      onMarkAllRead();
-      toast.success("All notifications marked as read.");
-    }
-  };
 
   const unreadCount = items?.filter(item => !item.read_at).length || 0;
 
   return (
-    <aside className="card-shell overflow-hidden flex flex-col h-full">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-dark-border">
-        <h3 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-          <FiBell className="text-emerald-500" />
-          Recent Notifications
+    <aside className="card-shell overflow-hidden flex flex-col h-full bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-sm">
+      <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/10">
+        <h3 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2 uppercase">
+          <FiBell className="text-brand-500" />
+          Recent Alerts
           {unreadCount > 0 && (
-            <span className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/30">
+            <span className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white shadow-lg shadow-rose-500/30">
               {unreadCount}
             </span>
           )}
         </h3>
-        {items?.length > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAll}
-            className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
-            Mark all read
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+            {items?.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearAll}
+                className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
+              >
+                Clear
+              </button>
+            )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-[150px] slim-scroll">

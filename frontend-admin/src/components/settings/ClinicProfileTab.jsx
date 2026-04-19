@@ -56,7 +56,30 @@ export default function ClinicProfileTab() {
 
   useEffect(() => {
     if (!user?.token) return;
+
+    const CACHE_KEY = 'settings_clinic_cache';
+    const CACHE_TTL = 5 * 60 * 1000;
+
+    const mergeFromData = (data) => ({
+      clinic_name: data.clinic_name || "",
+      primary_email: data.primary_email || "",
+      phone_number: data.phone_number || "",
+      address: data.address || "",
+      invoice_notes_template: data.invoice_notes_template || "",
+      clinic_logo: data.clinic_logo || ""
+    });
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && cached.data) {
+        reset(mergeFromData(cached.data));
+        setLoading(false);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
     fetch("/api/settings", {
+      signal: controller.signal,
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -64,24 +87,18 @@ export default function ClinicProfileTab() {
     })
       .then((res) => res.json())
       .then((data) => {
-        // Data from backend is a flat object: { key1: value1, key2: value2 }
-        const merged = {
-          clinic_name: data.clinic_name || "",
-          primary_email: data.primary_email || "",
-          phone_number: data.phone_number || "",
-          address: data.address || "",
-          invoice_notes_template: data.invoice_notes_template || "",
-          clinic_logo: data.clinic_logo || ""
-        };
-        
-        reset(merged);
+        reset(mergeFromData(data));
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
         setLoading(false);
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return;
         console.error("Error fetching settings:", err);
         toast.error("Failed to load clinic settings.");
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, [reset, toast, user?.token]);
 
   const onSubmit = async (data) => {

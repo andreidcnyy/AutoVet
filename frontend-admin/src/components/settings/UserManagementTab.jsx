@@ -20,26 +20,44 @@ export default function UserManagementTab() {
 
   const [formData, setFormData] = useState({ name: "", email: "", role: ROLES.STAFF, status: "active", password: "" });
 
-  const fetchUsers = () => {
+  const USERS_CACHE_KEY = 'settings_users_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchUsers = (signal) => {
     if (!user?.token) return;
-    setLoading(true);
-    fetch("/api/users", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
+
+    let hasCache = false;
+    try {
+      const cached = JSON.parse(localStorage.getItem(USERS_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setUsers(cached.data);
+        setLoading(false);
+        hasCache = true;
       }
+    } catch (_) {}
+    if (!hasCache) setLoading(true);
+
+    fetch("/api/users", {
+      signal,
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
     })
       .then(res => res.json())
-      .then(data => { 
+      .then(data => {
         const userList = Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []);
-        setUsers(userList); 
-        setLoading(false); 
+        setUsers(userList);
+        try { localStorage.setItem(USERS_CACHE_KEY, JSON.stringify({ data: userList, ts: Date.now() })); } catch (_) {}
       })
-      .catch(err => { toast.error("Failed to load users"); setLoading(false); });
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        toast.error("Failed to load users");
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchUsers();
+    const controller = new AbortController();
+    fetchUsers(controller.signal);
+    return () => controller.abort();
   }, [user?.token]);
 
   const handleOpenModal = (user = null) => {

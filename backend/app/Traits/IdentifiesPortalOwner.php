@@ -41,4 +41,23 @@ trait IdentifiesPortalOwner
 
         return $user->owner?->id;
     }
+
+    /**
+     * Invalidates the portal dashboard cache for a specific owner.
+     */
+    protected function invalidatePortalCache(?int $ownerId = null): void
+    {
+        if ($ownerId) {
+            $owner = Owner::find($ownerId);
+            if ($owner && $owner->user_id) {
+                \Illuminate\Support\Facades\Cache::forget("portal_overview_{$owner->user_id}");
+            }
+        }
+
+        // Also invalidate for the currently authenticated user if they are an owner
+        $user = auth()->user();
+        if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+            \Illuminate\Support\Facades\Cache::forget("portal_overview_{$user->id}");
+        }
+    }
 }

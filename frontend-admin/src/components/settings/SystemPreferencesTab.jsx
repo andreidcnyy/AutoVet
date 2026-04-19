@@ -14,7 +14,28 @@ export default function SystemPreferencesTab() {
 
   useEffect(() => {
     if (!user?.token) return;
+
+    const CACHE_KEY = 'settings_clinic_cache';
+    const CACHE_TTL = 5 * 60 * 1000;
+
+    const applyData = (data) => {
+      setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
+      setAiForecasting(data.enable_ai_forecasting !== 'false' && data.enable_ai_forecasting !== false);
+      setLowStockAlerts(data.enable_low_stock_alerts !== 'false' && data.enable_low_stock_alerts !== false);
+      setCloudSync(data.enable_cloud_sync === 'true' || data.enable_cloud_sync === true);
+    };
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && cached.data) {
+        applyData(cached.data);
+        setLoading(false);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
     fetch("/api/settings", {
+      signal: controller.signal,
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -22,15 +43,16 @@ export default function SystemPreferencesTab() {
     })
       .then((res) => res.json())
       .then((data) => {
-        setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
-        setAiForecasting(data.enable_ai_forecasting !== 'false' && data.enable_ai_forecasting !== false);
-        setLowStockAlerts(data.enable_low_stock_alerts !== 'false' && data.enable_low_stock_alerts !== false);
-        setCloudSync(data.enable_cloud_sync === 'true' || data.enable_cloud_sync === true);
+        applyData(data);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
         setLoading(false);
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return;
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, [user?.token]);
 
   const updateSetting = async (key, value) => {

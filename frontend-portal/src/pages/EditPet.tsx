@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet } from '../api';
 import { getAgeGroup } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
+import { readCache, writeCache } from '../utils/swrCache';
 
 const petSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
@@ -65,6 +66,33 @@ export default function EditPet() {
     if (!id) return;
     const petId = parseInt(id);
 
+    // Hydrate master data and pet from cache
+    const cachedSpecies = readCache<any[]>('portal_species_cache');
+    if (cachedSpecies) setSpeciesList(cachedSpecies);
+    const cachedWR = readCache<any[]>('portal_weight_ranges_cache');
+    if (cachedWR) setWeightRanges(cachedWR);
+    const cachedPet = readCache<any>(`portal_pet_${petId}_cache`);
+    if (cachedPet) {
+      reset({
+        name: cachedPet.name,
+        species_id: String(cachedPet.species_id),
+        breed_id: cachedPet.breed_id ? String(cachedPet.breed_id) : "",
+        date_of_birth: cachedPet.date_of_birth || "",
+        sex: cachedPet.sex || "Male",
+        age_group: cachedPet.age_group || "Adult",
+        color: cachedPet.color || "",
+        weight: cachedPet.weight || 0,
+        weight_unit: cachedPet.weight_unit || "kg",
+        size_category_id: cachedPet.size_category_id ? String(cachedPet.size_category_id) : "",
+        status: cachedPet.status || "Healthy",
+        allergies: cachedPet.allergies || "",
+        medication: cachedPet.medication || "",
+        notes: cachedPet.notes || "",
+        photo: cachedPet.photo || ""
+      });
+      setLoading(false);
+    }
+
     Promise.all([
       getSpecies(),
       getWeightRanges(),
@@ -72,30 +100,34 @@ export default function EditPet() {
     ])
     .then(([speciesRes, weightRes, petRes]) => {
       const sData = speciesRes.data.data || speciesRes.data;
-      setSpeciesList(Array.isArray(sData) ? sData : []);
-      
+      const sList = Array.isArray(sData) ? sData : [];
+      setSpeciesList(sList);
+      writeCache('portal_species_cache', sList);
+
       const wData = weightRes.data.data || weightRes.data;
-      setWeightRanges(Array.isArray(wData) ? wData : []);
+      const wList = Array.isArray(wData) ? wData : [];
+      setWeightRanges(wList);
+      writeCache('portal_weight_ranges_cache', wList);
 
       const pet = petRes.data;
+      writeCache(`portal_pet_${petId}_cache`, pet);
       reset({
-        name: pet.name,
-        species_id: String(pet.species_id),
-        breed_id: pet.breed_id ? String(pet.breed_id) : "",
-        date_of_birth: pet.date_of_birth || "",
-        sex: pet.sex || "Male",
-        age_group: pet.age_group || "Adult",
-        color: pet.color || "",
-        weight: pet.weight || 0,
-        weight_unit: pet.weight_unit || "kg",
-        size_category_id: pet.size_category_id ? String(pet.size_category_id) : "",
-        status: pet.status || "Healthy",
-        allergies: pet.allergies || "",
-        medication: pet.medication || "",
-        notes: pet.notes || "",
-        photo: pet.photo || ""
-      });
-    })
+      name: pet.name,
+      species_id: String(pet.species_id),
+      breed_id: pet.breed_id ? String(pet.breed_id) : "",
+      date_of_birth: pet.date_of_birth || "",
+      sex: pet.sex || "Male",
+      age_group: pet.age_group || "Adult",
+      color: pet.color || "",
+      weight: Math.round(pet.weight || 0),
+      weight_unit: pet.weight_unit || "kg",
+      size_category_id: pet.size_category_id ? String(pet.size_category_id) : "",
+      status: pet.status || "Healthy",
+      allergies: pet.allergies || "",
+      medication: pet.medication || "",
+      notes: pet.notes || "",
+      photo: pet.photo || ""
+      });    })
     .catch(err => {
       console.error("LOAD ERROR:", err);
       setError("Failed to load pet data.");
@@ -110,9 +142,14 @@ export default function EditPet() {
       if (selected && selected.breeds && selected.breeds.length > 0) {
         setAvailableBreeds(selected.breeds);
       } else {
+        const breedsKey = `portal_breeds_${speciesIdValue}_cache`;
+        const cachedBreeds = readCache<any[]>(breedsKey);
+        if (cachedBreeds) setAvailableBreeds(cachedBreeds);
         getBreeds(Number(speciesIdValue)).then(res => {
           const data = res.data.data || res.data;
-          setAvailableBreeds(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          setAvailableBreeds(list);
+          writeCache(breedsKey, list);
         }).catch(err => console.error("SYNC ERROR:", err));
       }
     } else {
@@ -266,13 +303,22 @@ export default function EditPet() {
             </div>
 
             <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Color / Marking</label>
+              <input 
+                {...register("color")}
+                className="input-field font-bold"
+                placeholder="e.g. Brown, White, Spots"
+              />
+            </div>
+
+            <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Birth Date</label>
               <input type="date" {...register("date_of_birth")} className="input-field font-bold" />
             </div>
 
             <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
-              <input type="number" step="0.01" {...register("weight")} className="input-field font-bold" placeholder="0.00" />
+              <input type="number" step="1" {...register("weight")} className="input-field font-bold" placeholder="0" />
             </div>
             
             <div>

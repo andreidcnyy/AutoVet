@@ -20,52 +20,66 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [formData, setFormData] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const CACHE_KEY = `mdt${apiUrl.replace(/\W+/g, '_')}_cache`;
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchData = useCallback(async (signal) => {
     if (!user?.token) {
-      setLoading(false); 
+      setLoading(false);
       return;
     }
-    setLoading(true);
+
+    const isDefault = !search && page === 1;
+    let hasCache = false;
+    if (isDefault) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        if (cached && Date.now() - cached.ts < CACHE_TTL) {
+          setData(cached.data);
+          setMeta(cached.meta);
+          setLoading(false);
+          hasCache = true;
+        }
+      } catch (_) {}
+    }
+    if (!hasCache) setLoading(true);
+
     try {
       const query = new URLSearchParams({
-        search,
-        sort_by: sortBy,
-        sort_direction: sortDir,
-        page: page.toString(),
-        per_page: "10"
+        search, sort_by: sortBy, sort_direction: sortDir, page: page.toString(), per_page: "10"
       });
       const res = await fetch(`${apiUrl}?${query.toString()}`, {
-        headers: {
-          "Authorization": `Bearer ${user.token}`,
-          "Accept": "application/json"
-        }
+        signal,
+        headers: { "Authorization": `Bearer ${user.token}`, "Accept": "application/json" }
       });
-      if (!res.ok) {
-        console.error(`[MasterDataTable fetch] Failed URL: ${apiUrl}, Status: ${res.status}`);
-        throw new Error(`Failed to load ${title.toLowerCase()}: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Failed to load ${title.toLowerCase()}: ${res.status}`);
       const result = await res.json();
-      
-      // Normalize data: handling both { data: [...] } and direct array [...]
+
       const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-      setData(normalizedData);
-      
-      setMeta({
+      const newMeta = {
         current_page: result.current_page || 1,
         last_page: result.last_page || 1,
         total: result.total || normalizedData.length
-      });
+      };
+      setData(normalizedData);
+      setMeta(newMeta);
+
+      if (isDefault) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: normalizedData, meta: newMeta, ts: Date.now() })); } catch (_) {}
+      }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error(`[MasterDataTable fetch catch] URL: ${apiUrl}, Error:`, err);
       error(`Failed to load ${title.toLowerCase()}`);
     } finally {
       setLoading(false);
     }
-  }, [apiUrl, search, sortBy, sortDir, page, error, title, user?.token]);
+  }, [apiUrl, search, sortBy, sortDir, page, error, title, user?.token, CACHE_KEY]);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchData(), 300);
-    return () => clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = setTimeout(() => fetchData(controller.signal), 300);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [fetchData]);
 
   const handleOpenModal = (item = null) => {

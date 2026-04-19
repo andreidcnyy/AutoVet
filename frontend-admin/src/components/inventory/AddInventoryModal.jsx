@@ -17,35 +17,21 @@ const inventorySchema = z.object({
   unit: z.string().min(1, "Unit is required"),
   min_stock_level: z.coerce.number().min(0, "Alert threshold must be 0 or more"),
   
-  price: z.coerce.number().min(0, "Price must be 0 or more").optional().or(z.literal("")),
-  selling_price: z.coerce.number().min(0, "Selling price is required").optional().or(z.literal("")),
+  price: z.coerce.number().min(0.01, "Buying price is required"),
+  selling_price: z.coerce.number().min(0.01, "Selling price is required"),
   
+  expiration_date: z.string().optional().or(z.literal("")),
+  
+  // Defaults set for standard behavior (Hidden from UI)
   is_billable: z.boolean().default(true),
   is_consumable: z.boolean().default(false),
   deduct_on_finalize: z.boolean().default(true),
-  track_expiration: z.boolean().default(false),
-  expiration_date: z.string().optional().or(z.literal("")),
+  track_expiration: z.boolean().default(true),
   
-  // Kept for backward compatibility but optional/defaulted
   supplier: z.string().optional().default("Other"),
   sku: z.string().max(255).optional(),
   sub_details: z.string().max(255).optional(),
   status: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.track_expiration && !data.expiration_date) {
-    ctx.addIssue({
-      path: ["expiration_date"],
-      message: "Expiration Date is required when Track Expiration is enabled",
-      code: z.ZodIssueCode.custom,
-    });
-  }
-  if (data.selling_price === "" || data.selling_price === undefined || data.selling_price === null) {
-      ctx.addIssue({
-          path: ["selling_price"],
-          message: "Selling price is required",
-          code: z.ZodIssueCode.custom
-      });
-  }
 });
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
@@ -76,7 +62,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
       is_billable: true,
       is_consumable: false,
       deduct_on_finalize: true,
-      track_expiration: false,
+      track_expiration: true,
       expiration_date: "",
       supplier: "Other",
       sku: "",
@@ -85,13 +71,8 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     },
   });
 
-  const watchCategory = watch("inventory_category_id");
-  const watchTrackExpiration = watch("track_expiration");
   const initialStock = watch("stock_level") || 0;
   const alertThreshold = watch("min_stock_level") || 0;
-  const watchBillable = watch("is_billable");
-  const watchConsumable = watch("is_consumable");
-  const watchAutoDeduct = watch("deduct_on_finalize");
 
   useEffect(() => {
     if (isOpen && user?.token) {
@@ -117,29 +98,6 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
         .catch(console.error);
     }
   }, [isOpen, user?.token]);
-
-  useEffect(() => {
-    if (watchCategory && categoryOptions.length > 0) {
-      const cat = categoryOptions.find((c) => c.id == watchCategory);
-      if (cat && cat.name) {
-        const name = cat.name.toLowerCase();
-        if (name.includes("vaccin")) {
-          setValue("unit", "dose");
-          setValue("track_expiration", true);
-          setValue("is_billable", true);
-          setValue("is_consumable", true);
-          setValue("deduct_on_finalize", true);
-        } else if (name.includes("medicin")) {
-          setValue("track_expiration", true);
-        } else if (name.includes("supplies")) {
-          setValue("track_expiration", false);
-        } else if (name.includes("retail")) {
-          setValue("is_billable", true);
-          setValue("deduct_on_finalize", true);
-        }
-      }
-    }
-  }, [watchCategory, categoryOptions, setValue]);
 
   let stockStatus = "Out of Stock";
   let stockStatusColor = "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400";
@@ -242,155 +200,60 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           <div className="grid flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-2">
             
             <div className="border-r border-zinc-100 p-6 dark:border-dark-border">
-              
               <SectionHeading>A. Item Information</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                            Item Name *
-                        </label>
-                        <input
-                            type="text"
-                            {...register("item_name")}
-                            className={getInputClass(errors.item_name)}
-                            placeholder="e.g., Meloxicam Oral Suspension"
-                        />
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Item Name *</label>
+                        <input type="text" {...register("item_name")} className={getInputClass(errors.item_name)} placeholder="e.g., Meloxicam" />
                         {errors.item_name && <p className="mt-1 text-xs text-red-500">{errors.item_name.message}</p>}
                     </div>
                     <div>
-                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                            Item Code *
-                        </label>
-                        <input
-                            type="text"
-                            {...register("code")}
-                            className={getInputClass(errors.code)}
-                            placeholder="e.g., MED-001 (Match Dataset Code)"
-                        />
-                        <div className="flex items-start gap-1.5 mt-1">
-                            <FiInfo className="mt-0.5 shrink-0 text-zinc-400 h-3 w-3" />
-                            <p className="text-[10px] text-zinc-400">Used for stable AI forecasting mapping.</p>
-                        </div>
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Item Code *</label>
+                        <input type="text" {...register("code")} className={getInputClass(errors.code)} placeholder="e.g., MED-001" />
                         {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code.message}</p>}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                      Category *
-                    </label>
+                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Category *</label>
                     <select {...register("inventory_category_id")} className={getInputClass(errors.inventory_category_id)}>
                       <option value="" disabled>Select category</option>
                       {categoryOptions.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
-                    {errors.inventory_category_id && <p className="mt-1 text-xs text-red-500">{errors.inventory_category_id.message}</p>}
                   </div>
-
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                      Unit *
-                    </label>
+                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Unit *</label>
                     <select {...register("unit")} className={getInputClass(errors.unit)}>
                       <option value="" disabled>Select unit</option>
                       {UNIT_OPTIONS.filter(Boolean).map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
-                    {errors.unit && <p className="mt-1 text-xs text-red-500">{errors.unit.message}</p>}
                   </div>
                 </div>
               </div>
 
-              <SectionHeading>B. Inventory & Expiration</SectionHeading>
+              <SectionHeading>B. Stock & Expiration</SectionHeading>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    {...register("stock_level")}
-                    className={getInputClass(errors.stock_level)}
-                  />
-                  {errors.stock_level && <p className="mt-1 text-xs text-red-500">{errors.stock_level.message}</p>}
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Initial Quantity *</label>
+                  <input type="number" min="0" {...register("stock_level")} className={getInputClass(errors.stock_level)} />
                 </div>
-
-                <div className="flex items-center col-span-2 pt-2">
-                   <label className="flex cursor-pointer items-center gap-3">
-                      <div className="relative">
-                        <input type="checkbox" className="peer sr-only" {...register("track_expiration")} />
-                        <div className="block h-6 w-11 rounded-full bg-zinc-200 transition-colors peer-checked:bg-emerald-600 dark:bg-dark-surface"></div>
-                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Track Expiration</span>
-                      </div>
-                    </label>
-                </div>
-
-                {watchTrackExpiration && (
-                  <div className="col-span-2">
-                    <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                      Expiration Date *
-                    </label>
-                    <input
-                      type="date"
-                      {...register("expiration_date")}
-                      className={getInputClass(errors.expiration_date)}
-                    />
-                    {errors.expiration_date && <p className="mt-1 text-xs text-red-500">{errors.expiration_date.message}</p>}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 rounded-lg border border-zinc-100 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Stock Status Preview</span>
-                    {highThresholdWarning && (
-                        <p className="text-[11px] text-amber-500 mt-0.5 flex items-center gap-1">
-                            <FiInfo className="h-3 w-3" /> Threshold exceeds/matches qty.
-                        </p>
-                    )}
-                  </div>
-                  <div className={clsx("flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide", stockStatusColor)}>
-                    {stockStatus}
-                  </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date</label>
+                  <input type="date" {...register("expiration_date")} className={getInputClass(errors.expiration_date)} />
+                  {errors.expiration_date && <p className="mt-1 text-xs text-red-500">{errors.expiration_date.message}</p>}
                 </div>
               </div>
             </div>
 
             <div className="p-6 bg-zinc-50/50 dark:bg-zinc-900/30">
-              
               <SectionHeading>C. Financials</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Selling Price (₱) *
-                  </label>
-                  <input
-                    type="text"
-                    value={sellingPriceDisplay}
-                    onChange={(e) => {
-                      let raw = e.target.value.replace(/,/g, "");
-                      if (/^\d*\.?\d*$/.test(raw)) {
-                        setSellingPriceDisplay(raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "");
-                        setValue("selling_price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
-                      }
-                    }}
-                    className={getInputClass(errors.selling_price)}
-                    placeholder="0.00"
-                  />
-                  {errors.selling_price && <p className="mt-1 text-xs text-red-500">{errors.selling_price.message}</p>}
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Buying Price (₱) *
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Buying Price (₱) *</label>
                   <input
                     type="text"
                     value={costPriceDisplay}
@@ -406,124 +269,50 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                   />
                   {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price.message}</p>}
                 </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Selling Price (₱) *</label>
+                  <input
+                    type="text"
+                    value={sellingPriceDisplay}
+                    onChange={(e) => {
+                      let raw = e.target.value.replace(/,/g, "");
+                      if (/^\d*\.?\d*$/.test(raw)) {
+                        setSellingPriceDisplay(raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "");
+                        setValue("selling_price", raw === "" ? "" : parseFloat(raw), { shouldValidate: true });
+                      }
+                    }}
+                    className={getInputClass(errors.selling_price)}
+                    placeholder="0.00"
+                  />
+                  {errors.selling_price && <p className="mt-1 text-xs text-red-500">{errors.selling_price.message}</p>}
+                </div>
               </div>
 
-              <SectionHeading>D. Usage Settings</SectionHeading>
-              <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-                Determines how the item interacts with invoices and treatments.
-              </p>
-              
-              <div className="space-y-3">
-                <label className={clsx(
-                  "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchBillable ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
-                )}>
-                  <div className="mt-0.5">
-                    <input
-                      type="checkbox"
-                      {...register("is_billable")}
-                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Billable</span>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Item appears on client invoices</span>
-                  </div>
-                </label>
-
-                <label className={clsx(
-                  "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchConsumable ? "border-indigo-200 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
-                )}>
-                  <div className="mt-0.5">
-                    <input
-                      type="checkbox"
-                      {...register("is_consumable")}
-                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Consumable</span>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Item is consumed during treatments</span>
-                  </div>
-                </label>
-
-                <label className={clsx(
-                  "flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
-                  watchAutoDeduct ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-900/20" : "border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-surface/50"
-                )}>
-                  <div className="mt-0.5">
-                    <input
-                      type="checkbox"
-                      {...register("deduct_on_finalize")}
-                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Auto-Deduct Stock</span>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Automatic stock reduction</span>
-                  </div>
-                </label>
-              </div>
-
-              {/* Simple Preview Widget */}
-              <div className="mt-6 rounded-2xl bg-zinc-900 p-4 shadow-xl">
-                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Preview</p>
-                 <div className="mt-3 flex items-center justify-between">
+              <div className="mt-12 rounded-2xl bg-zinc-900 p-6 shadow-xl">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Clinical Preview</p>
+                 <div className="mt-4 flex items-center justify-between">
                     <div className="flex flex-col">
-                       <span className="text-lg font-bold text-white leading-tight">₱{sellingPriceDisplay || "0.00"}</span>
-                       <span className="text-xs text-zinc-400">Retail Price</span>
+                       <span className="text-2xl font-black text-white leading-tight">₱{sellingPriceDisplay || "0.00"}</span>
+                       <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Retail Price</span>
                     </div>
-                    <div className="h-8 w-px bg-zinc-800"></div>
+                    <div className="h-10 w-px bg-zinc-800"></div>
                     <div className="flex flex-col items-end">
-                       <span className="text-lg font-bold text-white leading-tight">{initialStock} {watch("unit") || "units"}</span>
-                       <span className="text-xs text-zinc-400">Initial Total</span>
+                       <span className="text-2xl font-black text-white leading-tight">{initialStock} {watch("unit") || "units"}</span>
+                       <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">In Stock</span>
                     </div>
                  </div>
               </div>
             </div>
           </div>
 
-          {/* ================= MODAL FOOTER ================= */}
           <div className="flex shrink-0 items-center justify-between border-t border-zinc-100 bg-zinc-50 px-6 py-4 dark:border-dark-border dark:bg-dark-card/90 pb-safe">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-200 focus:outline-none dark:text-zinc-300 dark:hover:bg-dark-surface"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-dark-card"
-            >
-              {isSubmitting ? "Saving..." : <><FiCheckCircle className="h-4 w-4" /> Save Item</>}
+            <button type="button" onClick={onClose} className="rounded-xl px-5 py-2.5 text-sm font-bold text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-dark-surface">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-8 py-2.5 text-sm font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
+              {isSubmitting ? "Syncing..." : <><FiCheckCircle className="h-4 w-4" /> Save Item</>}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
-
-// Small helper component for Profile rows
-function ProfileRow({ label, description, active }) {
-    return (
-        <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{label}</span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-500">{description}</span>
-            </div>
-            {active ? (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                    <FiCheck className="h-3 w-3" />
-                </div>
-            ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-dark-surface dark:text-zinc-600">
-                    <FiX className="h-3 w-3" />
-                </div>
-            )}
-        </div>
-    );
 }

@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { generateInvoicePDF } from '../utils/invoicePdf';
 import { useAuth } from '../context/AuthContext';
+import { readCache, writeCache } from '../utils/swrCache';
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -31,11 +32,25 @@ export default function Invoices() {
   const { user } = useAuth();
 
   useEffect(() => {
+    const CACHE_KEY = 'portal_invoices_cache';
+    const cached = readCache<any>(CACHE_KEY);
+    if (cached) {
+      setInvoices(cached.invoices || []);
+      setPets(cached.pets || []);
+      setClinicSettings(cached.clinicSettings || null);
+      setLoading(false);
+    }
+
     Promise.all([getInvoices(), getPets(), getSettings()])
       .then(([invRes, petsRes, settingsRes]) => {
         setInvoices(invRes.data);
         setPets(petsRes.data);
         setClinicSettings(settingsRes.data);
+        writeCache(CACHE_KEY, {
+          invoices: invRes.data,
+          pets: petsRes.data,
+          clinicSettings: settingsRes.data,
+        });
       })
       .catch(console.error)
       .finally(() => setLoading(false));

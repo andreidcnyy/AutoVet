@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import { LuPawPrint } from 'react-icons/lu';
 import clsx from 'clsx';
+import { readCache, writeCache } from '../utils/swrCache';
 
 function PetProfile() {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,16 @@ function PetProfile() {
   useEffect(() => {
     if (!id) return;
     const petId = parseInt(id);
-    
+    const CACHE_KEY = `portal_pet_profile_${petId}_cache`;
+
+    const cached = readCache<any>(CACHE_KEY);
+    if (cached) {
+      setPet(cached.pet);
+      setMedicalRecords(cached.medicalRecords || []);
+      setInvoices(cached.invoices || []);
+      setLoading(false);
+    }
+
     Promise.all([
       getPet(petId),
       getMedicalRecords(petId),
@@ -38,6 +48,12 @@ function PetProfile() {
       setPet(petRes.data);
       setMedicalRecords(medicalRes.data);
       setInvoices(invoiceRes.data);
+      writeCache(CACHE_KEY, {
+        pet: petRes.data,
+        medicalRecords: medicalRes.data,
+        invoices: invoiceRes.data,
+      });
+      writeCache(`portal_pet_${petId}_cache`, petRes.data);
     })
     .catch(console.error)
     .finally(() => setLoading(false));

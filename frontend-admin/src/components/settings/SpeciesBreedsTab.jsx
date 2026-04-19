@@ -21,25 +21,25 @@ export default function SpeciesBreedsTab() {
   const [editBreedDefaultSize, setEditBreedDefaultSize] = useState("");
   const [sizeCategories, setSizeCategories] = useState([]);
 
-  const fetchSpecies = async () => {
-    if (!user?.token) {
-      setLoading(false);
-      return;
-    }
+  const SPECIES_CACHE_KEY = 'settings_species_cache';
+  const SIZE_CATS_CACHE_KEY = 'settings_size_cats_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchSpecies = async (signal) => {
+    if (!user?.token) { setLoading(false); return; }
     try {
       const res = await fetch("/api/species", {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        }
+        signal,
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
       });
       if (res.ok) {
         const result = await res.json();
-        // Normalize: Handle both { data: [...] } and direct array [...]
-        const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        setSpecies(normalizedData);
+        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setSpecies(normalized);
+        try { localStorage.setItem(SPECIES_CACHE_KEY, JSON.stringify({ data: normalized, ts: Date.now() })); } catch (_) {}
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error(err);
       toast.error("Failed to load species.");
     } finally {
@@ -47,28 +47,43 @@ export default function SpeciesBreedsTab() {
     }
   };
 
-  const fetchSizeCategories = async () => {
+  const fetchSizeCategories = async (signal) => {
     if (!user?.token) return;
     try {
       const res = await fetch("/api/pet-size-categories", {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        }
+        signal,
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
       });
       if (res.ok) {
         const result = await res.json();
         const cats = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
         setSizeCategories(cats);
+        try { localStorage.setItem(SIZE_CATS_CACHE_KEY, JSON.stringify({ data: cats, ts: Date.now() })); } catch (_) {}
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error("Failed to load size categories", err);
     }
   };
 
   useEffect(() => {
-    fetchSpecies();
-    fetchSizeCategories();
+    // Show cached data instantly
+    try {
+      const speciesCached = JSON.parse(localStorage.getItem(SPECIES_CACHE_KEY) || 'null');
+      if (speciesCached && Date.now() - speciesCached.ts < CACHE_TTL && Array.isArray(speciesCached.data)) {
+        setSpecies(speciesCached.data);
+        setLoading(false);
+      }
+      const sizeCached = JSON.parse(localStorage.getItem(SIZE_CATS_CACHE_KEY) || 'null');
+      if (sizeCached && Date.now() - sizeCached.ts < CACHE_TTL && Array.isArray(sizeCached.data)) {
+        setSizeCategories(sizeCached.data);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
+    fetchSpecies(controller.signal);
+    fetchSizeCategories(controller.signal);
+    return () => controller.abort();
   }, [user]);
 
   const handleAddSpecies = async (e) => {

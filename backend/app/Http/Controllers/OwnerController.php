@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Owner;
+use App\Models\PortalUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,7 +17,22 @@ class OwnerController extends Controller
         if ($request->boolean('minimal')) {
             return response()->json(Owner::select('id', 'name', 'phone', 'email')->orderBy('name')->get());
         }
-        return response()->json(Owner::with('pets')->orderBy('created_at', 'desc')->get());
+
+        $owners = Owner::with(['pets', 'user'])->orderBy('created_at', 'desc')->get();
+
+        // Fallback: if user_id was never set but the owner's email matches a PortalUser,
+        // treat the portal account as linked (covers owners seeded/created before user_id wiring).
+        $missingEmails = $owners->filter(fn ($o) => !$o->user && !empty($o->email))->pluck('email')->unique();
+        if ($missingEmails->isNotEmpty()) {
+            $portalUsers = PortalUser::whereIn('email', $missingEmails)->get()->keyBy('email');
+            $owners->each(function ($o) use ($portalUsers) {
+                if (!$o->user && $o->email && isset($portalUsers[$o->email])) {
+                    $o->setRelation('user', $portalUsers[$o->email]);
+                }
+            });
+        }
+
+        return response()->json($owners);
     }
 
     /**
@@ -60,7 +76,16 @@ class OwnerController extends Controller
 
     public function show(Owner $owner)
     {
-        return response()->json($owner->load('pets.species', 'pets.breed', 'pets.invoices'));
+        $owner->load(['pets.species', 'pets.breed', 'pets.invoices', 'user']);
+
+        if (!$owner->user && !empty($owner->email)) {
+            $portalUser = PortalUser::where('email', $owner->email)->first();
+            if ($portalUser) {
+                $owner->setRelation('user', $portalUser);
+            }
+        }
+
+        return response()->json($owner);
     }
 
     public function update(Request $request, Owner $owner)
@@ -80,7 +105,7 @@ class OwnerController extends Controller
         ]);
 
         $owner->update($validated);
-        return response()->json($owner);
+        return response()->json($owner->load('user'));
     }
 
     public function destroy(Owner $owner)

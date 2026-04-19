@@ -11,6 +11,7 @@ use App\Models\Admin;
 use App\Events\LowStockDetected;
 use App\Traits\HasInternalNotifications;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class InvoiceFinalizationService
@@ -57,8 +58,14 @@ class InvoiceFinalizationService
                     // For now, any item with an inventory_id attached is treated as needing deduction
                     // if it's explicitly billed as a product OR if it's a linked consumable.
 
+                    // Mandatory Rule: Reject if stock is already zero or below
+                    if ($inventoryItem->stock_level <= 0) {
+                        throw new Exception("Cannot deduct '{$inventoryItem->item_name}'. Item is currently OUT OF STOCK.");
+                    }
+
+                    // Mandatory Rule: Reject if deduction causes negative stock
                     if ($inventoryItem->stock_level < $item->qty) {
-                        throw new Exception("Insufficient stock for item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}");
+                        throw new Exception("Insufficient stock for item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}. Transaction rejected to prevent negative stock.");
                     }
 
                     $oldStock = $inventoryItem->stock_level;
@@ -111,6 +118,9 @@ class InvoiceFinalizationService
 
             $invoice->stock_deducted = true;
             $invoice->save();
+
+            // Clear Service Forecast Cache to reflect new live transaction
+            Cache::forget('service_forecast_v7');
 
             // Internal admin notification for invoice finalization
             $this->createInternalNotification(

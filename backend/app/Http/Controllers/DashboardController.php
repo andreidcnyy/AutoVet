@@ -14,8 +14,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-
 use App\Services\InventoryForecastService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
@@ -338,89 +336,76 @@ class DashboardController extends Controller
      */
     public function getStats()
     {
-        return response()->json(\Illuminate\Support\Facades\Cache::remember('dashboard_stats', 300, function () {
-            $totalPets = Pet::count();
-            $totalOwners = \App\Models\Owner::count();
-            $monthlyRevenue = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
-                ->sum('total');
-            
-            $pendingAppointments = Appointment::where('date', '>=', now()->toDateString())->count();
-            
-            // Low stock count
-            $lowStockItems = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
+        // No cache for real-time data accuracy
+        $tz = 'Asia/Manila';
+        $totalPets = Pet::count();
+        $totalOwners = \App\Models\Owner::count();
 
-            // Calculate revenue growth
-            $lastMonthRevenue = Invoice::whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
-                ->whereMonth('created_at', now()->subMonth()->month)
-                ->whereYear('created_at', now()->subMonth()->year)
-                ->sum('total');
-            
-            $revenueGrowth = 0;
-            if ($lastMonthRevenue > 0) {
-                $revenueGrowth = (($monthlyRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100;
-            }
+        $today = \Carbon\Carbon::now($tz)->toDateString();
+        $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
 
-            return [
-                [
-                    'id' => 'stat-1',
-                    'title' => 'Total Pets',
-                    'value' => number_format($totalPets),
-                    'detail' => 'Active patients in care',
-                    'iconName' => 'FiHeart',
-                    'iconBg' => 'bg-blue-100 dark:bg-blue-900/30',
-                    'iconColor' => 'text-blue-600 dark:text-blue-400',
-                    'badge' => '+' . Pet::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
-                    'badgeTone' => 'success',
-                ],
-                [
-                    'id' => 'stat-owners',
-                    'title' => 'Total Clients',
-                    'value' => number_format($totalOwners),
-                    'detail' => 'Registered pet owners',
-                    'iconName' => 'FiUsers',
-                    'iconBg' => 'bg-purple-100 dark:bg-purple-900/30',
-                    'iconColor' => 'text-purple-600 dark:text-purple-400',
-                    'badge' => '+' . \App\Models\Owner::whereDate('created_at', '>=', now()->subDays(7))->count() . ' this week',
-                    'badgeTone' => 'success',
-                ],
-                [
-                    'id' => 'stat-2',
-                    'title' => 'Monthly Revenue',
-                    'value' => '₱' . number_format($monthlyRevenue, 0),
-                    'detail' => 'Gross income this month',
-                    'iconName' => 'FiTrendingUp',
-                    'iconBg' => 'bg-emerald-100 dark:bg-emerald-900/30',
-                    'iconColor' => 'text-emerald-600 dark:text-emerald-400',
-                    'badge' => round($revenueGrowth, 1) . '% from last month',
-                    'badgeTone' => $revenueGrowth >= 0 ? 'success' : 'danger',
-                ],
-                [
-                    'id' => 'stat-3',
-                    'title' => 'Appointments',
-                    'value' => $pendingAppointments,
-                    'detail' => 'Upcoming scheduled visits',
-                    'iconName' => 'FiCalendar',
-                    'iconBg' => 'bg-indigo-100 dark:bg-indigo-900/30',
-                    'iconColor' => 'text-indigo-600 dark:text-indigo-400',
-                    'badge' => Appointment::whereDate('date', now()->toDateString())->count() . ' today',
-                    'badgeTone' => 'info',
-                ],
-                [
-                    'id' => 'stat-4',
-                    'title' => 'Low Stock Alert',
-                    'value' => $lowStockItems,
-                    'detail' => 'Items below minimum level',
-                    'iconName' => 'FiAlertTriangle',
-                    'iconBg' => 'bg-rose-100 dark:bg-rose-900/30',
-                    'iconColor' => 'text-rose-600 dark:text-rose-400',
-                    'badge' => $lowStockItems > 0 ? 'Critical' : 'All Clear',
-                    'badgeTone' => $lowStockItems > 0 ? 'danger' : 'success',
-                    'accentBorder' => $lowStockItems > 0 ? 'border-l-4 border-l-rose-500' : '',
-                ]
-            ];
-        }));
+        // Unified Active Statuses (Live Appointments)
+        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+        
+        $apptsToday = Appointment::whereDate('date', $today)
+            ->whereIn('status', $activeStatuses)
+            ->count();
+            
+        $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
+            ->whereIn('status', $activeStatuses)
+            ->count();
+            
+        $cancelledDeclined = Appointment::whereDate('date', $today)
+            ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
+            ->count();
+
+        return response()->json([
+            [
+                'id' => 'stat-pets',
+                'title' => 'Total Pets',
+                'value' => number_format($totalPets),
+                'detail' => 'Active patients',
+                'iconName' => 'FiHeart',
+                'iconBg' => 'bg-blue-100 dark:bg-blue-900/30',
+                'iconColor' => 'text-blue-600 dark:text-blue-400',
+            ],
+            [
+                'id' => 'stat-owners',
+                'title' => 'Total Clients',
+                'value' => number_format($totalOwners),
+                'detail' => 'Registered owners',
+                'iconName' => 'FiUsers',
+                'iconBg' => 'bg-purple-100 dark:bg-purple-900/30',
+                'iconColor' => 'text-purple-600 dark:text-purple-400',
+            ],
+            [
+                'id' => 'stat-appts-today',
+                'title' => 'Appointments Today',
+                'value' => $apptsToday,
+                'detail' => 'Scheduled for ' . \Carbon\Carbon::now($tz)->format('M d'),
+                'iconName' => 'FiCalendar',
+                'iconBg' => 'bg-emerald-100 dark:bg-emerald-900/30',
+                'iconColor' => 'text-emerald-600 dark:text-emerald-400',
+            ],
+            [
+                'id' => 'stat-appts-upcoming',
+                'title' => "Appointments Tomorrow",
+                'value' => $apptsUpcoming,
+                'detail' => 'Scheduled for ' . \Carbon\Carbon::now($tz)->addDay()->format('M d'),
+                'iconName' => 'FiClock',
+                'iconBg' => 'bg-indigo-100 dark:bg-indigo-900/30',
+                'iconColor' => 'text-indigo-600 dark:text-indigo-400',
+            ],
+            [
+                'id' => 'stat-cancelled',
+                'title' => 'Cancelled / Declined',
+                'value' => $cancelledDeclined,
+                'detail' => 'Inactive for ' . \Carbon\Carbon::now($tz)->format('M d'),
+                'iconName' => 'FiXCircle',
+                'iconBg' => 'bg-rose-100 dark:bg-rose-900/30',
+                'iconColor' => 'text-rose-600 dark:text-rose-400',
+            ]
+        ]);
     }
 
     /**
@@ -584,8 +569,10 @@ class DashboardController extends Controller
         if (!$user) return response()->json([]);
         
         $userId = $user->id;
+        $showAll = $request->query('all') === '1';
+        $cacheKey = "dashboard_notifications_{$userId}" . ($showAll ? "_all" : "");
 
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_notifications_{$userId}", 60, function () use ($request, $user) {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($request, $user, $showAll) {
             if ($user->isOwner()) {
                 $ownerId = $this->getPortalOwnerId();
                 if (!$ownerId) return [];
@@ -593,11 +580,12 @@ class DashboardController extends Controller
                 $notifications = [];
 
                 // 1. Fetch from ClientNotification
-                $dbNotifications = ClientNotification::where('owner_id', $ownerId)
-                    ->whereNull('read_at')
-                    ->latest()
-                    ->limit(5)
-                    ->get();
+                $query = ClientNotification::where('owner_id', $ownerId);
+                if (!$showAll) {
+                    $query->whereNull('read_at');
+                }
+                
+                $dbNotifications = $query->latest()->limit($showAll ? 50 : 8)->get();
 
                 foreach ($dbNotifications as $notif) {
                     $iconName = 'FiBell';
@@ -625,52 +613,55 @@ class DashboardController extends Controller
                         'tone' => $tone,
                         'title' => $notif->title,
                         'message' => $notif->message,
+                        'read_at' => $notif->read_at,
                         'time' => $notif->created_at->diffForHumans(),
                         'created_at' => $notif->created_at->toDateTimeString()
                     ];
                 }
 
-                // 2. Virtual: Overdue follow-ups
-                $overdueFollowups = \App\Models\MedicalRecord::whereHas('pet', function($q) use ($ownerId) {
-                        $q->where('owner_id', $ownerId);
-                    })
-                    ->whereNotNull('follow_up_date')
-                    ->where('follow_up_date', '<', now()->toDateString())
-                    ->with('pet')
-                    ->get();
-                
-                foreach ($overdueFollowups as $record) {
-                    $notifications[] = [
-                        'id' => 'followup-' . $record->id,
-                        'db_id' => $record->id,
-                        'iconName' => 'FiPlusCircle',
-                        'tone' => 'danger',
-                        'title' => 'Follow-up Overdue',
-                        'message' => "{$record->pet->name} is overdue for a follow-up visit (since " . $record->follow_up_date->format('M d') . ").",
-                        'time' => $record->follow_up_date->diffForHumans(),
-                        'created_at' => $record->follow_up_date->toDateTimeString()
-                    ];
-                }
+                if (!$showAll) {
+                    // 2. Virtual: Overdue follow-ups
+                    $overdueFollowups = \App\Models\MedicalRecord::whereHas('pet', function($q) use ($ownerId) {
+                            $q->where('owner_id', $ownerId);
+                        })
+                        ->whereNotNull('follow_up_date')
+                        ->where('follow_up_date', '<', now()->toDateString())
+                        ->with('pet')
+                        ->get();
+                    
+                    foreach ($overdueFollowups as $record) {
+                        $notifications[] = [
+                            'id' => 'followup-' . $record->id,
+                            'db_id' => $record->id,
+                            'iconName' => 'FiPlusCircle',
+                            'tone' => 'danger',
+                            'title' => 'Follow-up Overdue',
+                            'message' => "{$record->pet->name} is overdue for a follow-up visit (since " . $record->follow_up_date->format('M d') . ").",
+                            'time' => $record->follow_up_date->diffForHumans(),
+                            'created_at' => $record->follow_up_date->toDateTimeString()
+                        ];
+                    }
 
-                // 3. Virtual: Unpaid Invoices
-                $unpaidInvoices = \App\Models\Invoice::whereHas('pet', function($q) use ($ownerId) {
-                        $q->where('owner_id', $ownerId);
-                    })
-                    ->whereIn('status', ['Finalized', 'Partially Paid'])
-                    ->with('pet')
-                    ->get();
+                    // 3. Virtual: Unpaid Invoices
+                    $unpaidInvoices = \App\Models\Invoice::whereHas('pet', function($q) use ($ownerId) {
+                            $q->where('owner_id', $ownerId);
+                        })
+                        ->whereIn('status', ['Finalized', 'Partially Paid'])
+                        ->with('pet')
+                        ->get();
 
-                foreach ($unpaidInvoices as $invoice) {
-                    $notifications[] = [
-                        'id' => 'invoice-' . $invoice->id,
-                        'db_id' => $invoice->id,
-                        'iconName' => 'FiCreditCard',
-                        'tone' => 'warning',
-                        'title' => 'Payment Due',
-                        'message' => "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has a pending balance.",
-                        'time' => $invoice->created_at->diffForHumans(),
-                        'created_at' => $invoice->created_at->toDateTimeString()
-                    ];
+                    foreach ($unpaidInvoices as $invoice) {
+                        $notifications[] = [
+                            'id' => 'invoice-' . $invoice->id,
+                            'db_id' => $invoice->id,
+                            'iconName' => 'FiCreditCard',
+                            'tone' => 'warning',
+                            'title' => 'Payment Due',
+                            'message' => "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has a pending balance.",
+                            'time' => $invoice->created_at->diffForHumans(),
+                            'created_at' => $invoice->created_at->toDateTimeString()
+                        ];
+                    }
                 }
 
                 // Sort by created_at desc
@@ -678,17 +669,21 @@ class DashboardController extends Controller
                     return strcmp($b['created_at'], $a['created_at']);
                 });
 
-                return array_slice($notifications, 0, 8);
+                return array_slice($notifications, 0, $showAll ? 50 : 8);
             }
 
             // Admin Logic
-            $query = \App\Models\Notification::whereNull('read_at')->orderBy('created_at', 'desc');
+            $query = \App\Models\Notification::orderBy('created_at', 'desc');
             
+            if (!$showAll) {
+                $query->whereNull('read_at');
+            }
+
             $query->where(function ($q) use ($user) {
                 $q->whereNull('user_id')->orWhere('user_id', $user->id);
             });
 
-            $dbNotifications = $query->limit(8)->get();
+            $dbNotifications = $query->limit($showAll ? 50 : 8)->get();
             $notifications = [];
 
             foreach ($dbNotifications as $notif) {
@@ -699,7 +694,6 @@ class DashboardController extends Controller
                     $iconName = ($notif->type === 'LowStockAlert') ? 'FiAlertTriangle' : 'FiPackage';
                     $tone = ($notif->type === 'LowStockAlert' || (isset($notif->data['quantity']) && $notif->data['quantity'] < 0)) ? 'danger' : 'success';
                     
-                    // Fine-tune tone for StockAdjustment based on message if data is not explicit
                     if ($notif->type === 'StockAdjustment') {
                         if (str_contains($notif->message, 'decreased') || str_contains($notif->message, 'deducted')) {
                             $tone = 'danger';
@@ -731,7 +725,9 @@ class DashboardController extends Controller
                     'tone' => $tone,
                     'title' => $notif->title,
                     'message' => $notif->message,
-                    'time' => $notif->created_at->diffForHumans()
+                    'read_at' => $notif->read_at,
+                    'time' => $notif->created_at->diffForHumans(),
+                    'created_at' => $notif->created_at->toDateTimeString()
                 ];
             }
             return $notifications;
@@ -756,20 +752,30 @@ class DashboardController extends Controller
 
     public function dismissNotification(Request $request, $id)
     {
-        // Strip 'notif-' prefix if present
-        $dbId = str_replace('notif-', '', $id);
-        
-        $notification = \App\Models\Notification::where('id', $dbId);
-        
-        if ($request->user()) {
-            $notification->where(function ($q) use ($request) {
-                $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
-            });
+        try {
+            // Strip 'notif-' prefix if present
+            $dbId = str_replace('notif-', '', $id);
+            
+            $notification = \App\Models\Notification::where('id', $dbId);
+            
+            if ($request->user()) {
+                $notification->where(function ($q) use ($request) {
+                    $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
+                });
+            }
+
+            $notification->update(['read_at' => now()]);
+            
+            // Clear cache
+            if ($request->user()) {
+                \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$request->user()->id}");
+            }
+
+            return response()->json(['status' => 'success']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to dismiss notification: " . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
         }
-
-        $notification->update(['read_at' => now()]);
-
-        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -1148,6 +1154,231 @@ class DashboardController extends Controller
     /**
      * Return the current background forecast batch status for frontend polling.
      */
+    /**
+     * Mark all notifications as read for the authenticated admin.
+     */
+    public function markAllRead()
+    {
+        try {
+            $userId = auth()->id();
+            if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
+
+            \Illuminate\Support\Facades\DB::table('notifications')
+                ->where(function($q) use ($userId) {
+                    $q->where('user_id', $userId)->orWhereNull('user_id');
+                })
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+            
+            // Clear caches
+            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}_all");
+
+            return response()->json(['message' => 'All notifications marked as read.']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to mark notifications as read: " . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Clear all notifications (Mark as Read) for the authenticated admin.
+     */
+    public function clearAll()
+    {
+        try {
+            $userId = auth()->id();
+            if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
+
+            // Mark both personal and system alerts as read
+            \Illuminate\Support\Facades\DB::table('notifications')
+                ->where(function($q) use ($userId) {
+                    $q->where('user_id', $userId)->orWhereNull('user_id');
+                })
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            // Clear caches
+            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}_all");
+
+            return response()->json(['message' => 'Notifications cleared from dashboard. History preserved.']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to clear notifications: " . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function appointmentsToday(Request $request): JsonResponse
+    {
+        $tz = 'Asia/Manila';
+        $today = \Carbon\Carbon::now($tz)->toDateString();
+        $perPage = $request->query('per_page', 10);
+        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+
+        $appointments = Appointment::with(['pet.owner', 'service'])
+            ->whereDate('date', $today)
+            ->whereIn('status', $activeStatuses)
+            ->orderBy('time', 'asc')
+            ->paginate($perPage);
+
+        $items = collect($appointments->items())->map(fn($a) => [
+            'id'          => $a->id,
+            'time'        => Carbon::parse($a->time)->format('h:i A'),
+            'pet_name'    => optional($a->pet)->name        ?? 'N/A',
+            'owner_name'  => optional($a->pet?->owner)->name ?? 'N/A',
+            'service'     => optional($a->service)->name    ?? 'N/A',
+            'category'    => optional($a->service)->category ?? 'N/A',
+            'status'      => $a->status,
+        ]);
+
+        return response()->json([
+            'label'        => 'Appointments Today',
+            'date'         => \Carbon\Carbon::now($tz)->format('F d, Y'),
+            'count'        => $appointments->total(),
+            'appointments' => $items,
+            'pagination'   => [
+                'current_page' => $appointments->currentPage(),
+                'last_page'    => $appointments->lastPage(),
+                'per_page'     => $appointments->perPage(),
+                'total'        => $appointments->total(),
+            ],
+        ]);
+    }
+
+    public function appointmentsUpcoming(Request $request): JsonResponse
+    {
+        $tz = 'Asia/Manila';
+        $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
+        $perPage = $request->query('per_page', 10);
+        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+
+        $appointments = Appointment::with(['pet.owner', 'service'])
+            ->whereDate('date', $tomorrow)
+            ->whereIn('status', $activeStatuses)
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->paginate($perPage);
+
+        $items = collect($appointments->items())->map(fn($a) => [
+            'id'         => $a->id,
+            'date'       => Carbon::parse($a->date)->format('M d, Y'),
+            'time'       => Carbon::parse($a->time)->format('h:i A'),
+            'pet_name'   => optional($a->pet)->name    ?? 'N/A',
+            'owner_name' => optional($a->pet?->owner)->name  ?? 'N/A',
+            'service'    => optional($a->service)->name    ?? 'N/A',
+            'category'   => optional($a->service)->category ?? 'N/A',
+            'status'     => $a->status,
+        ]);
+
+        return response()->json([
+            'label'        => 'Appointments Tomorrow',
+            'date'         => \Carbon\Carbon::now($tz)->addDay()->format('F d, Y'),
+            'count'        => $appointments->total(),
+            'appointments' => $items,
+            'pagination'   => [
+                'current_page' => $appointments->currentPage(),
+                'last_page'    => $appointments->lastPage(),
+                'per_page'     => $appointments->perPage(),
+                'total'        => $appointments->total(),
+            ],
+        ]);
+    }
+
+    public function petsList(Request $request): JsonResponse
+    {
+        $perPage = $request->query('per_page', 10);
+        $pets = Pet::with(['owner', 'species', 'breed'])
+            ->orderBy('name', 'asc')
+            ->paginate($perPage);
+
+        $items = collect($pets->items())->map(fn($p) => [
+            'id'         => $p->id,
+            'name'       => $p->name,
+            'species'    => optional($p->species)->name ?? 'N/A',
+            'breed'      => optional($p->breed)->name   ?? 'N/A',
+            'owner_name' => optional($p->owner)->name   ?? 'N/A',
+        ]);
+
+        return response()->json([
+            'label' => 'Total Pets',
+            'count' => $pets->total(),
+            'pets'  => $items,
+            'pagination'   => [
+                'current_page' => $pets->currentPage(),
+                'last_page'    => $pets->lastPage(),
+                'per_page'     => $pets->perPage(),
+                'total'        => $pets->total(),
+            ],
+        ]);
+    }
+
+    public function clientsList(Request $request): JsonResponse
+    {
+        $perPage = $request->query('per_page', 10);
+        $clients = Owner::withCount('pets')
+            ->orderBy('name', 'asc')
+            ->paginate($perPage);
+
+        $items = collect($clients->items())->map(fn($o) => [
+            'id'        => $o->id,
+            'name'      => $o->name,
+            'email'     => $o->email    ?? 'N/A',
+            'phone'     => $o->phone    ?? 'N/A',
+            'pet_count' => $o->pets_count,
+        ]);
+
+        return response()->json([
+            'label'   => 'Total Clients',
+            'count'   => $clients->total(),
+            'clients' => $items,
+            'pagination'   => [
+                'current_page' => $clients->currentPage(),
+                'last_page'    => $clients->lastPage(),
+                'per_page'     => $clients->perPage(),
+                'total'        => $clients->total(),
+            ],
+        ]);
+    }
+
+    public function appointmentsCancelled(Request $request): JsonResponse
+    {
+        $tz = 'Asia/Manila';
+        $today = \Carbon\Carbon::now($tz)->toDateString();
+        $perPage = $request->query('per_page', 10);
+        $cancelledDeclinedStatuses = ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'];
+
+        $appointments = Appointment::with(['pet.owner', 'service'])
+            ->whereDate('date', $today)
+            ->whereIn('status', $cancelledDeclinedStatuses)
+            ->orderBy('updated_at', 'desc')
+            ->paginate($perPage);
+
+        $items = collect($appointments->items())->map(fn($a) => [
+            'id'             => $a->id,
+            'date'           => Carbon::parse($a->date)->format('M d, Y'),
+            'time'           => $a->time ? Carbon::parse($a->time)->format('h:i A') : 'N/A',
+            'pet_name'       => optional($a->pet)->name   ?? 'N/A',
+            'owner_name'     => optional($a->pet?->owner)->name ?? 'N/A',
+            'service'        => optional($a->service)->name ?? 'N/A',
+            'status'         => $a->status,
+            'decline_reason' => $a->notes ?? null,
+        ]);
+
+        return response()->json([
+            'label'        => 'Cancelled / Declined',
+            'date'         => \Carbon\Carbon::now($tz)->format('F d, Y'),
+            'count'        => $appointments->total(),
+            'appointments' => $items,
+            'pagination'   => [
+                'current_page' => $appointments->currentPage(),
+                'last_page'    => $appointments->lastPage(),
+                'per_page'     => $appointments->perPage(),
+                'total'        => $appointments->total(),
+            ],
+        ]);
+    }
+
     public function getForecastStatus(): JsonResponse
     {
         $status = \Illuminate\Support\Facades\Cache::get('forecast_batch_status');

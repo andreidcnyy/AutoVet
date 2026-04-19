@@ -1,0 +1,2837 @@
+date,service_name,category,quantity,price,revenue
+1/01/26,General Consultation / Check-up,Consultation,1,400,400
+1/01/26,Follow-up Consultation,Consultation,1,350,350
+1/01/26,General Consultation / Check-up,Consultation,1,400,400
+1/01/26,General Consultation / Check-up,Consultation,1,400,400
+1/01/26,General Consultation / Check-up,Consultation,1,400,400
+1/01/26,Basic Grooming,Grooming,1,600,600
+1/01/26,Full Grooming,Grooming,1,900,900
+1/01/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/01/26,General Laboratory Service,Laboratory,1,800,800
+1/01/26,Deworming,Others,1,350,350
+1/02/26,General Consultation / Check-up,Consultation,1,400,400
+1/02/26,Follow-up Consultation,Consultation,1,350,350
+1/02/26,General Consultation / Check-up,Consultation,1,400,400
+1/02/26,Follow-up Consultation,Consultation,1,350,350
+1/02/26,Follow-up Consultation,Consultation,1,350,350
+1/02/26,General Consultation / Check-up,Consultation,1,400,400
+1/02/26,General Consultation / Check-up,Consultation,1,400,400
+1/02/26,Follow-up Consultation,Consultation,1,350,350
+1/02/26,Follow-up Consultation,Consultation,1,350,350
+1/02/26,Basic Grooming,Grooming,1,600,600
+1/02/26,Basic Grooming,Grooming,1,600,600
+1/02/26,Full Grooming,Grooming,1,900,900
+1/02/26,Basic Grooming,Grooming,1,600,600
+1/02/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/02/26,Blood Test,Laboratory,1,900,900
+1/02/26,Tick and Flea Treatment,Others,1,450,450
+1/02/26,Deworming,Others,1,350,350
+1/03/26,General Consultation / Check-up,Consultation,1,400,400
+1/03/26,Follow-up Consultation,Consultation,1,350,350
+1/03/26,General Consultation / Check-up,Consultation,1,400,400
+1/03/26,Follow-up Consultation,Consultation,1,350,350
+1/03/26,Follow-up Consultation,Consultation,1,350,350
+1/03/26,General Consultation / Check-up,Consultation,1,400,400
+1/03/26,General Consultation / Check-up,Consultation,1,400,400
+1/03/26,General Consultation / Check-up,Consultation,1,400,400
+1/03/26,Full Grooming,Grooming,1,900,900
+1/03/26,Basic Grooming,Grooming,1,600,600
+1/03/26,Basic Grooming,Grooming,1,600,600
+1/03/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/03/26,Blood Test,Laboratory,1,900,900
+1/03/26,Blood Test,Laboratory,1,900,900
+1/03/26,General Laboratory Service,Laboratory,1,800,800
+1/03/26,Tick and Flea Treatment,Others,1,450,450
+1/03/26,Deworming,Others,1,350,350
+1/04/26,General Consultation / Check-up,Consultation,1,400,400
+1/04/26,General Consultation / Check-up,Consultation,1,400,400
+1/04/26,General Consultation / Check-up,Consultation,1,400,400
+1/04/26,General Consultation / Check-up,Consultation,1,400,400
+1/04/26,Follow-up Consultation,Consultation,1,350,350
+1/04/26,Follow-up Consultation,Consultation,1,350,350
+1/04/26,Follow-up Consultation,Consultation,1,350,350
+1/04/26,Full Grooming,Grooming,1,900,900
+1/04/26,Basic Grooming,Grooming,1,600,600
+1/04/26,Basic Grooming,Grooming,1,600,600
+1/04/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/04/26,Blood Test,Laboratory,1,900,900
+1/04/26,General Laboratory Service,Laboratory,1,800,800
+1/04/26,General Laboratory Service,Laboratory,1,800,800
+1/04/26,Blood Test,Laboratory,1,900,900
+1/04/26,Tick and Flea Treatment,Others,1,450,450
+1/05/26,Follow-up Consultation,Consultation,1,350,350
+1/05/26,General Consultation / Check-up,Consultation,1,400,400
+1/05/26,Follow-up Consultation,Consultation,1,350,350
+1/05/26,General Consultation / Check-up,Consultation,1,400,400
+1/05/26,General Consultation / Check-up,Consultation,1,400,400
+1/05/26,Follow-up Consultation,Consultation,1,350,350
+1/05/26,Follow-up Consultation,Consultation,1,350,350
+1/05/26,Follow-up Consultation,Consultation,1,350,350
+1/05/26,Basic Grooming,Grooming,1,600,600
+1/05/26,Basic Grooming,Grooming,1,600,600
+1/05/26,Full Grooming,Grooming,1,900,900
+1/05/26,Basic Grooming,Grooming,1,600,600
+1/05/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/05/26,General Laboratory Service,Laboratory,1,800,800
+1/05/26,Blood Test,Laboratory,1,900,900
+1/05/26,Deworming,Others,1,350,350
+1/05/26,Tick and Flea Treatment,Others,1,450,450
+1/05/26,Tick and Flea Treatment,Others,1,450,450
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,General Consultation / Check-up,Consultation,1,400,400
+1/06/26,General Consultation / Check-up,Consultation,1,400,400
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,General Consultation / Check-up,Consultation,1,400,400
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,Follow-up Consultation,Consultation,1,350,350
+1/06/26,Full Grooming,Grooming,1,900,900
+1/06/26,Basic Grooming,Grooming,1,600,600
+1/06/26,Full Grooming,Grooming,1,900,900
+1/06/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/06/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/06/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/06/26,General Laboratory Service,Laboratory,1,800,800
+1/06/26,General Laboratory Service,Laboratory,1,800,800
+1/06/26,Blood Test,Laboratory,1,900,900
+1/06/26,Deworming,Others,1,350,350
+1/07/26,Follow-up Consultation,Consultation,1,350,350
+1/07/26,Follow-up Consultation,Consultation,1,350,350
+1/07/26,General Consultation / Check-up,Consultation,1,400,400
+1/07/26,General Consultation / Check-up,Consultation,1,400,400
+1/07/26,Follow-up Consultation,Consultation,1,350,350
+1/07/26,Follow-up Consultation,Consultation,1,350,350
+1/07/26,General Consultation / Check-up,Consultation,1,400,400
+1/07/26,General Consultation / Check-up,Consultation,1,400,400
+1/07/26,General Consultation / Check-up,Consultation,1,400,400
+1/07/26,Basic Grooming,Grooming,1,600,600
+1/07/26,Full Grooming,Grooming,1,900,900
+1/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/07/26,General Laboratory Service,Laboratory,1,800,800
+1/07/26,Blood Test,Laboratory,1,900,900
+1/07/26,Deworming,Others,1,350,350
+1/07/26,Tick and Flea Treatment,Others,1,450,450
+1/07/26,Tick and Flea Treatment,Others,1,450,450
+1/08/26,General Consultation / Check-up,Consultation,1,400,400
+1/08/26,Follow-up Consultation,Consultation,1,350,350
+1/08/26,Follow-up Consultation,Consultation,1,350,350
+1/08/26,Follow-up Consultation,Consultation,1,350,350
+1/08/26,Follow-up Consultation,Consultation,1,350,350
+1/08/26,Follow-up Consultation,Consultation,1,350,350
+1/08/26,Basic Grooming,Grooming,1,600,600
+1/08/26,Basic Grooming,Grooming,1,600,600
+1/08/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/08/26,General Laboratory Service,Laboratory,1,800,800
+1/08/26,Deworming,Others,1,350,350
+1/08/26,Deworming,Others,1,350,350
+1/08/26,Deworming,Others,1,350,350
+1/09/26,General Consultation / Check-up,Consultation,1,400,400
+1/09/26,General Consultation / Check-up,Consultation,1,400,400
+1/09/26,General Consultation / Check-up,Consultation,1,400,400
+1/09/26,Follow-up Consultation,Consultation,1,350,350
+1/09/26,General Consultation / Check-up,Consultation,1,400,400
+1/09/26,Full Grooming,Grooming,1,900,900
+1/09/26,Full Grooming,Grooming,1,900,900
+1/09/26,Basic Grooming,Grooming,1,600,600
+1/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/09/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/09/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/09/26,General Laboratory Service,Laboratory,1,800,800
+1/09/26,Blood Test,Laboratory,1,900,900
+1/09/26,Blood Test,Laboratory,1,900,900
+1/09/26,General Laboratory Service,Laboratory,1,800,800
+1/09/26,Deworming,Others,1,350,350
+1/10/26,Follow-up Consultation,Consultation,1,350,350
+1/10/26,Follow-up Consultation,Consultation,1,350,350
+1/10/26,Follow-up Consultation,Consultation,1,350,350
+1/10/26,Follow-up Consultation,Consultation,1,350,350
+1/10/26,General Consultation / Check-up,Consultation,1,400,400
+1/10/26,General Consultation / Check-up,Consultation,1,400,400
+1/10/26,General Consultation / Check-up,Consultation,1,400,400
+1/10/26,Follow-up Consultation,Consultation,1,350,350
+1/10/26,Basic Grooming,Grooming,1,600,600
+1/10/26,Basic Grooming,Grooming,1,600,600
+1/10/26,Basic Grooming,Grooming,1,600,600
+1/10/26,Basic Grooming,Grooming,1,600,600
+1/10/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/10/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/10/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/10/26,Blood Test,Laboratory,1,900,900
+1/10/26,Blood Test,Laboratory,1,900,900
+1/10/26,Deworming,Others,1,350,350
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,General Consultation / Check-up,Consultation,1,400,400
+1/11/26,Follow-up Consultation,Consultation,1,350,350
+1/11/26,Follow-up Consultation,Consultation,1,350,350
+1/11/26,Basic Grooming,Grooming,1,600,600
+1/11/26,Full Grooming,Grooming,1,900,900
+1/11/26,Basic Grooming,Grooming,1,600,600
+1/11/26,Basic Grooming,Grooming,1,600,600
+1/11/26,Full Grooming,Grooming,1,900,900
+1/11/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/11/26,Blood Test,Laboratory,1,900,900
+1/11/26,Blood Test,Laboratory,1,900,900
+1/11/26,Blood Test,Laboratory,1,900,900
+1/11/26,Tick and Flea Treatment,Others,1,450,450
+1/11/26,Deworming,Others,1,350,350
+1/11/26,Deworming,Others,1,350,350
+1/12/26,General Consultation / Check-up,Consultation,1,400,400
+1/12/26,General Consultation / Check-up,Consultation,1,400,400
+1/12/26,General Consultation / Check-up,Consultation,1,400,400
+1/12/26,Follow-up Consultation,Consultation,1,350,350
+1/12/26,General Consultation / Check-up,Consultation,1,400,400
+1/12/26,General Consultation / Check-up,Consultation,1,400,400
+1/12/26,Follow-up Consultation,Consultation,1,350,350
+1/12/26,Basic Grooming,Grooming,1,600,600
+1/12/26,Basic Grooming,Grooming,1,600,600
+1/12/26,Basic Grooming,Grooming,1,600,600
+1/12/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/12/26,General Laboratory Service,Laboratory,1,800,800
+1/12/26,Deworming,Others,1,350,350
+1/12/26,Deworming,Others,1,350,350
+1/13/26,General Consultation / Check-up,Consultation,1,400,400
+1/13/26,General Consultation / Check-up,Consultation,1,400,400
+1/13/26,Follow-up Consultation,Consultation,1,350,350
+1/13/26,Follow-up Consultation,Consultation,1,350,350
+1/13/26,Follow-up Consultation,Consultation,1,350,350
+1/13/26,General Consultation / Check-up,Consultation,1,400,400
+1/13/26,Follow-up Consultation,Consultation,1,350,350
+1/13/26,General Consultation / Check-up,Consultation,1,400,400
+1/13/26,Follow-up Consultation,Consultation,1,350,350
+1/13/26,Basic Grooming,Grooming,1,600,600
+1/13/26,Full Grooming,Grooming,1,900,900
+1/13/26,Full Grooming,Grooming,1,900,900
+1/13/26,Full Grooming,Grooming,1,900,900
+1/13/26,Basic Grooming,Grooming,1,600,600
+1/13/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/13/26,General Laboratory Service,Laboratory,1,800,800
+1/13/26,Deworming,Others,1,350,350
+1/13/26,Tick and Flea Treatment,Others,1,450,450
+1/13/26,Deworming,Others,1,350,350
+1/14/26,General Consultation / Check-up,Consultation,1,400,400
+1/14/26,General Consultation / Check-up,Consultation,1,400,400
+1/14/26,Follow-up Consultation,Consultation,1,350,350
+1/14/26,Follow-up Consultation,Consultation,1,350,350
+1/14/26,General Consultation / Check-up,Consultation,1,400,400
+1/14/26,Follow-up Consultation,Consultation,1,350,350
+1/14/26,Follow-up Consultation,Consultation,1,350,350
+1/14/26,Full Grooming,Grooming,1,900,900
+1/14/26,Basic Grooming,Grooming,1,600,600
+1/14/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/14/26,General Laboratory Service,Laboratory,1,800,800
+1/14/26,Deworming,Others,1,350,350
+1/14/26,Tick and Flea Treatment,Others,1,450,450
+1/14/26,Tick and Flea Treatment,Others,1,450,450
+1/15/26,General Consultation / Check-up,Consultation,1,400,400
+1/15/26,Follow-up Consultation,Consultation,1,350,350
+1/15/26,General Consultation / Check-up,Consultation,1,400,400
+1/15/26,Follow-up Consultation,Consultation,1,350,350
+1/15/26,Follow-up Consultation,Consultation,1,350,350
+1/15/26,Follow-up Consultation,Consultation,1,350,350
+1/15/26,General Consultation / Check-up,Consultation,1,400,400
+1/15/26,General Consultation / Check-up,Consultation,1,400,400
+1/15/26,Follow-up Consultation,Consultation,1,350,350
+1/15/26,Basic Grooming,Grooming,1,600,600
+1/15/26,Basic Grooming,Grooming,1,600,600
+1/15/26,Full Grooming,Grooming,1,900,900
+1/15/26,Basic Grooming,Grooming,1,600,600
+1/15/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/15/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/15/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/15/26,Blood Test,Laboratory,1,900,900
+1/15/26,General Laboratory Service,Laboratory,1,800,800
+1/15/26,General Laboratory Service,Laboratory,1,800,800
+1/15/26,General Laboratory Service,Laboratory,1,800,800
+1/15/26,Deworming,Others,1,350,350
+1/15/26,Deworming,Others,1,350,350
+1/15/26,Tick and Flea Treatment,Others,1,450,450
+1/16/26,General Consultation / Check-up,Consultation,1,400,400
+1/16/26,Follow-up Consultation,Consultation,1,350,350
+1/16/26,General Consultation / Check-up,Consultation,1,400,400
+1/16/26,General Consultation / Check-up,Consultation,1,400,400
+1/16/26,Follow-up Consultation,Consultation,1,350,350
+1/16/26,Follow-up Consultation,Consultation,1,350,350
+1/16/26,General Consultation / Check-up,Consultation,1,400,400
+1/16/26,Follow-up Consultation,Consultation,1,350,350
+1/16/26,General Consultation / Check-up,Consultation,1,400,400
+1/16/26,Basic Grooming,Grooming,1,600,600
+1/16/26,Full Grooming,Grooming,1,900,900
+1/16/26,Full Grooming,Grooming,1,900,900
+1/16/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/16/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/16/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/16/26,General Laboratory Service,Laboratory,1,800,800
+1/16/26,Blood Test,Laboratory,1,900,900
+1/16/26,Deworming,Others,1,350,350
+1/17/26,Follow-up Consultation,Consultation,1,350,350
+1/17/26,General Consultation / Check-up,Consultation,1,400,400
+1/17/26,Follow-up Consultation,Consultation,1,350,350
+1/17/26,General Consultation / Check-up,Consultation,1,400,400
+1/17/26,General Consultation / Check-up,Consultation,1,400,400
+1/17/26,Follow-up Consultation,Consultation,1,350,350
+1/17/26,General Consultation / Check-up,Consultation,1,400,400
+1/17/26,Basic Grooming,Grooming,1,600,600
+1/17/26,Basic Grooming,Grooming,1,600,600
+1/17/26,Full Grooming,Grooming,1,900,900
+1/17/26,Full Grooming,Grooming,1,900,900
+1/17/26,Full Grooming,Grooming,1,900,900
+1/17/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/17/26,General Laboratory Service,Laboratory,1,800,800
+1/17/26,Tick and Flea Treatment,Others,1,450,450
+1/17/26,Tick and Flea Treatment,Others,1,450,450
+1/18/26,Follow-up Consultation,Consultation,1,350,350
+1/18/26,Follow-up Consultation,Consultation,1,350,350
+1/18/26,Follow-up Consultation,Consultation,1,350,350
+1/18/26,Follow-up Consultation,Consultation,1,350,350
+1/18/26,General Consultation / Check-up,Consultation,1,400,400
+1/18/26,Full Grooming,Grooming,1,900,900
+1/18/26,Basic Grooming,Grooming,1,600,600
+1/18/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/18/26,Blood Test,Laboratory,1,900,900
+1/18/26,Blood Test,Laboratory,1,900,900
+1/18/26,Blood Test,Laboratory,1,900,900
+1/18/26,General Laboratory Service,Laboratory,1,800,800
+1/18/26,Deworming,Others,1,350,350
+1/18/26,Tick and Flea Treatment,Others,1,450,450
+1/19/26,Follow-up Consultation,Consultation,1,350,350
+1/19/26,General Consultation / Check-up,Consultation,1,400,400
+1/19/26,General Consultation / Check-up,Consultation,1,400,400
+1/19/26,Follow-up Consultation,Consultation,1,350,350
+1/19/26,Follow-up Consultation,Consultation,1,350,350
+1/19/26,Full Grooming,Grooming,1,900,900
+1/19/26,Full Grooming,Grooming,1,900,900
+1/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/19/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/19/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/19/26,Blood Test,Laboratory,1,900,900
+1/19/26,Blood Test,Laboratory,1,900,900
+1/19/26,Blood Test,Laboratory,1,900,900
+1/19/26,Tick and Flea Treatment,Others,1,450,450
+1/19/26,Deworming,Others,1,350,350
+1/19/26,Deworming,Others,1,350,350
+1/20/26,Follow-up Consultation,Consultation,1,350,350
+1/20/26,General Consultation / Check-up,Consultation,1,400,400
+1/20/26,Follow-up Consultation,Consultation,1,350,350
+1/20/26,Follow-up Consultation,Consultation,1,350,350
+1/20/26,General Consultation / Check-up,Consultation,1,400,400
+1/20/26,Follow-up Consultation,Consultation,1,350,350
+1/20/26,Follow-up Consultation,Consultation,1,350,350
+1/20/26,General Consultation / Check-up,Consultation,1,400,400
+1/20/26,Full Grooming,Grooming,1,900,900
+1/20/26,Full Grooming,Grooming,1,900,900
+1/20/26,Full Grooming,Grooming,1,900,900
+1/20/26,Full Grooming,Grooming,1,900,900
+1/20/26,Basic Grooming,Grooming,1,600,600
+1/20/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/20/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/20/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/20/26,Blood Test,Laboratory,1,900,900
+1/20/26,Tick and Flea Treatment,Others,1,450,450
+1/20/26,Deworming,Others,1,350,350
+1/20/26,Deworming,Others,1,350,350
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,General Consultation / Check-up,Consultation,1,400,400
+1/21/26,Follow-up Consultation,Consultation,1,350,350
+1/21/26,Full Grooming,Grooming,1,900,900
+1/21/26,Full Grooming,Grooming,1,900,900
+1/21/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/21/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/21/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/21/26,Blood Test,Laboratory,1,900,900
+1/21/26,Blood Test,Laboratory,1,900,900
+1/21/26,General Laboratory Service,Laboratory,1,800,800
+1/21/26,General Laboratory Service,Laboratory,1,800,800
+1/21/26,Deworming,Others,1,350,350
+1/21/26,Deworming,Others,1,350,350
+1/21/26,Tick and Flea Treatment,Others,1,450,450
+1/22/26,General Consultation / Check-up,Consultation,1,400,400
+1/22/26,Follow-up Consultation,Consultation,1,350,350
+1/22/26,General Consultation / Check-up,Consultation,1,400,400
+1/22/26,General Consultation / Check-up,Consultation,1,400,400
+1/22/26,General Consultation / Check-up,Consultation,1,400,400
+1/22/26,Follow-up Consultation,Consultation,1,350,350
+1/22/26,Full Grooming,Grooming,1,900,900
+1/22/26,Full Grooming,Grooming,1,900,900
+1/22/26,Full Grooming,Grooming,1,900,900
+1/22/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/22/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/22/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/22/26,General Laboratory Service,Laboratory,1,800,800
+1/22/26,Blood Test,Laboratory,1,900,900
+1/22/26,Blood Test,Laboratory,1,900,900
+1/22/26,Blood Test,Laboratory,1,900,900
+1/22/26,Tick and Flea Treatment,Others,1,450,450
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,General Consultation / Check-up,Consultation,1,400,400
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,General Consultation / Check-up,Consultation,1,400,400
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,General Consultation / Check-up,Consultation,1,400,400
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,Follow-up Consultation,Consultation,1,350,350
+1/23/26,Basic Grooming,Grooming,1,600,600
+1/23/26,Basic Grooming,Grooming,1,600,600
+1/23/26,Basic Grooming,Grooming,1,600,600
+1/23/26,Basic Grooming,Grooming,1,600,600
+1/23/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/23/26,General Laboratory Service,Laboratory,1,800,800
+1/23/26,Blood Test,Laboratory,1,900,900
+1/23/26,Tick and Flea Treatment,Others,1,450,450
+1/23/26,Tick and Flea Treatment,Others,1,450,450
+1/24/26,General Consultation / Check-up,Consultation,1,400,400
+1/24/26,General Consultation / Check-up,Consultation,1,400,400
+1/24/26,Follow-up Consultation,Consultation,1,350,350
+1/24/26,Follow-up Consultation,Consultation,1,350,350
+1/24/26,General Consultation / Check-up,Consultation,1,400,400
+1/24/26,Follow-up Consultation,Consultation,1,350,350
+1/24/26,Follow-up Consultation,Consultation,1,350,350
+1/24/26,General Consultation / Check-up,Consultation,1,400,400
+1/24/26,Full Grooming,Grooming,1,900,900
+1/24/26,Full Grooming,Grooming,1,900,900
+1/24/26,Full Grooming,Grooming,1,900,900
+1/24/26,Basic Grooming,Grooming,1,600,600
+1/24/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/24/26,Blood Test,Laboratory,1,900,900
+1/24/26,General Laboratory Service,Laboratory,1,800,800
+1/24/26,Blood Test,Laboratory,1,900,900
+1/24/26,Blood Test,Laboratory,1,900,900
+1/24/26,Tick and Flea Treatment,Others,1,450,450
+1/24/26,Deworming,Others,1,350,350
+1/24/26,Tick and Flea Treatment,Others,1,450,450
+1/25/26,General Consultation / Check-up,Consultation,1,400,400
+1/25/26,Follow-up Consultation,Consultation,1,350,350
+1/25/26,General Consultation / Check-up,Consultation,1,400,400
+1/25/26,General Consultation / Check-up,Consultation,1,400,400
+1/25/26,Follow-up Consultation,Consultation,1,350,350
+1/25/26,General Consultation / Check-up,Consultation,1,400,400
+1/25/26,Basic Grooming,Grooming,1,600,600
+1/25/26,Basic Grooming,Grooming,1,600,600
+1/25/26,Full Grooming,Grooming,1,900,900
+1/25/26,Full Grooming,Grooming,1,900,900
+1/25/26,Full Grooming,Grooming,1,900,900
+1/25/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/25/26,Blood Test,Laboratory,1,900,900
+1/25/26,Blood Test,Laboratory,1,900,900
+1/25/26,Blood Test,Laboratory,1,900,900
+1/25/26,Tick and Flea Treatment,Others,1,450,450
+1/25/26,Deworming,Others,1,350,350
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,Follow-up Consultation,Consultation,1,350,350
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,General Consultation / Check-up,Consultation,1,400,400
+1/26/26,Basic Grooming,Grooming,1,600,600
+1/26/26,Basic Grooming,Grooming,1,600,600
+1/26/26,Basic Grooming,Grooming,1,600,600
+1/26/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/26/26,General Laboratory Service,Laboratory,1,800,800
+1/26/26,Tick and Flea Treatment,Others,1,450,450
+1/26/26,Tick and Flea Treatment,Others,1,450,450
+1/27/26,General Consultation / Check-up,Consultation,1,400,400
+1/27/26,General Consultation / Check-up,Consultation,1,400,400
+1/27/26,Follow-up Consultation,Consultation,1,350,350
+1/27/26,General Consultation / Check-up,Consultation,1,400,400
+1/27/26,General Consultation / Check-up,Consultation,1,400,400
+1/27/26,Follow-up Consultation,Consultation,1,350,350
+1/27/26,Full Grooming,Grooming,1,900,900
+1/27/26,Basic Grooming,Grooming,1,600,600
+1/27/26,Basic Grooming,Grooming,1,600,600
+1/27/26,Basic Grooming,Grooming,1,600,600
+1/27/26,Basic Grooming,Grooming,1,600,600
+1/27/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/27/26,General Laboratory Service,Laboratory,1,800,800
+1/27/26,Tick and Flea Treatment,Others,1,450,450
+1/27/26,Tick and Flea Treatment,Others,1,450,450
+1/28/26,Follow-up Consultation,Consultation,1,350,350
+1/28/26,General Consultation / Check-up,Consultation,1,400,400
+1/28/26,Follow-up Consultation,Consultation,1,350,350
+1/28/26,Follow-up Consultation,Consultation,1,350,350
+1/28/26,General Consultation / Check-up,Consultation,1,400,400
+1/28/26,Full Grooming,Grooming,1,900,900
+1/28/26,Full Grooming,Grooming,1,900,900
+1/28/26,Basic Grooming,Grooming,1,600,600
+1/28/26,Full Grooming,Grooming,1,900,900
+1/28/26,Basic Grooming,Grooming,1,600,600
+1/28/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/28/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/28/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/28/26,Blood Test,Laboratory,1,900,900
+1/28/26,Blood Test,Laboratory,1,900,900
+1/28/26,Blood Test,Laboratory,1,900,900
+1/28/26,Blood Test,Laboratory,1,900,900
+1/28/26,Deworming,Others,1,350,350
+1/29/26,Follow-up Consultation,Consultation,1,350,350
+1/29/26,General Consultation / Check-up,Consultation,1,400,400
+1/29/26,Follow-up Consultation,Consultation,1,350,350
+1/29/26,Follow-up Consultation,Consultation,1,350,350
+1/29/26,Follow-up Consultation,Consultation,1,350,350
+1/29/26,General Consultation / Check-up,Consultation,1,400,400
+1/29/26,Follow-up Consultation,Consultation,1,350,350
+1/29/26,Basic Grooming,Grooming,1,600,600
+1/29/26,Full Grooming,Grooming,1,900,900
+1/29/26,Basic Grooming,Grooming,1,600,600
+1/29/26,Full Grooming,Grooming,1,900,900
+1/29/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/29/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+1/29/26,General Laboratory Service,Laboratory,1,800,800
+1/29/26,General Laboratory Service,Laboratory,1,800,800
+1/29/26,General Laboratory Service,Laboratory,1,800,800
+1/29/26,Tick and Flea Treatment,Others,1,450,450
+1/30/26,General Consultation / Check-up,Consultation,1,400,400
+1/30/26,Follow-up Consultation,Consultation,1,350,350
+1/30/26,Follow-up Consultation,Consultation,1,350,350
+1/30/26,Follow-up Consultation,Consultation,1,350,350
+1/30/26,General Consultation / Check-up,Consultation,1,400,400
+1/30/26,General Consultation / Check-up,Consultation,1,400,400
+1/30/26,Follow-up Consultation,Consultation,1,350,350
+1/30/26,General Consultation / Check-up,Consultation,1,400,400
+1/30/26,Basic Grooming,Grooming,1,600,600
+1/30/26,Full Grooming,Grooming,1,900,900
+1/30/26,Full Grooming,Grooming,1,900,900
+1/30/26,Full Grooming,Grooming,1,900,900
+1/30/26,Full Grooming,Grooming,1,900,900
+1/30/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/30/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+1/30/26,Blood Test,Laboratory,1,900,900
+1/30/26,Blood Test,Laboratory,1,900,900
+1/30/26,Blood Test,Laboratory,1,900,900
+1/30/26,Tick and Flea Treatment,Others,1,450,450
+1/30/26,Deworming,Others,1,350,350
+1/31/26,General Consultation / Check-up,Consultation,1,400,400
+1/31/26,Follow-up Consultation,Consultation,1,350,350
+1/31/26,General Consultation / Check-up,Consultation,1,400,400
+1/31/26,General Consultation / Check-up,Consultation,1,400,400
+1/31/26,General Consultation / Check-up,Consultation,1,400,400
+1/31/26,Full Grooming,Grooming,1,900,900
+1/31/26,Full Grooming,Grooming,1,900,900
+1/31/26,Full Grooming,Grooming,1,900,900
+1/31/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+1/31/26,General Laboratory Service,Laboratory,1,800,800
+1/31/26,Blood Test,Laboratory,1,900,900
+1/31/26,General Laboratory Service,Laboratory,1,800,800
+1/31/26,Deworming,Others,1,350,350
+1/31/26,Deworming,Others,1,350,350
+2/01/26,General Consultation / Check-up,Consultation,1,400,400
+2/01/26,General Consultation / Check-up,Consultation,1,400,400
+2/01/26,Follow-up Consultation,Consultation,1,350,350
+2/01/26,General Consultation / Check-up,Consultation,1,400,400
+2/01/26,Follow-up Consultation,Consultation,1,350,350
+2/01/26,General Consultation / Check-up,Consultation,1,400,400
+2/01/26,General Consultation / Check-up,Consultation,1,400,400
+2/01/26,Follow-up Consultation,Consultation,1,350,350
+2/01/26,Full Grooming,Grooming,1,900,900
+2/01/26,Full Grooming,Grooming,1,900,900
+2/01/26,Full Grooming,Grooming,1,900,900
+2/01/26,Basic Grooming,Grooming,1,600,600
+2/01/26,Basic Grooming,Grooming,1,600,600
+2/01/26,Full Grooming,Grooming,1,900,900
+2/01/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/01/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/01/26,Blood Test,Laboratory,1,900,900
+2/01/26,General Laboratory Service,Laboratory,1,800,800
+2/01/26,General Laboratory Service,Laboratory,1,800,800
+2/01/26,General Laboratory Service,Laboratory,1,800,800
+2/01/26,General Laboratory Service,Laboratory,1,800,800
+2/01/26,Deworming,Others,1,350,350
+2/01/26,Deworming,Others,1,350,350
+2/01/26,Deworming,Others,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,General Consultation / Check-up,Consultation,1,400,400
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,Follow-up Consultation,Consultation,1,350,350
+2/02/26,General Consultation / Check-up,Consultation,1,400,400
+2/02/26,General Consultation / Check-up,Consultation,1,400,400
+2/02/26,Basic Grooming,Grooming,1,600,600
+2/02/26,Full Grooming,Grooming,1,900,900
+2/02/26,Basic Grooming,Grooming,1,600,600
+2/02/26,Basic Grooming,Grooming,1,600,600
+2/02/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/02/26,General Laboratory Service,Laboratory,1,800,800
+2/02/26,General Laboratory Service,Laboratory,1,800,800
+2/02/26,Tick and Flea Treatment,Others,1,450,450
+2/02/26,Tick and Flea Treatment,Others,1,450,450
+2/02/26,Tick and Flea Treatment,Others,1,450,450
+2/02/26,Deworming,Others,1,350,350
+2/03/26,Follow-up Consultation,Consultation,1,350,350
+2/03/26,Follow-up Consultation,Consultation,1,350,350
+2/03/26,Follow-up Consultation,Consultation,1,350,350
+2/03/26,General Consultation / Check-up,Consultation,1,400,400
+2/03/26,General Consultation / Check-up,Consultation,1,400,400
+2/03/26,Follow-up Consultation,Consultation,1,350,350
+2/03/26,General Consultation / Check-up,Consultation,1,400,400
+2/03/26,Basic Grooming,Grooming,1,600,600
+2/03/26,Basic Grooming,Grooming,1,600,600
+2/03/26,Basic Grooming,Grooming,1,600,600
+2/03/26,Full Grooming,Grooming,1,900,900
+2/03/26,Basic Grooming,Grooming,1,600,600
+2/03/26,Basic Grooming,Grooming,1,600,600
+2/03/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/03/26,Blood Test,Laboratory,1,900,900
+2/03/26,Blood Test,Laboratory,1,900,900
+2/03/26,General Laboratory Service,Laboratory,1,800,800
+2/03/26,Blood Test,Laboratory,1,900,900
+2/03/26,Tick and Flea Treatment,Others,1,450,450
+2/03/26,Tick and Flea Treatment,Others,1,450,450
+2/03/26,Tick and Flea Treatment,Others,1,450,450
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,Follow-up Consultation,Consultation,1,350,350
+2/04/26,Follow-up Consultation,Consultation,1,350,350
+2/04/26,Follow-up Consultation,Consultation,1,350,350
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,General Consultation / Check-up,Consultation,1,400,400
+2/04/26,Basic Grooming,Grooming,1,600,600
+2/04/26,Basic Grooming,Grooming,1,600,600
+2/04/26,Full Grooming,Grooming,1,900,900
+2/04/26,Full Grooming,Grooming,1,900,900
+2/04/26,Full Grooming,Grooming,1,900,900
+2/04/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/04/26,Blood Test,Laboratory,1,900,900
+2/04/26,General Laboratory Service,Laboratory,1,800,800
+2/04/26,Blood Test,Laboratory,1,900,900
+2/04/26,Blood Test,Laboratory,1,900,900
+2/04/26,Blood Test,Laboratory,1,900,900
+2/04/26,Tick and Flea Treatment,Others,1,450,450
+2/04/26,Deworming,Others,1,350,350
+2/04/26,Deworming,Others,1,350,350
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,General Consultation / Check-up,Consultation,1,400,400
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,General Consultation / Check-up,Consultation,1,400,400
+2/05/26,Follow-up Consultation,Consultation,1,350,350
+2/05/26,Full Grooming,Grooming,1,900,900
+2/05/26,Basic Grooming,Grooming,1,600,600
+2/05/26,Full Grooming,Grooming,1,900,900
+2/05/26,Basic Grooming,Grooming,1,600,600
+2/05/26,Full Grooming,Grooming,1,900,900
+2/05/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/05/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/05/26,Blood Test,Laboratory,1,900,900
+2/05/26,Blood Test,Laboratory,1,900,900
+2/05/26,General Laboratory Service,Laboratory,1,800,800
+2/05/26,General Laboratory Service,Laboratory,1,800,800
+2/05/26,Deworming,Others,1,350,350
+2/05/26,Tick and Flea Treatment,Others,1,450,450
+2/05/26,Tick and Flea Treatment,Others,1,450,450
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,Follow-up Consultation,Consultation,1,350,350
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,Follow-up Consultation,Consultation,1,350,350
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,General Consultation / Check-up,Consultation,1,400,400
+2/06/26,Full Grooming,Grooming,1,900,900
+2/06/26,Basic Grooming,Grooming,1,600,600
+2/06/26,Basic Grooming,Grooming,1,600,600
+2/06/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/06/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/06/26,Blood Test,Laboratory,1,900,900
+2/06/26,Blood Test,Laboratory,1,900,900
+2/06/26,Blood Test,Laboratory,1,900,900
+2/06/26,General Laboratory Service,Laboratory,1,800,800
+2/06/26,Deworming,Others,1,350,350
+2/06/26,Tick and Flea Treatment,Others,1,450,450
+2/06/26,Deworming,Others,1,350,350
+2/06/26,Deworming,Others,1,350,350
+2/07/26,Follow-up Consultation,Consultation,1,350,350
+2/07/26,Follow-up Consultation,Consultation,1,350,350
+2/07/26,Follow-up Consultation,Consultation,1,350,350
+2/07/26,Follow-up Consultation,Consultation,1,350,350
+2/07/26,General Consultation / Check-up,Consultation,1,400,400
+2/07/26,Follow-up Consultation,Consultation,1,350,350
+2/07/26,Full Grooming,Grooming,1,900,900
+2/07/26,Basic Grooming,Grooming,1,600,600
+2/07/26,Full Grooming,Grooming,1,900,900
+2/07/26,Full Grooming,Grooming,1,900,900
+2/07/26,Full Grooming,Grooming,1,900,900
+2/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/07/26,Blood Test,Laboratory,1,900,900
+2/07/26,Blood Test,Laboratory,1,900,900
+2/07/26,General Laboratory Service,Laboratory,1,800,800
+2/07/26,General Laboratory Service,Laboratory,1,800,800
+2/07/26,Blood Test,Laboratory,1,900,900
+2/07/26,Tick and Flea Treatment,Others,1,450,450
+2/07/26,Deworming,Others,1,350,350
+2/08/26,Follow-up Consultation,Consultation,1,350,350
+2/08/26,Follow-up Consultation,Consultation,1,350,350
+2/08/26,Follow-up Consultation,Consultation,1,350,350
+2/08/26,General Consultation / Check-up,Consultation,1,400,400
+2/08/26,Follow-up Consultation,Consultation,1,350,350
+2/08/26,General Consultation / Check-up,Consultation,1,400,400
+2/08/26,General Consultation / Check-up,Consultation,1,400,400
+2/08/26,Follow-up Consultation,Consultation,1,350,350
+2/08/26,Full Grooming,Grooming,1,900,900
+2/08/26,Basic Grooming,Grooming,1,600,600
+2/08/26,Full Grooming,Grooming,1,900,900
+2/08/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/08/26,Blood Test,Laboratory,1,900,900
+2/08/26,General Laboratory Service,Laboratory,1,800,800
+2/08/26,General Laboratory Service,Laboratory,1,800,800
+2/08/26,Tick and Flea Treatment,Others,1,450,450
+2/08/26,Tick and Flea Treatment,Others,1,450,450
+2/08/26,Tick and Flea Treatment,Others,1,450,450
+2/08/26,Deworming,Others,1,350,350
+2/09/26,Follow-up Consultation,Consultation,1,350,350
+2/09/26,Follow-up Consultation,Consultation,1,350,350
+2/09/26,Follow-up Consultation,Consultation,1,350,350
+2/09/26,General Consultation / Check-up,Consultation,1,400,400
+2/09/26,General Consultation / Check-up,Consultation,1,400,400
+2/09/26,General Consultation / Check-up,Consultation,1,400,400
+2/09/26,Follow-up Consultation,Consultation,1,350,350
+2/09/26,General Consultation / Check-up,Consultation,1,400,400
+2/09/26,Full Grooming,Grooming,1,900,900
+2/09/26,Basic Grooming,Grooming,1,600,600
+2/09/26,Basic Grooming,Grooming,1,600,600
+2/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/09/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/09/26,General Laboratory Service,Laboratory,1,800,800
+2/09/26,General Laboratory Service,Laboratory,1,800,800
+2/09/26,Blood Test,Laboratory,1,900,900
+2/09/26,General Laboratory Service,Laboratory,1,800,800
+2/09/26,Tick and Flea Treatment,Others,1,450,450
+2/09/26,Tick and Flea Treatment,Others,1,450,450
+2/09/26,Tick and Flea Treatment,Others,1,450,450
+2/10/26,General Consultation / Check-up,Consultation,1,400,400
+2/10/26,Follow-up Consultation,Consultation,1,350,350
+2/10/26,General Consultation / Check-up,Consultation,1,400,400
+2/10/26,General Consultation / Check-up,Consultation,1,400,400
+2/10/26,General Consultation / Check-up,Consultation,1,400,400
+2/10/26,General Consultation / Check-up,Consultation,1,400,400
+2/10/26,Follow-up Consultation,Consultation,1,350,350
+2/10/26,Basic Grooming,Grooming,1,600,600
+2/10/26,Full Grooming,Grooming,1,900,900
+2/10/26,Basic Grooming,Grooming,1,600,600
+2/10/26,Basic Grooming,Grooming,1,600,600
+2/10/26,Full Grooming,Grooming,1,900,900
+2/10/26,Full Grooming,Grooming,1,900,900
+2/10/26,Full Grooming,Grooming,1,900,900
+2/10/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/10/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/10/26,Blood Test,Laboratory,1,900,900
+2/10/26,General Laboratory Service,Laboratory,1,800,800
+2/10/26,General Laboratory Service,Laboratory,1,800,800
+2/10/26,Blood Test,Laboratory,1,900,900
+2/10/26,Blood Test,Laboratory,1,900,900
+2/10/26,Tick and Flea Treatment,Others,1,450,450
+2/10/26,Tick and Flea Treatment,Others,1,450,450
+2/10/26,Tick and Flea Treatment,Others,1,450,450
+2/11/26,General Consultation / Check-up,Consultation,1,400,400
+2/11/26,Follow-up Consultation,Consultation,1,350,350
+2/11/26,Follow-up Consultation,Consultation,1,350,350
+2/11/26,General Consultation / Check-up,Consultation,1,400,400
+2/11/26,General Consultation / Check-up,Consultation,1,400,400
+2/11/26,Follow-up Consultation,Consultation,1,350,350
+2/11/26,Follow-up Consultation,Consultation,1,350,350
+2/11/26,Follow-up Consultation,Consultation,1,350,350
+2/11/26,Basic Grooming,Grooming,1,600,600
+2/11/26,Full Grooming,Grooming,1,900,900
+2/11/26,Full Grooming,Grooming,1,900,900
+2/11/26,Basic Grooming,Grooming,1,600,600
+2/11/26,Basic Grooming,Grooming,1,600,600
+2/11/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/11/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/11/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/11/26,Blood Test,Laboratory,1,900,900
+2/11/26,General Laboratory Service,Laboratory,1,800,800
+2/11/26,General Laboratory Service,Laboratory,1,800,800
+2/11/26,Deworming,Others,1,350,350
+2/11/26,Deworming,Others,1,350,350
+2/11/26,Deworming,Others,1,350,350
+2/12/26,Follow-up Consultation,Consultation,1,350,350
+2/12/26,General Consultation / Check-up,Consultation,1,400,400
+2/12/26,Follow-up Consultation,Consultation,1,350,350
+2/12/26,General Consultation / Check-up,Consultation,1,400,400
+2/12/26,General Consultation / Check-up,Consultation,1,400,400
+2/12/26,Follow-up Consultation,Consultation,1,350,350
+2/12/26,Follow-up Consultation,Consultation,1,350,350
+2/12/26,Follow-up Consultation,Consultation,1,350,350
+2/12/26,Basic Grooming,Grooming,1,600,600
+2/12/26,Basic Grooming,Grooming,1,600,600
+2/12/26,Full Grooming,Grooming,1,900,900
+2/12/26,Full Grooming,Grooming,1,900,900
+2/12/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/12/26,Blood Test,Laboratory,1,900,900
+2/12/26,Blood Test,Laboratory,1,900,900
+2/12/26,General Laboratory Service,Laboratory,1,800,800
+2/12/26,Blood Test,Laboratory,1,900,900
+2/12/26,General Laboratory Service,Laboratory,1,800,800
+2/12/26,Deworming,Others,1,350,350
+2/12/26,Tick and Flea Treatment,Others,1,450,450
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,General Consultation / Check-up,Consultation,1,400,400
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,General Consultation / Check-up,Consultation,1,400,400
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,General Consultation / Check-up,Consultation,1,400,400
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,Follow-up Consultation,Consultation,1,350,350
+2/13/26,Basic Grooming,Grooming,1,600,600
+2/13/26,Basic Grooming,Grooming,1,600,600
+2/13/26,Full Grooming,Grooming,1,900,900
+2/13/26,Basic Grooming,Grooming,1,600,600
+2/13/26,Full Grooming,Grooming,1,900,900
+2/13/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/13/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/13/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/13/26,Blood Test,Laboratory,1,900,900
+2/13/26,Blood Test,Laboratory,1,900,900
+2/13/26,General Laboratory Service,Laboratory,1,800,800
+2/13/26,General Laboratory Service,Laboratory,1,800,800
+2/13/26,General Laboratory Service,Laboratory,1,800,800
+2/13/26,Tick and Flea Treatment,Others,1,450,450
+2/14/26,General Consultation / Check-up,Consultation,1,400,400
+2/14/26,General Consultation / Check-up,Consultation,1,400,400
+2/14/26,General Consultation / Check-up,Consultation,1,400,400
+2/14/26,General Consultation / Check-up,Consultation,1,400,400
+2/14/26,Follow-up Consultation,Consultation,1,350,350
+2/14/26,Follow-up Consultation,Consultation,1,350,350
+2/14/26,Follow-up Consultation,Consultation,1,350,350
+2/14/26,Follow-up Consultation,Consultation,1,350,350
+2/14/26,General Consultation / Check-up,Consultation,1,400,400
+2/14/26,Basic Grooming,Grooming,1,600,600
+2/14/26,Full Grooming,Grooming,1,900,900
+2/14/26,Full Grooming,Grooming,1,900,900
+2/14/26,Full Grooming,Grooming,1,900,900
+2/14/26,Basic Grooming,Grooming,1,600,600
+2/14/26,Full Grooming,Grooming,1,900,900
+2/14/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/14/26,General Laboratory Service,Laboratory,1,800,800
+2/14/26,Blood Test,Laboratory,1,900,900
+2/14/26,General Laboratory Service,Laboratory,1,800,800
+2/14/26,Blood Test,Laboratory,1,900,900
+2/14/26,Blood Test,Laboratory,1,900,900
+2/14/26,Tick and Flea Treatment,Others,1,450,450
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,Follow-up Consultation,Consultation,1,350,350
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,General Consultation / Check-up,Consultation,1,400,400
+2/15/26,Follow-up Consultation,Consultation,1,350,350
+2/15/26,Basic Grooming,Grooming,1,600,600
+2/15/26,Basic Grooming,Grooming,1,600,600
+2/15/26,Basic Grooming,Grooming,1,600,600
+2/15/26,Basic Grooming,Grooming,1,600,600
+2/15/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/15/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/15/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/15/26,General Laboratory Service,Laboratory,1,800,800
+2/15/26,Blood Test,Laboratory,1,900,900
+2/15/26,General Laboratory Service,Laboratory,1,800,800
+2/15/26,Tick and Flea Treatment,Others,1,450,450
+2/15/26,Deworming,Others,1,350,350
+2/16/26,General Consultation / Check-up,Consultation,1,400,400
+2/16/26,General Consultation / Check-up,Consultation,1,400,400
+2/16/26,General Consultation / Check-up,Consultation,1,400,400
+2/16/26,Follow-up Consultation,Consultation,1,350,350
+2/16/26,General Consultation / Check-up,Consultation,1,400,400
+2/16/26,Follow-up Consultation,Consultation,1,350,350
+2/16/26,Basic Grooming,Grooming,1,600,600
+2/16/26,Full Grooming,Grooming,1,900,900
+2/16/26,Basic Grooming,Grooming,1,600,600
+2/16/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/16/26,General Laboratory Service,Laboratory,1,800,800
+2/16/26,General Laboratory Service,Laboratory,1,800,800
+2/16/26,Blood Test,Laboratory,1,900,900
+2/16/26,Blood Test,Laboratory,1,900,900
+2/16/26,Blood Test,Laboratory,1,900,900
+2/16/26,Tick and Flea Treatment,Others,1,450,450
+2/17/26,General Consultation / Check-up,Consultation,1,400,400
+2/17/26,General Consultation / Check-up,Consultation,1,400,400
+2/17/26,Follow-up Consultation,Consultation,1,350,350
+2/17/26,Follow-up Consultation,Consultation,1,350,350
+2/17/26,General Consultation / Check-up,Consultation,1,400,400
+2/17/26,General Consultation / Check-up,Consultation,1,400,400
+2/17/26,Follow-up Consultation,Consultation,1,350,350
+2/17/26,Follow-up Consultation,Consultation,1,350,350
+2/17/26,Follow-up Consultation,Consultation,1,350,350
+2/17/26,General Consultation / Check-up,Consultation,1,400,400
+2/17/26,Full Grooming,Grooming,1,900,900
+2/17/26,Basic Grooming,Grooming,1,600,600
+2/17/26,Basic Grooming,Grooming,1,600,600
+2/17/26,Full Grooming,Grooming,1,900,900
+2/17/26,Basic Grooming,Grooming,1,600,600
+2/17/26,Basic Grooming,Grooming,1,600,600
+2/17/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/17/26,Blood Test,Laboratory,1,900,900
+2/17/26,Blood Test,Laboratory,1,900,900
+2/17/26,Blood Test,Laboratory,1,900,900
+2/17/26,Blood Test,Laboratory,1,900,900
+2/17/26,Deworming,Others,1,350,350
+2/18/26,General Consultation / Check-up,Consultation,1,400,400
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,General Consultation / Check-up,Consultation,1,400,400
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,Follow-up Consultation,Consultation,1,350,350
+2/18/26,General Consultation / Check-up,Consultation,1,400,400
+2/18/26,Full Grooming,Grooming,1,900,900
+2/18/26,Full Grooming,Grooming,1,900,900
+2/18/26,Full Grooming,Grooming,1,900,900
+2/18/26,Full Grooming,Grooming,1,900,900
+2/18/26,Basic Grooming,Grooming,1,600,600
+2/18/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/18/26,General Laboratory Service,Laboratory,1,800,800
+2/18/26,Blood Test,Laboratory,1,900,900
+2/18/26,Tick and Flea Treatment,Others,1,450,450
+2/19/26,General Consultation / Check-up,Consultation,1,400,400
+2/19/26,Follow-up Consultation,Consultation,1,350,350
+2/19/26,General Consultation / Check-up,Consultation,1,400,400
+2/19/26,Follow-up Consultation,Consultation,1,350,350
+2/19/26,Follow-up Consultation,Consultation,1,350,350
+2/19/26,Follow-up Consultation,Consultation,1,350,350
+2/19/26,General Consultation / Check-up,Consultation,1,400,400
+2/19/26,Full Grooming,Grooming,1,900,900
+2/19/26,Full Grooming,Grooming,1,900,900
+2/19/26,Basic Grooming,Grooming,1,600,600
+2/19/26,Basic Grooming,Grooming,1,600,600
+2/19/26,Basic Grooming,Grooming,1,600,600
+2/19/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/19/26,Blood Test,Laboratory,1,900,900
+2/19/26,General Laboratory Service,Laboratory,1,800,800
+2/19/26,Blood Test,Laboratory,1,900,900
+2/19/26,General Laboratory Service,Laboratory,1,800,800
+2/19/26,Deworming,Others,1,350,350
+2/19/26,Tick and Flea Treatment,Others,1,450,450
+2/19/26,Deworming,Others,1,350,350
+2/19/26,Deworming,Others,1,350,350
+2/20/26,Follow-up Consultation,Consultation,1,350,350
+2/20/26,Follow-up Consultation,Consultation,1,350,350
+2/20/26,Follow-up Consultation,Consultation,1,350,350
+2/20/26,General Consultation / Check-up,Consultation,1,400,400
+2/20/26,General Consultation / Check-up,Consultation,1,400,400
+2/20/26,General Consultation / Check-up,Consultation,1,400,400
+2/20/26,Follow-up Consultation,Consultation,1,350,350
+2/20/26,General Consultation / Check-up,Consultation,1,400,400
+2/20/26,Basic Grooming,Grooming,1,600,600
+2/20/26,Basic Grooming,Grooming,1,600,600
+2/20/26,Basic Grooming,Grooming,1,600,600
+2/20/26,Full Grooming,Grooming,1,900,900
+2/20/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/20/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/20/26,Blood Test,Laboratory,1,900,900
+2/20/26,Blood Test,Laboratory,1,900,900
+2/20/26,Blood Test,Laboratory,1,900,900
+2/20/26,Deworming,Others,1,350,350
+2/21/26,General Consultation / Check-up,Consultation,1,400,400
+2/21/26,General Consultation / Check-up,Consultation,1,400,400
+2/21/26,General Consultation / Check-up,Consultation,1,400,400
+2/21/26,Follow-up Consultation,Consultation,1,350,350
+2/21/26,Follow-up Consultation,Consultation,1,350,350
+2/21/26,Follow-up Consultation,Consultation,1,350,350
+2/21/26,Follow-up Consultation,Consultation,1,350,350
+2/21/26,Full Grooming,Grooming,1,900,900
+2/21/26,Full Grooming,Grooming,1,900,900
+2/21/26,Full Grooming,Grooming,1,900,900
+2/21/26,Basic Grooming,Grooming,1,600,600
+2/21/26,Basic Grooming,Grooming,1,600,600
+2/21/26,Full Grooming,Grooming,1,900,900
+2/21/26,Full Grooming,Grooming,1,900,900
+2/21/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/21/26,Blood Test,Laboratory,1,900,900
+2/21/26,General Laboratory Service,Laboratory,1,800,800
+2/21/26,General Laboratory Service,Laboratory,1,800,800
+2/21/26,Blood Test,Laboratory,1,900,900
+2/21/26,General Laboratory Service,Laboratory,1,800,800
+2/21/26,Deworming,Others,1,350,350
+2/22/26,General Consultation / Check-up,Consultation,1,400,400
+2/22/26,General Consultation / Check-up,Consultation,1,400,400
+2/22/26,Follow-up Consultation,Consultation,1,350,350
+2/22/26,Follow-up Consultation,Consultation,1,350,350
+2/22/26,Follow-up Consultation,Consultation,1,350,350
+2/22/26,General Consultation / Check-up,Consultation,1,400,400
+2/22/26,General Consultation / Check-up,Consultation,1,400,400
+2/22/26,Follow-up Consultation,Consultation,1,350,350
+2/22/26,Basic Grooming,Grooming,1,600,600
+2/22/26,Basic Grooming,Grooming,1,600,600
+2/22/26,Full Grooming,Grooming,1,900,900
+2/22/26,Basic Grooming,Grooming,1,600,600
+2/22/26,Full Grooming,Grooming,1,900,900
+2/22/26,Basic Grooming,Grooming,1,600,600
+2/22/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/22/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/22/26,General Laboratory Service,Laboratory,1,800,800
+2/22/26,Blood Test,Laboratory,1,900,900
+2/22/26,General Laboratory Service,Laboratory,1,800,800
+2/22/26,Blood Test,Laboratory,1,900,900
+2/22/26,Blood Test,Laboratory,1,900,900
+2/22/26,Tick and Flea Treatment,Others,1,450,450
+2/22/26,Tick and Flea Treatment,Others,1,450,450
+2/22/26,Deworming,Others,1,350,350
+2/22/26,Tick and Flea Treatment,Others,1,450,450
+2/23/26,Follow-up Consultation,Consultation,1,350,350
+2/23/26,General Consultation / Check-up,Consultation,1,400,400
+2/23/26,Follow-up Consultation,Consultation,1,350,350
+2/23/26,Follow-up Consultation,Consultation,1,350,350
+2/23/26,General Consultation / Check-up,Consultation,1,400,400
+2/23/26,Follow-up Consultation,Consultation,1,350,350
+2/23/26,Basic Grooming,Grooming,1,600,600
+2/23/26,Full Grooming,Grooming,1,900,900
+2/23/26,Full Grooming,Grooming,1,900,900
+2/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/23/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/23/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/23/26,General Laboratory Service,Laboratory,1,800,800
+2/23/26,Blood Test,Laboratory,1,900,900
+2/23/26,General Laboratory Service,Laboratory,1,800,800
+2/23/26,General Laboratory Service,Laboratory,1,800,800
+2/23/26,Deworming,Others,1,350,350
+2/24/26,Follow-up Consultation,Consultation,1,350,350
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,Follow-up Consultation,Consultation,1,350,350
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,General Consultation / Check-up,Consultation,1,400,400
+2/24/26,Basic Grooming,Grooming,1,600,600
+2/24/26,Basic Grooming,Grooming,1,600,600
+2/24/26,Basic Grooming,Grooming,1,600,600
+2/24/26,Full Grooming,Grooming,1,900,900
+2/24/26,Full Grooming,Grooming,1,900,900
+2/24/26,Full Grooming,Grooming,1,900,900
+2/24/26,Full Grooming,Grooming,1,900,900
+2/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/24/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/24/26,Blood Test,Laboratory,1,900,900
+2/24/26,Blood Test,Laboratory,1,900,900
+2/24/26,Tick and Flea Treatment,Others,1,450,450
+2/24/26,Deworming,Others,1,350,350
+2/24/26,Tick and Flea Treatment,Others,1,450,450
+2/25/26,General Consultation / Check-up,Consultation,1,400,400
+2/25/26,Follow-up Consultation,Consultation,1,350,350
+2/25/26,Follow-up Consultation,Consultation,1,350,350
+2/25/26,Follow-up Consultation,Consultation,1,350,350
+2/25/26,General Consultation / Check-up,Consultation,1,400,400
+2/25/26,General Consultation / Check-up,Consultation,1,400,400
+2/25/26,Follow-up Consultation,Consultation,1,350,350
+2/25/26,Follow-up Consultation,Consultation,1,350,350
+2/25/26,General Consultation / Check-up,Consultation,1,400,400
+2/25/26,General Consultation / Check-up,Consultation,1,400,400
+2/25/26,Full Grooming,Grooming,1,900,900
+2/25/26,Full Grooming,Grooming,1,900,900
+2/25/26,Basic Grooming,Grooming,1,600,600
+2/25/26,Full Grooming,Grooming,1,900,900
+2/25/26,Basic Grooming,Grooming,1,600,600
+2/25/26,Full Grooming,Grooming,1,900,900
+2/25/26,Full Grooming,Grooming,1,900,900
+2/25/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/25/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/25/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/25/26,Blood Test,Laboratory,1,900,900
+2/25/26,General Laboratory Service,Laboratory,1,800,800
+2/25/26,Deworming,Others,1,350,350
+2/25/26,Deworming,Others,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,General Consultation / Check-up,Consultation,1,400,400
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,Follow-up Consultation,Consultation,1,350,350
+2/26/26,General Consultation / Check-up,Consultation,1,400,400
+2/26/26,Basic Grooming,Grooming,1,600,600
+2/26/26,Full Grooming,Grooming,1,900,900
+2/26/26,Basic Grooming,Grooming,1,600,600
+2/26/26,Full Grooming,Grooming,1,900,900
+2/26/26,Full Grooming,Grooming,1,900,900
+2/26/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/26/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+2/26/26,Blood Test,Laboratory,1,900,900
+2/26/26,General Laboratory Service,Laboratory,1,800,800
+2/26/26,General Laboratory Service,Laboratory,1,800,800
+2/26/26,Tick and Flea Treatment,Others,1,450,450
+2/26/26,Tick and Flea Treatment,Others,1,450,450
+2/26/26,Deworming,Others,1,350,350
+2/27/26,General Consultation / Check-up,Consultation,1,400,400
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,General Consultation / Check-up,Consultation,1,400,400
+2/27/26,General Consultation / Check-up,Consultation,1,400,400
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,General Consultation / Check-up,Consultation,1,400,400
+2/27/26,Follow-up Consultation,Consultation,1,350,350
+2/27/26,Basic Grooming,Grooming,1,600,600
+2/27/26,Basic Grooming,Grooming,1,600,600
+2/27/26,Full Grooming,Grooming,1,900,900
+2/27/26,Full Grooming,Grooming,1,900,900
+2/27/26,Basic Grooming,Grooming,1,600,600
+2/27/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/27/26,General Laboratory Service,Laboratory,1,800,800
+2/27/26,Blood Test,Laboratory,1,900,900
+2/27/26,General Laboratory Service,Laboratory,1,800,800
+2/27/26,Tick and Flea Treatment,Others,1,450,450
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,Follow-up Consultation,Consultation,1,350,350
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,Follow-up Consultation,Consultation,1,350,350
+2/28/26,General Consultation / Check-up,Consultation,1,400,400
+2/28/26,Follow-up Consultation,Consultation,1,350,350
+2/28/26,Follow-up Consultation,Consultation,1,350,350
+2/28/26,Full Grooming,Grooming,1,900,900
+2/28/26,Full Grooming,Grooming,1,900,900
+2/28/26,Full Grooming,Grooming,1,900,900
+2/28/26,Basic Grooming,Grooming,1,600,600
+2/28/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+2/28/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/28/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+2/28/26,Blood Test,Laboratory,1,900,900
+2/28/26,Blood Test,Laboratory,1,900,900
+2/28/26,Blood Test,Laboratory,1,900,900
+2/28/26,Tick and Flea Treatment,Others,1,450,450
+2/28/26,Tick and Flea Treatment,Others,1,450,450
+2/28/26,Deworming,Others,1,350,350
+3/01/26,General Consultation / Check-up,Consultation,1,400,400
+3/01/26,Follow-up Consultation,Consultation,1,350,350
+3/01/26,General Consultation / Check-up,Consultation,1,400,400
+3/01/26,Follow-up Consultation,Consultation,1,350,350
+3/01/26,Follow-up Consultation,Consultation,1,350,350
+3/01/26,General Consultation / Check-up,Consultation,1,400,400
+3/01/26,General Consultation / Check-up,Consultation,1,400,400
+3/01/26,Follow-up Consultation,Consultation,1,350,350
+3/01/26,Basic Grooming,Grooming,1,600,600
+3/01/26,Full Grooming,Grooming,1,900,900
+3/01/26,Full Grooming,Grooming,1,900,900
+3/01/26,Basic Grooming,Grooming,1,600,600
+3/01/26,Full Grooming,Grooming,1,900,900
+3/01/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/01/26,Blood Test,Laboratory,1,900,900
+3/01/26,General Laboratory Service,Laboratory,1,800,800
+3/01/26,Blood Test,Laboratory,1,900,900
+3/01/26,General Laboratory Service,Laboratory,1,800,800
+3/01/26,Blood Test,Laboratory,1,900,900
+3/01/26,Deworming,Others,1,350,350
+3/01/26,Tick and Flea Treatment,Others,1,450,450
+3/01/26,Deworming,Others,1,350,350
+3/01/26,Tick and Flea Treatment,Others,1,450,450
+3/02/26,General Consultation / Check-up,Consultation,1,400,400
+3/02/26,Follow-up Consultation,Consultation,1,350,350
+3/02/26,General Consultation / Check-up,Consultation,1,400,400
+3/02/26,Follow-up Consultation,Consultation,1,350,350
+3/02/26,General Consultation / Check-up,Consultation,1,400,400
+3/02/26,General Consultation / Check-up,Consultation,1,400,400
+3/02/26,General Consultation / Check-up,Consultation,1,400,400
+3/02/26,Follow-up Consultation,Consultation,1,350,350
+3/02/26,Basic Grooming,Grooming,1,600,600
+3/02/26,Full Grooming,Grooming,1,900,900
+3/02/26,Full Grooming,Grooming,1,900,900
+3/02/26,Basic Grooming,Grooming,1,600,600
+3/02/26,Basic Grooming,Grooming,1,600,600
+3/02/26,Basic Grooming,Grooming,1,600,600
+3/02/26,Full Grooming,Grooming,1,900,900
+3/02/26,Basic Grooming,Grooming,1,600,600
+3/02/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/02/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/02/26,General Laboratory Service,Laboratory,1,800,800
+3/02/26,Blood Test,Laboratory,1,900,900
+3/02/26,General Laboratory Service,Laboratory,1,800,800
+3/02/26,Blood Test,Laboratory,1,900,900
+3/02/26,General Laboratory Service,Laboratory,1,800,800
+3/02/26,Deworming,Others,1,350,350
+3/02/26,Tick and Flea Treatment,Others,1,450,450
+3/03/26,Follow-up Consultation,Consultation,1,350,350
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,Follow-up Consultation,Consultation,1,350,350
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,Follow-up Consultation,Consultation,1,350,350
+3/03/26,Follow-up Consultation,Consultation,1,350,350
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,Follow-up Consultation,Consultation,1,350,350
+3/03/26,General Consultation / Check-up,Consultation,1,400,400
+3/03/26,Full Grooming,Grooming,1,900,900
+3/03/26,Basic Grooming,Grooming,1,600,600
+3/03/26,Basic Grooming,Grooming,1,600,600
+3/03/26,Full Grooming,Grooming,1,900,900
+3/03/26,Basic Grooming,Grooming,1,600,600
+3/03/26,Basic Grooming,Grooming,1,600,600
+3/03/26,Full Grooming,Grooming,1,900,900
+3/03/26,Full Grooming,Grooming,1,900,900
+3/03/26,Basic Grooming,Grooming,1,600,600
+3/03/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/03/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/03/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/03/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/03/26,General Laboratory Service,Laboratory,1,800,800
+3/03/26,Blood Test,Laboratory,1,900,900
+3/03/26,General Laboratory Service,Laboratory,1,800,800
+3/03/26,General Laboratory Service,Laboratory,1,800,800
+3/03/26,Deworming,Others,1,350,350
+3/03/26,Deworming,Others,1,350,350
+3/03/26,Tick and Flea Treatment,Others,1,450,450
+3/03/26,Tick and Flea Treatment,Others,1,450,450
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,Follow-up Consultation,Consultation,1,350,350
+3/04/26,Follow-up Consultation,Consultation,1,350,350
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,Follow-up Consultation,Consultation,1,350,350
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,Follow-up Consultation,Consultation,1,350,350
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,General Consultation / Check-up,Consultation,1,400,400
+3/04/26,Full Grooming,Grooming,1,900,900
+3/04/26,Full Grooming,Grooming,1,900,900
+3/04/26,Full Grooming,Grooming,1,900,900
+3/04/26,Full Grooming,Grooming,1,900,900
+3/04/26,Full Grooming,Grooming,1,900,900
+3/04/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/04/26,Blood Test,Laboratory,1,900,900
+3/04/26,Blood Test,Laboratory,1,900,900
+3/04/26,General Laboratory Service,Laboratory,1,800,800
+3/04/26,Tick and Flea Treatment,Others,1,450,450
+3/04/26,Deworming,Others,1,350,350
+3/04/26,Tick and Flea Treatment,Others,1,450,450
+3/04/26,Tick and Flea Treatment,Others,1,450,450
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,General Consultation / Check-up,Consultation,1,400,400
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,General Consultation / Check-up,Consultation,1,400,400
+3/05/26,Follow-up Consultation,Consultation,1,350,350
+3/05/26,Full Grooming,Grooming,1,900,900
+3/05/26,Basic Grooming,Grooming,1,600,600
+3/05/26,Full Grooming,Grooming,1,900,900
+3/05/26,Full Grooming,Grooming,1,900,900
+3/05/26,Basic Grooming,Grooming,1,600,600
+3/05/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/05/26,Blood Test,Laboratory,1,900,900
+3/05/26,Blood Test,Laboratory,1,900,900
+3/05/26,Blood Test,Laboratory,1,900,900
+3/05/26,General Laboratory Service,Laboratory,1,800,800
+3/05/26,Tick and Flea Treatment,Others,1,450,450
+3/05/26,Tick and Flea Treatment,Others,1,450,450
+3/05/26,Deworming,Others,1,350,350
+3/05/26,Tick and Flea Treatment,Others,1,450,450
+3/05/26,Tick and Flea Treatment,Others,1,450,450
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,Follow-up Consultation,Consultation,1,350,350
+3/06/26,Follow-up Consultation,Consultation,1,350,350
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,Follow-up Consultation,Consultation,1,350,350
+3/06/26,General Consultation / Check-up,Consultation,1,400,400
+3/06/26,Basic Grooming,Grooming,1,600,600
+3/06/26,Basic Grooming,Grooming,1,600,600
+3/06/26,Full Grooming,Grooming,1,900,900
+3/06/26,Full Grooming,Grooming,1,900,900
+3/06/26,Full Grooming,Grooming,1,900,900
+3/06/26,Basic Grooming,Grooming,1,600,600
+3/06/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/06/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/06/26,Blood Test,Laboratory,1,900,900
+3/06/26,Blood Test,Laboratory,1,900,900
+3/06/26,General Laboratory Service,Laboratory,1,800,800
+3/06/26,General Laboratory Service,Laboratory,1,800,800
+3/06/26,Tick and Flea Treatment,Others,1,450,450
+3/06/26,Tick and Flea Treatment,Others,1,450,450
+3/06/26,Tick and Flea Treatment,Others,1,450,450
+3/06/26,Deworming,Others,1,350,350
+3/07/26,General Consultation / Check-up,Consultation,1,400,400
+3/07/26,General Consultation / Check-up,Consultation,1,400,400
+3/07/26,Follow-up Consultation,Consultation,1,350,350
+3/07/26,Follow-up Consultation,Consultation,1,350,350
+3/07/26,General Consultation / Check-up,Consultation,1,400,400
+3/07/26,Follow-up Consultation,Consultation,1,350,350
+3/07/26,Follow-up Consultation,Consultation,1,350,350
+3/07/26,Full Grooming,Grooming,1,900,900
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Full Grooming,Grooming,1,900,900
+3/07/26,Full Grooming,Grooming,1,900,900
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Full Grooming,Grooming,1,900,900
+3/07/26,Basic Grooming,Grooming,1,600,600
+3/07/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/07/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/07/26,General Laboratory Service,Laboratory,1,800,800
+3/07/26,Blood Test,Laboratory,1,900,900
+3/07/26,Blood Test,Laboratory,1,900,900
+3/07/26,General Laboratory Service,Laboratory,1,800,800
+3/07/26,Tick and Flea Treatment,Others,1,450,450
+3/07/26,Deworming,Others,1,350,350
+3/07/26,Deworming,Others,1,350,350
+3/08/26,General Consultation / Check-up,Consultation,1,400,400
+3/08/26,General Consultation / Check-up,Consultation,1,400,400
+3/08/26,Follow-up Consultation,Consultation,1,350,350
+3/08/26,General Consultation / Check-up,Consultation,1,400,400
+3/08/26,Follow-up Consultation,Consultation,1,350,350
+3/08/26,Follow-up Consultation,Consultation,1,350,350
+3/08/26,Follow-up Consultation,Consultation,1,350,350
+3/08/26,General Consultation / Check-up,Consultation,1,400,400
+3/08/26,Basic Grooming,Grooming,1,600,600
+3/08/26,Basic Grooming,Grooming,1,600,600
+3/08/26,Full Grooming,Grooming,1,900,900
+3/08/26,Full Grooming,Grooming,1,900,900
+3/08/26,Full Grooming,Grooming,1,900,900
+3/08/26,Full Grooming,Grooming,1,900,900
+3/08/26,Full Grooming,Grooming,1,900,900
+3/08/26,Basic Grooming,Grooming,1,600,600
+3/08/26,Basic Grooming,Grooming,1,600,600
+3/08/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/08/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/08/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/08/26,Blood Test,Laboratory,1,900,900
+3/08/26,General Laboratory Service,Laboratory,1,800,800
+3/08/26,General Laboratory Service,Laboratory,1,800,800
+3/08/26,General Laboratory Service,Laboratory,1,800,800
+3/08/26,Blood Test,Laboratory,1,900,900
+3/08/26,Deworming,Others,1,350,350
+3/08/26,Deworming,Others,1,350,350
+3/09/26,General Consultation / Check-up,Consultation,1,400,400
+3/09/26,General Consultation / Check-up,Consultation,1,400,400
+3/09/26,Follow-up Consultation,Consultation,1,350,350
+3/09/26,General Consultation / Check-up,Consultation,1,400,400
+3/09/26,Follow-up Consultation,Consultation,1,350,350
+3/09/26,Follow-up Consultation,Consultation,1,350,350
+3/09/26,General Consultation / Check-up,Consultation,1,400,400
+3/09/26,Follow-up Consultation,Consultation,1,350,350
+3/09/26,General Consultation / Check-up,Consultation,1,400,400
+3/09/26,Full Grooming,Grooming,1,900,900
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Full Grooming,Grooming,1,900,900
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Full Grooming,Grooming,1,900,900
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Basic Grooming,Grooming,1,600,600
+3/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/09/26,General Laboratory Service,Laboratory,1,800,800
+3/09/26,Blood Test,Laboratory,1,900,900
+3/09/26,General Laboratory Service,Laboratory,1,800,800
+3/09/26,Blood Test,Laboratory,1,900,900
+3/09/26,Tick and Flea Treatment,Others,1,450,450
+3/09/26,Tick and Flea Treatment,Others,1,450,450
+3/09/26,Deworming,Others,1,350,350
+3/09/26,Tick and Flea Treatment,Others,1,450,450
+3/10/26,Follow-up Consultation,Consultation,1,350,350
+3/10/26,General Consultation / Check-up,Consultation,1,400,400
+3/10/26,General Consultation / Check-up,Consultation,1,400,400
+3/10/26,General Consultation / Check-up,Consultation,1,400,400
+3/10/26,Follow-up Consultation,Consultation,1,350,350
+3/10/26,Follow-up Consultation,Consultation,1,350,350
+3/10/26,Follow-up Consultation,Consultation,1,350,350
+3/10/26,Follow-up Consultation,Consultation,1,350,350
+3/10/26,General Consultation / Check-up,Consultation,1,400,400
+3/10/26,Basic Grooming,Grooming,1,600,600
+3/10/26,Full Grooming,Grooming,1,900,900
+3/10/26,Full Grooming,Grooming,1,900,900
+3/10/26,Full Grooming,Grooming,1,900,900
+3/10/26,Full Grooming,Grooming,1,900,900
+3/10/26,Basic Grooming,Grooming,1,600,600
+3/10/26,Full Grooming,Grooming,1,900,900
+3/10/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/10/26,Blood Test,Laboratory,1,900,900
+3/10/26,General Laboratory Service,Laboratory,1,800,800
+3/10/26,Blood Test,Laboratory,1,900,900
+3/10/26,Deworming,Others,1,350,350
+3/10/26,Deworming,Others,1,350,350
+3/10/26,Deworming,Others,1,350,350
+3/10/26,Deworming,Others,1,350,350
+3/10/26,Tick and Flea Treatment,Others,1,450,450
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,General Consultation / Check-up,Consultation,1,400,400
+3/11/26,General Consultation / Check-up,Consultation,1,400,400
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,General Consultation / Check-up,Consultation,1,400,400
+3/11/26,General Consultation / Check-up,Consultation,1,400,400
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,Follow-up Consultation,Consultation,1,350,350
+3/11/26,Full Grooming,Grooming,1,900,900
+3/11/26,Basic Grooming,Grooming,1,600,600
+3/11/26,Basic Grooming,Grooming,1,600,600
+3/11/26,Full Grooming,Grooming,1,900,900
+3/11/26,Full Grooming,Grooming,1,900,900
+3/11/26,Basic Grooming,Grooming,1,600,600
+3/11/26,Basic Grooming,Grooming,1,600,600
+3/11/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/11/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/11/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/11/26,Blood Test,Laboratory,1,900,900
+3/11/26,Blood Test,Laboratory,1,900,900
+3/11/26,General Laboratory Service,Laboratory,1,800,800
+3/11/26,General Laboratory Service,Laboratory,1,800,800
+3/11/26,Blood Test,Laboratory,1,900,900
+3/11/26,Tick and Flea Treatment,Others,1,450,450
+3/11/26,Tick and Flea Treatment,Others,1,450,450
+3/11/26,Tick and Flea Treatment,Others,1,450,450
+3/12/26,General Consultation / Check-up,Consultation,1,400,400
+3/12/26,Follow-up Consultation,Consultation,1,350,350
+3/12/26,General Consultation / Check-up,Consultation,1,400,400
+3/12/26,General Consultation / Check-up,Consultation,1,400,400
+3/12/26,Follow-up Consultation,Consultation,1,350,350
+3/12/26,Follow-up Consultation,Consultation,1,350,350
+3/12/26,General Consultation / Check-up,Consultation,1,400,400
+3/12/26,Follow-up Consultation,Consultation,1,350,350
+3/12/26,Follow-up Consultation,Consultation,1,350,350
+3/12/26,Full Grooming,Grooming,1,900,900
+3/12/26,Basic Grooming,Grooming,1,600,600
+3/12/26,Basic Grooming,Grooming,1,600,600
+3/12/26,Basic Grooming,Grooming,1,600,600
+3/12/26,Full Grooming,Grooming,1,900,900
+3/12/26,Full Grooming,Grooming,1,900,900
+3/12/26,Full Grooming,Grooming,1,900,900
+3/12/26,Full Grooming,Grooming,1,900,900
+3/12/26,Basic Grooming,Grooming,1,600,600
+3/12/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/12/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/12/26,General Laboratory Service,Laboratory,1,800,800
+3/12/26,General Laboratory Service,Laboratory,1,800,800
+3/12/26,General Laboratory Service,Laboratory,1,800,800
+3/12/26,General Laboratory Service,Laboratory,1,800,800
+3/12/26,Blood Test,Laboratory,1,900,900
+3/12/26,Tick and Flea Treatment,Others,1,450,450
+3/12/26,Deworming,Others,1,350,350
+3/12/26,Deworming,Others,1,350,350
+3/12/26,Tick and Flea Treatment,Others,1,450,450
+3/12/26,Tick and Flea Treatment,Others,1,450,450
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,General Consultation / Check-up,Consultation,1,400,400
+3/13/26,Follow-up Consultation,Consultation,1,350,350
+3/13/26,Basic Grooming,Grooming,1,600,600
+3/13/26,Full Grooming,Grooming,1,900,900
+3/13/26,Full Grooming,Grooming,1,900,900
+3/13/26,Basic Grooming,Grooming,1,600,600
+3/13/26,Full Grooming,Grooming,1,900,900
+3/13/26,Full Grooming,Grooming,1,900,900
+3/13/26,Basic Grooming,Grooming,1,600,600
+3/13/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/13/26,General Laboratory Service,Laboratory,1,800,800
+3/13/26,Blood Test,Laboratory,1,900,900
+3/13/26,General Laboratory Service,Laboratory,1,800,800
+3/13/26,General Laboratory Service,Laboratory,1,800,800
+3/13/26,General Laboratory Service,Laboratory,1,800,800
+3/13/26,Deworming,Others,1,350,350
+3/13/26,Deworming,Others,1,350,350
+3/14/26,Follow-up Consultation,Consultation,1,350,350
+3/14/26,Follow-up Consultation,Consultation,1,350,350
+3/14/26,General Consultation / Check-up,Consultation,1,400,400
+3/14/26,Follow-up Consultation,Consultation,1,350,350
+3/14/26,General Consultation / Check-up,Consultation,1,400,400
+3/14/26,Follow-up Consultation,Consultation,1,350,350
+3/14/26,Follow-up Consultation,Consultation,1,350,350
+3/14/26,General Consultation / Check-up,Consultation,1,400,400
+3/14/26,General Consultation / Check-up,Consultation,1,400,400
+3/14/26,General Consultation / Check-up,Consultation,1,400,400
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Basic Grooming,Grooming,1,600,600
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Full Grooming,Grooming,1,900,900
+3/14/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/14/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/14/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/14/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/14/26,General Laboratory Service,Laboratory,1,800,800
+3/14/26,Blood Test,Laboratory,1,900,900
+3/14/26,Blood Test,Laboratory,1,900,900
+3/14/26,General Laboratory Service,Laboratory,1,800,800
+3/14/26,Tick and Flea Treatment,Others,1,450,450
+3/14/26,Tick and Flea Treatment,Others,1,450,450
+3/14/26,Tick and Flea Treatment,Others,1,450,450
+3/14/26,Tick and Flea Treatment,Others,1,450,450
+3/14/26,Tick and Flea Treatment,Others,1,450,450
+3/15/26,Follow-up Consultation,Consultation,1,350,350
+3/15/26,Follow-up Consultation,Consultation,1,350,350
+3/15/26,Follow-up Consultation,Consultation,1,350,350
+3/15/26,General Consultation / Check-up,Consultation,1,400,400
+3/15/26,Follow-up Consultation,Consultation,1,350,350
+3/15/26,General Consultation / Check-up,Consultation,1,400,400
+3/15/26,Follow-up Consultation,Consultation,1,350,350
+3/15/26,Basic Grooming,Grooming,1,600,600
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Basic Grooming,Grooming,1,600,600
+3/15/26,Basic Grooming,Grooming,1,600,600
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Full Grooming,Grooming,1,900,900
+3/15/26,Basic Grooming,Grooming,1,600,600
+3/15/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/15/26,General Laboratory Service,Laboratory,1,800,800
+3/15/26,General Laboratory Service,Laboratory,1,800,800
+3/15/26,General Laboratory Service,Laboratory,1,800,800
+3/15/26,Deworming,Others,1,350,350
+3/15/26,Deworming,Others,1,350,350
+3/15/26,Tick and Flea Treatment,Others,1,450,450
+3/16/26,Follow-up Consultation,Consultation,1,350,350
+3/16/26,General Consultation / Check-up,Consultation,1,400,400
+3/16/26,General Consultation / Check-up,Consultation,1,400,400
+3/16/26,General Consultation / Check-up,Consultation,1,400,400
+3/16/26,General Consultation / Check-up,Consultation,1,400,400
+3/16/26,Follow-up Consultation,Consultation,1,350,350
+3/16/26,Follow-up Consultation,Consultation,1,350,350
+3/16/26,Follow-up Consultation,Consultation,1,350,350
+3/16/26,General Consultation / Check-up,Consultation,1,400,400
+3/16/26,Full Grooming,Grooming,1,900,900
+3/16/26,Full Grooming,Grooming,1,900,900
+3/16/26,Basic Grooming,Grooming,1,600,600
+3/16/26,Basic Grooming,Grooming,1,600,600
+3/16/26,Basic Grooming,Grooming,1,600,600
+3/16/26,Basic Grooming,Grooming,1,600,600
+3/16/26,Basic Grooming,Grooming,1,600,600
+3/16/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/16/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/16/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/16/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/16/26,Blood Test,Laboratory,1,900,900
+3/16/26,General Laboratory Service,Laboratory,1,800,800
+3/16/26,General Laboratory Service,Laboratory,1,800,800
+3/16/26,Deworming,Others,1,350,350
+3/16/26,Tick and Flea Treatment,Others,1,450,450
+3/16/26,Tick and Flea Treatment,Others,1,450,450
+3/16/26,Tick and Flea Treatment,Others,1,450,450
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,Follow-up Consultation,Consultation,1,350,350
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,General Consultation / Check-up,Consultation,1,400,400
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Basic Grooming,Grooming,1,600,600
+3/17/26,Basic Grooming,Grooming,1,600,600
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Basic Grooming,Grooming,1,600,600
+3/17/26,Full Grooming,Grooming,1,900,900
+3/17/26,Basic Grooming,Grooming,1,600,600
+3/17/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/17/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/17/26,General Laboratory Service,Laboratory,1,800,800
+3/17/26,General Laboratory Service,Laboratory,1,800,800
+3/17/26,Blood Test,Laboratory,1,900,900
+3/17/26,Blood Test,Laboratory,1,900,900
+3/17/26,Tick and Flea Treatment,Others,1,450,450
+3/17/26,Tick and Flea Treatment,Others,1,450,450
+3/17/26,Tick and Flea Treatment,Others,1,450,450
+3/18/26,General Consultation / Check-up,Consultation,1,400,400
+3/18/26,Follow-up Consultation,Consultation,1,350,350
+3/18/26,Follow-up Consultation,Consultation,1,350,350
+3/18/26,General Consultation / Check-up,Consultation,1,400,400
+3/18/26,General Consultation / Check-up,Consultation,1,400,400
+3/18/26,General Consultation / Check-up,Consultation,1,400,400
+3/18/26,Follow-up Consultation,Consultation,1,350,350
+3/18/26,Follow-up Consultation,Consultation,1,350,350
+3/18/26,General Consultation / Check-up,Consultation,1,400,400
+3/18/26,Full Grooming,Grooming,1,900,900
+3/18/26,Basic Grooming,Grooming,1,600,600
+3/18/26,Full Grooming,Grooming,1,900,900
+3/18/26,Full Grooming,Grooming,1,900,900
+3/18/26,Basic Grooming,Grooming,1,600,600
+3/18/26,Basic Grooming,Grooming,1,600,600
+3/18/26,Basic Grooming,Grooming,1,600,600
+3/18/26,Full Grooming,Grooming,1,900,900
+3/18/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/18/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/18/26,Blood Test,Laboratory,1,900,900
+3/18/26,Blood Test,Laboratory,1,900,900
+3/18/26,General Laboratory Service,Laboratory,1,800,800
+3/18/26,General Laboratory Service,Laboratory,1,800,800
+3/18/26,Tick and Flea Treatment,Others,1,450,450
+3/18/26,Tick and Flea Treatment,Others,1,450,450
+3/19/26,General Consultation / Check-up,Consultation,1,400,400
+3/19/26,General Consultation / Check-up,Consultation,1,400,400
+3/19/26,General Consultation / Check-up,Consultation,1,400,400
+3/19/26,General Consultation / Check-up,Consultation,1,400,400
+3/19/26,General Consultation / Check-up,Consultation,1,400,400
+3/19/26,Follow-up Consultation,Consultation,1,350,350
+3/19/26,Follow-up Consultation,Consultation,1,350,350
+3/19/26,Basic Grooming,Grooming,1,600,600
+3/19/26,Full Grooming,Grooming,1,900,900
+3/19/26,Basic Grooming,Grooming,1,600,600
+3/19/26,Full Grooming,Grooming,1,900,900
+3/19/26,Basic Grooming,Grooming,1,600,600
+3/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/19/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/19/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/19/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/19/26,Blood Test,Laboratory,1,900,900
+3/19/26,Blood Test,Laboratory,1,900,900
+3/19/26,Tick and Flea Treatment,Others,1,450,450
+3/19/26,Tick and Flea Treatment,Others,1,450,450
+3/20/26,General Consultation / Check-up,Consultation,1,400,400
+3/20/26,General Consultation / Check-up,Consultation,1,400,400
+3/20/26,General Consultation / Check-up,Consultation,1,400,400
+3/20/26,Follow-up Consultation,Consultation,1,350,350
+3/20/26,Follow-up Consultation,Consultation,1,350,350
+3/20/26,General Consultation / Check-up,Consultation,1,400,400
+3/20/26,General Consultation / Check-up,Consultation,1,400,400
+3/20/26,Full Grooming,Grooming,1,900,900
+3/20/26,Basic Grooming,Grooming,1,600,600
+3/20/26,Full Grooming,Grooming,1,900,900
+3/20/26,Full Grooming,Grooming,1,900,900
+3/20/26,Basic Grooming,Grooming,1,600,600
+3/20/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/20/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/20/26,Blood Test,Laboratory,1,900,900
+3/20/26,Blood Test,Laboratory,1,900,900
+3/20/26,Blood Test,Laboratory,1,900,900
+3/20/26,Blood Test,Laboratory,1,900,900
+3/20/26,Blood Test,Laboratory,1,900,900
+3/20/26,Deworming,Others,1,350,350
+3/20/26,Tick and Flea Treatment,Others,1,450,450
+3/21/26,General Consultation / Check-up,Consultation,1,400,400
+3/21/26,Follow-up Consultation,Consultation,1,350,350
+3/21/26,General Consultation / Check-up,Consultation,1,400,400
+3/21/26,General Consultation / Check-up,Consultation,1,400,400
+3/21/26,General Consultation / Check-up,Consultation,1,400,400
+3/21/26,General Consultation / Check-up,Consultation,1,400,400
+3/21/26,Follow-up Consultation,Consultation,1,350,350
+3/21/26,Full Grooming,Grooming,1,900,900
+3/21/26,Full Grooming,Grooming,1,900,900
+3/21/26,Basic Grooming,Grooming,1,600,600
+3/21/26,Basic Grooming,Grooming,1,600,600
+3/21/26,Full Grooming,Grooming,1,900,900
+3/21/26,Full Grooming,Grooming,1,900,900
+3/21/26,Basic Grooming,Grooming,1,600,600
+3/21/26,Full Grooming,Grooming,1,900,900
+3/21/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/21/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/21/26,Blood Test,Laboratory,1,900,900
+3/21/26,General Laboratory Service,Laboratory,1,800,800
+3/21/26,Deworming,Others,1,350,350
+3/21/26,Deworming,Others,1,350,350
+3/21/26,Deworming,Others,1,350,350
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,Follow-up Consultation,Consultation,1,350,350
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,Follow-up Consultation,Consultation,1,350,350
+3/22/26,Follow-up Consultation,Consultation,1,350,350
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,General Consultation / Check-up,Consultation,1,400,400
+3/22/26,Full Grooming,Grooming,1,900,900
+3/22/26,Basic Grooming,Grooming,1,600,600
+3/22/26,Full Grooming,Grooming,1,900,900
+3/22/26,Full Grooming,Grooming,1,900,900
+3/22/26,Basic Grooming,Grooming,1,600,600
+3/22/26,Full Grooming,Grooming,1,900,900
+3/22/26,Basic Grooming,Grooming,1,600,600
+3/22/26,Basic Grooming,Grooming,1,600,600
+3/22/26,Full Grooming,Grooming,1,900,900
+3/22/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/22/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/22/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/22/26,Blood Test,Laboratory,1,900,900
+3/22/26,Blood Test,Laboratory,1,900,900
+3/22/26,General Laboratory Service,Laboratory,1,800,800
+3/22/26,Tick and Flea Treatment,Others,1,450,450
+3/22/26,Tick and Flea Treatment,Others,1,450,450
+3/22/26,Tick and Flea Treatment,Others,1,450,450
+3/22/26,Tick and Flea Treatment,Others,1,450,450
+3/23/26,Follow-up Consultation,Consultation,1,350,350
+3/23/26,Follow-up Consultation,Consultation,1,350,350
+3/23/26,General Consultation / Check-up,Consultation,1,400,400
+3/23/26,Follow-up Consultation,Consultation,1,350,350
+3/23/26,General Consultation / Check-up,Consultation,1,400,400
+3/23/26,General Consultation / Check-up,Consultation,1,400,400
+3/23/26,Follow-up Consultation,Consultation,1,350,350
+3/23/26,General Consultation / Check-up,Consultation,1,400,400
+3/23/26,Basic Grooming,Grooming,1,600,600
+3/23/26,Full Grooming,Grooming,1,900,900
+3/23/26,Full Grooming,Grooming,1,900,900
+3/23/26,Basic Grooming,Grooming,1,600,600
+3/23/26,Full Grooming,Grooming,1,900,900
+3/23/26,Basic Grooming,Grooming,1,600,600
+3/23/26,Full Grooming,Grooming,1,900,900
+3/23/26,Basic Grooming,Grooming,1,600,600
+3/23/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/23/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/23/26,General Laboratory Service,Laboratory,1,800,800
+3/23/26,General Laboratory Service,Laboratory,1,800,800
+3/23/26,General Laboratory Service,Laboratory,1,800,800
+3/23/26,Blood Test,Laboratory,1,900,900
+3/23/26,Deworming,Others,1,350,350
+3/23/26,Deworming,Others,1,350,350
+3/23/26,Deworming,Others,1,350,350
+3/23/26,Deworming,Others,1,350,350
+3/23/26,Tick and Flea Treatment,Others,1,450,450
+3/24/26,Follow-up Consultation,Consultation,1,350,350
+3/24/26,Follow-up Consultation,Consultation,1,350,350
+3/24/26,General Consultation / Check-up,Consultation,1,400,400
+3/24/26,General Consultation / Check-up,Consultation,1,400,400
+3/24/26,General Consultation / Check-up,Consultation,1,400,400
+3/24/26,General Consultation / Check-up,Consultation,1,400,400
+3/24/26,Follow-up Consultation,Consultation,1,350,350
+3/24/26,General Consultation / Check-up,Consultation,1,400,400
+3/24/26,Basic Grooming,Grooming,1,600,600
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Basic Grooming,Grooming,1,600,600
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,Full Grooming,Grooming,1,900,900
+3/24/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/24/26,Blood Test,Laboratory,1,900,900
+3/24/26,Blood Test,Laboratory,1,900,900
+3/24/26,Tick and Flea Treatment,Others,1,450,450
+3/24/26,Tick and Flea Treatment,Others,1,450,450
+3/24/26,Tick and Flea Treatment,Others,1,450,450
+3/25/26,General Consultation / Check-up,Consultation,1,400,400
+3/25/26,General Consultation / Check-up,Consultation,1,400,400
+3/25/26,General Consultation / Check-up,Consultation,1,400,400
+3/25/26,Follow-up Consultation,Consultation,1,350,350
+3/25/26,Follow-up Consultation,Consultation,1,350,350
+3/25/26,Follow-up Consultation,Consultation,1,350,350
+3/25/26,General Consultation / Check-up,Consultation,1,400,400
+3/25/26,Full Grooming,Grooming,1,900,900
+3/25/26,Basic Grooming,Grooming,1,600,600
+3/25/26,Full Grooming,Grooming,1,900,900
+3/25/26,Basic Grooming,Grooming,1,600,600
+3/25/26,Full Grooming,Grooming,1,900,900
+3/25/26,Full Grooming,Grooming,1,900,900
+3/25/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/25/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/25/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/25/26,Blood Test,Laboratory,1,900,900
+3/25/26,General Laboratory Service,Laboratory,1,800,800
+3/25/26,Blood Test,Laboratory,1,900,900
+3/25/26,General Laboratory Service,Laboratory,1,800,800
+3/25/26,General Laboratory Service,Laboratory,1,800,800
+3/25/26,Deworming,Others,1,350,350
+3/25/26,Deworming,Others,1,350,350
+3/25/26,Deworming,Others,1,350,350
+3/25/26,Deworming,Others,1,350,350
+3/25/26,Deworming,Others,1,350,350
+3/26/26,Follow-up Consultation,Consultation,1,350,350
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,General Consultation / Check-up,Consultation,1,400,400
+3/26/26,Full Grooming,Grooming,1,900,900
+3/26/26,Full Grooming,Grooming,1,900,900
+3/26/26,Basic Grooming,Grooming,1,600,600
+3/26/26,Full Grooming,Grooming,1,900,900
+3/26/26,Full Grooming,Grooming,1,900,900
+3/26/26,Basic Grooming,Grooming,1,600,600
+3/26/26,Basic Grooming,Grooming,1,600,600
+3/26/26,Full Grooming,Grooming,1,900,900
+3/26/26,Basic Grooming,Grooming,1,600,600
+3/26/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/26/26,Blood Test,Laboratory,1,900,900
+3/26/26,General Laboratory Service,Laboratory,1,800,800
+3/26/26,Blood Test,Laboratory,1,900,900
+3/26/26,General Laboratory Service,Laboratory,1,800,800
+3/26/26,Deworming,Others,1,350,350
+3/26/26,Deworming,Others,1,350,350
+3/27/26,General Consultation / Check-up,Consultation,1,400,400
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,General Consultation / Check-up,Consultation,1,400,400
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,Follow-up Consultation,Consultation,1,350,350
+3/27/26,Basic Grooming,Grooming,1,600,600
+3/27/26,Basic Grooming,Grooming,1,600,600
+3/27/26,Full Grooming,Grooming,1,900,900
+3/27/26,Basic Grooming,Grooming,1,600,600
+3/27/26,Basic Grooming,Grooming,1,600,600
+3/27/26,Basic Grooming,Grooming,1,600,600
+3/27/26,Full Grooming,Grooming,1,900,900
+3/27/26,Full Grooming,Grooming,1,900,900
+3/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/27/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/27/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/27/26,General Laboratory Service,Laboratory,1,800,800
+3/27/26,General Laboratory Service,Laboratory,1,800,800
+3/27/26,Tick and Flea Treatment,Others,1,450,450
+3/27/26,Tick and Flea Treatment,Others,1,450,450
+3/27/26,Deworming,Others,1,350,350
+3/27/26,Deworming,Others,1,350,350
+3/27/26,Deworming,Others,1,350,350
+3/28/26,Follow-up Consultation,Consultation,1,350,350
+3/28/26,Follow-up Consultation,Consultation,1,350,350
+3/28/26,General Consultation / Check-up,Consultation,1,400,400
+3/28/26,General Consultation / Check-up,Consultation,1,400,400
+3/28/26,Follow-up Consultation,Consultation,1,350,350
+3/28/26,General Consultation / Check-up,Consultation,1,400,400
+3/28/26,General Consultation / Check-up,Consultation,1,400,400
+3/28/26,Follow-up Consultation,Consultation,1,350,350
+3/28/26,Basic Grooming,Grooming,1,600,600
+3/28/26,Basic Grooming,Grooming,1,600,600
+3/28/26,Full Grooming,Grooming,1,900,900
+3/28/26,Basic Grooming,Grooming,1,600,600
+3/28/26,Full Grooming,Grooming,1,900,900
+3/28/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/28/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/28/26,Blood Test,Laboratory,1,900,900
+3/28/26,Blood Test,Laboratory,1,900,900
+3/28/26,General Laboratory Service,Laboratory,1,800,800
+3/28/26,General Laboratory Service,Laboratory,1,800,800
+3/28/26,Blood Test,Laboratory,1,900,900
+3/28/26,Deworming,Others,1,350,350
+3/28/26,Tick and Flea Treatment,Others,1,450,450
+3/29/26,General Consultation / Check-up,Consultation,1,400,400
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,General Consultation / Check-up,Consultation,1,400,400
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,Follow-up Consultation,Consultation,1,350,350
+3/29/26,Full Grooming,Grooming,1,900,900
+3/29/26,Full Grooming,Grooming,1,900,900
+3/29/26,Full Grooming,Grooming,1,900,900
+3/29/26,Basic Grooming,Grooming,1,600,600
+3/29/26,Full Grooming,Grooming,1,900,900
+3/29/26,Basic Grooming,Grooming,1,600,600
+3/29/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/29/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/29/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/29/26,Blood Test,Laboratory,1,900,900
+3/29/26,General Laboratory Service,Laboratory,1,800,800
+3/29/26,Deworming,Others,1,350,350
+3/29/26,Tick and Flea Treatment,Others,1,450,450
+3/29/26,Tick and Flea Treatment,Others,1,450,450
+3/29/26,Tick and Flea Treatment,Others,1,450,450
+3/29/26,Deworming,Others,1,350,350
+3/30/26,General Consultation / Check-up,Consultation,1,400,400
+3/30/26,Follow-up Consultation,Consultation,1,350,350
+3/30/26,Follow-up Consultation,Consultation,1,350,350
+3/30/26,Follow-up Consultation,Consultation,1,350,350
+3/30/26,Follow-up Consultation,Consultation,1,350,350
+3/30/26,General Consultation / Check-up,Consultation,1,400,400
+3/30/26,General Consultation / Check-up,Consultation,1,400,400
+3/30/26,Basic Grooming,Grooming,1,600,600
+3/30/26,Full Grooming,Grooming,1,900,900
+3/30/26,Full Grooming,Grooming,1,900,900
+3/30/26,Full Grooming,Grooming,1,900,900
+3/30/26,Basic Grooming,Grooming,1,600,600
+3/30/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/30/26,General Laboratory Service,Laboratory,1,800,800
+3/30/26,Blood Test,Laboratory,1,900,900
+3/30/26,Blood Test,Laboratory,1,900,900
+3/30/26,General Laboratory Service,Laboratory,1,800,800
+3/30/26,Tick and Flea Treatment,Others,1,450,450
+3/30/26,Tick and Flea Treatment,Others,1,450,450
+3/30/26,Deworming,Others,1,350,350
+3/30/26,Deworming,Others,1,350,350
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,Follow-up Consultation,Consultation,1,350,350
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,Follow-up Consultation,Consultation,1,350,350
+3/31/26,Follow-up Consultation,Consultation,1,350,350
+3/31/26,Follow-up Consultation,Consultation,1,350,350
+3/31/26,Follow-up Consultation,Consultation,1,350,350
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,General Consultation / Check-up,Consultation,1,400,400
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Basic Grooming,Grooming,1,600,600
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Full Grooming,Grooming,1,900,900
+3/31/26,Basic Grooming,Grooming,1,600,600
+3/31/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/31/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+3/31/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+3/31/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+3/31/26,General Laboratory Service,Laboratory,1,800,800
+3/31/26,Blood Test,Laboratory,1,900,900
+3/31/26,Tick and Flea Treatment,Others,1,450,450
+3/31/26,Tick and Flea Treatment,Others,1,450,450
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,General Consultation / Check-up,Consultation,1,400,400
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,General Consultation / Check-up,Consultation,1,400,400
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,General Consultation / Check-up,Consultation,1,400,400
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Follow-up Consultation,Consultation,1,350,350
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Basic Grooming,Grooming,1,600,600
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Full Grooming,Grooming,1,900,900
+4/01/26,Basic Grooming,Grooming,1,600,600
+4/01/26,Basic Grooming,Grooming,1,600,600
+4/01/26,Basic Grooming,Grooming,1,600,600
+4/01/26,Basic Grooming,Grooming,1,600,600
+4/01/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/01/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/01/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/01/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/01/26,General Laboratory Service,Laboratory,1,800,800
+4/01/26,Blood Test,Laboratory,1,900,900
+4/01/26,Blood Test,Laboratory,1,900,900
+4/01/26,Tick and Flea Treatment,Others,1,450,450
+4/01/26,Deworming,Others,1,350,350
+4/01/26,Tick and Flea Treatment,Others,1,450,450
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,General Consultation / Check-up,Consultation,1,400,400
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,General Consultation / Check-up,Consultation,1,400,400
+4/02/26,Follow-up Consultation,Consultation,1,350,350
+4/02/26,General Consultation / Check-up,Consultation,1,400,400
+4/02/26,Basic Grooming,Grooming,1,600,600
+4/02/26,Full Grooming,Grooming,1,900,900
+4/02/26,Basic Grooming,Grooming,1,600,600
+4/02/26,Basic Grooming,Grooming,1,600,600
+4/02/26,Full Grooming,Grooming,1,900,900
+4/02/26,Full Grooming,Grooming,1,900,900
+4/02/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/02/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/02/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/02/26,General Laboratory Service,Laboratory,1,800,800
+4/02/26,General Laboratory Service,Laboratory,1,800,800
+4/02/26,Blood Test,Laboratory,1,900,900
+4/02/26,Tick and Flea Treatment,Others,1,450,450
+4/02/26,Tick and Flea Treatment,Others,1,450,450
+4/02/26,Deworming,Others,1,350,350
+4/02/26,Tick and Flea Treatment,Others,1,450,450
+4/03/26,Follow-up Consultation,Consultation,1,350,350
+4/03/26,General Consultation / Check-up,Consultation,1,400,400
+4/03/26,Follow-up Consultation,Consultation,1,350,350
+4/03/26,Follow-up Consultation,Consultation,1,350,350
+4/03/26,General Consultation / Check-up,Consultation,1,400,400
+4/03/26,General Consultation / Check-up,Consultation,1,400,400
+4/03/26,General Consultation / Check-up,Consultation,1,400,400
+4/03/26,Follow-up Consultation,Consultation,1,350,350
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,Basic Grooming,Grooming,1,600,600
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,Basic Grooming,Grooming,1,600,600
+4/03/26,Full Grooming,Grooming,1,900,900
+4/03/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/03/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/03/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/03/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/03/26,General Laboratory Service,Laboratory,1,800,800
+4/03/26,General Laboratory Service,Laboratory,1,800,800
+4/03/26,General Laboratory Service,Laboratory,1,800,800
+4/03/26,Deworming,Others,1,350,350
+4/03/26,Deworming,Others,1,350,350
+4/03/26,Deworming,Others,1,350,350
+4/03/26,Deworming,Others,1,350,350
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,General Consultation / Check-up,Consultation,1,400,400
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,General Consultation / Check-up,Consultation,1,400,400
+4/04/26,General Consultation / Check-up,Consultation,1,400,400
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,Follow-up Consultation,Consultation,1,350,350
+4/04/26,General Consultation / Check-up,Consultation,1,400,400
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Full Grooming,Grooming,1,900,900
+4/04/26,Full Grooming,Grooming,1,900,900
+4/04/26,Full Grooming,Grooming,1,900,900
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Full Grooming,Grooming,1,900,900
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,Basic Grooming,Grooming,1,600,600
+4/04/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/04/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/04/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/04/26,Blood Test,Laboratory,1,900,900
+4/04/26,Tick and Flea Treatment,Others,1,450,450
+4/04/26,Tick and Flea Treatment,Others,1,450,450
+4/04/26,Tick and Flea Treatment,Others,1,450,450
+4/04/26,Deworming,Others,1,350,350
+4/04/26,Tick and Flea Treatment,Others,1,450,450
+4/05/26,Follow-up Consultation,Consultation,1,350,350
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,Follow-up Consultation,Consultation,1,350,350
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,Follow-up Consultation,Consultation,1,350,350
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,Follow-up Consultation,Consultation,1,350,350
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,Follow-up Consultation,Consultation,1,350,350
+4/05/26,General Consultation / Check-up,Consultation,1,400,400
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Basic Grooming,Grooming,1,600,600
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Basic Grooming,Grooming,1,600,600
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Basic Grooming,Grooming,1,600,600
+4/05/26,Basic Grooming,Grooming,1,600,600
+4/05/26,Full Grooming,Grooming,1,900,900
+4/05/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/05/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/05/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/05/26,General Laboratory Service,Laboratory,1,800,800
+4/05/26,Blood Test,Laboratory,1,900,900
+4/05/26,General Laboratory Service,Laboratory,1,800,800
+4/05/26,Blood Test,Laboratory,1,900,900
+4/05/26,Deworming,Others,1,350,350
+4/05/26,Tick and Flea Treatment,Others,1,450,450
+4/05/26,Tick and Flea Treatment,Others,1,450,450
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,Follow-up Consultation,Consultation,1,350,350
+4/06/26,General Consultation / Check-up,Consultation,1,400,400
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Full Grooming,Grooming,1,900,900
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Basic Grooming,Grooming,1,600,600
+4/06/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/06/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/06/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/06/26,General Laboratory Service,Laboratory,1,800,800
+4/06/26,Blood Test,Laboratory,1,900,900
+4/06/26,General Laboratory Service,Laboratory,1,800,800
+4/06/26,Deworming,Others,1,350,350
+4/06/26,Tick and Flea Treatment,Others,1,450,450
+4/06/26,Tick and Flea Treatment,Others,1,450,450
+4/07/26,General Consultation / Check-up,Consultation,1,400,400
+4/07/26,General Consultation / Check-up,Consultation,1,400,400
+4/07/26,General Consultation / Check-up,Consultation,1,400,400
+4/07/26,General Consultation / Check-up,Consultation,1,400,400
+4/07/26,Follow-up Consultation,Consultation,1,350,350
+4/07/26,Follow-up Consultation,Consultation,1,350,350
+4/07/26,General Consultation / Check-up,Consultation,1,400,400
+4/07/26,Follow-up Consultation,Consultation,1,350,350
+4/07/26,Follow-up Consultation,Consultation,1,350,350
+4/07/26,Follow-up Consultation,Consultation,1,350,350
+4/07/26,Full Grooming,Grooming,1,900,900
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Full Grooming,Grooming,1,900,900
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Full Grooming,Grooming,1,900,900
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,Basic Grooming,Grooming,1,600,600
+4/07/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/07/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/07/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/07/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/07/26,General Laboratory Service,Laboratory,1,800,800
+4/07/26,Blood Test,Laboratory,1,900,900
+4/07/26,Blood Test,Laboratory,1,900,900
+4/07/26,Blood Test,Laboratory,1,900,900
+4/07/26,Deworming,Others,1,350,350
+4/07/26,Deworming,Others,1,350,350
+4/07/26,Tick and Flea Treatment,Others,1,450,450
+4/07/26,Tick and Flea Treatment,Others,1,450,450
+4/07/26,Tick and Flea Treatment,Others,1,450,450
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,General Consultation / Check-up,Consultation,1,400,400
+4/08/26,General Consultation / Check-up,Consultation,1,400,400
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,General Consultation / Check-up,Consultation,1,400,400
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,General Consultation / Check-up,Consultation,1,400,400
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,General Consultation / Check-up,Consultation,1,400,400
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Follow-up Consultation,Consultation,1,350,350
+4/08/26,Basic Grooming,Grooming,1,600,600
+4/08/26,Full Grooming,Grooming,1,900,900
+4/08/26,Full Grooming,Grooming,1,900,900
+4/08/26,Basic Grooming,Grooming,1,600,600
+4/08/26,Basic Grooming,Grooming,1,600,600
+4/08/26,Basic Grooming,Grooming,1,600,600
+4/08/26,Full Grooming,Grooming,1,900,900
+4/08/26,Basic Grooming,Grooming,1,600,600
+4/08/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/08/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/08/26,General Laboratory Service,Laboratory,1,800,800
+4/08/26,Blood Test,Laboratory,1,900,900
+4/08/26,General Laboratory Service,Laboratory,1,800,800
+4/08/26,General Laboratory Service,Laboratory,1,800,800
+4/08/26,Deworming,Others,1,350,350
+4/08/26,Tick and Flea Treatment,Others,1,450,450
+4/08/26,Deworming,Others,1,350,350
+4/08/26,Tick and Flea Treatment,Others,1,450,450
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,Follow-up Consultation,Consultation,1,350,350
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,Follow-up Consultation,Consultation,1,350,350
+4/09/26,Follow-up Consultation,Consultation,1,350,350
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,Follow-up Consultation,Consultation,1,350,350
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,General Consultation / Check-up,Consultation,1,400,400
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Full Grooming,Grooming,1,900,900
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Full Grooming,Grooming,1,900,900
+4/09/26,Basic Grooming,Grooming,1,600,600
+4/09/26,Full Grooming,Grooming,1,900,900
+4/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/09/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/09/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/09/26,General Laboratory Service,Laboratory,1,800,800
+4/09/26,General Laboratory Service,Laboratory,1,800,800
+4/09/26,General Laboratory Service,Laboratory,1,800,800
+4/09/26,Blood Test,Laboratory,1,900,900
+4/09/26,Tick and Flea Treatment,Others,1,450,450
+4/09/26,Deworming,Others,1,350,350
+4/09/26,Tick and Flea Treatment,Others,1,450,450
+4/09/26,Deworming,Others,1,350,350
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,Follow-up Consultation,Consultation,1,350,350
+4/10/26,Follow-up Consultation,Consultation,1,350,350
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,Follow-up Consultation,Consultation,1,350,350
+4/10/26,Follow-up Consultation,Consultation,1,350,350
+4/10/26,General Consultation / Check-up,Consultation,1,400,400
+4/10/26,Basic Grooming,Grooming,1,600,600
+4/10/26,Basic Grooming,Grooming,1,600,600
+4/10/26,Basic Grooming,Grooming,1,600,600
+4/10/26,Full Grooming,Grooming,1,900,900
+4/10/26,Full Grooming,Grooming,1,900,900
+4/10/26,Full Grooming,Grooming,1,900,900
+4/10/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/10/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/10/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/10/26,General Laboratory Service,Laboratory,1,800,800
+4/10/26,Tick and Flea Treatment,Others,1,450,450
+4/10/26,Deworming,Others,1,350,350
+4/10/26,Tick and Flea Treatment,Others,1,450,450
+4/10/26,Deworming,Others,1,350,350
+4/10/26,Deworming,Others,1,350,350
+4/10/26,Tick and Flea Treatment,Others,1,450,450
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,Follow-up Consultation,Consultation,1,350,350
+4/11/26,Follow-up Consultation,Consultation,1,350,350
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,Follow-up Consultation,Consultation,1,350,350
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,Follow-up Consultation,Consultation,1,350,350
+4/11/26,Follow-up Consultation,Consultation,1,350,350
+4/11/26,General Consultation / Check-up,Consultation,1,400,400
+4/11/26,Full Grooming,Grooming,1,900,900
+4/11/26,Full Grooming,Grooming,1,900,900
+4/11/26,Basic Grooming,Grooming,1,600,600
+4/11/26,Full Grooming,Grooming,1,900,900
+4/11/26,Basic Grooming,Grooming,1,600,600
+4/11/26,Basic Grooming,Grooming,1,600,600
+4/11/26,Basic Grooming,Grooming,1,600,600
+4/11/26,Basic Grooming,Grooming,1,600,600
+4/11/26,Full Grooming,Grooming,1,900,900
+4/11/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/11/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/11/26,Blood Test,Laboratory,1,900,900
+4/11/26,Blood Test,Laboratory,1,900,900
+4/11/26,Blood Test,Laboratory,1,900,900
+4/11/26,Blood Test,Laboratory,1,900,900
+4/11/26,Deworming,Others,1,350,350
+4/11/26,Tick and Flea Treatment,Others,1,450,450
+4/12/26,Follow-up Consultation,Consultation,1,350,350
+4/12/26,General Consultation / Check-up,Consultation,1,400,400
+4/12/26,General Consultation / Check-up,Consultation,1,400,400
+4/12/26,General Consultation / Check-up,Consultation,1,400,400
+4/12/26,Follow-up Consultation,Consultation,1,350,350
+4/12/26,Follow-up Consultation,Consultation,1,350,350
+4/12/26,General Consultation / Check-up,Consultation,1,400,400
+4/12/26,Follow-up Consultation,Consultation,1,350,350
+4/12/26,Follow-up Consultation,Consultation,1,350,350
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Full Grooming,Grooming,1,900,900
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Full Grooming,Grooming,1,900,900
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Full Grooming,Grooming,1,900,900
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,Basic Grooming,Grooming,1,600,600
+4/12/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/12/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/12/26,General Laboratory Service,Laboratory,1,800,800
+4/12/26,Tick and Flea Treatment,Others,1,450,450
+4/12/26,Tick and Flea Treatment,Others,1,450,450
+4/12/26,Deworming,Others,1,350,350
+4/12/26,Tick and Flea Treatment,Others,1,450,450
+4/12/26,Deworming,Others,1,350,350
+4/13/26,General Consultation / Check-up,Consultation,1,400,400
+4/13/26,General Consultation / Check-up,Consultation,1,400,400
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,General Consultation / Check-up,Consultation,1,400,400
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,General Consultation / Check-up,Consultation,1,400,400
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,Follow-up Consultation,Consultation,1,350,350
+4/13/26,General Consultation / Check-up,Consultation,1,400,400
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Full Grooming,Grooming,1,900,900
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Full Grooming,Grooming,1,900,900
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Basic Grooming,Grooming,1,600,600
+4/13/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/13/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/13/26,Blood Test,Laboratory,1,900,900
+4/13/26,Blood Test,Laboratory,1,900,900
+4/13/26,General Laboratory Service,Laboratory,1,800,800
+4/13/26,General Laboratory Service,Laboratory,1,800,800
+4/13/26,Tick and Flea Treatment,Others,1,450,450
+4/13/26,Deworming,Others,1,350,350
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,Follow-up Consultation,Consultation,1,350,350
+4/14/26,Follow-up Consultation,Consultation,1,350,350
+4/14/26,Follow-up Consultation,Consultation,1,350,350
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,Follow-up Consultation,Consultation,1,350,350
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,Follow-up Consultation,Consultation,1,350,350
+4/14/26,General Consultation / Check-up,Consultation,1,400,400
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,Basic Grooming,Grooming,1,600,600
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,Basic Grooming,Grooming,1,600,600
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,Basic Grooming,Grooming,1,600,600
+4/14/26,Full Grooming,Grooming,1,900,900
+4/14/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/14/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/14/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/14/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/14/26,Blood Test,Laboratory,1,900,900
+4/14/26,Blood Test,Laboratory,1,900,900
+4/14/26,General Laboratory Service,Laboratory,1,800,800
+4/14/26,General Laboratory Service,Laboratory,1,800,800
+4/14/26,Deworming,Others,1,350,350
+4/14/26,Tick and Flea Treatment,Others,1,450,450
+4/14/26,Deworming,Others,1,350,350
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,General Consultation / Check-up,Consultation,1,400,400
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,General Consultation / Check-up,Consultation,1,400,400
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,General Consultation / Check-up,Consultation,1,400,400
+4/15/26,General Consultation / Check-up,Consultation,1,400,400
+4/15/26,General Consultation / Check-up,Consultation,1,400,400
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,Follow-up Consultation,Consultation,1,350,350
+4/15/26,Basic Grooming,Grooming,1,600,600
+4/15/26,Full Grooming,Grooming,1,900,900
+4/15/26,Basic Grooming,Grooming,1,600,600
+4/15/26,Basic Grooming,Grooming,1,600,600
+4/15/26,Basic Grooming,Grooming,1,600,600
+4/15/26,Full Grooming,Grooming,1,900,900
+4/15/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/15/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/15/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/15/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/15/26,General Laboratory Service,Laboratory,1,800,800
+4/15/26,Deworming,Others,1,350,350
+4/15/26,Deworming,Others,1,350,350
+4/15/26,Tick and Flea Treatment,Others,1,450,450
+4/15/26,Deworming,Others,1,350,350
+4/15/26,Deworming,Others,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,Follow-up Consultation,Consultation,1,350,350
+4/16/26,General Consultation / Check-up,Consultation,1,400,400
+4/16/26,General Consultation / Check-up,Consultation,1,400,400
+4/16/26,General Consultation / Check-up,Consultation,1,400,400
+4/16/26,General Consultation / Check-up,Consultation,1,400,400
+4/16/26,General Consultation / Check-up,Consultation,1,400,400
+4/16/26,Basic Grooming,Grooming,1,600,600
+4/16/26,Basic Grooming,Grooming,1,600,600
+4/16/26,Full Grooming,Grooming,1,900,900
+4/16/26,Full Grooming,Grooming,1,900,900
+4/16/26,Full Grooming,Grooming,1,900,900
+4/16/26,Full Grooming,Grooming,1,900,900
+4/16/26,Basic Grooming,Grooming,1,600,600
+4/16/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/16/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/16/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/16/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/16/26,Blood Test,Laboratory,1,900,900
+4/16/26,General Laboratory Service,Laboratory,1,800,800
+4/16/26,General Laboratory Service,Laboratory,1,800,800
+4/16/26,General Laboratory Service,Laboratory,1,800,800
+4/16/26,Deworming,Others,1,350,350
+4/16/26,Deworming,Others,1,350,350
+4/16/26,Tick and Flea Treatment,Others,1,450,450
+4/16/26,Deworming,Others,1,350,350
+4/17/26,General Consultation / Check-up,Consultation,1,400,400
+4/17/26,Follow-up Consultation,Consultation,1,350,350
+4/17/26,Follow-up Consultation,Consultation,1,350,350
+4/17/26,General Consultation / Check-up,Consultation,1,400,400
+4/17/26,Follow-up Consultation,Consultation,1,350,350
+4/17/26,Follow-up Consultation,Consultation,1,350,350
+4/17/26,General Consultation / Check-up,Consultation,1,400,400
+4/17/26,General Consultation / Check-up,Consultation,1,400,400
+4/17/26,Follow-up Consultation,Consultation,1,350,350
+4/17/26,Full Grooming,Grooming,1,900,900
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Full Grooming,Grooming,1,900,900
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,Basic Grooming,Grooming,1,600,600
+4/17/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/17/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/17/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/17/26,Blood Test,Laboratory,1,900,900
+4/17/26,Deworming,Others,1,350,350
+4/17/26,Deworming,Others,1,350,350
+4/18/26,Follow-up Consultation,Consultation,1,350,350
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,Follow-up Consultation,Consultation,1,350,350
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,Follow-up Consultation,Consultation,1,350,350
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,General Consultation / Check-up,Consultation,1,400,400
+4/18/26,Follow-up Consultation,Consultation,1,350,350
+4/18/26,Follow-up Consultation,Consultation,1,350,350
+4/18/26,Basic Grooming,Grooming,1,600,600
+4/18/26,Full Grooming,Grooming,1,900,900
+4/18/26,Full Grooming,Grooming,1,900,900
+4/18/26,Basic Grooming,Grooming,1,600,600
+4/18/26,Full Grooming,Grooming,1,900,900
+4/18/26,Basic Grooming,Grooming,1,600,600
+4/18/26,Basic Grooming,Grooming,1,600,600
+4/18/26,Full Grooming,Grooming,1,900,900
+4/18/26,Full Grooming,Grooming,1,900,900
+4/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/18/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/18/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/18/26,Blood Test,Laboratory,1,900,900
+4/18/26,Blood Test,Laboratory,1,900,900
+4/18/26,Tick and Flea Treatment,Others,1,450,450
+4/18/26,Deworming,Others,1,350,350
+4/18/26,Deworming,Others,1,350,350
+4/18/26,Tick and Flea Treatment,Others,1,450,450
+4/18/26,Tick and Flea Treatment,Others,1,450,450
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,General Consultation / Check-up,Consultation,1,400,400
+4/19/26,General Consultation / Check-up,Consultation,1,400,400
+4/19/26,General Consultation / Check-up,Consultation,1,400,400
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Follow-up Consultation,Consultation,1,350,350
+4/19/26,Full Grooming,Grooming,1,900,900
+4/19/26,Basic Grooming,Grooming,1,600,600
+4/19/26,Basic Grooming,Grooming,1,600,600
+4/19/26,Full Grooming,Grooming,1,900,900
+4/19/26,Basic Grooming,Grooming,1,600,600
+4/19/26,Basic Grooming,Grooming,1,600,600
+4/19/26,Full Grooming,Grooming,1,900,900
+4/19/26,Basic Grooming,Grooming,1,600,600
+4/19/26,Full Grooming,Grooming,1,900,900
+4/19/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/19/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/19/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/19/26,General Laboratory Service,Laboratory,1,800,800
+4/19/26,Tick and Flea Treatment,Others,1,450,450
+4/19/26,Deworming,Others,1,350,350
+4/19/26,Deworming,Others,1,350,350
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,General Consultation / Check-up,Consultation,1,400,400
+4/20/26,Follow-up Consultation,Consultation,1,350,350
+4/20/26,Basic Grooming,Grooming,1,600,600
+4/20/26,Basic Grooming,Grooming,1,600,600
+4/20/26,Basic Grooming,Grooming,1,600,600
+4/20/26,Basic Grooming,Grooming,1,600,600
+4/20/26,Basic Grooming,Grooming,1,600,600
+4/20/26,Full Grooming,Grooming,1,900,900
+4/20/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/20/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/20/26,General Laboratory Service,Laboratory,1,800,800
+4/20/26,Blood Test,Laboratory,1,900,900
+4/20/26,Tick and Flea Treatment,Others,1,450,450
+4/20/26,Deworming,Others,1,350,350
+4/20/26,Deworming,Others,1,350,350
+4/21/26,General Consultation / Check-up,Consultation,1,400,400
+4/21/26,General Consultation / Check-up,Consultation,1,400,400
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,General Consultation / Check-up,Consultation,1,400,400
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,General Consultation / Check-up,Consultation,1,400,400
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,Follow-up Consultation,Consultation,1,350,350
+4/21/26,Basic Grooming,Grooming,1,600,600
+4/21/26,Full Grooming,Grooming,1,900,900
+4/21/26,Full Grooming,Grooming,1,900,900
+4/21/26,Full Grooming,Grooming,1,900,900
+4/21/26,Basic Grooming,Grooming,1,600,600
+4/21/26,Full Grooming,Grooming,1,900,900
+4/21/26,Basic Grooming,Grooming,1,600,600
+4/21/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/21/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/21/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/21/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/21/26,General Laboratory Service,Laboratory,1,800,800
+4/21/26,General Laboratory Service,Laboratory,1,800,800
+4/21/26,General Laboratory Service,Laboratory,1,800,800
+4/21/26,Tick and Flea Treatment,Others,1,450,450
+4/21/26,Deworming,Others,1,350,350
+4/21/26,Deworming,Others,1,350,350
+4/21/26,Tick and Flea Treatment,Others,1,450,450
+4/21/26,Deworming,Others,1,350,350
+4/21/26,Deworming,Others,1,350,350
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,Follow-up Consultation,Consultation,1,350,350
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,General Consultation / Check-up,Consultation,1,400,400
+4/22/26,Full Grooming,Grooming,1,900,900
+4/22/26,Basic Grooming,Grooming,1,600,600
+4/22/26,Basic Grooming,Grooming,1,600,600
+4/22/26,Basic Grooming,Grooming,1,600,600
+4/22/26,Full Grooming,Grooming,1,900,900
+4/22/26,Full Grooming,Grooming,1,900,900
+4/22/26,Full Grooming,Grooming,1,900,900
+4/22/26,Basic Grooming,Grooming,1,600,600
+4/22/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/22/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/22/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/22/26,General Laboratory Service,Laboratory,1,800,800
+4/22/26,Blood Test,Laboratory,1,900,900
+4/22/26,General Laboratory Service,Laboratory,1,800,800
+4/22/26,General Laboratory Service,Laboratory,1,800,800
+4/22/26,Deworming,Others,1,350,350
+4/22/26,Deworming,Others,1,350,350
+4/22/26,Tick and Flea Treatment,Others,1,450,450
+4/22/26,Deworming,Others,1,350,350
+4/22/26,Tick and Flea Treatment,Others,1,450,450
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,Follow-up Consultation,Consultation,1,350,350
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,Follow-up Consultation,Consultation,1,350,350
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,Follow-up Consultation,Consultation,1,350,350
+4/23/26,Follow-up Consultation,Consultation,1,350,350
+4/23/26,General Consultation / Check-up,Consultation,1,400,400
+4/23/26,Follow-up Consultation,Consultation,1,350,350
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Full Grooming,Grooming,1,900,900
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Full Grooming,Grooming,1,900,900
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Basic Grooming,Grooming,1,600,600
+4/23/26,Full Grooming,Grooming,1,900,900
+4/23/26,Full Grooming,Grooming,1,900,900
+4/23/26,Full Grooming,Grooming,1,900,900
+4/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/23/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/23/26,Blood Test,Laboratory,1,900,900
+4/23/26,General Laboratory Service,Laboratory,1,800,800
+4/23/26,General Laboratory Service,Laboratory,1,800,800
+4/23/26,Blood Test,Laboratory,1,900,900
+4/23/26,Tick and Flea Treatment,Others,1,450,450
+4/23/26,Deworming,Others,1,350,350
+4/24/26,Follow-up Consultation,Consultation,1,350,350
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,Follow-up Consultation,Consultation,1,350,350
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,Follow-up Consultation,Consultation,1,350,350
+4/24/26,General Consultation / Check-up,Consultation,1,400,400
+4/24/26,Follow-up Consultation,Consultation,1,350,350
+4/24/26,Follow-up Consultation,Consultation,1,350,350
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Basic Grooming,Grooming,1,600,600
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Basic Grooming,Grooming,1,600,600
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Full Grooming,Grooming,1,900,900
+4/24/26,Basic Grooming,Grooming,1,600,600
+4/24/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/24/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/24/26,Blood Test,Laboratory,1,900,900
+4/24/26,General Laboratory Service,Laboratory,1,800,800
+4/24/26,Blood Test,Laboratory,1,900,900
+4/24/26,General Laboratory Service,Laboratory,1,800,800
+4/24/26,Deworming,Others,1,350,350
+4/24/26,Deworming,Others,1,350,350
+4/24/26,Tick and Flea Treatment,Others,1,450,450
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,General Consultation / Check-up,Consultation,1,400,400
+4/25/26,Follow-up Consultation,Consultation,1,350,350
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,Full Grooming,Grooming,1,900,900
+4/25/26,Basic Grooming,Grooming,1,600,600
+4/25/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/25/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/25/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/25/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/25/26,Blood Test,Laboratory,1,900,900
+4/25/26,General Laboratory Service,Laboratory,1,800,800
+4/25/26,General Laboratory Service,Laboratory,1,800,800
+4/25/26,Tick and Flea Treatment,Others,1,450,450
+4/25/26,Tick and Flea Treatment,Others,1,450,450
+4/25/26,Tick and Flea Treatment,Others,1,450,450
+4/25/26,Tick and Flea Treatment,Others,1,450,450
+4/25/26,Deworming,Others,1,350,350
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,General Consultation / Check-up,Consultation,1,400,400
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Follow-up Consultation,Consultation,1,350,350
+4/26/26,Basic Grooming,Grooming,1,600,600
+4/26/26,Full Grooming,Grooming,1,900,900
+4/26/26,Full Grooming,Grooming,1,900,900
+4/26/26,Basic Grooming,Grooming,1,600,600
+4/26/26,Full Grooming,Grooming,1,900,900
+4/26/26,Basic Grooming,Grooming,1,600,600
+4/26/26,5 in 1 Vaccine (Dogs),Vaccination,1,1000,1000
+4/26/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/26/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/26/26,Blood Test,Laboratory,1,900,900
+4/26/26,Tick and Flea Treatment,Others,1,450,450
+4/26/26,Deworming,Others,1,350,350
+4/26/26,Tick and Flea Treatment,Others,1,450,450
+4/26/26,Tick and Flea Treatment,Others,1,450,450
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,General Consultation / Check-up,Consultation,1,400,400
+4/27/26,General Consultation / Check-up,Consultation,1,400,400
+4/27/26,General Consultation / Check-up,Consultation,1,400,400
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,Follow-up Consultation,Consultation,1,350,350
+4/27/26,General Consultation / Check-up,Consultation,1,400,400
+4/27/26,General Consultation / Check-up,Consultation,1,400,400
+4/27/26,Basic Grooming,Grooming,1,600,600
+4/27/26,Full Grooming,Grooming,1,900,900
+4/27/26,Full Grooming,Grooming,1,900,900
+4/27/26,Full Grooming,Grooming,1,900,900
+4/27/26,Basic Grooming,Grooming,1,600,600
+4/27/26,Basic Grooming,Grooming,1,600,600
+4/27/26,Basic Grooming,Grooming,1,600,600
+4/27/26,Full Grooming,Grooming,1,900,900
+4/27/26,Full Grooming,Grooming,1,900,900
+4/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/27/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/27/26,General Laboratory Service,Laboratory,1,800,800
+4/27/26,Deworming,Others,1,350,350
+4/27/26,Deworming,Others,1,350,350
+4/27/26,Deworming,Others,1,350,350
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,General Consultation / Check-up,Consultation,1,400,400
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,General Consultation / Check-up,Consultation,1,400,400
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,Follow-up Consultation,Consultation,1,350,350
+4/28/26,Basic Grooming,Grooming,1,600,600
+4/28/26,Basic Grooming,Grooming,1,600,600
+4/28/26,Basic Grooming,Grooming,1,600,600
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Basic Grooming,Grooming,1,600,600
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Full Grooming,Grooming,1,900,900
+4/28/26,Basic Grooming,Grooming,1,600,600
+4/28/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/28/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/28/26,Anti-Rabies Vaccine,Vaccination,1,500,500
+4/28/26,General Laboratory Service,Laboratory,1,800,800
+4/28/26,Blood Test,Laboratory,1,900,900
+4/28/26,General Laboratory Service,Laboratory,1,800,800
+4/28/26,Deworming,Others,1,350,350
+4/28/26,Deworming,Others,1,350,350
+4/28/26,Deworming,Others,1,350,350
+4/29/26,Follow-up Consultation,Consultation,1,350,350
+4/29/26,Follow-up Consultation,Consultation,1,350,350
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,Follow-up Consultation,Consultation,1,350,350
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,General Consultation / Check-up,Consultation,1,400,400
+4/29/26,Follow-up Consultation,Consultation,1,350,350
+4/29/26,Follow-up Consultation,Consultation,1,350,350
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Basic Grooming,Grooming,1,600,600
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Full Grooming,Grooming,1,900,900
+4/29/26,Basic Grooming,Grooming,1,600,600
+4/29/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/29/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/29/26,Blood Test,Laboratory,1,900,900
+4/29/26,Blood Test,Laboratory,1,900,900
+4/29/26,General Laboratory Service,Laboratory,1,800,800
+4/29/26,Deworming,Others,1,350,350
+4/29/26,Tick and Flea Treatment,Others,1,450,450
+4/29/26,Tick and Flea Treatment,Others,1,450,450
+4/29/26,Tick and Flea Treatment,Others,1,450,450
+4/29/26,Tick and Flea Treatment,Others,1,450,450
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,General Consultation / Check-up,Consultation,1,400,400
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,Follow-up Consultation,Consultation,1,350,350
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,Basic Grooming,Grooming,1,600,600
+4/30/26,Basic Grooming,Grooming,1,600,600
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,Basic Grooming,Grooming,1,600,600
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,Full Grooming,Grooming,1,900,900
+4/30/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/30/26,6 in 1 Vaccine (Dogs),Vaccination,1,1100,1100
+4/30/26,Blood Test,Laboratory,1,900,900
+4/30/26,General Laboratory Service,Laboratory,1,800,800
+4/30/26,Deworming,Others,1,350,350
+4/30/26,Tick and Flea Treatment,Others,1,450,450
+4/30/26,Deworming,Others,1,350,350
+4/30/26,Tick and Flea Treatment,Others,1,450,450
+4/30/26,Deworming,Others,1,350,350

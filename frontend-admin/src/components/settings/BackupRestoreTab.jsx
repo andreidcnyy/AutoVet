@@ -17,9 +17,14 @@ function BackupRestoreTab() {
     "Accept": "application/json"
   };
 
+  const controllerRef = React.useRef(null);
+
   const fetchBackups = () => {
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setLoading(true);
-    fetch("/api/backups", { headers: authHeader })
+    fetch("/api/backups", { headers: authHeader, signal: controller.signal })
       .then((res) => {
         if (!res.ok) {
            throw new Error("Failed to connect to backup server.");
@@ -27,20 +32,24 @@ function BackupRestoreTab() {
         return res.json();
       })
       .then((payload) => {
-        // Handle { data: [...] } format from Laravel
         const data = payload.data || [];
         setBackups(data);
       })
       .catch((err) => {
-        // Only show toast if it's a real failure, not an empty state
+        if (err.name === 'AbortError') return;
         console.error("Backup Fetch Error:", err);
         toast.error("Could not load backups. Please check your connection.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
   };
 
   useEffect(() => {
     fetchBackups();
+    return () => {
+      if (controllerRef.current) controllerRef.current.abort();
+    };
   }, []);
 
   const createBackup = () => {

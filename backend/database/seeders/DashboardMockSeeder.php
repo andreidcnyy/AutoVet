@@ -133,14 +133,17 @@ class DashboardMockSeeder extends Seeder
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
-                    'sync_status' => 'local_only'
+                    'sync_status' => 'local_only',
+                    'stock_deducted' => true
                 ]);
 
                 // Service item
+                $service = \App\Models\Service::where('category', 'Consultation')->first();
                 DB::table('invoice_items')->insert([
                     'invoice_id' => $invoiceId,
                     'name' => 'Consultation',
                     'item_type' => 'service',
+                    'service_id' => $service ? $service->id : null,
                     'qty' => 1,
                     'unit_price' => $total * 0.8,
                     'amount' => $total * 0.8,
@@ -152,18 +155,32 @@ class DashboardMockSeeder extends Seeder
 
                 // Inventory item
                 $inv = $inventoryItems[rand(0, count($inventoryItems) - 1)];
-                DB::table('invoice_items')->insert([
+                $qty = rand(1, 5);
+                $itemId = DB::table('invoice_items')->insertGetId([
                     'invoice_id' => $invoiceId,
                     'name' => $inv->item_name,
                     'item_type' => 'inventory',
                     'inventory_id' => $inv->id,
-                    'qty' => rand(1, 5),
+                    'qty' => $qty,
                     'unit_price' => $inv->selling_price,
                     'amount' => $inv->selling_price * 1, // simplified
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
                     'sync_status' => 'local_only'
+                ]);
+
+                // Populate InventoryUsageHistory
+                DB::table('inventory_usage_history')->insert([
+                    'inventory_id' => $inv->id,
+                    'invoice_id'   => $invoiceId,
+                    'invoice_item_id' => $itemId,
+                    'quantity_used' => $qty,
+                    'usage_date'   => $date->copy()->subDays(rand(1, 25))->toDateString(),
+                    'source_type'  => 'retail_sale',
+                    'unit_price'   => $inv->selling_price,
+                    'created_at'   => $date->copy(),
+                    'updated_at'   => $date->copy(),
                 ]);
             }
         }

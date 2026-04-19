@@ -28,6 +28,7 @@ import autoTable from "jspdf-autotable";
 import OwnerProfileModal from "./OwnerProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
+import api from "../../api";
 import ManualSendModal from "../notifications/ManualSendModal";
 import EditPatientModal from "./EditPatientModal";
 import { FiEdit3, FiTrash2, FiEye } from "react-icons/fi";
@@ -78,7 +79,9 @@ const toneDotStyles = {
 
 function formatDate(dateStr) {
   if (!dateStr) return "—";
-  const d = new Date(dateStr);
+  // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+  const normalizedDate = typeof dateStr === 'string' && dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  const d = new Date(normalizedDate);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-US", {
     year: "numeric",
@@ -385,7 +388,33 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [weightRanges, setWeightRanges] = useState([]);
   const { user } = useAuth();
+
+  useEffect(() => {
+    api.get("/api/weight-ranges")
+      .then(data => {
+        const ranges = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+        setWeightRanges(ranges);
+      })
+      .catch(err => console.error("Failed to fetch weight ranges:", err));
+  }, []);
+
+  const determinedSizeName = useMemo(() => {
+    if (!patient) return "N/A";
+    if (patient.size_category?.name) return patient.size_category.name;
+    if (!patient.weight || !patient.species_id || weightRanges.length === 0) return "N/A";
+    
+    const weight = Number(patient.weight);
+    const range = weightRanges.find(r => 
+      Number(r.species_id) === Number(patient.species_id) &&
+      weight >= Number(r.min_weight) &&
+      (r.max_weight === null || weight <= Number(r.max_weight))
+    );
+    
+    return range?.label || range?.size_category?.name || "N/A";
+  }, [patient, weightRanges]);
+
   const isStaff = user?.role === ROLES.STAFF;
   const isVet = VET_AND_ADMIN.includes(user?.role);
 
@@ -506,7 +535,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
         </nav>
 
         <div className="p-6">
-          {activeTab === "overview" && <OverviewTab patient={patient} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
+          {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
           {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
           {activeTab === "invoices" && <InvoiceTab invoices={patient.invoices || []} />}
@@ -565,7 +594,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 
 /* ──────────────── Overview Tab ──────────────── */
 
-function OverviewTab({ patient, onOpenOwner }) {
+function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
   const owner = patient.owner;
   const hasOwner = owner && typeof owner === 'object' && owner.id;
 
@@ -616,8 +645,8 @@ function OverviewTab({ patient, onOpenOwner }) {
             { label: "Age Group", value: formatAgeGroup(patient.age_group) },
             { label: "Age", value: calculateAge(patient.date_of_birth) || "N/A" },
             { label: "Color", value: patient.color || "N/A" },
-            { label: "Weight", value: patient.weight ? `${patient.weight} ${patient.weight_unit}` : "N/A" },
-            { label: "Size", value: patient.size_category?.name || "N/A" },
+            { label: "Weight", value: patient.weight ? `${Number(patient.weight).toLocaleString('en-US', { maximumFractionDigits: 0 })} ${patient.weight_unit}` : "N/A" },
+            { label: "Size", value: determinedSizeName },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
             { label: "Status", value: patient.status || "N/A" },
             { label: "Total Paid", value: formatCurrency(patient.total_paid) },
@@ -1085,6 +1114,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     setEditingRecord(record);
     setSelectedAppointmentId(record.appointment_id || "");
     setSelectedVetId(record.vet_id || "");
+    fetchAppointments(); // Refresh list to ensure real-time appointment data
     setIsModalOpen(true);
     // You might want to add a state for view mode if not already there
     setIsViewOnlyMode(mode === 'view');

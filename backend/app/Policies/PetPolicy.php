@@ -81,7 +81,16 @@ class PetPolicy
      */
     public function delete(Authenticatable $user, Pet $pet): bool
     {
-        return method_exists($user, 'isAdmin') && $user->isAdmin();
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return true;
+        }
+
+        // Portal owners can delete their own pets
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            return $user->owner?->id === $pet->owner_id;
+        }
+
+        return false;
     }
 
     /**

@@ -9,10 +9,12 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet } from '../api';
+import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet, deletePet } from '../api';
+import { FiTrash2 } from 'react-icons/fi';
 import { getAgeGroup } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
 import clsx from 'clsx';
+import { readCache, writeCache } from '../utils/swrCache';
 
 const petSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
@@ -65,8 +67,35 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
 
   useEffect(() => {
     if (isOpen && petId) {
-      setLoading(true);
       setError(null);
+
+      const cachedSpecies = readCache<any[]>('portal_species_cache');
+      if (cachedSpecies) setSpeciesList(cachedSpecies);
+      const cachedWR = readCache<any[]>('portal_weight_ranges_cache');
+      if (cachedWR) setWeightRanges(cachedWR);
+      const cachedPet = readCache<any>(`portal_pet_${petId}_cache`);
+      if (cachedPet) {
+        reset({
+          name: cachedPet.name,
+          species_id: String(cachedPet.species_id),
+          breed_id: cachedPet.breed_id ? String(cachedPet.breed_id) : "",
+          date_of_birth: cachedPet.date_of_birth || "",
+          sex: cachedPet.sex || "Male",
+          age_group: cachedPet.age_group || "Adult",
+          color: cachedPet.color || "",
+          weight: cachedPet.weight || 0,
+          weight_unit: cachedPet.weight_unit || "kg",
+          size_category_id: cachedPet.size_category_id ? String(cachedPet.size_category_id) : "",
+          allergies: cachedPet.allergies || "",
+          medication: cachedPet.medication || "",
+          notes: cachedPet.notes || "",
+          photo: cachedPet.photo || ""
+        });
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       Promise.all([
         getSpecies(),
         getWeightRanges(),
@@ -74,12 +103,17 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
       ])
       .then(([speciesRes, weightRes, petRes]) => {
         const sData = speciesRes.data.data || speciesRes.data;
-        setSpeciesList(Array.isArray(sData) ? sData : []);
-        
+        const sList = Array.isArray(sData) ? sData : [];
+        setSpeciesList(sList);
+        writeCache('portal_species_cache', sList);
+
         const wData = weightRes.data.data || weightRes.data;
-        setWeightRanges(Array.isArray(wData) ? wData : []);
+        const wList = Array.isArray(wData) ? wData : [];
+        setWeightRanges(wList);
+        writeCache('portal_weight_ranges_cache', wList);
 
         const pet = petRes.data;
+        writeCache(`portal_pet_${petId}_cache`, pet);
         reset({
           name: pet.name,
           species_id: String(pet.species_id),
@@ -112,9 +146,14 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
       if (selected && selected.breeds && selected.breeds.length > 0) {
         setAvailableBreeds(selected.breeds);
       } else {
+        const breedsKey = `portal_breeds_${speciesIdValue}_cache`;
+        const cachedBreeds = readCache<any[]>(breedsKey);
+        if (cachedBreeds) setAvailableBreeds(cachedBreeds);
         getBreeds(Number(speciesIdValue)).then(res => {
           const data = res.data.data || res.data;
-          setAvailableBreeds(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          setAvailableBreeds(list);
+          writeCache(breedsKey, list);
         }).catch(err => console.error("SYNC ERROR:", err));
       }
     } else {
@@ -166,6 +205,24 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
     } catch (err: any) {
       console.error("SUBMIT ERROR:", err);
       setError(err.response?.data?.message || "Failed to update pet details.");
+    }
+  };
+
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    if (!petId) return;
+    if (!window.confirm("Delete this pet? This cannot be undone.")) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deletePet(petId);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      console.error("DELETE ERROR:", err);
+      setError(err.response?.data?.message || "Failed to delete pet.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -320,23 +377,34 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
           )}
         </div>
 
-        <div className="border-t bg-zinc-50 px-8 py-5 dark:border-dark-border dark:bg-dark-surface/50 shrink-0 flex justify-end gap-3">
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="px-6 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-600 font-bold hover:bg-zinc-50 transition-all dark:bg-dark-card dark:border-dark-border dark:text-zinc-400"
+        <div className="border-t bg-zinc-50 px-8 py-5 dark:border-dark-border dark:bg-dark-surface/50 shrink-0 flex justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || isSubmitting || loading}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-50 transition-all active:scale-95 disabled:opacity-50 dark:bg-dark-card dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/10"
           >
-            Cancel
+            <FiTrash2 />
+            {deleting ? "Deleting..." : "Delete Pet"}
           </button>
-          <button 
-            type="submit" 
-            form="edit-pet-form"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
-          >
-            <FiCheckCircle />
-            {isSubmitting ? "Updating..." : "Save Changes"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-600 font-bold hover:bg-zinc-50 transition-all dark:bg-dark-card dark:border-dark-border dark:text-zinc-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-pet-form"
+              disabled={isSubmitting || deleting}
+              className="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
+            >
+              <FiCheckCircle />
+              {isSubmitting ? "Updating..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

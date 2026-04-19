@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { readCache, writeCache } from '../utils/swrCache';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -20,15 +21,24 @@ export default function Notifications() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
+  const NOTIF_CACHE_KEY = 'portal_notifications_cache';
+
   const fetchNotifications = () => {
-    setLoading(true);
     getNotifications()
-      .then(res => setNotifications(res.data))
+      .then(res => {
+        setNotifications(res.data);
+        writeCache(NOTIF_CACHE_KEY, res.data);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
+    const cached = readCache<any[]>(NOTIF_CACHE_KEY);
+    if (cached) {
+      setNotifications(cached);
+      setLoading(false);
+    }
     fetchNotifications();
 
     const userStr = localStorage.getItem('user');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getPet, getMedicalRecords, getInvoices } from '../api';
 import { 
   FiX,
@@ -17,6 +17,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import clsx from 'clsx';
+import { readCache, writeCache } from '../utils/swrCache';
+
+function formatPortalDate(dateStr: string) {
+  if (!dateStr) return "N/A";
+  
+  // Extract only the date part (YYYY-MM-DD) if it's an ISO string to avoid UTC shift
+  const cleanDate = typeof dateStr === 'string' && dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  
+  // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+  const normalizedDate = typeof cleanDate === 'string' && cleanDate.includes('-') ? cleanDate.replace(/-/g, '/') : cleanDate;
+  
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+  
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 interface PetProfileModalProps {
   isOpen: boolean;
@@ -31,17 +51,27 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'medical' | 'invoices'>('summary');
+  const [viewingRecord, setViewingRecord] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && petId) {
-      setLoading(true);
+      const CACHE_KEY = `portal_pet_modal_${petId}_cache`;
+      const cached = readCache<any>(CACHE_KEY);
+      if (cached) {
+        setPet(cached.pet);
+        setMedicalRecords(cached.medicalRecords || []);
+        setInvoices(cached.invoices || []);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       Promise.all([
         getPet(petId),
         getMedicalRecords({ pet_id: petId }),
         getInvoices({ pet_id: petId })
       ])
       .then(([petRes, medicalRes, invoiceRes]) => {
-        // Handle potentially nested data { data: { ... } } or { ... }
         const petData = petRes.data.data || petRes.data;
         const medicalData = Array.isArray(medicalRes.data) ? medicalRes.data : medicalRes.data.data || [];
         const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data.data || [];
@@ -49,10 +79,11 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
         setPet(petData);
         setMedicalRecords(medicalData);
         setInvoices(invoiceData);
+        writeCache(CACHE_KEY, { pet: petData, medicalRecords: medicalData, invoices: invoiceData });
       })
       .catch(err => {
         console.error("PetProfileModal Fetch Error:", err);
-        setPet(null);
+        if (!cached) setPet(null);
       })
       .finally(() => setLoading(false));
     } else {
@@ -60,6 +91,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
       setMedicalRecords([]);
       setInvoices([]);
       setActiveTab('summary');
+      setViewingRecord(null);
     }
   }, [isOpen, petId]);
 
@@ -188,7 +220,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                        <div className="grid grid-cols-2 gap-4 pt-2">
                           <div>
                             <div className="text-[10px] font-bold text-zinc-400 uppercase">Weight</div>
-                            <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.weight} {pet.weight_unit}</div>
+                            <div className="font-bold text-zinc-800 dark:text-zinc-200">{Math.round(pet.weight)} {pet.weight_unit}</div>
                           </div>
                           <div>
                             <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
@@ -197,6 +229,22 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                           <div className="col-span-2">
                             <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
                             <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category?.name || 'N/A'}</div>
+                          </div>
+                          <div className="col-span-2 border-t border-zinc-100 dark:border-dark-border pt-4 mt-2">
+                            <div className="flex justify-between gap-4">
+                               <div>
+                                  <div className="text-[10px] font-bold text-zinc-400 uppercase">Last Visit</div>
+                                  <div className="font-bold text-zinc-700 dark:text-zinc-300">
+                                     {pet.last_visit && pet.last_visit !== 'No past visits' ? formatPortalDate(pet.last_visit) : "No past visits"}
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <div className="text-[10px] font-bold text-zinc-400 uppercase">Next Due</div>
+                                  <div className="font-bold text-brand-600 dark:text-brand-400">
+                                     {pet.next_due && pet.next_due !== 'None scheduled' ? formatPortalDate(pet.next_due) : "None scheduled"}
+                                  </div>
+                               </div>
+                            </div>
                           </div>
                        </div>
                     </div>
@@ -231,27 +279,26 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                                  </div>
                                  <div>
                                     <div className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{record.type || 'Consultation'}</div>
-                                    <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.title || 'Medical Visit'}</h4>
+                                    <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.appointment?.service?.name || record.title || 'Medical Visit'}</h4>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
-                                       <span className="flex items-center gap-1"><FiCalendar /> {(() => {
-  const dateStr = record.appointment?.date || record.created_at;
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-})()}</span>
+                                       <span className="flex items-center gap-1"><FiCalendar /> {formatPortalDate(record.appointment?.date || record.created_at)}</span>
                                        <span className="flex items-center gap-1"><FiUser /> Dr. {record.vet?.name || 'Unknown'}</span>
                                     </div>
                                  </div>
                               </div>
-                              <div className="md:text-right">
-                                 <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Diagnosis</div>
-                                 <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{record.diagnosis || 'Standard Checkup'}</div>
+                              <div className="flex flex-col md:items-end gap-2 shrink-0">
+                                 <div className="md:text-right">
+                                    <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Diagnosis</div>
+                                    <div className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{record.diagnosis || 'Standard Checkup'}</div>
+                                 </div>
+                                 <button
+                                   onClick={() => setViewingRecord(record)}
+                                   className="text-[10px] font-black uppercase tracking-widest text-brand-600 hover:text-brand-700 underline underline-offset-4"
+                                 >
+                                   View Details
+                                 </button>
                               </div>
                            </div>
-                           {record.notes && (
-                             <div className="mt-6 p-4 rounded-2xl bg-zinc-50 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border text-sm text-zinc-600 dark:text-zinc-400 italic">
-                                "{record.notes}"
-                             </div>
-                           )}
                         </div>
                       ))
                     ) : (
@@ -275,10 +322,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                                  <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
                                  <div className="text-xs text-zinc-500">
-  {(() => {
-    const d = new Date(invoice.created_at);
-    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-  })()}
+  {formatPortalDate(invoice.created_at)}
 </div>
                               </div>
                            </div>
@@ -310,6 +354,89 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
           )}
         </div>
       </div>
+
+      {/* Details Sub-Modal */}
+      {viewingRecord && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" onClick={() => setViewingRecord(null)} />
+          <div className="relative w-full max-w-2xl bg-white dark:bg-dark-card rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-zinc-100 dark:border-dark-border">
+             <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 dark:border-dark-border">
+                <div>
+                   <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 uppercase italic tracking-tight">Clinical Summary</h3>
+                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Record ID #{viewingRecord.id}</p>
+                </div>
+                <button onClick={() => setViewingRecord(null)} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-800 transition-colors">
+                   <FiX className="w-5 h-5" />
+                </button>
+             </div>
+             
+             <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <section>
+                   <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-3">01. Attending Veterinarian</p>
+                   <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400">
+                         <FiUser className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <p className="font-bold text-zinc-800 dark:text-zinc-200">Dr. {viewingRecord.vet?.name || 'Assigned Staff'}</p>
+                         <p className="text-xs text-zinc-400 uppercase font-bold tracking-tight">{viewingRecord.vet?.specialization || 'Clinical Vet'}</p>
+                      </div>
+                   </div>
+                </section>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <section>
+                      <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-2">02. Chief Complaint</p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 leading-relaxed bg-zinc-50/50 dark:bg-dark-surface/30 p-4 rounded-2xl border border-zinc-100 dark:border-dark-border">
+                         {viewingRecord.chief_complaint || 'N/A'}
+                      </p>
+                   </section>
+                   <section>
+                      <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-2">03. Diagnosis</p>
+                      <p className="text-sm font-black text-zinc-800 dark:text-zinc-100 leading-relaxed bg-brand-50/30 dark:bg-brand-900/10 p-4 rounded-2xl border border-brand-100/50 dark:border-brand-900/30">
+                         {viewingRecord.diagnosis || 'Standard Checkup'}
+                      </p>
+                   </section>
+                </div>
+
+                <section>
+                   <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-2">04. Clinical Findings</p>
+                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      {viewingRecord.findings || 'No physical findings recorded.'}
+                   </p>
+                </section>
+
+                <section>
+                   <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-2">05. Treatment Plan</p>
+                   <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/30">
+                      <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                         {viewingRecord.treatment_plan || 'Monitor symptoms and follow up as scheduled.'}
+                      </p>
+                   </div>
+                </section>
+
+                <section className="flex items-center justify-between p-4 rounded-2xl bg-zinc-900 text-white shadow-xl">
+                   <div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Next Follow-up</p>
+                      <p className="text-sm font-black italic">
+                         {viewingRecord.follow_up_date ? formatPortalDate(viewingRecord.follow_up_date) : "Not yet scheduled"}
+                      </p>
+                   </div>
+                   <FiCalendar className="w-6 h-6 text-zinc-500" />
+                </section>
+             </div>
+
+             <div className="p-6 bg-zinc-50 dark:bg-dark-surface/50 border-t border-zinc-100 dark:border-dark-border flex justify-end">
+                <button 
+                  onClick={() => setViewingRecord(null)}
+                  className="px-8 py-3 rounded-xl bg-zinc-900 text-white text-xs font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95"
+                >
+                   Close Summary
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

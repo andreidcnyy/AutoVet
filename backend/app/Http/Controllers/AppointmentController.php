@@ -24,28 +24,67 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'pet_id', 'service_id', 'vet_id')
+        
+        // Use with() for eager loading to prevent N+1 queries.
+        // select() only columns needed for the list to reduce memory usage.
+        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id')
             ->with([
                 'pet:id,name,owner_id',
+                'pet.owner:id,name', 
                 'service:id,name',
                 'vet:id,name',
             ]);
 
+        // Access control: Portal users only see their own appointments
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
                 $q->where('owner_id', $ownerId);
             });
         }
 
+        // Filtering by Pet
         if ($request->has('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        // Filtering by Veterinarian
+        if ($request->filled('vet_id')) {
+            $query->where('vet_id', $request->vet_id);
         }
 
-        if ($request->has('upcoming')) {
+        // Filtering by Service
+        if ($request->filled('service_id')) {
+            $query->where('service_id', $request->service_id);
+        }
+
+        // Filtering by Status
+        if ($request->has('status') && $request->status !== 'all') {
+            $status = $request->status;
+            if ($status === 'upcoming') {
+                $query->where('date', '>=', now()->toDateString())
+                      ->whereNotIn('status', ['cancelled', 'declined', 'completed']);
+            } elseif ($status === 'past') {
+                $query->where('date', '<', now()->toDateString());
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        // Search functionality (title, pet name, owner name)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhereHas('pet', function($pq) use ($search) {
+                      $pq->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('owner', function($oq) use ($search) {
+                            $oq->where('name', 'like', "%{$search}%");
+                        });
+                  });
+            });
+        }
+
+        if ($request->has('upcoming') && !$request->has('status')) {
             $query->where('date', '>=', now()->toDateString());
         }
 
@@ -57,10 +96,38 @@ class AppointmentController extends Controller
             $query->where('date', '<=', $request->date_to);
         }
 
-        $query->orderBy('date', 'desc');
+        // Handle specific date if provided
+        if ($request->filled('date')) {
+            $query->where('date', $request->date);
+        }
 
-        if ($request->has('per_page')) {
-            return response()->json($query->paginate($request->per_page));
+        // Default sort by date desc, then time desc
+        $query->orderBy('date', 'desc')->orderBy('time', 'desc');
+
+        $perPage = $request->get('per_page', 15);
+        
+        return response()->json($query->paginate($perPage));
+    }
+
+    /**
+     * Get summary counts for calendar markers.
+     */
+    public function summary(Request $request)
+    {
+        $request->validate([
+            'date_from' => 'required|date',
+            'date_to' => 'required|date',
+        ]);
+
+        $query = Appointment::select('date', \DB::raw('count(*) as count'))
+            ->where('date', '>=', $request->date_from)
+            ->where('date', '<=', $request->date_to)
+            ->groupBy('date');
+
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->whereHas('pet', function ($q) use ($ownerId) {
+                $q->where('owner_id', $ownerId);
+            });
         }
 
         return response()->json($query->get());
@@ -84,6 +151,13 @@ class AppointmentController extends Controller
             'service_id.required' => 'Please select a specific service category (Consultation, Grooming, etc.) for forecasting.',
             'pet_id.required' => 'A pet must be selected for the appointment.'
         ]);
+
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $pet = \App\Models\Pet::find($validated['pet_id']);
+            if (!$pet || $pet->owner_id != $ownerId) {
+                return response()->json(['message' => 'You can only book appointments for your own pets.'], 403);
+            }
+        }
 
         $service = \App\Models\Service::find($validated['service_id']);
 
@@ -152,6 +226,7 @@ class AppointmentController extends Controller
         }
 
         $appointment = Appointment::create($validated);
+        $this->invalidatePortalCache($appointment->pet?->owner_id);
 
         // Broadcast appointment creation
         event(new \App\Events\AppointmentCreated($appointment));
@@ -281,6 +356,8 @@ class AppointmentController extends Controller
         }
 
         $appointment->update($validated);
+        $this->invalidatePortalCache($appointment->pet?->owner_id);
+
         return response()->json($appointment->load(['pet', 'service', 'vet']));
     }
 
@@ -306,7 +383,10 @@ class AppointmentController extends Controller
     public function destroy(Appointment $appointment)
     {
         $this->authorize('delete', $appointment);
+        $ownerId = $appointment->pet?->owner_id;
         $appointment->delete();
+        $this->invalidatePortalCache($ownerId);
+
         return response()->json(null, 204);
     }
 }

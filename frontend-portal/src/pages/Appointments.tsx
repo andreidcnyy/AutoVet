@@ -15,6 +15,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import PetProfileModal from '../components/PetProfileModal';
 import clsx from 'clsx';
 
+// Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatPortalDateLocal = (dateStr: string, long = false) => {
+  if (!dateStr) return "N/A";
+  const normalizedDate = dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+  return d.toLocaleDateString('en-US', long ? { month: 'long', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' });
+};
+
 export default function Appointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +43,10 @@ export default function Appointments() {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     return [...data].sort((a, b) => {
-      const dateA = new Date(a.date); dateA.setHours(0, 0, 0, 0);
-      const dateB = new Date(b.date); dateB.setHours(0, 0, 0, 0);
+      const normalizedA = a.date.includes('-') ? a.date.replace(/-/g, '/') : a.date;
+      const normalizedB = b.date.includes('-') ? b.date.replace(/-/g, '/') : b.date;
+      const dateA = new Date(normalizedA); dateA.setHours(0, 0, 0, 0);
+      const dateB = new Date(normalizedB); dateB.setHours(0, 0, 0, 0);
       const isA_Past = dateA < now;
       const isB_Past = dateB < now;
       if (isA_Past && !isB_Past) return 1;
@@ -57,7 +68,9 @@ export default function Appointments() {
 
     getAppointments()
       .then(res => {
-        const sorted = sortAppointments(res.data);
+        // Correctly extract the data array from the paginated backend response
+        const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        const sorted = sortAppointments(appointmentsArray);
         setAppointments(sorted);
         try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: sorted, ts: Date.now() })); } catch (_) {}
       })
@@ -68,15 +81,27 @@ export default function Appointments() {
   useEffect(() => {
     fetchAppointments();
 
+    const handleAppointmentUpdate = (e: any) => {
+      // Invalidate caches and refetch
+      localStorage.removeItem('portal_appointments_cache');
+      localStorage.removeItem('portal_book_appointments_cache');
+      localStorage.removeItem('portal_overview_cache');
+      
+      fetchAppointments();
+      
+      if (selectedAppointment?.id === e.appointment.id) {
+          setSelectedAppointment(e.appointment);
+      }
+    };
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.id) {
         const channel = echo.private(`client.appointments.${user.id}`)
-            .listen('.appointment.status.updated', (e: any) => {
-                setAppointments(prev => prev.map(a => a.id === e.appointment.id ? e.appointment : a));
-                if (selectedAppointment?.id === e.appointment.id) {
-                    setSelectedAppointment(e.appointment);
-                }
-            });
+            .listen('.appointment.status.updated', handleAppointmentUpdate);
+        
+        // Also listen for a generic update event after booking
+        echo.private(`client.appointments.${user.id}`)
+            .listen('.appointment.created', handleAppointmentUpdate);
 
         return () => {
             echo.leave(`client.appointments.${user.id}`);
@@ -88,6 +113,12 @@ export default function Appointments() {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
     try {
       await cancelAppointment(id);
+      
+      // Invalidate caches
+      localStorage.removeItem('portal_appointments_cache');
+      localStorage.removeItem('portal_book_appointments_cache');
+      localStorage.removeItem('portal_overview_cache');
+
       fetchAppointments();
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to cancel appointment.");
@@ -130,8 +161,10 @@ export default function Appointments() {
               <div key={appt.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
                 <div className={clsx(
                   "absolute left-0 top-0 bottom-0 w-1.5",
-                  appt.status === 'pending' ? 'bg-amber-400' : 
-                  appt.status === 'completed' ? 'bg-emerald-500' : 'bg-zinc-300'
+                  appt.status === 'pending' && 'bg-zinc-400',
+                  appt.status === 'approved' && 'bg-emerald-500',
+                  (appt.status === 'cancelled' || appt.status === 'declined') && 'bg-rose-500',
+                  appt.status === 'completed' && 'bg-blue-500'
                 )} />
                 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -144,18 +177,17 @@ export default function Appointments() {
                         <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{appt.service?.name}</span>
                         <span className={clsx(
                           "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
-                          appt.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
-                          appt.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'
+                          appt.status === 'pending' && 'bg-zinc-100 text-zinc-600',
+                          appt.status === 'approved' && 'bg-emerald-50 text-emerald-700',
+                          (appt.status === 'cancelled' || appt.status === 'declined') && 'bg-rose-50 text-rose-700',
+                          appt.status === 'completed' && 'bg-blue-50 text-blue-700'
                         )}>
                           {appt.status}
                         </span>
                       </div>
                       <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 hover:text-brand-500 transition-colors">Patient: {appt.pet?.name}</h3>
                       <div className="flex items-center gap-4 mt-2 text-sm text-zinc-500 font-medium">
-                        <span className="flex items-center gap-1.5"><FiCalendar className="w-4 h-4" /> {(() => {
-  const d = new Date(appt.date);
-  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-})()}</span>
+                        <span className="flex items-center gap-1.5"><FiCalendar className="w-4 h-4" /> {formatPortalDateLocal(appt.date, true)}</span>
                         <span className="flex items-center gap-1.5"><FiClock className="w-4 h-4" /> {appt.time?.substring(0, 5) || '00:00'}</span>
                       </div>
                     </div>
@@ -214,8 +246,10 @@ export default function Appointments() {
                   </h3>
                   <div className={clsx(
                     "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
-                    selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : 
-                    selectedAppointment.status === 'completed' ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-600"
+                    selectedAppointment.status === 'pending' && "bg-zinc-100 text-zinc-600",
+                    selectedAppointment.status === 'approved' && "bg-emerald-50 text-emerald-700",
+                    (selectedAppointment.status === 'cancelled' || selectedAppointment.status === 'declined') && "bg-rose-50 text-rose-700",
+                    selectedAppointment.status === 'completed' && "bg-blue-50 text-blue-700"
                   )}>
                     {selectedAppointment.status}
                   </div>
@@ -244,7 +278,7 @@ export default function Appointments() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{new Date(selectedAppointment.date).toLocaleDateString()}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date, true)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -253,7 +287,7 @@ export default function Appointments() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
                       </div>
                     </div>
                   </div>
@@ -264,7 +298,7 @@ export default function Appointments() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name}</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name || 'N/A'}</p>
                     </div>
                   </div>
 
@@ -287,11 +321,27 @@ export default function Appointments() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1">{selectedAppointment.notes}</p>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">{selectedAppointment.notes}</p>
                       </div>
                     </div>
                   )}
                 </div>
+
+                {(selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') && (
+                  <div className="p-5 rounded-[1.5rem] bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
+                    <div className="flex items-start gap-3">
+                      <FiXCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">
+                          {selectedAppointment.status === 'declined' ? 'Reason for Decline' : 'Cancellation Reason'}
+                        </p>
+                        <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed break-words">
+                          {selectedAppointment.decline_reason || selectedAppointment.cancellation_reason || "No reason provided"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {selectedAppointment.status === 'pending' && (
                   <button 

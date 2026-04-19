@@ -30,6 +30,7 @@ class PHClinicAISeeder extends Seeder
         DB::table('patients')->truncate();
         DB::table('owners')->truncate();
         DB::table('notifications')->truncate();
+        DB::table('inventory_usage_history')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 1. Setup Master Data
@@ -40,20 +41,21 @@ class PHClinicAISeeder extends Seeder
         $golden = Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id]);
         $persian = Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id]);
 
-        $vaccine = Inventory::updateOrCreate(
-            ['sku' => 'VAC-PARVO-AI'],
-            [
-                'item_name' => 'Parvo Vaccine (AI Sample)',
-                'inventory_category_id' => $medCategory->id,
-                'code' => 'VAC-PARVO-AI',
-                'stock_level' => 500,
-                'min_stock_level' => 100,
-                'price' => 450,
-                'selling_price' => 850,
-                'status' => 'Active',
-                'is_billable' => true
-            ]
-        );
+        // Core Vaccines for AI Dataset (INV-001 to INV-005)
+        $dhppi = Inventory::where('code', 'INV-001')->first();
+        $rabies = Inventory::where('code', 'INV-002')->first();
+        $l4 = Inventory::where('code', 'INV-003')->first();
+        $kc = Inventory::where('code', 'INV-004')->first();
+        $tricat = Inventory::where('code', 'INV-005')->first();
+
+        $vaccine = Inventory::where('code', 'VAC-PARVO-AI')->first();
+
+        if (!$vaccine || !$dhppi) {
+            $this->command->error('Inventory items not found. Please run InventoryListSeeder first.');
+            return;
+        }
+
+        $allVacs = [$dhppi, $rabies, $l4, $kc, $tricat, $vaccine];
 
         // 2. Create pool of owners and pets
         $owners = [];
@@ -155,26 +157,52 @@ class PHClinicAISeeder extends Seeder
                         'created_at' => $currentDate->copy()->addHours(rand(8, 17)),
                         'updated_at' => $currentDate->copy(),
                         'uuid' => (string) Str::uuid(),
-                        'sync_status' => 'local_only'
+                        'sync_status' => 'local_only',
+                        'stock_deducted' => true
                     ]);
 
-                    // Add vaccine to inventory consumption
+                    // Add a random vaccine from the core set
                     if (rand(1, 10) <= 4) {
-                        DB::table('invoice_items')->insert([
+                        $targetVac = $allVacs[array_rand($allVacs)];
+                        $qty = 1;
+
+                        // Find matching service for forecasting
+                        $serviceName = 'Vaccination';
+                        if (str_contains($targetVac->item_name, 'Rabies')) $serviceName = 'Anti-Rabies Vaccine';
+                        elseif (str_contains($targetVac->item_name, '5-in-1') || str_contains($targetVac->item_name, 'DHPPI')) $serviceName = '5 in 1 Vaccine (Dogs)';
+                        
+                        $service = \App\Models\Service::where('name', 'like', "%{$serviceName}%")->first();
+
+                        $itemId = DB::table('invoice_items')->insertGetId([
                             'invoice_id' => $invoiceId,
-                            'name' => $vaccine->item_name,
+                            'name' => $targetVac->item_name,
                             'item_type' => 'inventory',
-                            'inventory_id' => $vaccine->id,
-                            'qty' => 1,
-                            'unit_price' => $vaccine->selling_price,
-                            'amount' => $vaccine->selling_price,
+                            'inventory_id' => $targetVac->id,
+                            'service_id' => $service ? $service->id : null, // LINK TO SERVICE FOR FORECAST
+                            'qty' => $qty,
+                            'unit_price' => $targetVac->selling_price,
+                            'amount' => $targetVac->selling_price,
                             'created_at' => $currentDate->copy(),
                             'updated_at' => $currentDate->copy(),
                             'uuid' => (string) Str::uuid(),
                             'sync_status' => 'local_only'
                         ]);
+                        
+                        // Populate the InventoryUsageHistory table directly
+                        DB::table('inventory_usage_history')->insert([
+                            'inventory_id' => $targetVac->id,
+                            'invoice_id'   => $invoiceId,
+                            'invoice_item_id' => $itemId,
+                            'quantity_used' => $qty,
+                            'usage_date'   => $currentDate->copy()->toDateString(),
+                            'source_type'  => 'retail_sale',
+                            'unit_price'   => $targetVac->selling_price,
+                            'created_at'   => $currentDate->copy(),
+                            'updated_at'   => $currentDate->copy(),
+                        ]);
+
                         // Deduct from stock
-                        $vaccine->decrement('stock_level', 1);
+                        $targetVac->decrement('stock_level', $qty);
                     }
                 }
 

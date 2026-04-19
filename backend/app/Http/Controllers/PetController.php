@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Traits\IdentifiesPortalOwner;
 
 class PetController extends Controller
@@ -28,8 +29,13 @@ class PetController extends Controller
             return response()->json($query->orderBy('name')->get());
         }
 
-        // Eager load invoices to support total_paid calculation without N+1 queries
-        $query = Pet::with(['owner', 'species', 'breed', 'sizeCategory', 'invoices']);
+        // Start with optimized query for the list
+        $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'photo', 'sex', 'date_of_birth', 'created_at')
+            ->with([
+                'owner:id,name', 
+                'species:id,name', 
+                'breed:id,name'
+            ]);
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->where('owner_id', $ownerId);
@@ -37,13 +43,27 @@ class PetController extends Controller
             $query->where('owner_id', $request->owner_id);
         }
 
-        $query->orderBy('created_at', 'desc');
-
-        if ($request->has('per_page')) {
-            return response()->json($query->paginate($request->per_page));
+        // Add Search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhereHas('owner', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('breed', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('species', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  });
+            });
         }
 
-        return response()->json($query->get());
+        $query->orderBy('created_at', 'desc');
+
+        $perPage = $request->get('per_page', 12);
+        return response()->json($query->paginate($perPage));
     }
 
     public function store(Request $request)
@@ -108,6 +128,8 @@ class PetController extends Controller
                 'vet_id'          => $recordVetId,
             ]);
         }
+
+        $this->invalidatePortalCache($pet->owner_id);
 
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])->append(['total_paid', 'total_due', 'last_visit', 'next_due']), 201);
     }
@@ -191,6 +213,8 @@ class PetController extends Controller
             }
         }
 
+        $this->invalidatePortalCache($pet->owner_id);
+
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])
             ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
@@ -198,14 +222,20 @@ class PetController extends Controller
     public function destroy(Pet $pet)
     {
         $user = auth()->user();
-        if (
-            (method_exists($user, 'isAdmin') && !$user->isAdmin()) && 
-            (method_exists($user, 'isClinical') && !$user->isClinical())
-        ) {
-            return response()->json(['message' => 'Unauthorized. Only Admins and Veterinarians can archive patient records.'], 403);
+        $portalOwnerId = $this->getPortalOwnerId();
+        $isPortalOwner = $portalOwnerId !== null && (int) $portalOwnerId === (int) $pet->owner_id;
+
+        $isAdminUser = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
+        $isClinicalUser = $user && method_exists($user, 'isClinical') && $user->isClinical();
+
+        if (!$isPortalOwner && !$isAdminUser && !$isClinicalUser) {
+            return response()->json(['message' => 'Unauthorized. You can only delete your own pet.'], 403);
         }
 
+        $ownerId = $pet->owner_id;
         $pet->delete();
+        $this->invalidatePortalCache($ownerId);
+
         return response()->json(null, 204);
     }
 }

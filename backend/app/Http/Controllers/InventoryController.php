@@ -22,7 +22,37 @@ class InventoryController extends Controller
 
     public function index()
     {
-        return response()->json(Inventory::with(['inventoryCategory', 'latestForecast'])->get());
+        $inventory = Inventory::with(['inventoryCategory', 'latestForecast'])->get();
+// Recalculate forecast days/status based on real-time stock and monthly needs
+$daysInMonth = \Carbon\Carbon::now()->daysInMonth;
+$dayOfMonth = \Carbon\Carbon::now()->day;
+$daysRemaining = $daysInMonth - $dayOfMonth + 1; // Remaining days including today
+
+$inventory->each(function ($item) use ($daysRemaining) {
+    if ($item->latestForecast) {
+        $avgDaily = (float) ($item->latestForecast->average_daily_consumption ?? 0);
+        $currentStock = (float) $item->stock_level;
+        $minStock = (float) ($item->min_stock_level ?? 0);
+
+        if ($avgDaily > 0) {
+            $daysLeft = ($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0;
+            $item->latestForecast->days_until_stockout = (int)$daysLeft;
+
+            // NEW PREDICTIVE LOGIC:
+            // If predicted needs for the rest of the month exceed current stock, mark as Critical
+            $projectedMonthlyNeed = $avgDaily * $daysRemaining;
+
+            if ($currentStock < $projectedMonthlyNeed || $daysLeft < 7) {
+                $item->latestForecast->forecast_status = 'Low Stock';
+            } elseif ($daysLeft < 14) {
+                $item->latestForecast->forecast_status = 'Reorder Soon';
+            } else {
+                $item->latestForecast->forecast_status = 'Safe';
+            }
+        }
+    }
+});
+        return response()->json($inventory);
     }
 
     public function lowStock(Request $request)
@@ -41,13 +71,10 @@ class InventoryController extends Controller
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'required|numeric|min:0', 
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
-            'expiration_date' => 'nullable|date',
-            'is_billable' => 'boolean',
-            'is_consumable' => 'boolean',
-            'deduct_on_finalize' => 'boolean',
+            'expiration_date' => 'nullable|date', // Optional again
         ]);
 
         // Automatically generate SKU by resolving the category name
@@ -57,19 +84,6 @@ class InventoryController extends Controller
             $validatedData['item_name'],
             $validatedData['sub_details']
         );
-
-        if (array_key_exists('price', $validatedData)) {
-            $validatedData['cost_price'] = $validatedData['price'];
-            unset($validatedData['price']);
-        }
-        if (array_key_exists('is_billable', $validatedData)) {
-            $validatedData['is_sellable'] = $validatedData['is_billable'];
-            unset($validatedData['is_billable']);
-        }
-        if (array_key_exists('is_consumable', $validatedData)) {
-            $validatedData['is_service_usable'] = $validatedData['is_consumable'];
-            unset($validatedData['is_consumable']);
-        }
 
         $item = Inventory::create($validatedData);
 
@@ -110,68 +124,59 @@ class InventoryController extends Controller
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
-            'is_billable' => 'boolean',
-            'is_consumable' => 'boolean',
-            'deduct_on_finalize' => 'boolean',
         ]);
 
         $oldStock = $inventory->stock_level;
         $newStock = $validatedData['stock_level'];
 
-        if (array_key_exists('price', $validatedData)) {
-            $validatedData['cost_price'] = $validatedData['price'];
-            unset($validatedData['price']);
-        }
-        if (array_key_exists('is_billable', $validatedData)) {
-            $validatedData['is_sellable'] = $validatedData['is_billable'];
-            unset($validatedData['is_billable']);
-        }
-        if (array_key_exists('is_consumable', $validatedData)) {
-            $validatedData['is_service_usable'] = $validatedData['is_consumable'];
-            unset($validatedData['is_consumable']);
-        }
-
         $inventory->update($validatedData);
 
         if ($oldStock != $newStock) {
             $qtyDiff = $newStock - $oldStock;
-            InventoryTransaction::create([
+            \App\Models\InventoryTransaction::create([
                 'inventory_id' => $inventory->id,
                 'transaction_type' => 'Adjustment',
                 'quantity' => $qtyDiff,
                 'previous_stock' => $oldStock,
                 'new_stock' => $newStock,
                 'remarks' => 'Manual adjustment via UI',
-                'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
+                'created_by' => auth()->id() ?? (\App\Models\Admin::first()->id ?? null)
             ]);
 
-            // Internal admin notification for stock adjustment
-            if ($qtyDiff > 0) {
-                $this->createInternalNotification(
-                    'StockAdjustment',
-                    'Stock Increased',
-                    "Stock level for '{$inventory->item_name}' was manually increased by {$qtyDiff} units.",
-                    ['inventory_id' => $inventory->id]
-                );
-            } else {
-                $this->createInternalNotification(
-                    'StockAdjustment',
-                    'Stock Decreased',
-                    "Stock level for '{$inventory->item_name}' was manually decreased by " . abs($qtyDiff) . " units.",
-                    ['inventory_id' => $inventory->id]
-                );
+            // If it's a decrease, log into usage history for AI learning
+            if ($qtyDiff < 0) {
+                \App\Models\InventoryUsageHistory::create([
+                    'inventory_id' => $inventory->id,
+                    'quantity_used' => abs($qtyDiff),
+                    'usage_date' => now()->toDateString(),
+                    'source_type' => 'manual_adjustment',
+                    'unit_price' => $inventory->selling_price
+                ]);
+                
+                // Clear AI forecast reorder suggestions if item just became out of stock
+                if ($newStock <= 0) {
+                    \App\Models\InventoryForecast::where('inventory_id', $inventory->id)->update(['forecast_status' => 'Out of Stock']);
+                }
             }
 
-            // Trigger forecast refresh when stock level changes (Part 1.2)
-            RefreshInventoryForecast::dispatch([$inventory->id], 'stock_update');
-        }
+            // Internal admin notification for stock adjustment
+            $this->createInternalNotification(
+                'StockAdjustment',
+                'Inventory Adjusted',
+                "Stock for '{$inventory->item_name}' was manually adjusted from {$oldStock} to {$newStock}. New Status: " . $inventory->calculateStockStatus(),
+                ['inventory_id' => $inventory->id]
+            );
+            }
 
-        return response()->json($inventory->load('inventoryCategory'));
-    }
+            // Trigger initial forecast refresh (Part 1.2)
+            \App\Jobs\RefreshInventoryForecast::dispatch([$inventory->id], 'manual');
+
+            return response()->json($inventory->load('inventoryCategory'));
+            }
 
     public function destroy(Inventory $inventory)
     {

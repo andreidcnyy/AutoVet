@@ -10,6 +10,7 @@ import {
   FiCalendar,
   FiInfo,
   FiX,
+  FiSearch,
   FiCheckCircle,
   FiAlertCircle,
   FiXCircle,
@@ -33,8 +34,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/AuthContext";
 import ManualSendModal from "../notifications/ManualSendModal";
 
-const viewModes = ["Month", "Week", "Day"];
+const viewModes = ["Month", "Week", "Day", "List"];
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatDateLocal = (dateStr, formatStr = "MMMM d, yyyy") => {
+  if (!dateStr) return "";
+  const normalizedDate = typeof dateStr === 'string' && dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+  return format(d, formatStr);
+};
 
 const quickAddSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -65,16 +75,41 @@ function AppointmentsView() {
 
   const [activeViewMode, setActiveViewMode] = useState("Month");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState([]); // Now used for paginated list
+  const [calendarSummaries, setCalendarSummaries] = useState([]); // NEW: for dots on calendar
   const [aiForecast, setAiForecast] = useState(null);
   const [categories, setCategories] = useState([]);
   const { user } = useAuth();
+
+  // Unified State for Filtering and Pagination
+  const [params, setParams] = useState({
+    page: 1,
+    status: "all",
+    date: format(new Date(), "yyyy-MM-dd"), // Default to today
+    vet_id: "",
+    service_id: "",
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // New state for interactivity
   const [activePanel, setActivePanel] = useState("booking"); // 'booking' | 'details'
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [declineModal, setDeclineModal] = useState({ open: false, reason: "", error: "", submitting: false });
 
   const {
     register,
@@ -96,13 +131,6 @@ function AppointmentsView() {
   });
 
   const watchPetId = watch("pet_id");
-
-  // Update form if preSelectedPetId changes
-  useEffect(() => {
-    if (preSelectedPetId) {
-      setValue("pet_id", preSelectedPetId);
-    }
-  }, [preSelectedPetId, setValue]);
 
   const [owners, setOwners] = useState([]);
   const [pets, setPets] = useState([]);
@@ -128,41 +156,79 @@ function AppointmentsView() {
     }
   }, [selectedDate, selectedVetId, user?.token]);
 
-  const CACHE_KEY = 'appointments_cache';
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  // Fetch Calendar Summaries (Dots/Counts)
+  const fetchCalendarSummaries = useCallback((signal) => {
+    if (!user?.token) return;
+    setIsSummaryLoading(true);
 
+    const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+    const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+
+    api.get('/api/appointments/summary', { params: { date_from: dateFrom, date_to: dateTo }, signal })
+      .then((data) => {
+        setCalendarSummaries(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        console.error("Error fetching summaries:", err);
+      })
+      .finally(() => setIsSummaryLoading(false));
+  }, [user?.token, currentDate]);
+
+  // Fetch Paginated List
   const fetchAppointments = useCallback((signal) => {
     if (!user?.token) return;
-    const dateFrom = format(startOfMonth(subMonths(currentDate, 1)), 'yyyy-MM-dd');
-    const dateTo = format(endOfMonth(addMonths(currentDate, 1)), 'yyyy-MM-dd');
+    setIsLoading(true);
 
-    // Show cached data immediately while fetching fresh
-    try {
-      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
-        setAppointments(cached.data);
-      }
-    } catch (_) {}
+    const queryParams = {
+      page: params.page,
+      per_page: 10,
+      search: debouncedSearch,
+      status: params.status,
+      date: params.date,
+      vet_id: params.vet_id,
+      service_id: params.service_id,
+    };
 
-    api.get('/api/appointments', { params: { date_from: dateFrom, date_to: dateTo }, signal })
+    api.get('/api/appointments', { params: queryParams, signal })
       .then((data) => {
-        const result = Array.isArray(data) ? data
-          : (data?.appointments ?? []);
-        setAppointments(result);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
+        if (data && data.data) {
+          setAppointments(data.data);
+          setPagination({
+            current_page: data.current_page,
+            last_page: data.last_page,
+            total: data.total
+          });
+        }
       })
       .catch((err) => {
         if (err.name === 'AbortError') return;
         console.error("Error fetching appointments:", err);
-        setAppointments([]);
-      });
-  }, [user?.token, currentDate]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [user?.token, params, debouncedSearch]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCalendarSummaries(controller.signal);
+    return () => controller.abort();
+  }, [fetchCalendarSummaries]);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchAppointments(controller.signal);
     return () => controller.abort();
   }, [fetchAppointments]);
+
+  const handleParamChange = (newParams) => {
+    setParams(prev => ({ ...prev, ...newParams, page: newParams.page || 1 }));
+  };
+
+  const refreshAllData = () => {
+    const controller = new AbortController();
+    fetchCalendarSummaries(controller.signal);
+    fetchAppointments(controller.signal);
+  };
 
   // Track whether form data has been loaded yet
   const [formDataLoaded, setFormDataLoaded] = useState(false);
@@ -322,6 +388,12 @@ function AppointmentsView() {
   };
 
   const handleStatusAction = async (action) => {
+    // Decline requires a reason — open modal instead of firing immediately
+    if (action === 'decline') {
+      setDeclineModal({ open: true, reason: "", error: "", submitting: false });
+      return;
+    }
+
     try {
       const response = await fetch(`/api/appointments/${selectedAppointment.id}/${action}`, {
         method: "POST",
@@ -341,6 +413,38 @@ function AppointmentsView() {
       setSelectedAppointment(prev => ({ ...prev, status: action === 'approve' ? 'approved' : 'declined' }));
     } catch (err) {
       toast.error(err.message);
+    }
+  };
+
+  const submitDecline = async () => {
+    const reason = declineModal.reason.trim();
+    if (reason.length < 10) {
+      setDeclineModal(prev => ({ ...prev, error: "Decline reason must be at least 10 characters." }));
+      return;
+    }
+    setDeclineModal(prev => ({ ...prev, submitting: true, error: "" }));
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointment.id}/decline`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to decline appointment.");
+      }
+
+      toast.success("Appointment declined.");
+      fetchAppointments();
+      setSelectedAppointment(prev => prev ? { ...prev, status: 'declined', decline_reason: reason } : prev);
+      setDeclineModal({ open: false, reason: "", error: "", submitting: false });
+    } catch (err) {
+      setDeclineModal(prev => ({ ...prev, submitting: false, error: err.message }));
     }
   };
 
@@ -381,180 +485,273 @@ function AppointmentsView() {
     else setCurrentDate(addDays(currentDate, 1));
   };
 
-  const calendarDays = activeViewMode === "Month"
-    ? generateCalendarGrid(currentDate, appointments)
-    : activeViewMode === "Week"
-    ? generateWeekGrid(currentDate, appointments)
-    : generateDayGrid(currentDate, appointments);
+  const calendarDays = generateCalendarGrid(currentDate); // Minimal grid, no events here
 
   const qInputBase = "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500";
   const getQInputClass = (error) => clsx(qInputBase, error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-500 dark:border-dark-border");
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      {/* ── Left Column: Calendar ── */}
-      <div className="flex-1 min-w-0">
-        <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-colors duration-300 dark:border-dark-border dark:bg-dark-card">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 p-5 transition-colors duration-300 dark:border-dark-border">
-            <div className="flex items-center gap-1.5 rounded-xl bg-zinc-100 p-1 dark:bg-dark-surface">
-              {viewModes.map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setActiveViewMode(mode)}
-                  className={clsx(
-                    "rounded-lg px-5 py-2 text-xs font-bold uppercase tracking-tight transition-all",
-                    activeViewMode === mode
-                      ? "bg-white text-emerald-600 shadow-sm dark:bg-dark-card dark:text-emerald-400"
-                      : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                  )}
-                >
-                  {mode}
-                </button>
+    <div className="flex flex-col gap-8">
+      {/* ── Top Filters ── */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 bg-white dark:bg-dark-card p-6 rounded-[2rem] border border-zinc-200 dark:border-dark-border shadow-sm transition-all duration-300">
+        <div className="relative">
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input 
+            type="text" 
+            placeholder="Search pet/owner..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/50 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface/50 text-sm font-bold"
+          />
+        </div>
+        <select 
+          value={params.status} 
+          onChange={(e) => handleParamChange({ status: e.target.value })}
+          className="h-11 px-3 rounded-xl border border-zinc-200 bg-zinc-50/50 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface/50 text-sm font-bold appearance-none pr-10 relative"
+        >
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="declined">Declined</option>
+          <option value="upcoming">Upcoming (Not completed/cancelled)</option>
+          <option value="past">Past Appointments</option>
+        </select>
+        <select 
+          value={params.vet_id} 
+          onChange={(e) => handleParamChange({ vet_id: e.target.value })}
+          className="h-11 px-3 rounded-xl border border-zinc-200 bg-zinc-50/50 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface/50 text-sm font-bold appearance-none pr-10 relative"
+        >
+          <option value="">All Veterinarians</option>
+          {vets.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+        </select>
+        <select 
+          value={params.service_id} 
+          onChange={(e) => handleParamChange({ service_id: e.target.value })}
+          className="h-11 px-3 rounded-xl border border-zinc-200 bg-zinc-50/50 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface/50 text-sm font-bold appearance-none pr-10 relative"
+        >
+          <option value="">All Services</option>
+          {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <div className="flex gap-2">
+          <input 
+            type="date" 
+            value={params.date} 
+            onChange={(e) => handleParamChange({ date: e.target.value })}
+            className="flex-1 h-11 px-3 rounded-xl border border-zinc-200 bg-zinc-50/50 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface/50 text-sm font-bold"
+          />
+          <button onClick={() => { setSearchTerm(""); handleParamChange({ date: "", status: "all", vet_id: "", service_id: "" }); }} className="p-3 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400 transition-all">
+            <FiRefreshCcw className={clsx(isLoading && "animate-spin")} />
+          </button>
+        </div>
+      </section>
+
+      <div className="flex flex-col xl:flex-row gap-8">
+        {/* ── Left Column: Lightweight Calendar Navigator ── */}
+        <aside className="w-full xl:w-[400px] shrink-0 space-y-6">
+          <section className="overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white shadow-xl transition-colors duration-300 dark:border-dark-border dark:bg-dark-card">
+            <div className="flex items-center justify-between border-b border-zinc-100 p-6 dark:border-dark-border">
+              <button onClick={handlePrev} className="p-2.5 rounded-xl border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface transition-all">
+                <FiChevronLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-100 italic">
+                {format(currentDate, "MMMM yyyy")}
+              </h2>
+              <button onClick={handleNext} className="p-2.5 rounded-xl border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface transition-all">
+                <FiChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 border-b border-zinc-50 bg-zinc-50/30 dark:border-dark-border/50 dark:bg-dark-surface/30">
+              {weekDays.map((day) => (
+                <div key={day} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  {day[0]}
+                </div>
               ))}
             </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-4 px-4 py-2 bg-zinc-50/50 dark:bg-dark-surface/30 rounded-2xl border border-zinc-100 dark:border-dark-border">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-zinc-400"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pending</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Approved</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Declined/Cancelled/Past</span>
-              </div>
-            </div>
+            <div className="grid grid-cols-7 divide-x divide-y divide-zinc-50 dark:divide-dark-border/50">
+              {calendarDays.map((entry, index) => {
+                const todayStr = format(new Date(), "yyyy-MM-dd");
+                const isToday = entry.dateString === todayStr;
+                const isSelected = entry.dateString === params.date;
+                const summary = calendarSummaries.find(s => s.date === entry.dateString);
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrev}
-                  className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
-                >
-                  <FiChevronLeft className="h-4 w-4" />
-                </button>
-                <h2 className="min-w-[140px] text-center text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 italic">
-                  {activeViewMode === "Month" ? format(currentDate, "MMMM yyyy") : 
-                   activeViewMode === "Week" ? `Week of ${format(currentDate, "MMM d")}` :
-                   format(currentDate, "MMMM d, yyyy")}
-                </h2>
-                <button
-                  onClick={handleNext}
-                  className="rounded-lg border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"
-                >
-                  <FiChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+                if (!entry.inMonth) return <div key={index} className="aspect-square bg-zinc-50/10 dark:bg-dark-surface/5" />;
 
-          <div className="grid grid-cols-7 border-b border-zinc-100 bg-zinc-50/50 dark:border-dark-border/50 dark:bg-dark-surface/30">
-            {weekDays.map((day) => (
-              <div
-                key={day}
-                className="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className={clsx(
-            "grid divide-x divide-y divide-zinc-100 transition-colors duration-300 dark:divide-dark-border/50",
-            activeViewMode === "Month" || activeViewMode === "Week" ? "grid-cols-7" : "grid-cols-1"
-          )}>
-            {calendarDays.map((entry, index) => {
-              const todayStr = format(new Date(), "yyyy-MM-dd");
-              const isToday = entry.dateString === todayStr;
-              const isPast = entry.dateString < todayStr;
-
-              if (activeViewMode === "Month" && !entry.inMonth) {
-                return <div key={`empty-${index}`} className="min-h-[140px] bg-zinc-50/10 dark:bg-dark-surface/5" />;
-              }
-
-              return (
-                <div
-                  key={`${entry.dateString}-${index}`}
-                  onClick={() => handleDayClick(entry)}
-                  className={clsx(
-                    "group relative min-h-[140px] p-2 transition-all cursor-pointer",
-                    !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-40",
-                    isToday && "bg-emerald-50/50 dark:bg-emerald-900/10",
-                    isPast && "bg-zinc-100/50 dark:bg-zinc-800/40 grayscale-sm cursor-default",
-                    !isPast && "hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={clsx(
-                        "inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition-all",
-                        isToday
-                          ? "bg-emerald-600 text-white shadow-lg"
-                          : (isPast ? "text-zinc-400 dark:text-zinc-600" : (entry.inMonth ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-600"))
-                      )}
-                    >
+                return (
+                  <button
+                    key={entry.dateString}
+                    onClick={() => handleParamChange({ date: entry.dateString })}
+                    className={clsx(
+                      "group relative aspect-square flex flex-col items-center justify-center transition-all",
+                      isSelected ? "bg-emerald-600 text-white shadow-inner scale-95 rounded-2xl" : "hover:bg-emerald-50 dark:hover:bg-emerald-500/5",
+                      isToday && !isSelected && "bg-emerald-50/50 dark:bg-emerald-900/10"
+                    )}
+                  >
+                    <span className={clsx("text-xs font-black", !isSelected && (isToday ? "text-emerald-600" : "text-zinc-700 dark:text-zinc-300"))}>
                       {entry.day}
                     </span>
-                    {entry.events.length > 0 && (
-                      <span className={clsx(
-                        "text-[9px] font-bold px-1.5 py-0.5 rounded-md italic",
-                        isPast ? "text-zinc-400 bg-zinc-100 dark:bg-zinc-800" : "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                    {summary && summary.count > 0 && (
+                      <div className={clsx(
+                        "mt-1 flex gap-0.5",
+                        isSelected ? "opacity-100" : "opacity-60"
                       )}>
-                        {entry.events.length}
-                      </span>
+                        {Array.from({ length: Math.min(summary.count, 3) }).map((_, i) => (
+                          <div key={i} className={clsx("w-1 h-1 rounded-full", isSelected ? "bg-white" : "bg-emerald-500")} />
+                        ))}
+                      </div>
                     )}
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-                  <div className="mt-2 space-y-1.5">
-                    {entry.events.map((event) => {
-                      // Status logic:
-                      // Grey: Pending
-                      // Green: Approved / Completed
-                      // Red: Declined / Cancelled / Past its time if still pending
-                      const isPast = new Date(`${event.date}T${event.time}`) < new Date();
-                      
-                      let statusColorClass = "";
-                      let statusText = event.status;
+          {/* AI Insights Card */}
+          <section className="rounded-[2.5rem] border border-emerald-100 bg-emerald-50/30 p-8 dark:border-emerald-600/20 dark:bg-emerald-600/5 shadow-sm">
+            <div className="mb-4 inline-flex items-center gap-3 text-emerald-700 dark:text-emerald-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xl shadow-emerald-500/40">
+                <LuSparkles className="h-5 w-5" />
+              </div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] italic">Forecaster Intelligence</p>
+            </div>
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-emerald-300/80 font-bold italic">{aiForecast?.insight || "Analyzing clinic data for scheduling trends..."}</p>
+            <button onClick={handleReviewHints} className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors">
+              <FiBell className="h-4 w-4" />
+              Access planning matrix
+            </button>
+          </section>
+        </aside>
 
-                      if (event.status === 'approved' || event.status === 'completed') {
-                        statusColorClass = "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300";
-                        if (event.status === 'approved') statusText = 'Approved';
-                        if (event.status === 'completed') statusText = 'Completed';
-                      } else if (event.status === 'declined' || event.status === 'cancelled' || (event.status === 'pending' && isPast)) {
-                        statusColorClass = "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300";
-                        if (event.status === 'declined') statusText = 'Declined';
-                        if (event.status === 'cancelled') statusText = 'Cancelled';
-                        if (event.status === 'pending' && isPast) statusText = 'Past/No Show';
-                      } else {
-                        // Default pending
-                        statusColorClass = "border-zinc-400/50 bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
-                        statusText = 'Pending';
-                      }
+        {/* ── Main Content: Appointment Table ── */}
+        <section className="flex-1 min-w-0">
+          <div className="overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 p-8 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/30">
+              <div>
+                <h3 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 italic">
+                  <span className="text-emerald-600 mr-2">/</span>
+                  {params.date ? formatDateLocal(params.date) : "Recent Appointments"}
+                </h3>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+                  {pagination.total} Records Found
+                </p>
+              </div>
+              <button
+                onClick={() => { reset(); setSelectedAppointment(null); setSelectedOwnerId(""); setActivePanel("booking"); setIsDrawerOpen(true); }}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-xl hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-95 transition-all"
+              >
+                <FiPlusCircle className="h-5 w-5" />
+                Book Now
+              </button>
+            </div>
 
-                      return (
-                        <article
-                          key={event.id}
-                          onClick={(e) => handleAppointmentClick(e, event)}
-                          className={clsx(
-                            "rounded-lg border-l-4 px-2 py-1 text-[10px] font-bold shadow-sm transition-all hover:translate-x-1 group/appt",
-                            statusColorClass
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="truncate flex-1 uppercase">{event.title}</span>
-                            <span className="opacity-70 whitespace-nowrap">{event.time?.substring(0, 5)}</span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-50 dark:border-dark-border">
+                    <th className="px-8 py-5">Status</th>
+                    <th className="px-8 py-5">Patient & Guardian</th>
+                    <th className="px-8 py-5">Clinical Service</th>
+                    <th className="px-8 py-5">Schedule</th>
+                    <th className="px-8 py-5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+                  {isLoading ? (
+                    Array(5).fill(0).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td colSpan={5} className="px-8 py-10"><div className="h-4 bg-zinc-100 dark:bg-dark-surface rounded-full w-full"></div></td>
+                      </tr>
+                    ))
+                  ) : appointments.length > 0 ? appointments.map(appt => (
+                    <tr 
+                      key={appt.id} 
+                      onClick={(e) => handleAppointmentClick(e, appt)}
+                      className="group hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 cursor-pointer transition-all duration-200"
+                    >
+                      <td className="px-8 py-6">
+                        <span className={clsx(
+                          "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border",
+                          appt.status === 'approved' || appt.status === 'completed' ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50" :
+                          appt.status === 'declined' || appt.status === 'cancelled' ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50" :
+                          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50"
+                        )}>
+                          {appt.status}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-dark-surface flex items-center justify-center text-lg shadow-inner group-hover:scale-110 transition-transform">🐾</div>
+                          <div>
+                            <p className="font-black text-zinc-900 dark:text-zinc-100 italic">{appt.pet?.name}</p>
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase">Guardian: {appt.pet?.owner?.name}</p>
                           </div>
-                        </article>
-                      );
-                    })}
-                  </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <p className="font-black text-zinc-800 dark:text-zinc-200 uppercase text-xs tracking-tight">{appt.title}</p>
+                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">{appt.service?.name}</p>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-black text-sm italic">
+                          <FiClock className="text-emerald-500 shrink-0 h-4 w-4" />
+                          {appt.time?.substring(0, 5)}
+                        </div>
+                        {!params.date && (
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase mt-1">{formatDateLocal(appt.date, "MMM d, yyyy")}</p>
+                        )}
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                         <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-all">
+                           <button className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white dark:bg-emerald-900/30 dark:text-emerald-400 transition-all shadow-lg shadow-emerald-500/10">
+                             <FiChevronRight className="h-5 w-5" />
+                           </button>
+                         </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-32 text-center">
+                        <div className="max-w-xs mx-auto">
+                          <div className="w-20 h-20 rounded-[2rem] bg-zinc-50 dark:bg-dark-surface flex items-center justify-center mx-auto mb-6">
+                            <FiCalendar className="w-10 h-10 text-zinc-200" />
+                          </div>
+                          <p className="text-zinc-900 dark:text-zinc-50 font-black italic text-lg uppercase tracking-tight">No records found</p>
+                          <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mt-2">Adjust your filters or pick another date from the navigator.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {pagination.last_page > 1 && (
+              <div className="flex items-center justify-between p-8 border-t border-zinc-50 dark:border-dark-border bg-zinc-50/20 dark:bg-dark-surface/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  Showing Page <span className="text-zinc-900 dark:text-zinc-100">{pagination.current_page}</span> of <span className="text-zinc-900 dark:text-zinc-100">{pagination.last_page}</span>
+                </p>
+                <div className="flex gap-3">
+                  <button 
+                    disabled={pagination.current_page === 1}
+                    onClick={() => handleParamChange({ page: pagination.current_page - 1 })}
+                    className="h-12 px-6 rounded-2xl border border-zinc-200 dark:border-dark-border text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-dark-surface disabled:opacity-30 transition-all"
+                  >
+                    Prev
+                  </button>
+                  <button 
+                    disabled={pagination.current_page === pagination.last_page}
+                    onClick={() => handleParamChange({ page: pagination.current_page + 1 })}
+                    className="h-12 px-6 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 text-xs font-black uppercase tracking-widest hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-30 transition-all shadow-xl"
+                  >
+                    Next
+                  </button>
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -702,24 +899,6 @@ function AppointmentsView() {
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Internal record view</p>
                 </div>
                 <div className="flex gap-2">
-                  {selectedAppointment?.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => handleStatusAction('approve')}
-                        className="rounded-2xl bg-emerald-100 p-3 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-800/50 transition-all active:scale-90"
-                        title="Approve Appointment"
-                      >
-                        <FiThumbsUp className="h-6 w-6" />
-                      </button>
-                      <button
-                        onClick={() => handleStatusAction('decline')}
-                        className="rounded-2xl bg-rose-100 p-3 text-rose-600 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-800/50 transition-all active:scale-90"
-                        title="Decline Appointment"
-                      >
-                        <FiThumbsDown className="h-6 w-6" />
-                      </button>
-                    </>
-                  )}
                   {selectedAppointment?.status === 'approved' && (
                     <button
                       onClick={handleSendReminder}
@@ -766,7 +945,7 @@ function AppointmentsView() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Date Scheduled</p>
-                      <p className="text-lg font-black text-zinc-800 dark:text-zinc-100">{selectedAppointment?.date ? format(new Date(selectedAppointment.date), "MMMM d, yyyy") : ""}</p>
+                      <p className="text-lg font-black text-zinc-800 dark:text-zinc-100">{formatDateLocal(selectedAppointment?.date)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-5">
@@ -879,13 +1058,59 @@ function AppointmentsView() {
         </aside>
       </div>
 
-      <ManualSendModal 
-        isOpen={isSendModalOpen} 
-        onClose={() => setIsSendModalOpen(false)} 
+      <ManualSendModal
+        isOpen={isSendModalOpen}
+        onClose={() => setIsSendModalOpen(false)}
         owner={owners.find(o => o.id === selectedAppointment?.pet?.owner_id)}
         relatedObject={selectedAppointment}
         relatedType="App\Models\Appointment"
       />
+
+      {declineModal.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border p-8">
+            <h3 className="text-xl font-black uppercase tracking-tight text-rose-600 mb-2">Decline Appointment</h3>
+            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">
+              Provide a reason (visible to the client, min 10 characters)
+            </p>
+            <textarea
+              value={declineModal.reason}
+              onChange={(e) => setDeclineModal(prev => ({ ...prev, reason: e.target.value, error: "" }))}
+              rows={5}
+              autoFocus
+              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3 text-sm focus:outline-none focus:border-rose-500"
+              placeholder="e.g. Vet is unavailable at this time; please reschedule for a later slot."
+            />
+            <div className="flex items-center justify-between mt-2">
+              <span className={clsx(
+                "text-[10px] font-bold uppercase tracking-widest",
+                declineModal.reason.trim().length < 10 ? "text-rose-500" : "text-emerald-500"
+              )}>
+                {declineModal.reason.trim().length}/10+ chars
+              </span>
+              {declineModal.error && (
+                <span className="text-[10px] font-bold text-rose-500">{declineModal.error}</span>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setDeclineModal({ open: false, reason: "", error: "", submitting: false })}
+                disabled={declineModal.submitting}
+                className="px-6 py-2.5 rounded-xl border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-300 font-bold text-xs uppercase tracking-widest hover:bg-zinc-50 dark:hover:bg-dark-surface"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitDecline}
+                disabled={declineModal.submitting || declineModal.reason.trim().length < 10}
+                className="px-6 py-2.5 rounded-xl bg-rose-600 text-white font-black text-xs uppercase tracking-widest hover:bg-rose-700 disabled:opacity-50"
+              >
+                {declineModal.submitting ? "Declining..." : "Confirm Decline"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

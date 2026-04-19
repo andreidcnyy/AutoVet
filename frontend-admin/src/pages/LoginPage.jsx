@@ -36,6 +36,8 @@ function LoginPage() {
 
       const data = await res.json();
 
+      console.log('Full login response:', JSON.stringify(data, null, 2));
+
       if (res.ok && !data.error) {
         login(data); 
         if (data.must_change_password) {

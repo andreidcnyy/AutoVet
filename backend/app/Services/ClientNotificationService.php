@@ -127,6 +127,41 @@ class ClientNotificationService
     }
 
     /**
+     * Notify client about a medical record update.
+     */
+    public function notifyMedicalRecordUpdate(\App\Models\MedicalRecord $record)
+    {
+        $pet = $record->pet;
+        if (!$pet || !$pet->owner) return;
+
+        $owner = $pet->owner;
+
+        // Create a portal notification record
+        ClientNotification::create([
+            'owner_id' => $owner->id,
+            'channel' => 'portal', // Internal portal alert
+            'type' => 'automated',
+            'title' => 'Medical Record Updated',
+            'message' => "A new medical record has been added for {$pet->name}. Diagnosis: " . ($record->diagnosis ?: 'Pending'),
+            'status' => 'sent',
+            'sent_at' => now(),
+            'related_type' => get_class($record),
+            'related_id' => $record->id,
+        ]);
+
+        // Optionally send email if configured...
+        try {
+            $this->sendFromTemplate($owner, 'medical_record_updated', 'email', [
+                'pet_name' => $pet->name,
+                'diagnosis' => $record->diagnosis
+            ], 'automated', $record);
+        } catch (\Exception $e) {
+            // Silently fail if template doesn't exist, as this is a secondary channel
+            \Log::info("Optional email notification skipped for medical record: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Interpolate variables in a string.
      */
     public function interpolateVariables(string $text, array $variables, ?Owner $owner = null, $relatedModel = null): string

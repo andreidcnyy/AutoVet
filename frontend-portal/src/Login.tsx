@@ -86,7 +86,8 @@ function LoginPage() {
           <input
             id="email"
             type="email"
-            autoComplete="email"
+            autoComplete="off"
+            name="no-autofill-email"
             required
             className="input-field"
             placeholder="name@example.com"

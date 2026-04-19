@@ -12,7 +12,7 @@ class InventoryUsageHistory extends Model
      * Source types that represent true verified consumption and are safe to use
      * as AI forecast input. Excludes manual adjustments and non-sale events.
      */
-    public const FORECASTING_SAFE_SOURCES = ['retail_sale', 'service_consumable'];
+    public const FORECASTING_SAFE_SOURCES = ['retail_sale', 'service_consumable', 'manual_adjustment'];
 
     protected $fillable = [
         'inventory_id',

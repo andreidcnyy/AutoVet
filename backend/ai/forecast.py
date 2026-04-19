@@ -121,69 +121,53 @@ def forecast_stockout(csv_filepath, min_stock_level):
     else:
         last_stock = float(df['stock_level'].iloc[-1])
 
-    # If stock is already at or below min_stock_level
+    # If stock is already at or below min_stock_level, we still want to return 
+    # the true average daily consumption for recalculated UI projections.
     if last_stock <= min_stock_level:
+        # We calculate the average even if stock is 0
+        consumptions = df[df['stock_diff'] < 0]
+        total_consumption = abs(consumptions['stock_diff'].sum()) if not consumptions.empty else 0
+        window_start = df['date'].min()
+        window_end = df['date'].max()
+        total_days_in_window = (window_end - window_start).days or 1
+        avg_daily = total_consumption / total_days_in_window
+
         return {
             "prediction_status": "Critical",
             "forecast_status": "Critical",
             "message": "Stock is currently at or below minimum level.",
             "predicted_stockout_date": last_date.strftime('%Y-%m-%d'),
             "days_until_stockout": 0,
-            "average_daily_consumption": 0,
+            "average_daily_consumption": round(avg_daily, 2),
+            "predicted_monthly_sales": round(avg_daily * 30, 2),
             "current_stock": last_stock
         }
 
-    # Calculate average daily consumption
-    # We only care about consumption (where stock_diff < 0). 
-    consumptions = df[df['stock_diff'] < 0]
-
-    if consumptions.empty:
-        return {
-            "prediction_status": "Safe",
-            "forecast_status": "Safe",
-            "message": "No consumption history detected in this period.",
-            "average_daily_consumption": 0,
-            "current_stock": last_stock
-        }
-
+    # Calculate average daily consumption over the analyzed window
     total_consumption = abs(consumptions['stock_diff'].sum())
-    total_days_consuming = consumptions['days_diff'].sum()
+    
+    # window_start is either the requested history cutoff or the first data point
+    window_start = df['date'].min()
+    window_end = df['date'].max()
+    total_days_in_window = (window_end - window_start).days or 1
 
-    if total_days_consuming <= 0:
-        # Fallback if dates are identical or logic fails
-        total_days_consuming = (df['date'].max() - df['date'].min()).days or 1
-
-    average_daily_consumption = total_consumption / total_days_consuming
+    average_daily_consumption = total_consumption / total_days_in_window
 
     if average_daily_consumption <= 0:
         return {
             "prediction_status": "Success",
             "forecast_status": "Safe",
-            "message": "No consumption rate measured in historical dataset.",
+            "message": "No consumption rate measured in clinical history.",
             "average_daily_consumption": 0,
+            "predicted_monthly_sales": 0,
             "days_until_stockout": None,
             "predicted_stockout_date": None,
-            "current_stock": last_stock,
-            "predicted_monthly_sales": 0
+            "current_stock": last_stock
         }
 
     # Predict stockout days based on current stock
-    stock_to_deplete = last_stock - min_stock_level
-    
-    # Requirement: Handle zero or invalid usage correctly
-    if average_daily_consumption <= 0:
-        return {
-            "prediction_status": "Success",
-            "forecast_status": "Safe",
-            "message": "Insufficient usage data in selected range (No consumption detected).",
-            "average_daily_consumption": 0,
-            "days_until_stockout": None,
-            "predicted_stockout_date": None,
-            "current_stock": last_stock,
-            "min_stock_level": min_stock_level,
-            "predicted_monthly_sales": 0
-        }
-
+    # Logic: how many days until current_stock hits min_stock_level?
+    stock_to_deplete = max(0, last_stock - min_stock_level)
     predicted_days_to_min = math.ceil(stock_to_deplete / average_daily_consumption)
 
     # FINAL RULE: stockout date must never be in the past. 

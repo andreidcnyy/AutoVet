@@ -23,28 +23,30 @@ export default function VetScheduleTab() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [isOverwriting, setIsOverwriting] = useState(false);
 
-  const fetchData = async () => {
+  const VET_DATA_CACHE_KEY = 'settings_vet_data_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchData = async (signal) => {
     if (!user?.token) return;
     try {
-      const headers = { 
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      };
+      const headers = { "Accept": "application/json", "Authorization": `Bearer ${user.token}` };
       const [vetsRes, schedulesRes] = await Promise.all([
-        fetch("/api/vets", { headers }),
-        fetch("/api/vet-schedules", { headers })
+        fetch("/api/vets", { signal, headers }),
+        fetch("/api/vet-schedules", { signal, headers })
       ]);
       if (vetsRes.ok && schedulesRes.ok) {
         const vetsData = await vetsRes.json();
         const schedulesData = await schedulesRes.json();
-        
+
         setUsers(vetsData);
         setSchedules(schedulesData);
         if (vetsData.length > 0 && !selectedVetId) {
           setSelectedVetId(vetsData[0].id.toString());
         }
+        try { localStorage.setItem(VET_DATA_CACHE_KEY, JSON.stringify({ vets: vetsData, schedules: schedulesData, ts: Date.now() })); } catch (_) {}
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error(err);
       toast.error("Failed to load schedule data.");
     } finally {
@@ -53,7 +55,21 @@ export default function VetScheduleTab() {
   };
 
   useEffect(() => {
-    fetchData();
+    try {
+      const cached = JSON.parse(localStorage.getItem(VET_DATA_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        if (Array.isArray(cached.vets)) {
+          setUsers(cached.vets);
+          if (cached.vets.length > 0 && !selectedVetId) setSelectedVetId(cached.vets[0].id.toString());
+        }
+        if (Array.isArray(cached.schedules)) setSchedules(cached.schedules);
+        setLoading(false);
+      }
+    } catch (_) {}
+
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    return () => controller.abort();
   }, [user?.token]);
 
   const toggleDay = (day) => {

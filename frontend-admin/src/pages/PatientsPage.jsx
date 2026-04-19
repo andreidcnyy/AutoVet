@@ -19,11 +19,15 @@ function PatientsPage() {
   const [activeTab, setActiveTab] = useState("owners"); // "owners", "patients"
   const { user } = useAuth();
   const [owners, setOwners] = useState([]);
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [page, setPage] = useState(1);
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
-  
+
   // Form States for "Register New Owner" view
   const [phoneValue, setPhoneValue] = useState("");
   const [province, setProvince] = useState("");
@@ -31,37 +35,38 @@ function PatientsPage() {
   const [zip, setZip] = useState("");
   const [availableCities, setAvailableCities] = useState([]);
 
-  const OWNERS_CACHE_KEY = 'patients_owners_cache';
-  const CACHE_TTL = 5 * 60 * 1000;
+  const fetchOwners = useCallback((signal, searchVal = "", filterVal = "All", pageNum = 1) => {
+    setIsLoading(true);
+    const params = new URLSearchParams({
+      page: pageNum,
+      per_page: 10,
+      search: searchVal,
+      filter: filterVal
+    });
 
-  const fetchOwners = useCallback((signal) => {
-    try {
-      const cached = JSON.parse(localStorage.getItem(OWNERS_CACHE_KEY) || 'null');
-      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
-        setOwners(cached.data);
-        setIsLoading(false);
-      }
-    } catch (_) {}
-
-    api.get('/api/owners', { signal })
+    api.get(`/api/patients/owners?${params.toString()}`, { signal })
       .then((data) => {
-        const result = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-        setOwners(result);
-        try { localStorage.setItem(OWNERS_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
+        if (data && data.data) {
+          setOwners(data.data);
+          setPagination(data.pagination);
+        } else {
+          setOwners(Array.isArray(data) ? data : []);
+          setPagination({ current_page: 1, last_page: 1, total: (data?.length || 0) });
+        }
       })
       .catch((err) => {
         if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error("Failed to load owner data:", err);
       })
       .finally(() => setIsLoading(false));
-  }, [user?.token]);
+  }, []);
 
   useEffect(() => {
     if (!user?.token) return;
     const controller = new AbortController();
-    fetchOwners(controller.signal);
+    fetchOwners(controller.signal, search, filter, page);
     return () => controller.abort();
-  }, [fetchOwners]);
+  }, [fetchOwners, user?.token, search, filter, page]);
 
   // Sync cities when province changes
   useEffect(() => {
@@ -80,7 +85,7 @@ function PatientsPage() {
   }, [city, availableCities]);
 
   const handleSaveNewOwner = (newOwner) => {
-    setOwners((prev) => [newOwner, ...prev]);
+    fetchOwners(null, search, filter, page);
     setSelectedOwnerId(newOwner.id);
     setView("records");
   };
@@ -88,14 +93,8 @@ function PatientsPage() {
   const handleDeleteOwner = async (ownerId) => {
     if (!window.confirm("Archive: recoverable within 30 days.\nAre you sure you want to archive this owner?")) return;
     try {
-      await fetch(`/api/owners/${ownerId}`, { 
-        method: "DELETE",
-        headers: { 
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
-      });
-      setOwners((prev) => prev.filter((o) => o.id !== ownerId));
+      await api.delete(`/api/patients/owners/${ownerId}`);
+      fetchOwners(null, search, filter, page);
       setSelectedOwnerId(null);
       toast.success("Owner archived successfully.");
     } catch (err) {
@@ -116,9 +115,34 @@ function PatientsPage() {
     setSelectedOwnerId(updatedOwner.id);
   };
 
+  const handleSelectOwner = useCallback((ownerId) => {
+    setSelectedOwnerId(ownerId);
+    
+    // Optional: fetch full details if not already present in the list
+    api.get(`/api/patients/owners/${ownerId}`)
+      .then(fullOwner => {
+        setOwners(prev => prev.map(o => o.id === ownerId ? fullOwner : o));
+      })
+      .catch(err => console.error("Failed to fetch full owner details:", err));
+  }, []);
+
   const handleAddPetToOwner = (ownerId) => {
     setSelectedOwnerId(ownerId);
     setView("add-pet");
+  };
+
+  const handleSearch = (val) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handleFilter = (val) => {
+    setFilter(val);
+    setPage(1);
+  };
+
+  const handlePageChange = (pageNum) => {
+    setPage(pageNum);
   };
 
   if (view === "add") {
@@ -144,7 +168,7 @@ function PatientsPage() {
               const formData = new FormData(e.target);
               const data = Object.fromEntries(formData);
               try {
-                const res = await fetch("/api/owners", {
+                const res = await fetch("/api/patients/owners", {
                   method: "POST",
                   headers: { 
                     "Content-Type": "application/json",
@@ -341,8 +365,13 @@ function PatientsPage() {
           ) : (
             <PatientRecordsView
                 owners={owners}
+                pagination={pagination}
+                isLoading={isLoading}
                 selectedOwnerId={selectedOwnerId}
-                onSelectOwner={setSelectedOwnerId}
+                onSelectOwner={handleSelectOwner}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
                 onOpenAddPatient={() => {
                 setPhoneValue("");
                 setProvince("");

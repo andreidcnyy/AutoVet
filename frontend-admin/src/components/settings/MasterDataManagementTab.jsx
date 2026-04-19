@@ -1,9 +1,12 @@
 import MasterDataTable from "./MasterDataTable";
 import WeightRangesManager from "./WeightRangesManager";
-import { FiCheckCircle } from "react-icons/fi";
+import { FiCheckCircle, FiLoader } from "react-icons/fi";
+import { useApi } from "../../hooks/useApi";
 import clsx from "clsx";
 
 export default function MasterDataManagementTab() {
+  const { data: sizeCategories, isLoading: isSizesLoading } = useApi(['size-categories'], '/api/size-categories');
+
   const categoryColumns = [
     { key: "name", label: "Category Name" },
     { 
@@ -113,15 +116,26 @@ export default function MasterDataManagementTab() {
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-             {['Extra Small', 'Small', 'Medium', 'Large', 'Giant'].map((size, idx) => (
-               <div key={size} className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-zinc-100 dark:bg-dark-surface dark:border-dark-border shadow-sm group hover:border-emerald-400 hover:shadow-md transition-all duration-300">
-                  <div className={clsx(
-                    "h-2 w-12 rounded-full mb-4 group-hover:scale-x-125 transition-all duration-300",
-                    idx === 0 ? "bg-zinc-200" : idx === 1 ? "bg-zinc-300" : idx === 2 ? "bg-zinc-400" : idx === 3 ? "bg-zinc-500" : "bg-zinc-600"
-                  )} />
-                  <span className="text-sm font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-tight">{size}</span>
-               </div>
-             ))}
+            {isSizesLoading ? (
+              <div className="col-span-full py-10 flex flex-col items-center justify-center gap-3">
+                <FiLoader className="w-8 h-8 text-emerald-500 animate-spin" />
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Loading size categories...</p>
+              </div>
+            ) : sizeCategories && sizeCategories.length > 0 ? (
+              sizeCategories.map((size, idx) => (
+                <div key={size.id} className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-zinc-100 dark:bg-dark-surface dark:border-dark-border shadow-sm group hover:border-emerald-400 hover:shadow-md transition-all duration-300">
+                   <div className={clsx(
+                     "h-2 w-12 rounded-full mb-4 group-hover:scale-x-125 transition-all duration-300",
+                     idx === 0 ? "bg-zinc-200" : idx === 1 ? "bg-zinc-300" : idx === 2 ? "bg-zinc-400" : idx === 3 ? "bg-zinc-500" : "bg-zinc-600"
+                   )} />
+                   <span className="text-sm font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-tight">{size.name}</span>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-10 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                No size categories found.
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { FiX, FiTrash2, FiSave, FiEdit2, FiClock } from "react-icons/fi";
+import { FiX, FiTrash2, FiSave, FiEdit2, FiClock, FiAlertTriangle } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
@@ -20,8 +20,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
-  const [aiForecastData, setAiForecastData] = useState(null); // New state for AI forecast
-  const [isLoadingForecast, setIsLoadingForecast] = useState(false); // New state for forecast loading
+  const [aiForecastData, setAiForecastData] = useState(null); 
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false); 
 
 
   const { user } = useAuth();
@@ -31,24 +31,17 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     if (isOpen && product) {
       setFormData(product);
       setIsEditing(false);
-      setAiForecastData(null); // Clear previous forecast data when modal opens
+      setAiForecastData(null); 
       
-      // Fetch latest SAVED forecast (dataset insights)
       setIsLoadingForecast(true);
-      fetch(`/api/inventory/${product.id}/forecast/saved`, {
+      fetch(`/api/inventory/${product.id}/forecast/saved?t=${Date.now()}`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
       })
         .then(res => res.json())
         .then(data => {
             if (data && data.prediction_status !== 'No Forecast Available') {
-                // Determine if it's currently "Updating" based on timestamp or status
-                const isVeryRecent = (new Date() - new Date(data.generated_at)) < 15000; // 15s
-                
-                // Map saved data to match the component's expected structure
                 setAiForecastData({
                     ...data,
-                    is_background_refreshing: isVeryRecent && data.trigger_source !== 'manual',
-                    prediction_status: data.prediction_status,
                     last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null
                 });
             }
@@ -59,7 +52,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             setIsLoadingForecast(false);
         });
 
-      // Fetch transaction history
       setIsLoadingTx(true);
       fetch(`/api/inventory/${product.id}/transactions`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
@@ -74,7 +66,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             setIsLoadingTx(false);
         });
 
-      // Fetch category options dynamically
       fetch("/api/inventory-categories?per_page=1000", {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
       })
@@ -86,10 +77,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         } else if (data && Array.isArray(data.data)) {
             categories = data.data;
         }
-        
-        const activeCategories = categories.filter(c => 
-            c.status === 'Active' || c.status === 'active'
-        );
+        const activeCategories = categories.filter(c => c.status === 'Active' || c.status === 'active');
         setCategoryOptions(activeCategories);
       })
       .catch(console.error);
@@ -97,23 +85,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   }, [isOpen, product, user?.token]);
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // If we're editing stock level, flag the forecast as stale/recalculating locally
-    if (field === 'stock_level' || field === 'current_stock') {
-        if (aiForecastData && !aiForecastData.is_calculating_locally) {
-            setAiForecastData(prev => ({ 
-                ...prev, 
-                is_calculating_locally: true,
-                local_new_stock: value 
-            }));
-        }
-    }
-  };
-
-
-
-  const handleCheckboxChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: !!value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
@@ -146,11 +118,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       toast.success("Inventory item updated successfully!");
       setIsEditing(false);
       onUpdate(updated); 
-      
-      // Auto-refresh forecast after save to sync with new stock quantity
       handleRunForecast();
     } catch (err) {
-      toast.error(err.message || "An error occurred while saving.");
+      toast.error(err instanceof Error ? err.message : "An error occurred while saving.");
     } finally {
       setIsSaving(false);
     }
@@ -162,7 +132,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       return;
     }
     setIsLoadingForecast(true);
-    setAiForecastData(null); // Clear previous forecast
     try {
       const response = await fetch(`/api/inventory/${product.id}/forecast`, {
         headers: {
@@ -176,10 +145,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       }
       const data = await response.json();
       setAiForecastData(data);
-      toast.success("AI Forecast generated successfully!");
+      toast.success("AI Forecast updated successfully!");
     } catch (err) {
-      toast.error(err.message || "An error occurred during forecasting.");
-      setAiForecastData({ error: err.message || "Could not generate forecast." });
+      toast.error(err instanceof Error ? err.message : "An error occurred during forecasting.");
     } finally {
       setIsLoadingForecast(false);
     }
@@ -192,7 +160,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
-      <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft flex flex-col max-h-[90vh]">
+      <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col max-h-[90vh]">
+        
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border shrink-0">
           <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">Product Details</h3>
@@ -205,7 +174,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto custom-scrollbar">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex-1">
               {isEditing ? (
@@ -248,7 +217,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                       onChange={(e) => handleChange(field, parseInt(e.target.value) || "")}
                     >
                       <option value="" disabled>Select category</option>
-                      {categoryOptions.length === 0 && <option value="" disabled>No active categories loaded</option>}
                       {categoryOptions.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
@@ -256,7 +224,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   ) : (
                     <input
                       type={
-                        field === "price" || field === "selling_price" || field === "stock_level" || field === "min_stock_level" 
+                        field === "price" || field === "selling_price" || field === "stock_level" 
                           ? "number" 
                           : field === "expiration_date" 
                             ? "date" 
@@ -275,11 +243,11 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                     ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                ) : (field === "stock_level" || field === "min_stock_level") ? (
+                ) : (field === "stock_level") ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
                 ) : field === "expiration_date" ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {product[field] ? new Date(product[field]).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : "N/A"}
+                    {product[field] ? new Date(product[field]).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : "No Expiration"}
                   </p>
                 ) : (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
@@ -288,56 +256,31 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             ))}
           </div>
 
-          {/* Invoice & Logic Flags */}
           <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface/50">
             <div className="flex flex-col gap-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Invoicing Profile</p>
-              {isEditing ? (
-                <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input 
-                    type="checkbox" 
-                    checked={!!formData.is_billable} 
-                    onChange={(e) => handleCheckboxChange("is_billable", e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" 
-                  />
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Billable?</span>
-                </label>
-              ) : (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={clsx(
-                    "inline-block h-2 w-2 rounded-full",
-                    product.is_billable ? "bg-emerald-500" : "bg-zinc-300"
-                  )} />
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    {product.is_billable ? "Billable Item" : "Non-Billable"}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 mt-1">
+                <span className={clsx(
+                  "inline-block h-2 w-2 rounded-full",
+                  product.is_billable ? "bg-emerald-500" : "bg-zinc-300"
+                )} />
+                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {product.is_billable ? "Billable Item" : "Non-Billable"}
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Inventory Logic</p>
-              {isEditing ? (
-                <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input 
-                    type="checkbox" 
-                    checked={!!formData.deduct_on_finalize} 
-                    onChange={(e) => handleCheckboxChange("deduct_on_finalize", e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" 
-                  />
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Auto-Deduct?</span>
-                </label>
-              ) : (
-                <div className="flex items-center gap-2 mt-1">
-                   <span className={clsx(
-                    "inline-block h-2 w-2 rounded-full",
-                    product.deduct_on_finalize ? "bg-emerald-500" : "bg-amber-500"
-                  )} />
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    {product.deduct_on_finalize ? "Deduct on Finalize" : "Manual Stock Out"}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 mt-1">
+                 <span className={clsx(
+                  "inline-block h-2 w-2 rounded-full",
+                  product.deduct_on_finalize ? "bg-emerald-500" : "bg-amber-500"
+                )} />
+                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {product.deduct_on_finalize ? "Deduct on Finalize" : "Manual Stock Out"}
+                </span>
+              </div>
             </div>
           </div>
           
@@ -347,108 +290,69 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
                 <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
               </h4>
-              {aiForecastData.is_background_refreshing && (
-                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 flex items-center gap-2 dark:border-emerald-800 dark:bg-emerald-900/20">
-                    <LuSparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400 animate-spin" />
-                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        System is currently refreshing this forecast in the background...
-                    </p>
+              
+              {aiForecastData.prediction_status === "Insufficient Data" ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {aiForecastData.message}
+                  </p>
                 </div>
-              )}
-              {aiForecastData.is_calculating_locally && (
-                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 flex items-center gap-2 dark:border-amber-800 dark:bg-amber-900/20">
-                    <LuSparkles className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-pulse" />
-                    <p className="text-xs font-bold text-amber-700 dark:text-amber-300">
-                        New stock level detected ({aiForecastData.local_new_stock}). Forecast will auto-sync on save.
-                    </p>
-                </div>
-              )}
-              {aiForecastData.error ? (
-                <p className="text-rose-600 dark:text-rose-400 text-sm">{aiForecastData.error}</p>
-              ) : aiForecastData.prediction_status === "Insufficient Data" ? (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                        {aiForecastData.message}
-                      </p>
-                      <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
-                        Record stock movements or invoice this item to enable AI forecasting.
-                      </p>
-                      <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-500 uppercase font-bold tracking-tight">
-                        Current: {aiForecastData.current_stock} | Min: {aiForecastData.min_stock_level}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 mb-1">
-                         <span className={clsx(
-                           "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm",
-                           aiForecastData.prediction_status.toLowerCase().includes("dataset") 
-                             ? "bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800" 
-                             : "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800"
-                         )}>
-                           {aiForecastData.prediction_status}
-                         </span>
-                         <span className="text-[9px] font-black uppercase tracking-tighter bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                            Dynamic Prediction
-                         </span>
-                      </div>
-                      <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
-                    {aiForecastData.prediction_status === "Stockout Imminent/Occurred" ? (
-                      <span className="text-rose-600 dark:text-rose-400">{aiForecastData.message || aiForecastData.notes}</span>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className={clsx(
+                      "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm border",
+                      (product.stock_level <= 0) 
+                        ? "bg-rose-50 text-rose-700 border-rose-200" 
+                        : (aiForecastData.prediction_status.toLowerCase().includes("dataset") 
+                           ? "bg-purple-100 text-purple-700 border-purple-200" 
+                           : "bg-emerald-100 text-emerald-700 border-emerald-200")
+                    )}>
+                      {product.stock_level <= 0 ? "Stockout Alert" : aiForecastData.prediction_status}
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-tighter bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                        Dynamic Prediction
+                    </span>
+                  </div>
+
+                  <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
+                    {product.stock_level <= 0 ? (
+                        <span className="text-rose-600 uppercase font-black italic">Stockout Occurred</span>
                     ) : aiForecastData.predicted_stockout_date ? (
-                      <>Predicted Stockout: <span className="text-rose-600 dark:text-rose-400">
+                      <>Predicted Stockout: <span className="text-rose-600">
                         {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span></>
                     ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400">{aiForecastData.message || aiForecastData.notes}</span>
+                      <span className="text-emerald-600">{aiForecastData.message || "Monitoring usage..."}</span>
                     )}
                   </p>
-                  {aiForecastData.predicted_stockout_date && (
-                    <>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                        Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={clsx(
+                        "rounded-lg p-3 border",
+                        product.stock_level <= 0 ? "bg-rose-50/30 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30" : "bg-zinc-50 dark:bg-dark-surface border-zinc-100 dark:border-dark-border"
+                    )}>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase">Avg Daily Usage</p>
+                      <p className={clsx("text-sm font-black", product.stock_level <= 0 ? "text-rose-700 dark:text-rose-400" : "text-zinc-700 dark:text-zinc-200")}>
+                        {Number(aiForecastData.average_daily_consumption || 0).toFixed(1)} units/day
                       </p>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        {(aiForecastData.confidence_score != null || aiForecastData.lr_r2 != null) && (
-                          <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase">Model Confidence</p>
-                            <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
-                              {((aiForecastData.confidence_score ?? aiForecastData.lr_r2) * 100).toFixed(1)}%
-                            </p>
-                          </div>
-                        )}
-                        <div className="rounded-lg bg-zinc-50 p-2 dark:bg-dark-surface/50 border border-zinc-100 dark:border-dark-border">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase">Avg Daily Usage</p>
-                          <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">
-                            {Number(aiForecastData.average_daily_consumption || 0).toFixed(1)} units/day
-                          </p>
-                        </div>
-                        {aiForecastData.growth_label && (
-                           <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30">
-                             <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase">Growth Trend</p>
-                             <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                               {aiForecastData.growth_label}
-                             </p>
-                           </div>
-                        )}
-                        {aiForecastData.predicted_monthly_sales != null && (
-                           <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
-                             <p className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase">Est. Monthly Need</p>
-                             <p className="text-xs font-black text-blue-700 dark:text-blue-400">
-                               {Number(aiForecastData.predicted_monthly_sales).toFixed(0)} units
-                             </p>
-                           </div>
-                        )}
-                      </div>
-                      {aiForecastData.prediction_status === "Using dataset-based prediction" && (
-                        <p className="text-[10px] text-purple-500 dark:text-purple-400 italic mt-1">
-                          Using dataset-based prediction
-                        </p>
-                      )}
-                    </>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
+                      <p className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase">Est. Monthly Need</p>
+                      <p className="text-sm font-black text-blue-700 dark:text-blue-400">
+                        {Number(aiForecastData.predicted_monthly_sales || 0).toFixed(0)} units
+                      </p>
+                    </div>
+                  </div>
+
+                  {aiForecastData.predicted_stockout_date && product.stock_level > 0 && (
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 italic">
+                      Approximately {aiForecastData.days_until_stockout} days until stock reaches minimum level.
+                    </p>
                   )}
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Current Stock: {aiForecastData.current_stock} | Min Stock Level: {aiForecastData.min_stock_level} | As of: {aiForecastData.last_recorded_date}
+
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest">
+                    Live Stock: {product.stock_level} | Min Stock Level: {aiForecastData.min_stock_level ?? 0} | As of: {aiForecastData.last_recorded_date}
                   </p>
                 </div>
               )}
@@ -460,14 +364,14 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Transaction Ledger</h4>
             <div className="max-h-64 overflow-y-auto rounded-xl border border-zinc-100 dark:border-dark-border custom-scrollbar">
                 {isLoadingTx ? (
-                    <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500">Loading transactions...</div>
+                    <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic animate-pulse">Loading transaction logs...</div>
                 ) : transactions.length > 0 ? (
                     <table className="w-full text-left text-sm border-collapse">
                         <thead className="sticky top-0 bg-zinc-50 dark:bg-dark-surface z-10">
                             <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border">
-                                <th className="px-4 py-3">Type & User</th>
-                                <th className="px-4 py-3">Details</th>
-                                <th className="px-4 py-3 text-right">Qty</th>
+                                <th className="px-4 py-3">Type & Details</th>
+                                <th className="px-4 py-3">Timestamp</th>
+                                <th className="px-4 py-3 text-right">Adjustment</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
@@ -475,13 +379,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                                 <tr key={tx.id} className="group hover:bg-zinc-50/50 dark:hover:bg-dark-surface/40 transition-colors">
                                     <td className="px-4 py-3">
                                         <p className="font-bold text-zinc-800 dark:text-zinc-200">{tx.transaction_type}</p>
-                                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">{tx.creator?.name || 'System'}</p>
+                                        {tx.remarks && <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">"{tx.remarks}"</p>}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 italic">
+                                        <p className="text-[10px] text-zinc-400">
                                             {new Date(tx.created_at).toLocaleDateString()}
                                         </p>
-                                        {tx.remarks && <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium truncate max-w-[150px]">"{tx.remarks}"</p>}
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <p className={clsx(
@@ -504,27 +407,17 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-100 p-6 dark:border-dark-border shrink-0 bg-white dark:bg-dark-card rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 border-t border-zinc-100 p-6 dark:border-dark-border shrink-0 bg-white dark:bg-dark-card rounded-b-2xl">
           {isAdmin && (
             <>
-              <div className="mr-auto flex items-center gap-3 px-2">
-                <span className="text-[10px] uppercase italic text-zinc-400 font-bold tracking-tight">
-                  Forecast based on recent usage trends
-                </span>
-                <button
-                  onClick={handleRunForecast}
-                  disabled={isLoadingForecast || isSaving}
-                  className={clsx(
-                    "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
-                    (isLoadingForecast || isSaving)
-                      ? "bg-zinc-300 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20"
-                  )}
-                >
-                  <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
-                  {isLoadingForecast ? "Analyzing..." : "AI Forecast"}
-                </button>
-              </div>
+              <button
+                onClick={handleRunForecast}
+                disabled={isLoadingForecast || isSaving}
+                className="mr-auto inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20"
+              >
+                <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
+                {isLoadingForecast ? "Analyzing..." : "Re-Sync AI"}
+              </button>
               
               <button
                 onClick={() => onDeleteRequest(product)}
@@ -535,18 +428,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               </button>
 
               <button
-                onClick={() => {
-                  if (isEditing) {
-                    handleSave();
-                  } else {
-                    setIsEditing(true);
-                  }
-                }}
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                 disabled={isSaving}
                 className={clsx(
-                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none",
+                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none transition-all",
                   isEditing
-                    ? (isSaving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/20")
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                     : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
                 )}
               >
@@ -558,7 +445,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
           <button
             onClick={onClose}
-            className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 focus:outline-none dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             Close
           </button>

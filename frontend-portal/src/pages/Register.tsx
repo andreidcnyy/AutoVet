@@ -50,6 +50,8 @@ export default function Register() {
     }
   }, [city, availableCities]);
 
+  const [success, setSuccess] = useState(false);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 11) {
@@ -60,10 +62,13 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (phone.length !== 11) {
-      setError("Contact number must be exactly 11 digits.");
+    const cleanedPhone = phone.replace(/\D/g, "");
+    if (cleanedPhone.length !== 11 && cleanedPhone.length !== 10) {
+      setError("Contact number must be 10 or 11 digits (PH-based).");
       return;
     }
+
+    const finalPhone = cleanedPhone.length === 10 ? "0" + cleanedPhone : cleanedPhone;
 
     if (password !== passwordConfirmation) {
       setError("Passwords do not match.");
@@ -83,7 +88,7 @@ export default function Register() {
         body: JSON.stringify({ 
           name, 
           email, 
-          phone,
+          phone: finalPhone,
           address,
           city,
           province,
@@ -96,25 +101,14 @@ export default function Register() {
       const data = await res.json();
 
       if (res.ok && !data.error) {
-        register(data);
-        navigate("/");
+        setSuccess(true);
+        // Do not call login() here, user needs to verify email first
       } else {
         if (data.errors) {
           const firstError = Object.values(data.errors)[0] as string[];
-          setError(firstError[0] || "Registration failed. Ensure you used a real email.");
+          setError(firstError[0] || "Registration failed.");
         } else {
-          // Extremely robust string extraction
-          let errorMsg = "Registration failed.";
-          if (typeof data.error === "string") {
-            errorMsg = data.error;
-          } else if (data.error && typeof data.error === "object") {
-            errorMsg = data.error.message || data.error.code || JSON.stringify(data.error);
-          } else if (data.message) {
-            errorMsg = data.message;
-          } else if (data.code) {
-            errorMsg = `Error Code: ${data.code}`;
-          }
-          setError(String(errorMsg));
+          setError(data.message || data.error || "Registration failed.");
         }
       }
     } catch (err: any) {
@@ -124,6 +118,28 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg p-4">
+        <div className="card-shell w-full max-w-md p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+            <FiMail className="w-10 h-10" />
+          </div>
+          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-tight">Verify Your Email</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">
+            We've sent a verification link to <span className="font-bold text-zinc-800 dark:text-zinc-200">{email}</span>.
+            Please check your inbox (and spam folder) to complete your registration.
+          </p>
+          <div className="pt-4">
+            <Link to="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-widest text-xs hover:scale-105 transition-all">
+              Go to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 relative py-12 px-4">
@@ -178,7 +194,8 @@ export default function Register() {
               </div>
               <input
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
+                name="no-autofill-email"
                 required
                 className="input-field pl-10"
                 placeholder="must be a real email"

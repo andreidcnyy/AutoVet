@@ -18,20 +18,49 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            \Log::info('Registration attempt', ['email' => $request->email]);
+            // Pre-flight: purge orphan / unverified PortalUser rows that would block a
+            // legitimate re-registration. An orphan is a portal_users row that either
+            // (a) has no linked Owner, or (b) was never email-verified. These rows can
+            // exist from earlier registration flows or abandoned verification attempts,
+            // and would otherwise make the unique-email check falsely reject a brand-new user.
+            $normalizedEmail = strtolower(trim((string) $request->input('email')));
+            if ($normalizedEmail !== '') {
+                $existing = PortalUser::where('email', $normalizedEmail)->first();
+                if ($existing) {
+                    $hasLinkedOwner = Owner::where('user_id', $existing->id)->exists();
+                    $neverVerified = is_null($existing->email_verified_at);
+
+                    if (!$hasLinkedOwner || $neverVerified) {
+                        \Log::info('Register: cleaning stale PortalUser before re-registration', [
+                            'email' => $normalizedEmail,
+                            'existing_id' => $existing->id,
+                            'has_linked_owner' => $hasLinkedOwner,
+                            'never_verified' => $neverVerified,
+                        ]);
+                        Owner::where('user_id', $existing->id)->forceDelete();
+                        $existing->forceDelete();
+                    }
+                }
+            }
+
             $request->validate([
                 'name' => 'required|string|max:255',
-                'email' => 'required|string|email:rfc,dns|max:255|unique:portal_users|unique:admins',
-                'phone' => 'required|string|size:11', 
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:255',
-                'province' => 'required|string|max:255',
-                'zip' => 'nullable|string|max:20',
+                'email' => [
+                    'required',
+                    'string',
+                    'email:rfc,dns',
+                    'max:255',
+                    \Illuminate\Validation\Rule::unique('portal_users')->whereNull('deleted_at'),
+                    \Illuminate\Validation\Rule::unique('admins')->whereNull('deleted_at'),
+                ],
+                'phone' => 'required|string|size:11',
                 'password' => 'required|string|min:8|confirmed',
+            ], [
+                'email.unique' => 'An account with this email already exists. If this is you, try logging in or resetting your password.',
             ]);
 
-            return DB::transaction(function () use ($request) {
-                $user = PortalUser::create([
+            $verificationUrl = \URL::temporarySignedRoute(
+                'registration.verify', now()->addHours(24), [
                     'name' => $request->name,
                     'email' => $request->email,
                     'phone' => $request->phone,
@@ -39,43 +68,100 @@ class AuthController extends Controller
                     'city' => $request->city,
                     'province' => $request->province,
                     'zip' => $request->zip,
-                    'password' => Hash::make($request->password),
-                    'status' => 'active',
-                ]);
+                    'password' => Hash::make($request->password), // Hash password before sending
+                ]
+            );
+            
+            // Send custom notification
+            (new \App\Models\PortalUser(['email' => $request->email]))
+                ->notify(new \App\Notifications\VerifyRegistration($verificationUrl));
 
-                Owner::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'phone' => $request->phone,
-                    'address' => $request->address,
-                    'city' => $request->city,
-                    'province' => $request->province,
-                    'zip' => $request->zip,
-                    'user_id' => $user->id,
-                ]);
+            return response()->json(['message' => 'Verification email sent. Please check your inbox.']);
 
-                $token = $user->createToken('auth-token')->plainTextToken;
-
-                \Log::info('User registered successfully in portal_users', ['user_id' => $user->id]);
-
-                return response()->json([
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => Roles::OWNER->value,
-                    'token' => $token,
-                ], 201);
-            });
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Registration Validation Error', [
+                'errors' => $e->errors(),
+                'input' => $request->all()
+            ]);
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Registration Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Registration Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Could not send verification email.'], 500);
+        }
+    }
+
+    public function verifyRegistration(Request $request)
+    {
+        if (! $request->hasValidSignature()) {
+            return response()->json(['error' => 'Invalid or expired verification link.'], 401);
+        }
+
+        try {
+            return DB::transaction(function () use ($request) {
+                $email = strtolower(trim((string) $request->email));
+
+                // Idempotent: if a PortalUser already exists for this email (e.g. the user
+                // clicked the verification link a second time, or had a duplicate link from
+                // an earlier register attempt), just make sure it's marked verified, ensure
+                // the Owner companion row exists, and send them to login.
+                $user = PortalUser::where('email', $email)->first();
+
+                if ($user) {
+                    if (is_null($user->email_verified_at)) {
+                        $user->forceFill(['email_verified_at' => now()])->save();
+                    }
+                } else {
+                    $user = PortalUser::create([
+                        'name' => $request->name,
+                        'email' => $email,
+                        'phone' => $request->phone,
+                        'password' => $request->password, // Already hashed
+                        'address' => $request->address,
+                        'city' => $request->city,
+                        'province' => $request->province,
+                        'zip' => $request->zip,
+                        'status' => 'active',
+                        'email_verified_at' => now(),
+                    ]);
+                }
+
+                $ownerExists = Owner::where('user_id', $user->id)
+                    ->orWhere('email', $email)
+                    ->exists();
+
+                if (!$ownerExists) {
+                    Owner::create([
+                        'name' => $request->name,
+                        'email' => $email,
+                        'phone' => $request->phone,
+                        'address' => $request->address,
+                        'city' => $request->city,
+                        'province' => $request->province,
+                        'zip' => $request->zip,
+                        'user_id' => $user->id,
+                    ]);
+                } else {
+                    // If an Owner row exists but isn't linked to this PortalUser, link it.
+                    Owner::where('email', $email)
+                        ->whereNull('user_id')
+                        ->update(['user_id' => $user->id]);
+                }
+
+                \Log::info('User verified (idempotent)', ['user_id' => $user->id, 'email' => $email]);
+
+                return redirect(env('FRONTEND_PORTAL_URL', 'http://localhost:5174') . '/login?verified=true');
+            });
+        } catch (\Exception $e) {
+            \Log::error('Verification Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'An error occurred during account creation.',
+                'detail' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
     }
 
@@ -100,6 +186,18 @@ class AuthController extends Controller
         if (!$user) {
             \Log::warning('Login failed: User not found in either table', ['email' => $request->email]);
             return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        if (!$is_admin && !$user->hasVerifiedEmail()) {
+            // Backfill: earlier versions of verifyRegistration() silently dropped
+            // email_verified_at on create (field wasn't in $fillable). If this user
+            // has a linked Owner, they completed verification — mark them verified now.
+            $hasLinkedOwner = Owner::where('user_id', $user->id)->exists();
+            if ($hasLinkedOwner && Hash::check($request->password, $user->password)) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            } else {
+                return response()->json(['error' => 'Please verify your email before logging in.'], 403);
+            }
         }
 
         if (!Hash::check($request->password, $user->password)) {

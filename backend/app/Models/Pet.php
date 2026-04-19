@@ -97,7 +97,7 @@ class Pet extends Model
     ];
 
     protected $appends = [
-        'total_paid', 'total_due', // 'last_visit', 'next_due' // removed slow ones, but totals are needed
+        // 'total_paid', 'total_due', 'last_visit', 'next_due' - removed to improve list performance
     ];
 
     public function getTotalPaidAttribute()

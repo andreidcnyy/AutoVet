@@ -23,10 +23,49 @@ function AuditLogTab() {
   });
   const [expandedId, setExpandedId] = useState(null);
 
+  const AUDIT_CACHE_KEY = 'settings_audit_logs_cache';
+  const AUDIT_CACHE_TTL = 5 * 60 * 1000;
+
+  const isDefaultView = (page, f) =>
+    page === 1 && !f.action_type && !f.model_type && !f.date_from && !f.date_to;
+
+  const applyResponse = (data) => {
+    setLogs(data.data || []);
+    setPagination({
+      current_page: data.current_page,
+      last_page: data.last_page,
+      total: data.total,
+      per_page: data.per_page
+    });
+  };
+
+  const controllerRef = React.useRef(null);
+
   const fetchLogs = (page = 1) => {
-    setLoading(true);
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    // Hydrate from cache only for default view (page 1, no filters)
+    if (isDefaultView(page, filters)) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(AUDIT_CACHE_KEY) || 'null');
+        if (cached && Date.now() - cached.ts < AUDIT_CACHE_TTL && cached.data) {
+          applyResponse(cached.data);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+      } catch (_) {
+        setLoading(true);
+      }
+    } else {
+      setLoading(true);
+    }
+
     const params = new URLSearchParams({ ...filters, page });
     fetch(`/api/audit-logs?${params.toString()}`, {
+      signal: controller.signal,
       headers: {
         "Authorization": `Bearer ${user?.token}`,
         "Accept": "application/json"
@@ -37,20 +76,25 @@ function AuditLogTab() {
         return res.json();
       })
       .then((data) => {
-        setLogs(data.data || []);
-        setPagination({
-          current_page: data.current_page,
-          last_page: data.last_page,
-          total: data.total,
-          per_page: data.per_page
-        });
+        applyResponse(data);
+        if (isDefaultView(page, filters)) {
+          try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+        }
       })
-      .catch((err) => toast.error(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        toast.error(err.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
   };
 
   useEffect(() => {
     fetchLogs(1);
+    return () => {
+      if (controllerRef.current) controllerRef.current.abort();
+    };
   }, [filters]);
 
   const handlePageChange = (page) => {

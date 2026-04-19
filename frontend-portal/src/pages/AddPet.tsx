@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getPetSizeCategories, getWeightRanges, createPet, getBreeds } from '../api';
 import { getAgeGroup, calculateAgeDisplay } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
+import { readCache, writeCache } from '../utils/swrCache';
 
 const petSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
@@ -62,18 +63,28 @@ export default function AddPet() {
   const dobValue = watch("date_of_birth");
   const weightValue = watch("weight");
 
-  // Load Initial Master Data
+  // Load Initial Master Data (stale-while-revalidate cached)
   useEffect(() => {
+    const cachedSpecies = readCache<any[]>('portal_species_cache');
+    if (cachedSpecies) setSpeciesList(cachedSpecies);
+    const cachedWR = readCache<any[]>('portal_weight_ranges_cache');
+    if (cachedWR) setWeightRanges(cachedWR);
+
     getSpecies()
       .then(res => {
         const data = res.data.data || res.data;
-        if (Array.isArray(data)) setSpeciesList(data);
+        if (Array.isArray(data)) {
+          setSpeciesList(data);
+          writeCache('portal_species_cache', data);
+        }
       })
       .catch(console.error);
 
     getWeightRanges().then(res => {
         const data = res.data.data || res.data;
-        setWeightRanges(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setWeightRanges(list);
+        writeCache('portal_weight_ranges_cache', list);
     }).catch(console.error);
   }, []);
 
@@ -84,9 +95,14 @@ export default function AddPet() {
       if (selected && selected.breeds && selected.breeds.length > 0) {
         setAvailableBreeds(selected.breeds);
       } else {
+        const breedsKey = `portal_breeds_${speciesIdValue}_cache`;
+        const cachedBreeds = readCache<any[]>(breedsKey);
+        if (cachedBreeds) setAvailableBreeds(cachedBreeds);
         getBreeds(Number(speciesIdValue)).then(res => {
           const data = res.data.data || res.data;
-          setAvailableBreeds(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          setAvailableBreeds(list);
+          writeCache(breedsKey, list);
         }).catch(console.error);
       }
     } else {
@@ -146,14 +162,6 @@ export default function AddPet() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
           <FiArrowLeft /> Back
         </button>
-        <button 
-          onClick={handleSubmit(onSubmit)}
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
-        >
-          <FiCheckCircle />
-          {isSubmitting ? "Saving..." : "Register Pet"}
-        </button>
       </div>
 
       <div className="card-shell p-8 bg-white dark:bg-dark-card">
@@ -168,7 +176,7 @@ export default function AddPet() {
           </div>
         )}
 
-        <form className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Photo Upload Section */}
           <div className="flex flex-col items-center gap-4 py-4 border-b border-zinc-100 dark:border-dark-border">
             <button 
@@ -239,13 +247,22 @@ export default function AddPet() {
             </div>
 
             <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Color / Marking</label>
+              <input 
+                {...register("color")}
+                className="input-field font-bold"
+                placeholder="e.g. Brown, White, Spots"
+              />
+            </div>
+
+            <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Birth Date</label>
               <input type="date" {...register("date_of_birth")} className="input-field font-bold" />
             </div>
 
             <div>
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
-              <input type="number" step="any" {...register("weight")} className="input-field font-bold" placeholder="0.0" />
+              <input type="number" step="1" {...register("weight")} className="input-field font-bold" placeholder="0" />
             </div>
 
             <div>
@@ -268,6 +285,17 @@ export default function AddPet() {
               className="input-field h-32 py-4 resize-none font-medium text-base"
               placeholder="Any allergies or existing conditions?"
             />
+          </div>
+
+          <div className="pt-6 border-t border-zinc-100 dark:border-dark-border">
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 rounded-[2rem] bg-brand-500 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+            >
+              <FiCheckCircle className="w-6 h-6" />
+              {isSubmitting ? "Syncing Pet Data..." : "Register New Pet"}
+            </button>
           </div>
         </form>
       </div>

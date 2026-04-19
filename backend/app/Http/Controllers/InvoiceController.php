@@ -35,7 +35,19 @@ class InvoiceController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Invoice::with(['pet.species', 'pet.breed', 'pet.owner', 'items']);
+        $query = Invoice::select([
+            'id', 'invoice_number', 'pet_id', 'status', 'total', 
+            'amount_paid', 'created_at', 'updated_at'
+        ])
+        ->with([
+            'pet' => function($q) {
+                $q->select('id', 'name', 'owner_id', 'species_id', 'breed_id');
+            },
+            'pet.species:id,name',
+            'pet.breed:id,name',
+            'pet.owner:id,name'
+        ])
+        ->withCount('items');
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -60,7 +72,7 @@ class InvoiceController extends Controller
             });
         }
 
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('updated_at', 'desc');
 
         if ($request->has('per_page')) {
             return response()->json($query->paginate($request->per_page));
@@ -80,6 +92,7 @@ class InvoiceController extends Controller
             'pet_id' => 'required|exists:pets,id',
             'appointment_id' => 'required|exists:appointments,id',
             'pet_weight' => 'nullable|numeric|min:0.01',
+            'date' => 'nullable|date', // Support custom date from frontend
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',

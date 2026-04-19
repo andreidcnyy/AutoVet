@@ -24,6 +24,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatPortalDateLocal = (dateStr: string, formatStr = "MMMM d, yyyy") => {
+  if (!dateStr) return "";
+  const normalizedDate = dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+  
+  // Custom formatters since we want to match the provided strings
+  if (formatStr === "MMM d, yyyy") {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
 const bookingSchema = z.object({
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required").regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid format (HH:mm)"),
@@ -76,6 +90,18 @@ export default function BookAppointment() {
   const selectedPetId = watch("pet_id");
   const selectedDate = watch("date");
   const selectedVetId = watch("vet_id");
+  const selectedTime = watch("time");
+
+  // Generate standard clinic slots: 08:00–17:00 every 30 min
+  const generateSlots = (): string[] => {
+    const slots: string[] = [];
+    for (let h = 8; h < 17; h++) {
+      slots.push(`${String(h).padStart(2, '0')}:00`);
+      slots.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    return slots;
+  };
+  const standardSlots = generateSlots();
 
   useEffect(() => {
     if (selectedDate && !isViewMode) {
@@ -109,16 +135,42 @@ export default function BookAppointment() {
   }, []);
 
   // Lazy-load form data only when booking drawer first opens
+  const FORM_CACHE_KEY = 'portal_book_form_cache';
   useEffect(() => {
     if (!isDrawerOpen || formDataLoaded) return;
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(FORM_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && cached.data) {
+        setPets(cached.data.pets || []);
+        setServices(cached.data.services || []);
+        setVets(cached.data.vets || []);
+        setFormDataLoaded(true);
+        if ((cached.data.pets || []).length === 1) {
+          setValue("pet_id", cached.data.pets[0].id.toString());
+        }
+      }
+    } catch (_) {}
+
     Promise.all([getPets(), getServices(), getVets()])
       .then(([petsRes, servRes, vetsRes]) => {
-        setPets(petsRes.data);
-        setServices(servRes.data);
-        setVets(vetsRes.data);
+        // Correctly handle paginated or array responses
+        const petsArray = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
+        const servicesArray = Array.isArray(servRes.data) ? servRes.data : (servRes.data?.data || []);
+        const vetsArray = Array.isArray(vetsRes.data) ? vetsRes.data : (vetsRes.data?.data || []);
+
+        setPets(petsArray);
+        setServices(servicesArray);
+        setVets(vetsArray);
         setFormDataLoaded(true);
-        if (petsRes.data.length === 1) {
-          setValue("pet_id", petsRes.data[0].id.toString());
+        try {
+          localStorage.setItem(FORM_CACHE_KEY, JSON.stringify({
+            data: { pets: petsArray, services: servicesArray, vets: vetsArray },
+            ts: Date.now()
+          }));
+        } catch (_) {}
+        if (petsArray.length === 1) {
+          setValue("pet_id", petsArray[0].id.toString());
         }
       })
       .catch(console.error);
@@ -161,8 +213,17 @@ export default function BookAppointment() {
   const onBookingSubmit = async (data: BookingForm) => {
     try {
       await createAppointment(data);
-      // Refresh appointments to show on calendar
-      getAppointments().then(res => setAppointments(res.data));
+      
+      // Invalidate caches
+      localStorage.removeItem('portal_appointments_cache');
+      localStorage.removeItem('portal_book_appointments_cache');
+      localStorage.removeItem('portal_overview_cache');
+
+      // Refresh local appointments to show on calendar - handle paginated response
+      getAppointments().then(res => {
+          const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+          setAppointments(appointmentsArray);
+      });
       setIsSuccess(true);
       reset();
     } catch (err: any) {
@@ -240,7 +301,10 @@ export default function BookAppointment() {
                       {entry.events.map((e: any) => (
                         <div key={e.id} className={clsx(
                           "w-1.5 h-1.5 rounded-full",
-                          e.status === 'pending' ? 'bg-amber-400' : 'bg-brand-500'
+                          e.status === 'pending' && 'bg-zinc-400',
+                          e.status === 'approved' && 'bg-emerald-500',
+                          (e.status === 'cancelled' || e.status === 'declined') && 'bg-rose-500',
+                          e.status === 'completed' && 'bg-blue-500'
                         )} />
                       ))}
                     </div>
@@ -252,7 +316,13 @@ export default function BookAppointment() {
                     <div 
                       key={event.id} 
                       onClick={(e) => handleEventClick(e, event)}
-                      className="px-2 py-1 rounded-md bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-dark-border text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate uppercase hover:border-brand-500 hover:text-brand-500 transition-colors"
+                      className={clsx(
+                        "px-2 py-1 rounded-md border text-[10px] font-bold truncate uppercase transition-colors",
+                        event.status === 'pending' && "bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400",
+                        event.status === 'approved' && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:border-emerald-500",
+                        (event.status === 'cancelled' || event.status === 'declined') && "bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 hover:border-rose-500",
+                        event.status === 'completed' && "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800/50 text-blue-700 dark:text-blue-400 hover:border-blue-500"
+                      )}
                     >
                       {event.pet?.name} - {event.status}
                     </div>
@@ -261,6 +331,26 @@ export default function BookAppointment() {
               </div>
             );
           })}
+        </div>
+        
+        {/* Calendar Legend */}
+        <div className="p-4 border-t border-zinc-100 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/10 flex flex-wrap items-center justify-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-zinc-400" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-emerald-500" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Approved</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-rose-500" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Cancelled / Declined</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-blue-500" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Completed</span>
+          </div>
         </div>
       </div>
 
@@ -333,7 +423,7 @@ export default function BookAppointment() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{format(new Date(selectedAppointment.date), "MMM d, yyyy")}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date, "MMM d, yyyy")}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -404,7 +494,7 @@ export default function BookAppointment() {
                     <span className="text-brand-500 mr-2">/</span>Book Visit
                   </h3>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
-                    {selectedDay ? format(new Date(selectedDay.dateString), "MMMM d, yyyy") : ""}
+                    {selectedDay ? formatPortalDateLocal(selectedDay.dateString, "MMMM d, yyyy") : ""}
                   </p>
                 </div>
                 <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
@@ -462,33 +552,54 @@ export default function BookAppointment() {
                   {/* Time Selection */}
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Arrival Time</label>
-                    <input type="time" {...register("time")} className="input-field bg-white dark:bg-dark-card font-bold" />
+                    <input type="hidden" {...register("time")} />
+                    {selectedDate ? (
+                      <>
+                        {isCheckingAvailability ? (
+                          <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availability…</div>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-2">
+                            {standardSlots.filter(slot => {
+                              const isBooked = availability.some((a: any) =>
+                                a.time?.substring(0, 5) === slot &&
+                                a.status !== 'cancelled' && a.status !== 'declined'
+                              );
+                              const todayStr = format(new Date(), "yyyy-MM-dd");
+                              const nowTime = format(new Date(), "HH:mm");
+                              const isPast = selectedDate === todayStr && slot < nowTime;
+                              return !isBooked && !isPast;
+                            }).map(slot => {
+                              const isSelected = selectedTime === slot;
+                              return (
+                                <button
+                                  key={slot}
+                                  type="button"
+                                  onClick={() => setValue("time", slot, { shouldValidate: true })}
+                                  className={clsx(
+                                    "px-2 py-2 rounded-lg text-[11px] font-bold border-2 transition-all",
+                                    isSelected ? "border-emerald-500 bg-emerald-500 text-white shadow-md" : "border-blue-100 bg-blue-50 text-blue-600 hover:border-blue-400 dark:bg-blue-900/10 dark:border-blue-900/30 dark:text-blue-400"
+                                  )}
+                                >
+                                  {slot}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 mt-3 text-[9px] font-bold uppercase tracking-widest">
+                          <span className="flex items-center gap-1.5 text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-400" />Available</span>
+                          <span className="flex items-center gap-1.5 text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-500" />Selected</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-zinc-400 py-4 text-center">Select a date to see available hours.</div>
+                    )}
                     {errors.time && <p className="mt-2 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
                   </div>
-
-                  {/* Availability List */}
-                  {selectedDate && (
-                    <div className="pt-2">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Already Booked Slots</p>
-                      <div className="flex flex-wrap gap-2">
-                        {isCheckingAvailability ? (
-                          <span className="text-[10px] text-zinc-400 animate-pulse">Checking...</span>
-                        ) : availability.length > 0 ? (
-                          availability.map((a: any) => (
-                            <span key={a.id} className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-dark-surface text-zinc-500 text-[10px] font-bold border border-zinc-200 dark:border-dark-border">
-                              {a.time.substring(0, 5)}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-[10px] text-emerald-500 font-bold uppercase">All slots available</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Assigned Doctor (Optional)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 ml-1">Assigned Doctor</label>
                   <select {...register("vet_id")} className="input-field font-bold">
                     <option value="">Any Available Vet</option>
                     {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}

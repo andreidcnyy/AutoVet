@@ -45,6 +45,7 @@ export const getPets = (params?: any) => api.get('/pets', { params });
 export const getPet = (id: number) => api.get(`/pets/${id}`);
 export const createPet = (data: any) => api.post('/pets', data);
 export const updatePet = (id: number, data: any) => api.put(`/pets/${id}`, data);
+export const deletePet = (id: number) => api.delete(`/pets/${id}`);
 export const getSpecies = () => api.get('/species?per_page=100');
 export const getBreeds = (speciesId?: number) => api.get('/breeds?per_page=200' + (speciesId ? `&species_id=${speciesId}` : ''));
 export const getPetSizeCategories = () => api.get('/pet-size-categories?per_page=100');

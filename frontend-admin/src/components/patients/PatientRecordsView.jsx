@@ -18,48 +18,43 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 
-function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddPatient, onDeleteOwner, onEditOwner, onOwnerEdited, onAddPet }) {
+function PatientRecordsView({ 
+  owners, 
+  pagination, 
+  isLoading,
+  selectedOwnerId, 
+  onSelectOwner, 
+  onSearch,
+  onFilter,
+  onPageChange,
+  onOpenAddPatient, 
+  onDeleteOwner, 
+  onEditOwner, 
+  onOwnerEdited, 
+  onAddPet 
+}) {
   const toast = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchValue, setSearchValue] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const ownersPerPage = 10;
+  const selectedOwner = owners.find((owner) => owner.id === selectedOwnerId) || owners[0] || null;
 
-  const filteredOwners = useMemo(() => {
-    const search = searchValue.trim().toLowerCase();
+  const handleSearchChange = (e) => {
+    setSearchValue(e.target.value);
+  };
 
-    return owners.filter((owner) => {
-      const matchesSearch =
-        !search ||
-        owner.name.toLowerCase().includes(search) ||
-        owner.phone?.toLowerCase().includes(search) ||
-        owner.email?.toLowerCase().includes(search);
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+      onSearch(searchValue);
+    }
+  };
 
-      const hasPets = (owner.pets?.length || 0) > 0;
-      const matchesFilter = 
-        activeFilter === "All" ? true :
-        activeFilter === "With Pets" ? hasPets :
-        !hasPets;
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [owners, searchValue, activeFilter]);
-
-  // Pagination Logic
-  const indexOfLastOwner = currentPage * ownersPerPage;
-  const indexOfFirstOwner = indexOfLastOwner - ownersPerPage;
-  const currentOwners = filteredOwners.slice(indexOfFirstOwner, indexOfLastOwner);
-  const totalPages = Math.ceil(filteredOwners.length / ownersPerPage);
-
-  // Reset to page 1 when filter or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchValue, activeFilter]);
-
-  const selectedOwner = filteredOwners.find((owner) => owner.id === selectedOwnerId) || currentOwners[0] || null;
+  const handleFilterClick = (f) => {
+    setActiveFilter(f);
+    onFilter(f);
+  };
 
   return (
     <div className="space-y-5">
@@ -68,7 +63,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Pet Owners</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-            Manage {owners.length} clients and {owners.reduce((sum, owner) => sum + (owner.pets?.length || 0), 0)} pets.
+            Manage your clients and their pets efficiently.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -88,9 +83,10 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search owners by name, phone, or email..."
+            placeholder="Search and press Enter..."
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchSubmit}
             className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
         </div>
@@ -98,7 +94,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
           {["All", "With Pets"].map((f) => (
             <button
               key={f}
-              onClick={() => setActiveFilter(f)}
+              onClick={() => handleFilterClick(f)}
               className={clsx(
                 "rounded-lg px-4 py-1.5 text-sm font-semibold transition-all",
                 activeFilter === f
@@ -127,7 +123,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-                {currentOwners.length > 0 ? currentOwners.map((owner) => (
+                {owners.length > 0 ? owners.map((owner) => (
                   <tr
                     key={owner.id}
                     onClick={() => onSelectOwner(owner.id)}
@@ -170,7 +166,7 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                       </div>
                     </td>
                     <td className="px-6 py-5 text-right font-black text-emerald-600 text-sm">
-                      ₱{(owner.pets?.reduce((sum, p) => sum + (Number(p.total_paid) || 0), 0) || 0).toLocaleString()}
+                      ₱{(Number(owner.total_paid_sum) || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -206,16 +202,16 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
             </table>
           </div>
           {/* Pagination */}
-          {totalPages > 1 && (
+          {pagination.last_page > 1 && (
             <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/30">
               <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstOwner + 1}-{Math.min(indexOfLastOwner, filteredOwners.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredOwners.length}</span> clients
+                Showing Page <span className="text-zinc-900 dark:text-zinc-50">{pagination.current_page}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.last_page}</span> ({pagination.total} total)
               </div>
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => onPageChange(Math.max(pagination.current_page - 1, 1))}
+                  disabled={pagination.current_page === 1}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -223,26 +219,9 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                   </svg>
                 </button>
                 
-                <div className="flex items-center gap-1.5">
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={clsx(
-                        "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                        currentPage === i + 1
-                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                          : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => onPageChange(Math.min(pagination.current_page + 1, pagination.last_page))}
+                  disabled={pagination.current_page === pagination.last_page}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -312,32 +291,8 @@ function PatientRecordsView({ owners, selectedOwnerId, onSelectOwner, onOpenAddP
                      </div>
                   </div>
 
-                  {/* Web Portal Section */}
-                  <div className="mt-8 border-t border-zinc-100 pt-8 dark:border-dark-border">
-                    <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-zinc-400 mb-4">
-                      🌐 Web Portal Account
-                    </h4>
-                    {selectedOwner.user ? (
-                      <div className="rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tighter">Status: {selectedOwner.user.status || 'Active'}</p>
-                            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mt-0.5">{selectedOwner.user.email}</p>
-                          </div>
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl bg-zinc-50/50 p-4 border border-zinc-100 dark:bg-dark-surface dark:border-dark-border">
-                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">No portal account linked</p>
-                        <p className="text-[10px] text-zinc-400 mt-1 italic">Client cannot login to web portal.</p>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Pets Section */}
-                  <div className="mt-10 border-t border-zinc-100 pt-8 dark:border-dark-border">
-                     <div className="mb-6 flex items-center justify-between">
+                  <div className="mt-10 border-t border-zinc-100 pt-8 dark:border-dark-border">                     <div className="mb-6 flex items-center justify-between">
                         <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-zinc-400">
                           <LuPawPrint className="h-4 w-4" />
                           Pets ({selectedOwner.pets?.length || 0})

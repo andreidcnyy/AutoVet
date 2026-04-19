@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\Roles;
 
-class PortalUser extends Authenticatable
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class PortalUser extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasAuditTrail;
 
@@ -26,6 +28,11 @@ class PortalUser extends Authenticatable
         'zip',
         'password',
         'status',
+        'email_verified_at',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
     ];
 
     protected $hidden = [

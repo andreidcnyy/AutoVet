@@ -24,11 +24,16 @@ export default function ArchiveRecoveryTab() {
   });
   const toast = useToast();
   const { user } = useAuth();
+  const controllerRef = React.useRef(null);
 
   const fetchArchives = async (type, page = 1) => {
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setIsLoading(true);
     try {
       const response = await fetch(`/api/archives/${type}?page=${page}`, {
+        signal: controller.signal,
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`,
@@ -44,9 +49,10 @@ export default function ArchiveRecoveryTab() {
         per_page: data.per_page
       });
     } catch (err) {
+      if (err.name === 'AbortError') return;
       toast.error(err.message);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   };
 
@@ -54,6 +60,9 @@ export default function ArchiveRecoveryTab() {
     if (user?.token) {
       fetchArchives(activeType, 1);
     }
+    return () => {
+      if (controllerRef.current) controllerRef.current.abort();
+    };
   }, [activeType, user?.token]);
 
   const handlePageChange = (page) => {

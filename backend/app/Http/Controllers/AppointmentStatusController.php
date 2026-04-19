@@ -6,11 +6,12 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 use App\Services\ClientNotificationService;
 use App\Traits\HasInternalNotifications;
+use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Support\Facades\Log;
 
 class AppointmentStatusController extends Controller
 {
-    use HasInternalNotifications;
+    use HasInternalNotifications, IdentifiesPortalOwner;
 
     protected ClientNotificationService $notificationService;
 
@@ -24,6 +25,8 @@ class AppointmentStatusController extends Controller
     {
         $appointment->status = 'approved';
         $appointment->save();
+
+        $this->invalidatePortalCache($appointment->pet?->owner_id);
 
         // Broadcast status update
         event(new \App\Events\AppointmentStatusUpdated($appointment));
@@ -59,8 +62,18 @@ class AppointmentStatusController extends Controller
 
     public function decline(Request $request, Appointment $appointment)
     {
+        $validated = $request->validate([
+            'reason' => 'required|string|min:10|max:1000',
+        ], [
+            'reason.required' => 'A decline reason is required.',
+            'reason.min'      => 'Decline reason must be at least 10 characters.',
+        ]);
+
         $appointment->status = 'declined';
+        $appointment->decline_reason = $validated['reason'];
         $appointment->save();
+
+        $this->invalidatePortalCache($appointment->pet?->owner_id);
 
         // Broadcast status update
         event(new \App\Events\AppointmentStatusUpdated($appointment));
@@ -82,6 +95,7 @@ class AppointmentStatusController extends Controller
                 [
                     'pet_name' => $appointment->pet->name,
                     'date' => $appointment->date,
+                    'reason' => $appointment->decline_reason,
                 ],
                 'automated',
                 $appointment

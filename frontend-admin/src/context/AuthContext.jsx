@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // This function is fine as it is, it handles data shaping.
   const sanitizeUser = (data) => {
     if (!data) return null;
     return {
@@ -17,13 +18,14 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    setLoading(true);
     const stored = localStorage.getItem("user");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed && (parsed.token || (parsed.user && parsed.user.token))) {
-          const userData = parsed.token ? parsed : { ...parsed.user, token: parsed.user.token };
-          setUser(sanitizeUser(userData));
+        // The object stored in localStorage IS the user object, which contains the token.
+        if (parsed && parsed.token) {
+          setUser(sanitizeUser(parsed));
         } else {
           localStorage.removeItem("user");
           setUser(null);
@@ -37,13 +39,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (data) => {
-    if (data && (data.error || (data.message && !data.token))) {
-      console.error("AuthContext: Attempted to login with error data", data);
-      return;
+    // The 'data' from the API is the flat user object containing the token.
+    // It's exactly what we need to store.
+    if (data && data.token) {
+        const sanitized = sanitizeUser(data);
+        setUser(sanitized);
+        localStorage.setItem("user", JSON.stringify(sanitized));
+    } else {
+        console.error("AuthContext: Invalid login data received, token missing.", data);
     }
-    const sanitized = sanitizeUser(data);
-    setUser(sanitized);
-    localStorage.setItem("user", JSON.stringify(sanitized));
   };
 
   const logout = () => {

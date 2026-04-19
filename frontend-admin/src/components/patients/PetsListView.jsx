@@ -24,36 +24,36 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [page, setPage] = useState(1);
 
   // Modal State
   const [selectedPetId, setSelectedPetId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const PETS_CACHE_KEY = 'patients_pets_cache';
-  const CACHE_TTL = 5 * 60 * 1000;
-
-  const fetchPets = useCallback((signal) => {
+  const fetchPets = useCallback((signal, searchVal = "", pageNum = 1) => {
     if (!user?.token) return;
+    setIsLoading(true);
 
-    try {
-      const cached = JSON.parse(localStorage.getItem(PETS_CACHE_KEY) || 'null');
-      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
-        setPets(cached.data);
-        setIsLoading(false);
-      }
-    } catch (_) {}
+    const params = new URLSearchParams({
+      page: pageNum,
+      per_page: 12,
+      search: searchVal
+    });
 
-    fetch("/api/pets", {
+    fetch(`/api/patients/pets?${params.toString()}`, {
       signal,
       headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
     })
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(data => {
-        const result = Array.isArray(data) ? data : [];
-        setPets(result);
-        try { localStorage.setItem(PETS_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() })); } catch (_) {}
+        if (data && data.data) {
+          setPets(data.data);
+          setPagination(data.pagination);
+        } else {
+          setPets(Array.isArray(data) ? data : []);
+          setPagination({ current_page: 1, last_page: 1, total: (data?.length || 0) });
+        }
       })
       .catch(err => {
         if (err.name === 'AbortError') return;
@@ -61,35 +61,24 @@ function PetsListView() {
         toast.error("Failed to load patient records.");
       })
       .finally(() => setIsLoading(false));
-  }, [user?.token]);
+  }, [user?.token, toast]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchPets(controller.signal);
+    fetchPets(controller.signal, searchQuery, page);
     return () => controller.abort();
-  }, [fetchPets]);
+  }, [fetchPets, searchQuery, page]);
 
-  const filteredPets = useMemo(() => {
-    return pets.filter(pet => {
-      const matchesSearch = 
-        pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.owner?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (pet.breed?.name && pet.breed.name.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      return matchesSearch;
-    });
-  }, [pets, searchQuery]);
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      setPage(1);
+      // The fetch is already triggered by searchQuery dependency
+    }
+  };
 
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredPets.slice(indexOfFirstItem, indexOfLastItem);
+  const handlePageChange = (pageNum) => {
+    setPage(pageNum);
+  };
 
   const getAge = (dob) => {
     if (!dob) return "N/A";
@@ -109,17 +98,17 @@ function PetsListView() {
   };
 
   const Pagination = () => {
-    if (totalPages <= 1) return null;
+    if (pagination.last_page <= 1) return null;
     return (
       <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
           <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-              Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
+              Showing Page <span className="text-zinc-900 dark:text-zinc-50">{pagination.current_page}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.last_page}</span> ({pagination.total} total)
           </div>
           
           <div className="flex items-center gap-2">
               <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(Math.max(pagination.current_page - 1, 1))}
+                  disabled={pagination.current_page === 1}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
               >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,26 +116,9 @@ function PetsListView() {
                   </svg>
               </button>
               
-              <div className="flex items-center gap-1.5">
-                  {[...Array(totalPages)].map((_, i) => (
-                      <button
-                          key={i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className={clsx(
-                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                              currentPage === i + 1
-                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                          )}
-                      >
-                          {i + 1}
-                      </button>
-                  ))}
-              </div>
-
               <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(Math.min(pagination.current_page + 1, pagination.last_page))}
+                  disabled={pagination.current_page === pagination.last_page}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
               >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,7 +137,7 @@ function PetsListView() {
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Directory</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-            Total of {pets.length} patient records across all clients.
+            Search and manage all patient records efficiently.
           </p>
         </div>
       </div>
@@ -176,14 +148,15 @@ function PetsListView() {
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search by pet name, breed, or owner..."
+            placeholder="Search and press Enter..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchSubmit}
             className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
+              onClick={() => { setSearchQuery(""); setPage(1); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <FiX className="h-4 w-4" />
@@ -200,8 +173,8 @@ function PetsListView() {
             Array(8).fill(0).map((_, i) => (
                 <div key={i} className="card-shell h-64 animate-pulse bg-zinc-100 dark:bg-dark-card/50" />
             ))
-        ) : currentItems.length > 0 ? (
-            currentItems.map((pet) => (
+        ) : pets.length > 0 ? (
+            pets.map((pet) => (
                 <article 
                     key={pet.id} 
                     onClick={() => handlePetClick(pet.id)}

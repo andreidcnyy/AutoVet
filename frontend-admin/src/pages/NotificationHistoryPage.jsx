@@ -37,7 +37,7 @@ function NotificationHistoryPage() {
 
   const fetchNotifications = () => {
     setLoading(true);
-    fetch("/api/dashboard/notifications", {
+    fetch("/api/dashboard/notifications?all=1", {
       headers: {
         "Authorization": `Bearer ${user?.token}`,
         "Accept": "application/json"

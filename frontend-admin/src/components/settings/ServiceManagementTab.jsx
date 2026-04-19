@@ -27,62 +27,80 @@ export default function ServiceManagementTab() {
     pricing_rules: []
   });
 
-  const fetchServices = () => {
-    if (!user?.token) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetch("/api/services", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
+  const SERVICES_CACHE_KEY = 'settings_services_cache';
+  const SVC_FORM_CACHE_KEY = 'settings_svc_form_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const fetchServices = (signal) => {
+    if (!user?.token) { setLoading(false); return; }
+
+    let hasCache = false;
+    try {
+      const cached = JSON.parse(localStorage.getItem(SERVICES_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
+        setServices(cached.data);
+        setLoading(false);
+        hasCache = true;
       }
+    } catch (_) {}
+    if (!hasCache) setLoading(true);
+
+    fetch("/api/services", {
+      signal,
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
     })
       .then(res => res.json())
-      .then(result => { 
-        const normalizedData = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        setServices(normalizedData); 
-        setLoading(false); 
+      .then(result => {
+        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+        setServices(normalized);
+        try { localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify({ data: normalized, ts: Date.now() })); } catch (_) {}
       })
-      .catch(err => { toast.error("Failed to load services"); setLoading(false); });
+      .catch(err => {
+        if (err.name === 'AbortError') return;
+        toast.error("Failed to load services");
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     if (!user?.token) return;
-    fetchServices();
-    
-    const headers = {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${user.token}`
-    };
 
-    // Fetch categories from MDM
-    fetch("/api/service-categories", { headers })
-      .then(res => res.json())
-      .then(result => {
-        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        setServiceCategories(normalized);
-      }) 
-      .catch(console.error);
+    // Show cached form dropdowns instantly
+    try {
+      const cached = JSON.parse(localStorage.getItem(SVC_FORM_CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        if (Array.isArray(cached.categories)) setServiceCategories(cached.categories);
+        if (Array.isArray(cached.sizes)) setPetSizes(cached.sizes);
+        if (Array.isArray(cached.ranges)) setWeightRanges(cached.ranges);
+      }
+    } catch (_) {}
 
-    fetch("/api/pet-size-categories", { headers })
-      .then(res => res.json())
-      .then(result => {
-        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        // Sort by sort_order if available, otherwise keep alphabetical or natural
-        const sorted = [...normalized].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-        setPetSizes(sorted);
-      })
-      .catch(console.error);
+    const controller = new AbortController();
+    fetchServices(controller.signal);
 
-    fetch("/api/weight-ranges", { headers })
-      .then(res => res.json())
-      .then(result => {
-        const normalized = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
-        setWeightRanges(normalized);
-      })
-      .catch(console.error);
+    const headers = { "Accept": "application/json", "Authorization": `Bearer ${user.token}` };
+
+    Promise.all([
+      fetch("/api/service-categories", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/pet-size-categories", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/weight-ranges", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
+    ]).then(([catsRaw, sizesRaw, rangesRaw]) => {
+      const categories = Array.isArray(catsRaw?.data) ? catsRaw.data : (Array.isArray(catsRaw) ? catsRaw : []);
+      const sizesList = Array.isArray(sizesRaw?.data) ? sizesRaw.data : (Array.isArray(sizesRaw) ? sizesRaw : []);
+      const sizes = [...sizesList].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const ranges = Array.isArray(rangesRaw?.data) ? rangesRaw.data : (Array.isArray(rangesRaw) ? rangesRaw : []);
+
+      setServiceCategories(categories);
+      setPetSizes(sizes);
+      setWeightRanges(ranges);
+
+      try { localStorage.setItem(SVC_FORM_CACHE_KEY, JSON.stringify({ categories, sizes, ranges, ts: Date.now() })); } catch (_) {}
+    }).catch(err => {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+    });
+
+    return () => controller.abort();
   }, [user?.token]);
 
   const handleOpenModal = (service = null) => {
@@ -136,8 +154,9 @@ export default function ServiceManagementTab() {
 
     const payload = { 
       ...formData, 
-      price: Number(formData.base_price || formData.price),
-      base_price: Number(formData.base_price),
+      // Ensure we send numbers, and fallback to 0 if empty
+      price: Number(formData.base_price ?? formData.price ?? 0),
+      base_price: Number(formData.base_price ?? 0),
       pricing_rules: cleanedRules
     };
 
@@ -151,7 +170,12 @@ export default function ServiceManagementTab() {
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Failed to save service");
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || "Failed to save service");
+      }
+      
       toast.success(isEditing ? "Service updated" : "Service created");
       fetchServices();
       handleCloseModal();
@@ -269,7 +293,7 @@ export default function ServiceManagementTab() {
                 <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className={formData.pricing_type === 'fixed' ? 'col-span-1' : 'col-span-2'}>
+                <div className="col-span-1">
                   <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Pricing Type</label>
                   <select 
                     value={formData.pricing_type} 
@@ -287,12 +311,10 @@ export default function ServiceManagementTab() {
                     <option value="weight_based">Weight Based</option>
                   </select>
                 </div>
-                {formData.pricing_type === 'fixed' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
-                    <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
+                  <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                </div>
               </div>
 
               {formData.pricing_type === 'size_based' && (

@@ -21,7 +21,7 @@ class Inventory extends Model
         'sku',
         'stock_level',
         'status',
-        'cost_price',
+        'price',
         'selling_price',
         'supplier',
         'expiration_date',
@@ -35,8 +35,12 @@ class Inventory extends Model
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
 
+    protected $appends = ['stock_status'];
+
     protected $casts = [
-        'cost_price'               => 'decimal:2',
+        'stock_level'              => 'integer',
+        'min_stock_level'          => 'integer',
+        'price'                    => 'decimal:2',
         'selling_price'            => 'decimal:2',
         'is_sellable'              => 'boolean',
         'is_service_usable'        => 'boolean',
@@ -45,6 +49,41 @@ class Inventory extends Model
         'synced_at'                => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($inventory) {
+            $inventory->status = $inventory->calculateStockStatus();
+        });
+    }
+
+    /**
+     * Calculate status string based on numeric stock levels.
+     */
+    public function calculateStockStatus(): string
+    {
+        if ($this->stock_level <= 0) {
+            return 'Out of Stock';
+        }
+        
+        if ($this->stock_level <= ($this->min_stock_level ?? 0)) {
+            return 'Low Stock';
+        }
+
+        return 'In Stock';
+    }
+
+    /**
+     * Virtual attribute for standardized logic-friendly status.
+     */
+    public function getStockStatusAttribute(): string
+    {
+        if ($this->stock_level <= 0) return 'out_of_stock';
+        if ($this->stock_level <= ($this->min_stock_level ?? 0)) return 'low_stock';
+        return 'in_stock';
+    }
 
     public function transactions()
     {

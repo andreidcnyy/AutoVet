@@ -44,10 +44,23 @@ async function getBase64ImageFromUrl(imageUrl) {
   });
 }
 
-const formatDate = (date) => {
-  if (!date) return "N/A";
+const formatDate = (dateStr) => {
+  if (!dateStr) return "N/A";
   try {
-    return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    let d = new Date(dateStr);
+    
+    // If it's a bare DB timestamp (YYYY-MM-DD HH:mm:ss), force it to UTC first
+    if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      d = new Date(dateStr.replace(' ', 'T') + 'Z');
+    }
+    
+    if (isNaN(d.getTime())) return "N/A";
+    
+    return d.toLocaleDateString("en-US", { 
+      year: "numeric", 
+      month: "short", 
+      day: "numeric" 
+    });
   } catch (e) {
     return "N/A";
   }
@@ -55,6 +68,8 @@ const formatDate = (date) => {
 
 /* ───────────────────────────────────────── PDF Generation ── */
 async function generateInvoicePDF(invoiceData, patient, clinic) {
+  if (!invoiceData) return;
+  
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -68,7 +83,13 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   // 2. Header Section
   if (clinic?.clinic_logo) {
     try {
-      doc.addImage(clinic.clinic_logo, 'PNG', 14, y, 16, 16, undefined, 'FAST');
+      const logoBase64 = clinic.clinic_logo.startsWith('data:') 
+        ? clinic.clinic_logo 
+        : await getBase64ImageFromUrl(clinic.clinic_logo).catch(() => null);
+      
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', 14, y, 16, 16, undefined, 'FAST');
+      }
     } catch (e) {
       console.error("PDF Logo error:", e);
     }
@@ -82,12 +103,12 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139); // zinc-500
+  doc.setTextColor(100, 116, 139); // zinc-50
   doc.text(clinic?.address || "", 34, y + 13);
   doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 34, y + 17);
 
   // Invoice/Receipt Title (Right Aligned)
-  const isPaid = invoiceData.status === 'Paid' || (invoiceData.amount_paid >= invoiceData.total && invoiceData.total > 0);
+  const isPaid = invoiceData.status === 'Paid' || (Number(invoiceData.amount_paid) >= Number(invoiceData.total) && Number(invoiceData.total) > 0);
   const docTitle = isPaid ? "RECEIPT" : "INVOICE";
 
   doc.setTextColor(203, 213, 225); // Light zinc
@@ -129,8 +150,8 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 
   // Patient Card (Subtle Gray Box)
   const patientCardX = 110;
-  doc.setFillColor(248, 250, 252); // zinc-50 (Very light gray)
-  doc.roundedRect(patientCardX - 4, y - 4, 90, 32, 4, 4, "F");
+  doc.setFillColor(248, 250, 252); // zinc-50
+  doc.roundedRect(patientCardX - 4, y - 4, 90, 36, 4, 4, "F");
 
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
@@ -141,20 +162,22 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
     const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name);
     if (photoUrl && !photoUrl.endsWith(".svg")) {
       try {
-        const base64 = await getBase64ImageFromUrl(photoUrl);
-        doc.addImage(base64, 'JPEG', patientCardX, y + 5, 10, 10);
+        const base64 = await getBase64ImageFromUrl(photoUrl).catch(() => null);
+        if (base64) {
+          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 12, 12);
+        }
       } catch (e) {
         console.error("PDF Patient Image error:", e);
       }
     }
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(10);
+    doc.text(patient.name || "N/A", patientCardX + 16, y + 10);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${patient.species?.name || "N/A"} • ${patient.breed?.name || "Mixed"}`, patientCardX + 16, y + 15);
+    doc.text(`Weight: ${invoiceData.weight_override || patient.weight || "N/A"} kg`, patientCardX + 16, y + 20);
   }
-
-  doc.setTextColor(30, 41, 59);
-  doc.setFontSize(10);
-  doc.text(patient?.name || "N/A", patientCardX + 13, y + 10);
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text(`${patient?.species?.name || ""} • ${patient?.breed?.name || ""}`, patientCardX + 13, y + 15);
 
   y += 45;
 
@@ -181,11 +204,11 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
       3: { halign: 'right', cellWidth: 35 },
     },
     head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
-    body: invoiceData.items.filter(item => !item.is_hidden).map(item => [
-      item.name.toUpperCase() + (item.notes ? "\n" + item.notes : ""),
-      item.qty,
-      (item.unitPrice || item.unit_price || 0).toFixed(2),
-      (item.amount || 0).toFixed(2)
+    body: (invoiceData.items || []).filter(item => !item.is_hidden).map(item => [
+      (item.name || "Item").toUpperCase() + (item.notes ? "\n" + item.notes : ""),
+      item.qty || 1,
+      Number(item.unitPrice || item.unit_price || 0).toFixed(2),
+      Number(item.amount || 0).toFixed(2)
     ]),
   });
 
@@ -280,6 +303,7 @@ function InvoiceModuleView() {
   const [appointmentSearch, setAppointmentSearch] = useState("");
 
   const [currentWeight, setCurrentWeight] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [services, setServices] = useState([]);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -291,30 +315,44 @@ function InvoiceModuleView() {
   const FORM_DATA_CACHE_KEY = 'invoices_form_data_minimal_cache';
   const CACHE_TTL = 5 * 60 * 1000;
 
-  const fetchInvoices = useCallback(async (page = 1, search = searchQuery, signal = null) => {
+  const fetchInvoices = useCallback(async (page = 1, search = searchQuery, signal = null, force = false) => {
     if (!user?.token) return;
+    
+    // Use a local variable to prevent race conditions
     setHistoryLoading(true);
 
-    // Show cached data instantly for default view (page 1, no search)
-    if (page === 1 && !search) {
+    // Try cache first for default page 1, no-search view
+    if (page === 1 && !search && !force) {
       try {
         const cached = JSON.parse(localStorage.getItem(INVOICES_CACHE_KEY) || 'null');
         if (cached && Date.now() - cached.ts < CACHE_TTL) {
           setInvoices(cached.invoices);
           setPagination(cached.pagination);
           setHistoryLoading(false);
+          return;
         }
-      } catch (_) {}
+      } catch (_) {
+        localStorage.removeItem(INVOICES_CACHE_KEY);
+      }
     }
 
     try {
-      const response = await fetch(`/api/invoices?per_page=10&page=${page}&search=${encodeURIComponent(search)}`, {
+      const params = new URLSearchParams({
+        per_page: '10',
+        page: page.toString(),
+        search: search
+      });
+
+      const response = await fetch(`/api/invoices?${params.toString()}`, {
         signal,
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user.token}`
         }
       });
+      
+      if (!response.ok) throw new Error("Failed to fetch invoices");
+      
       const data = await response.json();
 
       if (data.data) {
@@ -326,26 +364,85 @@ function InvoiceModuleView() {
           perPage: data.per_page
         };
         setPagination(newPagination);
+        
+        // Only cache the first page of default results
         if (page === 1 && !search) {
-          try { localStorage.setItem(INVOICES_CACHE_KEY, JSON.stringify({ invoices: data.data, pagination: newPagination, ts: Date.now() })); } catch (_) {}
+          try { 
+            localStorage.setItem(INVOICES_CACHE_KEY, JSON.stringify({ 
+              invoices: data.data, 
+              pagination: newPagination, 
+              ts: Date.now() 
+            })); 
+          } catch (_) {}
         }
-      } else {
-        setInvoices(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      console.error("Failed to fetch invoices:", err);
-      toast.error("Failed to load invoice history.");
+      console.error("Fetch Invoices Error:", err);
+      toast.error("Could not load invoice history.");
     } finally {
       setHistoryLoading(false);
     }
-  }, [user?.token, searchQuery]);
+  }, [user?.token, searchQuery, toast]);
+
+  // Handle viewing full details (needed because index list is optimized/minimal)
+  const handleViewInvoiceDetails = useCallback(async (inv) => {
+    if (!inv?.id) return;
+    
+    try {
+      setHistoryLoading(true);
+      const fullInv = await api.get(`/api/invoices/${inv.id}`);
+      
+      // Batch state updates to reduce re-renders
+      const mappedItems = (fullInv.items || []).map(i => ({
+        ...i,
+        id: i.id,
+        unitPrice: Number(i.unit_price),
+        amount: Number(i.amount),
+        indicator: i.item_type === 'inventory' ? "bg-amber-400" : "bg-emerald-400"
+      }));
+
+      setItems(mappedItems);
+      setSelectedPatientId(fullInv.pet_id.toString());
+      setSelectedOwnerId(fullInv.pet?.owner_id?.toString() || "");
+      setSelectedAppointmentId(fullInv.appointment_id?.toString() || "");
+      setPatientDetails(fullInv.pet);
+      setNotes(fullInv.notes_to_client || "");
+      setStatus(fullInv.status);
+      setAmountPaid(Number(fullInv.amount_paid) || 0);
+      setPaymentMethod(fullInv.payment_method || "");
+      setInvoiceId(fullInv.id);
+      
+      if (fullInv.created_at) {
+        // Ensure we parse as UTC then convert to local YYYY-MM-DD for the form input
+        let dateStr = fullInv.created_at;
+        if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
+          dateStr += ' UTC';
+        }
+        const localDate = new Date(dateStr);
+        setInvoiceDate(localDate.toLocaleDateString('en-CA')); // Returns YYYY-MM-DD in local time
+      }
+
+      setDiscountVal(Number(fullInv.discount_value) || 0);
+      setDiscountType(fullInv.discount_type || "percentage");
+      
+      setActiveTab("new");
+      setIsPreviewMode(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error("View Details Error:", err);
+      toast.error("Failed to load invoice details.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     if (activeTab === "history") {
-      fetchInvoices(pagination.currentPage);
+      // Always reset to page 1 when switching to history tab to see most recent
+      fetchInvoices(1, searchQuery, null, true);
     }
-  }, [activeTab, user?.token]);
+  }, [activeTab]); // Only trigger on tab change
 
   // Debounced search effect
   useEffect(() => {
@@ -363,9 +460,17 @@ function InvoiceModuleView() {
   }, [searchQuery]);
 
   const filteredAppointments = useMemo(() => {
-    if (!appointmentSearch) return appointments;
+    // Only show non-cancelled and non-declined appointments
+    const activeAppts = appointments.filter(appt => 
+      appt.status !== 'cancelled' && 
+      appt.status !== 'declined' && 
+      appt.status !== 'Cancelled' && 
+      appt.status !== 'Declined'
+    );
+    
+    if (!appointmentSearch) return activeAppts;
     const term = appointmentSearch.toLowerCase();
-    return appointments.filter(appt => {
+    return activeAppts.filter(appt => {
       const formatted = formatDate(appt.date).toLowerCase();
       const rawDate = appt.date.toLowerCase();
       const title = (appt.title || "").toLowerCase();
@@ -457,21 +562,28 @@ function InvoiceModuleView() {
       setAppointments([]);
       return;
     }
-    const patientData = (Array.isArray(pets) ? pets : []).find(p => p.id.toString() === pId.toString());
 
-    // Simply use the raw patient data, the UI will access nested properties
-    setPatientDetails(patientData);
-    setCurrentWeight(patientData?.weight || "");
+    // Fetch full patient details to ensure owner and breed/species relations are loaded
+    api.get(`/api/pets/${pId}`)
+      .then(fullPatient => {
+        setPatientDetails(fullPatient);
+        setCurrentWeight(fullPatient?.weight || "");
 
-    // Fetch appointments for this patient (stale-while-revalidate)
-    const apptCacheKey = `invoice_appts_pet_${pId}`;
-    try {
-      const cached = JSON.parse(localStorage.getItem(apptCacheKey) || 'null');
-      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
-        setAppointments(cached.data);
-      }
-    } catch (_) {}
+        // Auto replace placeholders in the notes if clinic template is present
+        if (clinicSettings && clinicSettings.invoice_notes_template) {
+          let template = clinicSettings.invoice_notes_template;
+          template = template.replace(/{clinic_name}/g, clinicSettings.clinic_name || "");
+          template = template.replace(/{pet_name}/g, fullPatient.name || "");
+          template = template.replace(/{owner_name}/g, fullPatient.owner?.name || "");
+          setNotes(template);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch full patient details:", err);
+        toast.error("Failed to load patient records.");
+      });
 
+    // Fetch appointments for this patient - Always fetch real-time data
     const sortAppts = (appts) => {
       const now = new Date(); now.setHours(0, 0, 0, 0);
       return [...appts].sort((a, b) => {
@@ -491,23 +603,12 @@ function InvoiceModuleView() {
       .then(data => {
         const sorted = sortAppts(Array.isArray(data) ? data : []);
         setAppointments(sorted);
-        try { localStorage.setItem(apptCacheKey, JSON.stringify({ data: sorted, ts: Date.now() })); } catch (_) {}
       })
       .catch(err => {
         console.error("Failed to load appointments", err);
         setAppointments([]);
       });
-
-    // Auto replace placeholders in the notes if clinic template is present
-    if (clinicSettings && clinicSettings.invoice_notes_template) {
-      let template = clinicSettings.invoice_notes_template;
-      template = template.replace(/{clinic_name}/g, clinicSettings.clinic_name || "");
-      template = template.replace(/{pet_name}/g, patientData.name || "");
-      template = template.replace(/{owner_name}/g, patientData.owner?.name || "");
-      setNotes(template);
-    }
-  };
-
+    };
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + (item.is_hidden ? 0 : item.amount), 0), [items]);
 
   // Real-time discount calculations safely capping out at subtotal
@@ -592,6 +693,39 @@ function InvoiceModuleView() {
 
     return Number(service.base_price || service.price) || 0;
   };
+
+  // Sync invoice data when appointment is selected - Moved down here to ensure dependencies are initialized
+  useEffect(() => {
+    if (selectedAppointmentId && appointments.length > 0) {
+      const appt = appointments.find(a => a.id.toString() === selectedAppointmentId);
+      if (appt) {
+        // 1. Show the actual appointment date
+        setInvoiceDate(appt.date);
+        
+        // 2. Auto-fetch service if items are empty or don't contain it
+        if (appt.service_id && !items.find(i => i.service_id === appt.service_id)) {
+           const svc = services.find(s => s.id === appt.service_id);
+           if (svc) {
+             const price = calculateDynamicPrice(svc);
+             const newItem = {
+               id: `appt-li-${appt.id}`,
+               name: svc.name,
+               item_type: 'service',
+               service_id: svc.id,
+               inventory_id: null,
+               notes: "Service from Appointment",
+               qty: 1,
+               unitPrice: price,
+               amount: price,
+               indicator: "bg-emerald-400",
+             };
+             setItems(prev => [...prev, newItem]);
+             toast.info(`Added ${svc.name} from appointment.`);
+           }
+        }
+      }
+    }
+  }, [selectedAppointmentId, appointments, services, items, toast]);
 
   const selectItemFromDropdown = (item) => {
     setServiceInput(item.name);
@@ -794,6 +928,14 @@ function InvoiceModuleView() {
         setStatus(actualStatus);
         setInvoiceId(result.id);
 
+        // Clear dashboard and invoice caches to ensure live data is reflected
+        localStorage.removeItem('dashboard_service_forecast_v7_cache');
+        localStorage.removeItem('dashboard_stats_cache');
+        localStorage.removeItem(INVOICES_CACHE_KEY);
+
+        // Reset form to clear the UI after successful finalization
+        resetForm();
+
         // Visibility sequence for AI workflow defense
         setTimeout(() => toast.info("Analyzing AI Inventory Impact...", 3000), 1000);
 
@@ -849,6 +991,14 @@ function InvoiceModuleView() {
       setStatus(updated.status);
       setAmountPaid(updated.amount_paid);
       toast.success("Payment recorded successfully!");
+
+      // Clear dashboard and invoice caches to ensure live data is reflected
+      localStorage.removeItem('dashboard_service_forecast_v7_cache');
+      localStorage.removeItem('dashboard_stats_cache');
+      localStorage.removeItem(INVOICES_CACHE_KEY);
+
+      // Broadcast event for dashboard listeners
+      window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
 
       // Refresh history list if needed
       fetchInvoices(pagination.currentPage);
@@ -1133,7 +1283,7 @@ function InvoiceModuleView() {
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Address:</strong> {
-                          [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip_code].filter(Boolean).join(", ") || "N/A"
+                          [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip].filter(Boolean).join(", ") || "N/A"
                         }</p>
                         <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
                         {patientDetails.date_of_birth && (
@@ -1494,7 +1644,7 @@ function InvoiceModuleView() {
                   <div className="shrink-0 text-right">
                     <p className="text-3xl font-light tracking-wide text-zinc-300 dark:text-zinc-600">INVOICE</p>
                     <p className="mt-1.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">#VB-{new Date().getFullYear()}-{String(new Date().getMonth() + 1).padStart(2, '0')}-0000</p>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Date: {new Date().toLocaleDateString()}</p>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Date: {invoiceDate}</p>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Due: Upon Receipt</p>
                   </div>
                 </header>
@@ -1772,7 +1922,7 @@ function InvoiceModuleView() {
                                 inv.status === 'Cancelled' ? 'bg-rose-100 text-rose-700' :
                                   'bg-zinc-100 text-zinc-600'
                           )}>
-                            {inv.status === 'Finalized' ? 'Unpaid Invoice' : inv.status === 'Paid' ? 'Payment Receipt' : inv.status}
+                            {inv.status === 'Paid' ? 'Payment Receipt' : inv.status}
                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
@@ -1781,7 +1931,7 @@ function InvoiceModuleView() {
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-zinc-500 font-medium">
                           <span className="flex items-center gap-1.5"><FiCalendar className="w-3.5 h-3.5" /> {formatDate(inv.created_at)}</span>
                           <span className="flex items-center gap-1.5"><LuPawPrint className="w-3.5 h-3.5" /> {inv.pet?.owner?.name || "N/A"}</span>
-                          <span className="flex items-center gap-1.5"><FiPlusCircle className="w-3.5 h-3.5" /> {inv.items?.length || 0} Items</span>
+                          <span className="flex items-center gap-1.5"><FiPlusCircle className="w-3.5 h-3.5" /> {inv.items_count || 0} Items</span>
                         </div>
                       </div>
                     </div>
@@ -1793,59 +1943,22 @@ function InvoiceModuleView() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => generateInvoicePDF(inv, inv.pet, clinicSettings)}
+                          onClick={async () => {
+                            try {
+                              toast.info("Preparing document...");
+                              const fullInv = await api.get(`/api/invoices/${inv.id}`);
+                              generateInvoicePDF(fullInv, fullInv.pet, clinicSettings);
+                            } catch (err) {
+                              toast.error("Failed to generate PDF.");
+                            }
+                          }}
                           className="p-2.5 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all"
                           title={inv.status === 'Paid' ? "Download Receipt" : "Download Invoice"}
                         >
                           <FiDownload className="w-5 h-5" />
                         </button>
-                        {inv.status !== 'Paid' && inv.status !== 'Cancelled' && (
-                          <button
-                            onClick={() => {
-                              setItems(inv.items.map(i => ({
-                                ...i,
-                                id: i.id,
-                                unitPrice: i.unit_price,
-                                indicator: "bg-emerald-400"
-                              })));
-                              setSelectedPatientId(inv.pet_id.toString());
-                              setPatientDetails(inv.pet);
-                              setNotes(inv.notes_to_client || "");
-                              setStatus(inv.status);
-                              setAmountPaid(inv.amount_paid || 0);
-                              setPaymentMethod(inv.payment_method || "Cash");
-                              setInvoiceId(inv.id);
-                              setActiveTab("new");
-                              setIsPreviewMode(true);
-                              toast.info(`Ready to record payment for ${inv.invoice_number}`);
-                            }}
-                            className="p-2.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all border border-amber-100"
-                            title="Record Payment"
-                          >
-                            <FiCreditCard className="w-5 h-5" />
-                          </button>
-                        )}
                         <button
-                          onClick={() => {
-                            // Populate form for viewing/editing if possible
-                            // For now, let's just show a toast or preview
-                            setItems(inv.items.map(i => ({
-                              ...i,
-                              id: i.id,
-                              unitPrice: i.unit_price,
-                              indicator: "bg-emerald-400"
-                            })));
-                            setSelectedPatientId(inv.pet_id.toString());
-                            setSelectedOwnerId(inv.pet?.owner_id?.toString() || "");
-                            setPatientDetails(inv.pet);
-                            setNotes(inv.notes_to_client || "");
-                            setStatus(inv.status);
-                            setAmountPaid(inv.amount_paid);
-                            setPaymentMethod(inv.payment_method || "");
-                            setInvoiceId(inv.id);
-                            setActiveTab("new");
-                            setIsPreviewMode(true);
-                          }}
+                          onClick={() => handleViewInvoiceDetails(inv)}
                           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
                         >
                           <FiEye className="w-4 h-4" /> View Details

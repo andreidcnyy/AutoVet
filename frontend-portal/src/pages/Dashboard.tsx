@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { getPortalOverview, cancelAppointment } from '../api';
+import { readCache, writeCache } from '../utils/swrCache';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import clsx from 'clsx';
+
+// Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatPortalDateLocal = (dateStr: string) => {
+  if (!dateStr) return "N/A";
+  const normalizedDate = dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -25,25 +35,33 @@ export default function Dashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  const CACHE_KEY = 'portal_overview_cache';
+
+  const applyData = (data: any) => {
+    const petsData = Array.isArray(data.pets) ? data.pets : data.pets?.data || [];
+    const apptsData = Array.isArray(data.appointments) ? data.appointments : data.appointments?.data || [];
+    const notifData = Array.isArray(data.notifications) ? data.notifications : data.notifications?.data || [];
+    setPets(petsData);
+    setAppointments(apptsData);
+    setNotifications(notifData.filter((n: any) => !n.read_at).slice(0, 3));
+  };
+
   const fetchData = () => {
     getPortalOverview()
       .then((res: any) => {
-        const data = res.data;
-        
-        // Handle pets (re-use existing logic for data extraction)
-        const petsData = Array.isArray(data.pets) ? data.pets : data.pets.data || [];
-        const apptsData = Array.isArray(data.appointments) ? data.appointments : data.appointments.data || [];
-        const notifData = Array.isArray(data.notifications) ? data.notifications : data.notifications.data || [];
-
-        setPets(petsData);
-        setAppointments(apptsData);
-        setNotifications(notifData.filter((n: any) => !n.read_at).slice(0, 3));
+        applyData(res.data);
+        writeCache(CACHE_KEY, res.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
+    const cached = readCache<any>(CACHE_KEY);
+    if (cached) {
+      applyData(cached);
+      setLoading(false);
+    }
     fetchData();
   }, []);
 
@@ -95,52 +113,65 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Pets Section */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2 uppercase tracking-tight">
               <FiHeart className="text-rose-500" />
               My Pets
             </h2>
-            <Link to="/add-pet" className="text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
-              <FiPlus /> Add Pet
-            </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {pets.length > 0 ? (
-              pets.map(pet => (
-                <div key={pet.id} onClick={() => handlePetClick(pet.id)}>
-                  <div className="card-shell card-shell-hover p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
-                      {pet.photo ? (
-                        <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <FiHeart className="w-8 h-8 text-zinc-300 dark:text-zinc-600 group-hover:scale-110 transition-transform" />
-                      )}
+              <>
+                {pets.map(pet => (
+                  <div key={pet.id} onClick={() => handlePetClick(pet.id)}>
+                    <div className="card-shell card-shell-hover p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
+                        {pet.photo ? (
+                          <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <FiHeart className="w-8 h-8 text-zinc-300 dark:text-zinc-600 group-hover:scale-110 transition-transform" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 text-lg truncate leading-tight uppercase tracking-tight">{pet.name}</h3>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 truncate mt-0.5">
+                          {pet.breed?.name || pet.species?.name || 'Unknown Breed'}
+                        </p>
+                        <p className="text-xs font-bold text-zinc-400 mt-1 flex items-center gap-1">
+                          <FiClock className="w-3 h-3" /> {calculateAgeDisplay(pet.date_of_birth)}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={(e) => handleEditClick(e, pet.id)}
+                        className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 hover:text-brand-500 transition-colors"
+                      >
+                        <FiEdit2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <h3 className="font-bold text-zinc-800 dark:text-zinc-100 text-lg truncate leading-tight">{pet.name}</h3>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 truncate mt-0.5">
-                        {pet.breed?.name || pet.species?.name || 'Unknown Breed'}
-                      </p>
-                      <p className="text-xs font-bold text-zinc-400 mt-1 flex items-center gap-1">
-                        <FiClock className="w-3 h-3" /> {calculateAgeDisplay(pet.date_of_birth)}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={(e) => handleEditClick(e, pet.id)}
-                      className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 hover:text-brand-500 transition-colors"
-                    >
-                      <FiEdit2 className="w-4 h-4" />
-                    </button>
                   </div>
-                </div>
-              ))
+                ))}
+                
+                {/* Secondary Register Button inside the grid */}
+                <Link to="/add-pet" className="group">
+                  <div className="h-full border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 flex items-center justify-center gap-3 text-zinc-400 group-hover:border-brand-400 group-hover:text-brand-600 transition-all cursor-pointer bg-zinc-50/30 dark:bg-dark-surface/10">
+                    <FiPlusCircle className="w-6 h-6" />
+                    <span className="text-xs font-black uppercase tracking-widest">Register New Pet</span>
+                  </div>
+                </Link>
+              </>
             ) : (
-              <div className="col-span-full card-shell p-12 text-center space-y-3 bg-zinc-50/50 border-dashed">
-                <p className="text-zinc-400">You haven't added any pets yet.</p>
+              <div className="col-span-full card-shell p-12 text-center space-y-4 bg-zinc-50/50 border-dashed">
+                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto text-zinc-400">
+                  <FiHeart className="w-8 h-8" />
+                </div>
+                <div>
+                  <p className="text-zinc-500 font-bold">You haven't added any pets yet.</p>
+                  <p className="text-xs text-zinc-400 mt-1">Register your pets to start booking appointments.</p>
+                </div>
                 <Link to="/add-pet">
-                  <button className="text-brand-600 font-semibold hover:underline">Register your first pet</button>
+                  <button className="px-8 py-3 rounded-xl bg-brand-500 text-white font-black uppercase tracking-widest text-xs hover:bg-brand-600 shadow-lg shadow-brand-500/20 transition-all">Register your first pet</button>
                 </Link>
               </div>
             )}
@@ -219,7 +250,10 @@ export default function Dashboard() {
                              <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest truncate">{appt.service?.name}</span>
                              <span className={clsx(
                                "text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md",
-                               appt.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                               appt.status === 'pending' && 'bg-zinc-100 text-zinc-600',
+                               appt.status === 'approved' && 'bg-emerald-50 text-emerald-700',
+                               (appt.status === 'cancelled' || appt.status === 'declined') && 'bg-rose-50 text-rose-700',
+                               appt.status === 'completed' && 'bg-blue-50 text-blue-700'
                              )}>
                                {appt.status}
                              </span>
@@ -229,10 +263,7 @@ export default function Dashboard() {
                         <div className="text-right shrink-0">
                           <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
                             <FiCalendar className="w-3 h-3 text-zinc-400" />
-                            {(() => {
-  const d = new Date(appt.date);
-  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-})()}
+                            {formatPortalDateLocal(appt.date)}
                           </div>
                           <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
                             <FiClock className="w-3 h-3" />
@@ -273,7 +304,10 @@ export default function Dashboard() {
                   </h3>
                   <div className={clsx(
                     "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
-                    selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                    selectedAppointment.status === 'pending' && "bg-zinc-100 text-zinc-600",
+                    selectedAppointment.status === 'approved' && "bg-emerald-50 text-emerald-700",
+                    (selectedAppointment.status === 'cancelled' || selectedAppointment.status === 'declined') && "bg-rose-50 text-rose-700",
+                    selectedAppointment.status === 'completed' && "bg-blue-50 text-blue-700"
                   )}>
                     {selectedAppointment.status}
                   </div>
@@ -302,11 +336,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{(() => {
-  const dateStr = selectedAppointment.date || selectedAppointment.created_at;
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-})()}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date || selectedAppointment.created_at)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -315,7 +345,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
                       </div>
                     </div>
                   </div>
@@ -326,7 +356,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name}</p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name || 'N/A'}</p>
                     </div>
                   </div>
 
@@ -349,11 +379,27 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1">{selectedAppointment.notes}</p>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">{selectedAppointment.notes}</p>
                       </div>
                     </div>
                   )}
                 </div>
+
+                {(selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') && (
+                  <div className="p-5 rounded-[1.5rem] bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
+                    <div className="flex items-start gap-3">
+                      <FiXCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">
+                          {selectedAppointment.status === 'declined' ? 'Reason for Decline' : 'Cancellation Reason'}
+                        </p>
+                        <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed break-words">
+                          {selectedAppointment.decline_reason || selectedAppointment.cancellation_reason || "No reason provided"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {selectedAppointment.status === 'pending' && (
                   <button 
