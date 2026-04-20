@@ -23,6 +23,12 @@ class PetController extends Controller
         if ($request->boolean('minimal')) {
             $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'weight')
                 ->with(['owner:id,name', 'species:id,name']);
+            
+            // Always hide AI Training Records for minimal lists too
+            $query->whereHas('owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            });
+
             if ($ownerId = $this->getPortalOwnerId()) {
                 $query->where('owner_id', $ownerId);
             }
@@ -32,10 +38,15 @@ class PetController extends Controller
         // Start with optimized query for the list
         $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'photo', 'sex', 'date_of_birth', 'created_at')
             ->with([
-                'owner:id,name', 
+                'owner:id,name,email', 
                 'species:id,name', 
                 'breed:id,name'
             ]);
+
+        // Always hide AI Training Records from the list for Admins/Staff
+        $query->whereHas('owner', function($q) {
+            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+        });
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->where('owner_id', $ownerId);

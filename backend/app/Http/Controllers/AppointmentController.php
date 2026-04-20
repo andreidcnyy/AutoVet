@@ -30,10 +30,16 @@ class AppointmentController extends Controller
         $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id')
             ->with([
                 'pet:id,name,owner_id',
-                'pet.owner:id,name', 
+                'pet.owner:id,name,email', 
                 'service:id,name',
                 'vet:id,name',
             ]);
+
+        // Always hide AI Training Records from the list for Admins/Staff
+        // but keep them in the DB for forecasting logic.
+        $query->whereHas('pet.owner', function($q) {
+            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+        });
 
         // Access control: Portal users only see their own appointments
         if ($ownerId = $this->getPortalOwnerId()) {
@@ -84,7 +90,13 @@ class AppointmentController extends Controller
             });
         }
 
-        if ($request->has('upcoming') && !$request->has('status')) {
+        // If no specific status is requested, or if 'all' is requested,
+        // we still want to hide 'Scheduled' (mock) data by default to keep the UI clean.
+        if (!$request->has('status') || $request->status === 'all') {
+             $query->whereNotIn('status', ['Scheduled', 'scheduled']);
+        }
+
+        if ($request->has('status') && $request->status !== 'all') {
             $query->where('date', '>=', now()->toDateString());
         }
 
@@ -122,6 +134,9 @@ class AppointmentController extends Controller
         $query = Appointment::select('date', \DB::raw('count(*) as count'))
             ->where('date', '>=', $request->date_from)
             ->where('date', '<=', $request->date_to)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->groupBy('date');
 
         if ($ownerId = $this->getPortalOwnerId()) {

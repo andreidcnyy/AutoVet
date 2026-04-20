@@ -24,6 +24,9 @@ class PatientOwnerController extends Controller
                     ->whereIn('invoices.status', ['Paid', 'Finalized'])
             ]);
 
+        // Always hide AI Training Records from the list for Admins/Staff
+        $query->where('email', '!=', 'dataset.seeder@autovet.ai');
+
         if ($user instanceof \App\Models\PortalUser) {
             $query->where('id', $user->owner?->id);
         }

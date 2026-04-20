@@ -338,25 +338,39 @@ class DashboardController extends Controller
     {
         // No cache for real-time data accuracy
         $tz = 'Asia/Manila';
-        $totalPets = Pet::count();
-        $totalOwners = \App\Models\Owner::count();
+        $totalPets = Pet::whereHas('owner', function($q) {
+            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+        })->count();
+        
+        $totalOwners = \App\Models\Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
 
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
 
-        // Unified Active Statuses (Live Appointments)
-        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+        // Unified Confirmed Statuses (Confirmed Appointments)
+        // We exclude 'Pending' so that 'Approve' action 'adds' to the count
+        // We exclude 'Scheduled' as it is often used for mock/seeded data
+        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed'];
         
         $apptsToday = Appointment::whereDate('date', $today)
-            ->whereIn('status', $activeStatuses)
+            ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
             
         $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
-            ->whereIn('status', $activeStatuses)
+            ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
             
         $cancelledDeclined = Appointment::whereDate('date', $today)
             ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
 
         return response()->json([
@@ -382,7 +396,7 @@ class DashboardController extends Controller
                 'id' => 'stat-appts-today',
                 'title' => 'Appointments Today',
                 'value' => $apptsToday,
-                'detail' => 'Scheduled for ' . \Carbon\Carbon::now($tz)->format('M d'),
+                'detail' => 'Confirmed for ' . \Carbon\Carbon::now($tz)->format('M d'),
                 'iconName' => 'FiCalendar',
                 'iconBg' => 'bg-emerald-100 dark:bg-emerald-900/30',
                 'iconColor' => 'text-emerald-600 dark:text-emerald-400',
@@ -391,7 +405,7 @@ class DashboardController extends Controller
                 'id' => 'stat-appts-upcoming',
                 'title' => "Appointments Tomorrow",
                 'value' => $apptsUpcoming,
-                'detail' => 'Scheduled for ' . \Carbon\Carbon::now($tz)->addDay()->format('M d'),
+                'detail' => 'Confirmed for ' . \Carbon\Carbon::now($tz)->addDay()->format('M d'),
                 'iconName' => 'FiClock',
                 'iconBg' => 'bg-indigo-100 dark:bg-indigo-900/30',
                 'iconColor' => 'text-indigo-600 dark:text-indigo-400',
@@ -639,27 +653,6 @@ class DashboardController extends Controller
                             'message' => "{$record->pet->name} is overdue for a follow-up visit (since " . $record->follow_up_date->format('M d') . ").",
                             'time' => $record->follow_up_date->diffForHumans(),
                             'created_at' => $record->follow_up_date->toDateTimeString()
-                        ];
-                    }
-
-                    // 3. Virtual: Unpaid Invoices
-                    $unpaidInvoices = \App\Models\Invoice::whereHas('pet', function($q) use ($ownerId) {
-                            $q->where('owner_id', $ownerId);
-                        })
-                        ->whereIn('status', ['Finalized', 'Partially Paid'])
-                        ->with('pet')
-                        ->get();
-
-                    foreach ($unpaidInvoices as $invoice) {
-                        $notifications[] = [
-                            'id' => 'invoice-' . $invoice->id,
-                            'db_id' => $invoice->id,
-                            'iconName' => 'FiCreditCard',
-                            'tone' => 'warning',
-                            'title' => 'Payment Due',
-                            'message' => "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has a pending balance.",
-                            'time' => $invoice->created_at->diffForHumans(),
-                            'created_at' => $invoice->created_at->toDateTimeString()
                         ];
                     }
                 }
@@ -1214,11 +1207,14 @@ class DashboardController extends Controller
         $tz = 'Asia/Manila';
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $perPage = $request->query('per_page', 10);
-        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $today)
-            ->whereIn('status', $activeStatuses)
+            ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->orderBy('time', 'asc')
             ->paginate($perPage);
 
@@ -1251,11 +1247,14 @@ class DashboardController extends Controller
         $tz = 'Asia/Manila';
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
         $perPage = $request->query('per_page', 10);
-        $activeStatuses = ['Approved', 'Pending', 'Scheduled', 'approved', 'pending', 'scheduled'];
+        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $tomorrow)
-            ->whereIn('status', $activeStatuses)
+            ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->orderBy('date', 'asc')
             ->orderBy('time', 'asc')
             ->paginate($perPage);
@@ -1289,6 +1288,9 @@ class DashboardController extends Controller
     {
         $perPage = $request->query('per_page', 10);
         $pets = Pet::with(['owner', 'species', 'breed'])
+            ->whereHas('owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->orderBy('name', 'asc')
             ->paginate($perPage);
 
@@ -1317,6 +1319,7 @@ class DashboardController extends Controller
     {
         $perPage = $request->query('per_page', 10);
         $clients = Owner::withCount('pets')
+            ->where('email', '!=', 'dataset.seeder@autovet.ai')
             ->orderBy('name', 'asc')
             ->paginate($perPage);
 
@@ -1351,6 +1354,9 @@ class DashboardController extends Controller
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $today)
             ->whereIn('status', $cancelledDeclinedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->orderBy('updated_at', 'desc')
             ->paginate($perPage);
 

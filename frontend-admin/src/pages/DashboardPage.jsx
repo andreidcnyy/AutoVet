@@ -139,6 +139,8 @@ function DashboardPage() {
   const { data: notifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
   const { data: serviceForecast, refetch: refetchForecast } = useApi(['dashboard-service-forecast'], '/api/forecast/services', { enabled: enabled && !isStaff, cacheKey: 'dashboard_service_forecast_v8_cache' });
 
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
+
   useEffect(() => {
     if (!enabled) return;
     
@@ -148,19 +150,32 @@ function DashboardPage() {
             .listen('.appointment.created', () => {
                 refetchStats();
                 refetchNotifications();
+                setLastUpdate(Date.now());
             })
             .listen('.appointment.status.updated', () => {
                 refetchStats();
                 refetchNotifications();
+                setLastUpdate(Date.now());
             })
             .listen('.appointment.deleted', () => {
                 refetchStats();
                 refetchNotifications();
+                setLastUpdate(Date.now());
             });
             
         return () => echo.leave('admin.appointments');
     });
   }, [enabled, refetchStats, refetchNotifications]);
+
+  // Real-time Modal Refresh
+  useEffect(() => {
+    if (modal.open && ['today', 'upcoming', 'cancelled'].includes(modal.type)) {
+       // Silent refresh if possible, but openModal currently sets loading: true.
+       // To avoid flickering, we could implement a silent version or just accept it.
+       // For now, let's just refetch.
+       openModal(modal.type, modal.title, modal.pagination?.current_page || 1);
+    }
+  }, [lastUpdate]);
 
   useEffect(() => {
     const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); refetchForecast?.(); };
