@@ -15,29 +15,21 @@ class PatientOwnerController extends Controller
     {
         $user = auth('admin_api')->user() ?? auth('portal_api')->user();
 
-        // Start with a clean query, optimized to only what's needed for the list
-        $query = Owner::select('id', 'name', 'phone', 'email', 'address', 'city', 'province', 'zip', 'created_at')
-            ->withCount('pets'); 
-
-        // Efficiently sum total paid across all pets of an owner using a subquery
-        $query->addSelect([
-            'total_paid_sum' => \App\Models\Invoice::selectRaw('sum(total_amount)')
-                ->whereColumn('owner_id', 'owners.id')
-                ->where('status', 'paid')
-        ]);
-
-        // If admin needs to see the pet names/details in the list, we load only essential columns
-        $query->with(['pets' => function($q) {
-            $q->select('id', 'owner_id', 'name', 'species_id', 'breed_id', 'photo')
-              ->with(['species:id,name', 'breed:id,name']);
-        }]);
+        // Optimized query with required relationships and total paid sum calculation
+        $query = Owner::with(['pets', 'user'])
+            ->addSelect([
+                'total_paid_sum' => \App\Models\Invoice::selectRaw('IFNULL(SUM(total), 0)')
+                    ->join('pets', 'pets.id', '=', 'invoices.pet_id')
+                    ->whereColumn('pets.owner_id', 'owners.id')
+                    ->whereIn('invoices.status', ['Paid', 'Finalized'])
+            ]);
 
         if ($user instanceof \App\Models\PortalUser) {
             $query->where('id', $user->owner?->id);
         }
 
         // Add Search functionality
-        if ($request->has('search')) {
+        if ($request->has('search') && !empty($request->get('search'))) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -47,18 +39,17 @@ class PatientOwnerController extends Controller
             });
         }
 
-        // Filter: With Pets vs No Pets
-        if ($request->has('filter')) {
-            $filter = $request->get('filter');
-            if ($filter === 'With Pets') {
-                $query->has('pets');
-            }
+        // Filter: With Pets
+        if ($request->get('filter') === 'With Pets') {
+            $query->has('pets');
         }
 
         $query->orderBy('created_at', 'desc');
 
         $perPage = $request->get('per_page', 10);
-        return response()->json($query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        return response()->json($paginated);
     }
 
     /**

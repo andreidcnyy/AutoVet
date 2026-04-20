@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ServicesSeeder::class,
             ServiceForecastDatasetSeeder::class,
             DashboardAIForecastSeeder::class,
+            PatientPetSeeder::class,
         ]);
     }
 }

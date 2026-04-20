@@ -15,7 +15,7 @@ import {
   FiAlertCircle,
   FiHeart
 } from 'react-icons/fi';
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getAppointments, getAvailability } from '../api';
 import { useForm } from 'react-hook-form';
@@ -65,6 +65,7 @@ export default function BookAppointment() {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [pets, setPets] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [vets, setVets] = useState<any[]>([]);
@@ -117,22 +118,33 @@ export default function BookAppointment() {
   const CACHE_TTL = 5 * 60 * 1000;
   const [formDataLoaded, setFormDataLoaded] = useState(false);
 
-  // Load calendar appointments immediately with cache
+  // Load calendar appointments for the visible month range
   useEffect(() => {
+    const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+    const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+    const cacheKey = `${CACHE_KEY}_${dateFrom}_${dateTo}`;
+
     try {
-      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
       if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
         setAppointments(cached.data);
+        setLoading(false);
       }
     } catch (_) {}
 
-    getAppointments()
+    setLoading(true);
+    getAppointments({ date_from: dateFrom, date_to: dateTo, per_page: 100 })
       .then(res => {
-        setAppointments(res.data);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: res.data, ts: Date.now() })); } catch (_) {}
+        // Correctly extract the data array from the paginated backend response
+        const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setAppointments(appointmentsArray);
+        try { 
+          localStorage.setItem(cacheKey, JSON.stringify({ data: appointmentsArray, ts: Date.now() })); 
+        } catch (_) {}
       })
-      .catch(console.error);
-  }, []);
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [currentDate]);
 
   // Lazy-load form data only when booking drawer first opens
   const FORM_CACHE_KEY = 'portal_book_form_cache';
@@ -259,8 +271,32 @@ export default function BookAppointment() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-center gap-6 py-2">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Approved</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/20" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Declined</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-zinc-400 shadow-sm shadow-zinc-400/20" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pending</span>
+        </div>
+      </div>
+
       {/* Calendar Grid */}
-      <div className="card-shell overflow-hidden bg-white dark:bg-dark-card">
+      <div className="card-shell overflow-hidden bg-white dark:bg-dark-card relative min-h-[500px]">
+        {loading && (
+          <div className="absolute inset-0 z-10 bg-white/60 dark:bg-dark-card/60 backdrop-blur-[1px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
+              <span className="text-xs font-black uppercase tracking-widest text-zinc-500">Syncing Calendar...</span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-7 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
           {weekDays.map(day => (
             <div key={day} className="py-4 text-center text-xs font-bold uppercase tracking-widest text-zinc-400">
@@ -281,7 +317,7 @@ export default function BookAppointment() {
                 key={`${entry.dateString}-${idx}`}
                 onClick={() => handleDayClick(entry)}
                 className={clsx(
-                  "group relative min-h-[120px] p-2 transition-all cursor-pointer",
+                  "group relative min-h-[100px] md:min-h-[120px] p-2 transition-all cursor-pointer",
                   !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-30 pointer-events-none",
                   isToday && "bg-brand-50/50 dark:bg-brand-900/10",
                   isPast && "bg-zinc-100/50 dark:bg-zinc-800/40 grayscale-sm cursor-default",
@@ -296,61 +332,41 @@ export default function BookAppointment() {
                   )}>
                     {entry.day}
                   </span>
-                  {hasEvents && (
-                    <div className="flex gap-1">
-                      {entry.events.map((e: any) => (
-                        <div key={e.id} className={clsx(
-                          "w-1.5 h-1.5 rounded-full",
-                          e.status === 'pending' && 'bg-zinc-400',
-                          e.status === 'approved' && 'bg-emerald-500',
-                          (e.status === 'cancelled' || e.status === 'declined') && 'bg-rose-500',
-                          e.status === 'completed' && 'bg-blue-500'
-                        )} />
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                <div className="mt-2 space-y-1">
-                  {entry.events.map((event: any) => (
-                    <div 
-                      key={event.id} 
-                      onClick={(e) => handleEventClick(e, event)}
-                      className={clsx(
-                        "px-2 py-1 rounded-md border text-[10px] font-bold truncate uppercase transition-colors",
-                        event.status === 'pending' && "bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400",
-                        event.status === 'approved' && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 hover:border-emerald-500",
-                        (event.status === 'cancelled' || event.status === 'declined') && "bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 hover:border-rose-500",
-                        event.status === 'completed' && "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800/50 text-blue-700 dark:text-blue-400 hover:border-blue-500"
-                      )}
-                    >
-                      {event.pet?.name} - {event.status}
-                    </div>
-                  ))}
+                {/* Simplified Status Dots for Client Portal */}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {entry.events.map((event: any) => {
+                    const status = (event.status || '').toLowerCase();
+                    // Do not show completed visits in the booking calendar grid to reduce noise
+                    if (status === 'completed') return null;
+                    
+                    return (
+                      <div 
+                        key={event.id} 
+                        onClick={(e) => handleEventClick(e, event)}
+                        title={`${event.pet?.name}: ${event.status}`}
+                        className={clsx(
+                          "w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-dark-card transition-transform hover:scale-150 shadow-sm",
+                          status === 'pending' && "bg-zinc-400",
+                          (status === 'approved' || status === 'scheduled' || status === 'confirmed') && "bg-emerald-500",
+                          (status === 'cancelled' || status === 'declined') && "bg-rose-500"
+                        )}
+                      />
+                    );
+                  })}
                 </div>
+                
+                {hasEvents && !isPast && (
+                   <div className="mt-2 hidden md:block opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-[9px] font-black text-brand-500 uppercase tracking-tighter">
+                        {entry.events.length} {entry.events.length === 1 ? 'Visit' : 'Visits'}
+                      </p>
+                   </div>
+                )}
               </div>
             );
           })}
-        </div>
-        
-        {/* Calendar Legend */}
-        <div className="p-4 border-t border-zinc-100 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/10 flex flex-wrap items-center justify-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-zinc-400" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Pending</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Approved</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Cancelled / Declined</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Completed</span>
-          </div>
         </div>
       </div>
 

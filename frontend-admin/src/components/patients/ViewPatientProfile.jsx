@@ -997,7 +997,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
   const fetchAppointments = () => {
     if (!user?.token) return;
-    return fetch(`/api/appointments?pet_id=${patient.id}`, {
+    return fetch(`/api/appointments?pet_id=${patient.id}&per_page=100`, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -1008,10 +1008,12 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
         return res.json();
       })
       .then(data => {
-        setAppointments(data);
+        // Handle both paginated and non-paginated responses
+        setAppointments(Array.isArray(data) ? data : (data?.data || []));
       })
       .catch(err => {
         console.error("Error fetching appointments:", err);
+        setAppointments([]);
       });
   };
 
@@ -1047,7 +1049,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     const isEdit = !!editingRecord;
     const method = isEdit ? "PUT" : "POST";
     const url = isEdit ? `/api/medical-records/${editingRecord.id}` : "/api/medical-records";
-    
+
     fetch(url, {
       method,
       headers: { 
@@ -1078,10 +1080,10 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const deleteRecord = (e, id) => {
     e.stopPropagation(); // Prevent opening modal
     if (!confirm("Are you sure you want to delete this record?")) return;
-    
+
     // Immediate UI feedback
     setRecords(prev => prev.filter(r => r.id !== id));
-    
+
     fetch(`/api/medical-records/${id}`, { 
       method: "DELETE",
       headers: {
@@ -1260,10 +1262,10 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
       )}
 
       {isModalOpen && (
-        <MedicalRecordModal 
-          record={editingRecord} 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={onSave} 
+        <MedicalRecordModal
+          record={editingRecord}
+          onClose={() => setIsModalOpen(false)}
+          onSave={onSave}
           isStaff={isStaff}
           isVet={isVet}
           isViewOnlyMode={isViewOnlyMode}
@@ -1276,7 +1278,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
         />
       )}
 
-      <ManualSendModal 
+      <ManualSendModal
         isOpen={isSendModalOpen} 
         onClose={() => setIsSendModalOpen(false)} 
         owner={patient?.owner}
@@ -1285,9 +1287,9 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
       />
     </div>
   );
-}
+  }
 
-function MedicalRecordModal({ 
+  function MedicalRecordModal({ 
   record, 
   onClose, 
   onSave, 
@@ -1300,34 +1302,38 @@ function MedicalRecordModal({
   vets = [],
   selectedVetId,
   setSelectedVetId
-}) {
+  }) {
   const isEdit = !!record;
   const isViewOnly = isStaff || isViewOnlyMode;
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
-  
+
   const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
   const [apptSearch, setApptSearch] = useState("");
 
+  const safeAppointments = Array.isArray(appointments) 
+    ? appointments 
+    : (Array.isArray(appointments?.data) ? appointments.data : []);
+
   const filteredAppointments = useMemo(() => {
-    if (!apptSearch.trim()) return appointments;
+    if (!apptSearch.trim()) return safeAppointments;
     const search = apptSearch.toLowerCase();
-    return appointments.filter(apt => 
+    return safeAppointments.filter(apt => 
       formatDate(apt.date).toLowerCase().includes(search) ||
       (apt.service?.name || apt.title || "").toLowerCase().includes(search)
     );
-  }, [appointments, apptSearch]);
+  }, [safeAppointments, apptSearch]);
 
-  const selectedApt = appointments.find(a => a.id.toString() === selectedAppointmentId?.toString());
+  const selectedApt = safeAppointments.find(a => a.id.toString() === selectedAppointmentId?.toString());
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isViewOnly) return;
-    
+
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
     data.appointment_id = selectedAppointmentId;
     data.vet_id = selectedVetId;
-    
+
     clearErrors();
     onSave(data, setLaravelErrors);
   };

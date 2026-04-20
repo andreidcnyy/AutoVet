@@ -6,7 +6,6 @@ import PetsListView from "../components/patients/PetsListView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
-import api from "../api";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
@@ -15,60 +14,76 @@ import clsx from "clsx";
 function PatientsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [view, setView] = useState("records"); // "records", "add", "add-pet"
-  const [activeTab, setActiveTab] = useState("owners"); // "owners", "patients"
+  const [view, setView] = useState("records");
+  const [activeTab, setActiveTab] = useState("owners");
   const { user } = useAuth();
   const [owners, setOwners] = useState([]);
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [page, setPage] = useState(1);
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 }); // Initialize with a safe default
 
-  // Form States for "Register New Owner" view
+  // Form States for New Owner Registration
   const [phoneValue, setPhoneValue] = useState("");
-  const [province, setProvince] = useState("");
+  const [province, setProvince] = useState(""); // Province state is correctly declared
   const [city, setCity] = useState("");
   const [zip, setZip] = useState("");
   const [availableCities, setAvailableCities] = useState([]);
 
-  const fetchOwners = useCallback((signal, searchVal = "", filterVal = "All", pageNum = 1) => {
+  const fetchOwners = useCallback((page = 1) => {
+    if (!user?.token) {
+      setIsLoading(false);
+      return; // Don't fetch if no user token
+    }
     setIsLoading(true);
-    const params = new URLSearchParams({
-      page: pageNum,
-      per_page: 10,
-      search: searchVal,
-      filter: filterVal
-    });
-
-    api.get(`/api/patients/owners?${params.toString()}`, { signal })
+    fetch(`/api/owners?page=${page}`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then((res) => {
+        if (!res.ok) {
+          return res.json().then(errData => {
+            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+          }).catch(() => {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          });
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data && data.data) {
           setOwners(data.data);
-          setPagination(data.pagination);
+          // Map Laravel pagination fields to what the component expects
+          setPagination({
+            current_page: data.current_page,
+            last_page: data.last_page,
+            total: data.total
+          });
         } else {
           setOwners(Array.isArray(data) ? data : []);
           setPagination({ current_page: 1, last_page: 1, total: (data?.length || 0) });
         }
+        setIsLoading(false);
       })
       .catch((err) => {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error("Failed to load owner data:", err);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+        console.error("Failed to load owner data:", err); // Corrected typo: console.error
+        toast.error(err.message || "Failed to load owner records.");
+        setIsLoading(false);
+        setPagination({ current_page: 1, last_page: 1, total: 0 });
+      });
+  }, [user?.token, toast]);
 
   useEffect(() => {
-    if (!user?.token) return;
-    const controller = new AbortController();
-    fetchOwners(controller.signal, search, filter, page);
-    return () => controller.abort();
-  }, [fetchOwners, user?.token, search, filter, page]);
+    if (user?.token && activeTab === 'owners') {
+      fetchOwners(1);
+    } else if (!user) {
+      setIsLoading(false);
+    }
+  }, [user?.token, activeTab, fetchOwners]);
 
-  // Sync cities when province changes
   useEffect(() => {
     const provinceData = PH_LOCATION_DATA.find(p => p.name === province);
     setAvailableCities(provinceData ? provinceData.cities : []);
@@ -76,30 +91,37 @@ function PatientsPage() {
     setZip("");
   }, [province]);
 
-  // Sync zip when city changes
   useEffect(() => {
     const cityData = availableCities.find(c => c.name === city);
-    if (cityData) {
-      setZip(cityData.zip);
-    }
+    if (cityData) setZip(cityData.zip);
   }, [city, availableCities]);
 
   const handleSaveNewOwner = (newOwner) => {
-    fetchOwners(null, search, filter, page);
-    setSelectedOwnerId(newOwner.id);
+    fetchOwners(pagination?.current_page || 1);
     setView("records");
   };
 
   const handleDeleteOwner = async (ownerId) => {
+    // Using a single-line confirm with escaped newline for simplicity and correctness
     if (!window.confirm("Archive: recoverable within 30 days.\nAre you sure you want to archive this owner?")) return;
     try {
-      await api.delete(`/api/patients/owners/${ownerId}`);
-      fetchOwners(null, search, filter, page);
-      setSelectedOwnerId(null);
+      const res = await fetch(`/api/owners/${ownerId}`, {
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `HTTP error! status: ${res.status}`);
+      }
+      setOwners((prev) => prev.filter((o) => o.id !== ownerId));
+      if (selectedOwnerId === ownerId) setSelectedOwnerId(null);
       toast.success("Owner archived successfully.");
     } catch (err) {
       console.error("Failed to delete owner:", err);
-      toast.error("Could not delete the owner.");
+      toast.error(err.message || "Could not delete the owner.");
     }
   };
 
@@ -112,37 +134,14 @@ function PatientsPage() {
     setOwners((prev) =>
       prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
     );
-    setSelectedOwnerId(updatedOwner.id);
+    if (selectedOwnerId === updatedOwner.id) {
+       setOwnerToEdit(updatedOwner);
+    }
   };
-
-  const handleSelectOwner = useCallback((ownerId) => {
-    setSelectedOwnerId(ownerId);
-    
-    // Optional: fetch full details if not already present in the list
-    api.get(`/api/patients/owners/${ownerId}`)
-      .then(fullOwner => {
-        setOwners(prev => prev.map(o => o.id === ownerId ? fullOwner : o));
-      })
-      .catch(err => console.error("Failed to fetch full owner details:", err));
-  }, []);
-
+  
   const handleAddPetToOwner = (ownerId) => {
     setSelectedOwnerId(ownerId);
     setView("add-pet");
-  };
-
-  const handleSearch = (val) => {
-    setSearch(val);
-    setPage(1);
-  };
-
-  const handleFilter = (val) => {
-    setFilter(val);
-    setPage(1);
-  };
-
-  const handlePageChange = (pageNum) => {
-    setPage(pageNum);
   };
 
   if (view === "add") {
@@ -168,7 +167,7 @@ function PatientsPage() {
               const formData = new FormData(e.target);
               const data = Object.fromEntries(formData);
               try {
-                const res = await fetch("/api/patients/owners", {
+                const res = await fetch("/api/owners", {
                   method: "POST",
                   headers: { 
                     "Content-Type": "application/json",
@@ -185,19 +184,16 @@ function PatientsPage() {
                 });
                 if (!res.ok) {
                   const errData = await res.json().catch(() => ({}));
-                  throw new Error(errData.message || "Failed to create owner");
+                  throw new Error(errData.message || `HTTP error! status: ${res.status}`);
                 }
                 const newOwner = await res.json();
-                setOwners((prev) => [newOwner, ...prev]);
-                setView("records");
-                setSelectedOwnerId(newOwner.id);
+                handleSaveNewOwner(newOwner);
                 toast.success("Owner registered successfully!");
               } catch (err) {
                 toast.error(err.message);
               }
            }} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Full Name */}
+              <div className="grid grid-cols-1 md:grid-all-2 gap-5">
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Full Name *</label>
                   <div className="relative">
@@ -206,7 +202,6 @@ function PatientsPage() {
                   </div>
                 </div>
 
-                {/* Email Address */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Email Address</label>
                   <div className="relative">
@@ -215,7 +210,6 @@ function PatientsPage() {
                   </div>
                 </div>
 
-                {/* Contact Number */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Contact Number *</label>
                   <div className="flex gap-2">
@@ -236,7 +230,6 @@ function PatientsPage() {
                   </div>
                 </div>
 
-                {/* Street Address */}
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Street Address *</label>
                   <div className="relative">
@@ -245,7 +238,6 @@ function PatientsPage() {
                   </div>
                 </div>
 
-                {/* Province Dropdown */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Province *</label>
                   <div className="relative">
@@ -260,9 +252,9 @@ function PatientsPage() {
                     </select>
                     <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
                   </div>
+
                 </div>
 
-                {/* City Dropdown */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">City / Municipality *</label>
                   <div className="relative">
@@ -280,7 +272,6 @@ function PatientsPage() {
                   </div>
                 </div>
 
-                {/* Zip Code (Auto) */}
                 <div className="w-1/2">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Zip Code (Auto)</label>
                   <div className="relative">
@@ -309,17 +300,13 @@ function PatientsPage() {
   if (view === "add-pet") {
     return (
       <div className="p-6">
-        <AddPatientFormView 
+        <AddPatientFormView
           ownerId={selectedOwnerId}
-          onCancel={() => setView("records")} 
+          onCancel={() => setView("records")}
           onSave={(newPet) => {
-            setOwners(owners.map(o => o.id === selectedOwnerId ? { ...o, pets: [...(o.pets || []), newPet] } : o));
+            fetchOwners(pagination?.current_page || 1);
             toast.success(`${newPet.name} has been registered!`);
-            if (newPet?.id) {
-              navigate(`/patients/${newPet.id}`);
-            } else {
-              setView("records");
-            }
+            setView("records");
           }} 
         />
       </div>
@@ -328,7 +315,6 @@ function PatientsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50/50 p-6 dark:bg-dark-surface/30 space-y-6">
-      {/* Tab Switcher */}
       <div className="flex items-center gap-1 w-fit rounded-2xl bg-zinc-100 p-1.5 dark:bg-zinc-800/50 shadow-inner">
         <button
           onClick={() => setActiveTab("owners")}
@@ -360,29 +346,33 @@ function PatientsPage() {
         <>
           {isLoading ? (
             <div className="flex h-64 items-center justify-center text-zinc-500">
-                Loading owner records...
+              Loading owner records...
             </div>
           ) : (
             <PatientRecordsView
-                owners={owners}
-                pagination={pagination}
-                isLoading={isLoading}
-                selectedOwnerId={selectedOwnerId}
-                onSelectOwner={handleSelectOwner}
-                onSearch={handleSearch}
-                onFilter={handleFilter}
-                onPageChange={handlePageChange}
-                onOpenAddPatient={() => {
+              owners={owners}
+              pagination={pagination}
+              onPageChange={fetchOwners}
+              selectedOwnerId={selectedOwnerId}
+              onSelectOwner={setSelectedOwnerId}
+              onOpenAddPatient={() => {
                 setPhoneValue("");
                 setProvince("");
                 setCity("");
                 setZip("");
                 setView("add");
-                }}
-                onDeleteOwner={handleDeleteOwner}
-                onEditOwner={handleEditOwner}
-                onOwnerEdited={fetchOwners}
-                onAddPet={handleAddPetToOwner}
+              }}
+              onDeleteOwner={handleDeleteOwner}
+              onEditOwner={handleEditOwner}
+              onOwnerEdited={(updatedOwner) => {
+                setOwners((prev) =>
+                  prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
+                );
+                if (selectedOwnerId === updatedOwner.id) {
+                   setOwnerToEdit(updatedOwner); 
+                }
+              }}
+              onAddPet={handleAddPetToOwner}
             />
           )}
         </>
@@ -390,12 +380,9 @@ function PatientsPage() {
         <PetsListView />
       )}
 
-      <EditOwnerModal 
+      <EditOwnerModal
         isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setOwnerToEdit(null);
-        }}
+        onClose={() => setIsEditModalOpen(false)}
         owner={ownerToEdit}
         onSaveSuccess={handleUpdateOwnerSuccess}
       />

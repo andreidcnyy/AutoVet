@@ -86,21 +86,26 @@ class ServiceForecastDatasetSeeder extends Seeder
                 $invoiceNum = 'SEED-' . Str::upper(Str::random(4)) . '-' . (100000 + $count);
 
                 $invoicesBatch[] = [
-                    'invoice_number' => $invoiceNum,
-                    'pet_id' => $seedPet->id,
-                    'status' => 'Finalized',
-                    'subtotal' => (float)$revenue,
-                    'total' => (float)$revenue,
-                    'amount_paid' => (float)$revenue,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                    'uuid' => (string) Str::uuid(),
+                    'invoice' => [
+                        'invoice_number' => $invoiceNum,
+                        'pet_id' => $seedPet->id,
+                        'status' => 'Finalized',
+                        'subtotal' => (float)$revenue,
+                        'total' => (float)$revenue,
+                        'amount_paid' => (float)$revenue,
+                        'created_at' => $timestamp,
+                        'updated_at' => $timestamp,
+                        'uuid' => (string) Str::uuid(),
+                    ],
+                    'item' => [
+                        'service_id' => $service->id,
+                        'name' => $service->name,
+                        'qty' => $quantity,
+                        'unit_price' => $price,
+                        'amount' => $revenue,
+                    ]
                 ];
 
-                // Note: Since we need IDs for items, we'll insert invoices in small chunks 
-                // to get the auto-increment IDs quickly or just insert items with the invoice number if possible
-                // Better approach for speed: Insert invoices, get last ID, then insert items.
-                
                 $apptsBatch[] = [
                     'uuid' => (string) Str::uuid(),
                     'pet_id' => $seedPet->id,
@@ -118,7 +123,7 @@ class ServiceForecastDatasetSeeder extends Seeder
                 $count++;
 
                 if ($count % 500 === 0) {
-                    $this->flushBatches($invoicesBatch, $apptsBatch, $seedPet->id, $service->id, $service->name, $quantity, $price, $revenue);
+                    $this->flushBatches($invoicesBatch, $apptsBatch);
                     $invoicesBatch = [];
                     $apptsBatch = [];
                 }
@@ -126,7 +131,7 @@ class ServiceForecastDatasetSeeder extends Seeder
 
             // Final flush
             if (!empty($invoicesBatch)) {
-                $this->flushBatches($invoicesBatch, $apptsBatch, $seedPet->id, $service->id ?? 1, $service->name ?? 'Service', $quantity ?? 1, $price ?? 0, $revenue ?? 0);
+                $this->flushBatches($invoicesBatch, $apptsBatch);
             }
 
             fclose($handle);
@@ -134,23 +139,27 @@ class ServiceForecastDatasetSeeder extends Seeder
         }
     }
 
-    private function flushBatches($invoices, $appts, $petId, $serviceId, $serviceName, $qty, $price, $amt)
+    private function flushBatches($invoices, $appts)
     {
-        DB::transaction(function () use ($invoices, $appts, $petId, $serviceId, $serviceName, $qty, $price, $amt) {
+        DB::transaction(function () use ($invoices, $appts) {
             // Insert Appointments
             DB::table('appointments')->insert($appts);
 
             // Insert Invoices and match Items
-            foreach ($invoices as $invData) {
+            foreach ($invoices as $batchItem) {
+                $invData = $batchItem['invoice'];
+                $itemData = $batchItem['item'];
+                
                 $id = DB::table('invoices')->insertGetId($invData);
+                
                 DB::table('invoice_items')->insert([
                     'invoice_id' => $id,
                     'item_type' => 'service',
-                    'service_id' => $serviceId,
-                    'name' => $serviceName,
-                    'qty' => $qty,
-                    'unit_price' => $price,
-                    'amount' => $amt,
+                    'service_id' => $itemData['service_id'],
+                    'name' => $itemData['name'],
+                    'qty' => $itemData['qty'],
+                    'unit_price' => $itemData['unit_price'],
+                    'amount' => $itemData['amount'],
                     'created_at' => $invData['created_at'],
                     'updated_at' => $invData['updated_at'],
                     'uuid' => (string) Str::uuid(),

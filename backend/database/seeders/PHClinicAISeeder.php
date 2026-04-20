@@ -21,7 +21,7 @@ class PHClinicAISeeder extends Seeder
 {
     public function run(): void
     {
-        // Disable foreign key checks for clean seeding
+        // Disable foreign key checks temporarily (for idempotency of updateOrCreate)
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('invoice_items')->truncate();
         DB::table('invoices')->truncate();
@@ -47,15 +47,20 @@ class PHClinicAISeeder extends Seeder
         $l4 = Inventory::where('code', 'INV-003')->first();
         $kc = Inventory::where('code', 'INV-004')->first();
         $tricat = Inventory::where('code', 'INV-005')->first();
+        $vaccine = Inventory::where('code', 'VAC-PARVO-AI')->first(); // Legacy AI seeder vaccine
 
-        $vaccine = Inventory::where('code', 'VAC-PARVO-AI')->first();
-
-        if (!$vaccine || !$dhppi) {
-            $this->command->error('Inventory items not found. Please run InventoryListSeeder first.');
+        if (!$dhppi) {
+            $this->command->error('Core vaccine DHPPI (INV-001) not found. Please ensure InventoryListSeeder has run correctly.');
             return;
         }
 
-        $allVacs = [$dhppi, $rabies, $l4, $kc, $tricat, $vaccine];
+        // Create a pool of all available vaccines
+        $allVacs = array_filter([$dhppi, $rabies, $l4, $kc, $tricat, $vaccine]);
+
+        if (empty($allVacs)) {
+             $this->command->error('No vaccine inventory items found to seed historical data. Please run InventoryListSeeder.');
+             return;
+        }
 
         // 2. Create pool of owners and pets
         $owners = [];

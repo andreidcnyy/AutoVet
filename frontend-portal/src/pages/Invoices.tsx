@@ -35,20 +35,25 @@ export default function Invoices() {
     const CACHE_KEY = 'portal_invoices_cache';
     const cached = readCache<any>(CACHE_KEY);
     if (cached) {
-      setInvoices(cached.invoices || []);
-      setPets(cached.pets || []);
+      setInvoices(Array.isArray(cached.invoices) ? cached.invoices : []);
+      setPets(Array.isArray(cached.pets) ? cached.pets : []);
       setClinicSettings(cached.clinicSettings || null);
       setLoading(false);
     }
 
     Promise.all([getInvoices(), getPets(), getSettings()])
       .then(([invRes, petsRes, settingsRes]) => {
-        setInvoices(invRes.data);
-        setPets(petsRes.data);
+        // Handle paginated responses if necessary
+        const invData = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
+        const petsData = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
+        
+        setInvoices(invData);
+        setPets(petsData);
         setClinicSettings(settingsRes.data);
+        
         writeCache(CACHE_KEY, {
-          invoices: invRes.data,
-          pets: petsRes.data,
+          invoices: invData,
+          pets: petsData,
           clinicSettings: settingsRes.data,
         });
       })
@@ -95,7 +100,8 @@ export default function Invoices() {
 
   const totals = filteredInvoices.reduce((acc, inv) => {
     if (inv.status !== 'Cancelled') {
-      acc.paid += parseFloat(inv.total);
+      const amt = parseFloat(inv.total);
+      acc.paid += isNaN(amt) ? 0 : amt;
     }
     return acc;
   }, { paid: 0 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -24,61 +24,60 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Modal State
   const [selectedPetId, setSelectedPetId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchPets = useCallback((signal, searchVal = "", pageNum = 1) => {
+  const fetchPets = async () => {
     if (!user?.token) return;
-    setIsLoading(true);
-
-    const params = new URLSearchParams({
-      page: pageNum,
-      per_page: 12,
-      search: searchVal
-    });
-
-    fetch(`/api/patients/pets?${params.toString()}`, {
-      signal,
-      headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
-    })
-      .then(res => res.ok ? res.json() : Promise.reject(res))
-      .then(data => {
-        if (data && data.data) {
-          setPets(data.data);
-          setPagination(data.pagination);
-        } else {
-          setPets(Array.isArray(data) ? data : []);
-          setPagination({ current_page: 1, last_page: 1, total: (data?.length || 0) });
+    try {
+      const response = await fetch("/api/pets?per_page=100", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user.token}`
         }
-      })
-      .catch(err => {
-        if (err.name === 'AbortError') return;
-        console.error("Failed to fetch pets:", err);
-        toast.error("Failed to load patient records.");
-      })
-      .finally(() => setIsLoading(false));
-  }, [user?.token, toast]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchPets(controller.signal, searchQuery, page);
-    return () => controller.abort();
-  }, [fetchPets, searchQuery, page]);
-
-  const handleSearch = (e) => {
-    if (e.key === 'Enter') {
-      setPage(1);
-      // The fetch is already triggered by searchQuery dependency
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Laravel paginate() returns { data: [...] }
+        setPets(data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch pets:", error);
+      toast.error("Failed to load patient records.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handlePageChange = (pageNum) => {
-    setPage(pageNum);
-  };
+  useEffect(() => {
+    fetchPets();
+  }, [user?.token]);
+
+  const filteredPets = useMemo(() => {
+    return pets.filter(pet => {
+      const matchesSearch = 
+        pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.owner?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (pet.breed?.name && pet.breed.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      return matchesSearch;
+    });
+  }, [pets, searchQuery]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredPets.slice(indexOfFirstItem, indexOfLastItem);
 
   const getAge = (dob) => {
     if (!dob) return "N/A";
@@ -98,17 +97,17 @@ function PetsListView() {
   };
 
   const Pagination = () => {
-    if (pagination.last_page <= 1) return null;
+    if (totalPages <= 1) return null;
     return (
       <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
           <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-              Showing Page <span className="text-zinc-900 dark:text-zinc-50">{pagination.current_page}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.last_page}</span> ({pagination.total} total)
+              Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
           </div>
           
           <div className="flex items-center gap-2">
               <button
-                  onClick={() => handlePageChange(Math.max(pagination.current_page - 1, 1))}
-                  disabled={pagination.current_page === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
               >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,9 +115,26 @@ function PetsListView() {
                   </svg>
               </button>
               
+              <div className="flex items-center gap-1.5">
+                  {[...Array(totalPages)].map((_, i) => (
+                      <button
+                          key={i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={clsx(
+                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
+                              currentPage === i + 1
+                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                          )}
+                      >
+                          {i + 1}
+                      </button>
+                  ))}
+              </div>
+
               <button
-                  onClick={() => handlePageChange(Math.min(pagination.current_page + 1, pagination.last_page))}
-                  disabled={pagination.current_page === pagination.last_page}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
               >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,7 +153,7 @@ function PetsListView() {
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Directory</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-            Search and manage all patient records efficiently.
+            Total of {pets.length} patient records across all clients.
           </p>
         </div>
       </div>
@@ -148,15 +164,14 @@ function PetsListView() {
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search and press Enter..."
+            placeholder="Search by pet name, breed, or owner..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearchSubmit}
             className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
           {searchQuery && (
             <button
-              onClick={() => { setSearchQuery(""); setPage(1); }}
+              onClick={() => setSearchQuery("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <FiX className="h-4 w-4" />
@@ -173,8 +188,8 @@ function PetsListView() {
             Array(8).fill(0).map((_, i) => (
                 <div key={i} className="card-shell h-64 animate-pulse bg-zinc-100 dark:bg-dark-card/50" />
             ))
-        ) : pets.length > 0 ? (
-            pets.map((pet) => (
+        ) : currentItems.length > 0 ? (
+            currentItems.map((pet) => (
                 <article 
                     key={pet.id} 
                     onClick={() => handlePetClick(pet.id)}
@@ -258,7 +273,7 @@ function PetsListView() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         patientId={selectedPetId}
-        onRefresh={() => fetchPets(new AbortController().signal)}
+        onRefresh={fetchPets}
       />
     </div>
   );

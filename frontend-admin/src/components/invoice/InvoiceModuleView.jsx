@@ -502,20 +502,21 @@ function InvoiceModuleView() {
     const controller = new AbortController();
 
     Promise.all([
-      api.get('/api/owners', { params: { minimal: 1 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
-      api.get('/api/pets', { params: { minimal: 1 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/owners', { params: { minimal: 1, per_page: 1000 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
+      api.get('/api/pets', { params: { minimal: 1, per_page: 1000 }, signal: controller.signal }).catch(() => ({ error: "Fetch failed" })),
       api.get('/api/settings', { signal: controller.signal }).catch(() => ({})),
       api.get('/api/services', { signal: controller.signal }).catch(() => []),
       api.get('/api/inventory', { signal: controller.signal }).catch(() => []),
     ])
       .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
-        const owners = Array.isArray(ownersData) ? ownersData : [];
-        const pets = Array.isArray(petsData) ? petsData : [];
-        const services = Array.isArray(servicesData) ? servicesData : [];
-        const inventory = Array.isArray(inventoryData) ? inventoryData : [];
+        // Handle paginated responses for owners and pets
+        const owners = Array.isArray(ownersData) ? ownersData : (ownersData?.data || []);
+        const pets = Array.isArray(petsData) ? petsData : (petsData?.data || []);
+        const services = Array.isArray(servicesData) ? servicesData : (servicesData?.data || servicesData || []);
+        const inventory = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.data || inventoryData || []);
 
-        if (!Array.isArray(ownersData)) console.error("Unexpected owners API response:", ownersData);
-        if (!Array.isArray(petsData)) console.error("Unexpected pets API response:", petsData);
+        if (!Array.isArray(owners) || owners.length === 0) console.error("Unexpected or empty owners API response:", ownersData);
+        if (!Array.isArray(pets) || pets.length === 0) console.error("Unexpected or empty pets API response:", petsData);
 
         setOwners(owners);
         setPets(pets);
@@ -596,19 +597,21 @@ function InvoiceModuleView() {
       });
     };
 
-    fetch(`/api/appointments?pet_id=${pId}`, {
+    fetch(`/api/appointments?pet_id=${pId}&per_page=100`, {
       headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
     })
       .then(res => res.json())
       .then(data => {
-        const sorted = sortAppts(Array.isArray(data) ? data : []);
+        const appointmentsArray = Array.isArray(data) ? data : (data?.data || []);
+        const sorted = sortAppts(appointmentsArray);
         setAppointments(sorted);
       })
       .catch(err => {
         console.error("Failed to load appointments", err);
         setAppointments([]);
       });
-    };
+  };
+
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + (item.is_hidden ? 0 : item.amount), 0), [items]);
 
   // Real-time discount calculations safely capping out at subtotal

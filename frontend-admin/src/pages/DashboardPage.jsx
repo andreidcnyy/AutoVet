@@ -149,14 +149,27 @@ function DashboardPage() {
   const forecast = serviceForecast?.forecast || [];
 
   // Align forecast labels
-  const currentMonthDate = new Date();
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
   const visibleForecast = useMemo(() => (forecast.length > 0 ? forecast.slice(0, FORECAST_WINDOW) : []).map((m, index) => {
-    const d = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + index + 1, 1);
+    const d = new Date(now.getFullYear(), now.getMonth() + index + 1, 1);
     const alignedMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     return { ...m, month: alignedMonthStr, is_forecast: true };
-  }), [forecast]);
+  }), [forecast, now]);
 
-  const displayPoint = selectedPoint || visibleForecast[0] || historical[historical.length - 1];
+  // Priority: Selected > Current Month (Actual) > Current Month (Forecast) > Next Forecast > Last Historical
+  const displayPoint = useMemo(() => {
+    if (selectedPoint) return selectedPoint;
+    
+    const currentActual = historical.find(h => h.month === currentMonthStr);
+    if (currentActual) return currentActual;
+    
+    const currentForecast = visibleForecast.find(f => f.month === currentMonthStr);
+    if (currentForecast) return currentForecast;
+
+    return visibleForecast[0] || historical[historical.length - 1];
+  }, [selectedPoint, historical, visibleForecast, currentMonthStr]);
 
   // Derive Jump Options
   const historicalYears = useMemo(() => {

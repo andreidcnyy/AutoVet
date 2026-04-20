@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { destroyEcho } from "../utils/echo";
+import { setAuthToken } from "../api"; // Import the new function
 
 const AuthContext = createContext();
 
@@ -7,54 +8,59 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // This function is fine as it is, it handles data shaping.
-  const sanitizeUser = (data) => {
-    if (!data) return null;
-    return {
-      ...data,
-      name: typeof data.name === 'string' ? data.name : (data.name?.message || data.name?.text || String(data.name || 'User')),
-      role: typeof data.role === 'string' ? data.role : (data.role?.message || data.role?.text || String(data.role || 'Guest')),
-    };
-  };
-
+  // On initial load, read from localStorage to handle page refreshes
   useEffect(() => {
     setLoading(true);
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      try {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
         const parsed = JSON.parse(stored);
-        // The object stored in localStorage IS the user object, which contains the token.
         if (parsed && parsed.token) {
-          setUser(sanitizeUser(parsed));
+          // Set the user state AND directly inject the token into the API client
+          setUser(parsed);
+          setAuthToken(parsed.token);
         } else {
           localStorage.removeItem("user");
-          setUser(null);
+          setAuthToken(null);
         }
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-        localStorage.removeItem("user");
       }
+    } catch (e) {
+      console.error("Failed to parse stored user", e);
+      localStorage.removeItem("user");
+      setAuthToken(null);
     }
     setLoading(false);
   }, []);
 
+  // When login happens, update state, localStorage, AND the API client
   const login = (data) => {
-    // The 'data' from the API is the flat user object containing the token.
-    // It's exactly what we need to store.
     if (data && data.token) {
-        const sanitized = sanitizeUser(data);
-        setUser(sanitized);
-        localStorage.setItem("user", JSON.stringify(sanitized));
+      setUser(data);
+      localStorage.setItem("user", JSON.stringify(data));
+      setAuthToken(data.token); // Directly set the token
     } else {
-        console.error("AuthContext: Invalid login data received, token missing.", data);
+      console.error("AuthContext: Invalid login data received, token missing.", data);
     }
   };
 
+  // On logout, clear everything
   const logout = () => {
     destroyEcho();
     setUser(null);
     localStorage.removeItem("user");
+    setAuthToken(null); // Clear the token from the API client
   };
+
+  // Handle auth failures triggered by the API client
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      logout();
+    };
+    window.addEventListener('auth-failure', handleAuthFailure);
+    return () => {
+      window.removeEventListener('auth-failure', handleAuthFailure);
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>

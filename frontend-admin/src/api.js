@@ -1,19 +1,19 @@
 const _cache = new Map();
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
-let _cachedToken = null;
-let _cachedRaw = null;
+// --- START: MODIFIED AUTH HANDLING ---
+let _token = null;
 
-function getToken() {
-  const raw = localStorage.getItem('user');
-  if (!raw) { _cachedToken = null; _cachedRaw = null; return null; }
-  if (raw === _cachedRaw) return _cachedToken;
-  try {
-    _cachedRaw = raw;
-    _cachedToken = JSON.parse(raw)?.token ?? null;
-  } catch { _cachedToken = null; }
-  return _cachedToken;
+// New function to directly set the token from outside
+export function setAuthToken(token) {
+  _token = token;
 }
+
+// The rest of the app will use this to get the token
+function getToken() {
+  return _token;
+}
+// --- END: MODIFIED AUTH HANDLING ---
 
 function getHeaders(extra = {}) {
   const token = getToken();
@@ -69,6 +69,11 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     if (!res.ok) {
       const err = new Error(`API error ${res.status}`);
       err.status = res.status;
+      if (res.status === 401) {
+        // If we get a 401, clear the token and potentially trigger a logout
+        setAuthToken(null);
+        window.dispatchEvent(new Event('auth-failure'));
+      }
       throw err;
     }
     const data = await res.json();
