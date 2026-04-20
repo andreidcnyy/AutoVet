@@ -140,6 +140,29 @@ function DashboardPage() {
   const { data: serviceForecast, refetch: refetchForecast } = useApi(['dashboard-service-forecast'], '/api/forecast/services', { enabled: enabled && !isStaff, cacheKey: 'dashboard_service_forecast_v8_cache' });
 
   useEffect(() => {
+    if (!enabled) return;
+    
+    import("../utils/echo").then(module => {
+        const echo = module.default;
+        const channel = echo.private('admin.appointments')
+            .listen('.appointment.created', () => {
+                refetchStats();
+                refetchNotifications();
+            })
+            .listen('.appointment.status.updated', () => {
+                refetchStats();
+                refetchNotifications();
+            })
+            .listen('.appointment.deleted', () => {
+                refetchStats();
+                refetchNotifications();
+            });
+            
+        return () => echo.leave('admin.appointments');
+    });
+  }, [enabled, refetchStats, refetchNotifications]);
+
+  useEffect(() => {
     const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); refetchForecast?.(); };
     window.addEventListener('inventory-forecast-refresh', handleRefresh);
     return () => window.removeEventListener('inventory-forecast-refresh', handleRefresh);

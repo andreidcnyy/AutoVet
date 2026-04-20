@@ -7,7 +7,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('admin.appointments', function ($user) {
-    return $user->isFullAdmin() || $user->isClinical();
+    return $user->isFullAdmin() || $user->isClinical() || $user->isStaff();
 });
 
 Broadcast::channel('client.appointments.{id}', function ($user, $id) {

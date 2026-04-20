@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\Appointment;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -10,30 +9,32 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AppointmentCreated implements ShouldBroadcast
+class EntityCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $appointment;
+    public $entityType;
+    public $data;
 
     /**
      * Create a new event instance.
+     * 
+     * @param string $entityType e.g., 'pet', 'owner'
+     * @param mixed $data
      */
-    public function __construct(Appointment $appointment)
+    public function __construct($entityType, $data = null)
     {
-        $this->appointment = $appointment->load(['pet.owner', 'service', 'vet']);
+        $this->entityType = $entityType;
+        $this->data = $data;
     }
 
     /**
      * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
-        // Admin appointments channel
         return [
-            new PrivateChannel('admin.appointments'),
+            new PrivateChannel('admin.notifications'),
         ];
     }
 
@@ -42,6 +43,6 @@ class AppointmentCreated implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'appointment.created';
+        return 'entity.created';
     }
 }

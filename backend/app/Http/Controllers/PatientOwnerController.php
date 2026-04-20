@@ -80,7 +80,12 @@ class PatientOwnerController extends Controller
         }
 
         $owner = Owner::create($validated);
+
+        // Broadcast for real-time dashboard stats
+        event(new \App\Events\EntityCreated('owner', $owner->id));
+
         return response()->json($owner, 201);
+
     }
 
     public function show(Owner $owner)
@@ -103,6 +108,23 @@ class PatientOwnerController extends Controller
         ]);
 
         $owner->update($validated);
+
+        // Sync with PortalUser if exists
+        if ($owner->user_id) {
+            $user = \App\Models\PortalUser::find($owner->user_id);
+            if ($user) {
+                $user->update([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'],
+                    'address' => $validated['address'],
+                    'city' => $validated['city'],
+                    'province' => $validated['province'],
+                    'zip' => $validated['zip'],
+                ]);
+            }
+        }
+
         $owner->load(['pets.species', 'pets.breed', 'pets.sizeCategory', 'pets.invoices', 'pets.appointments']);
         $owner->pets->each->append(['total_paid', 'total_due', 'last_visit', 'next_due']);
         return response()->json($owner);

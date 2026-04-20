@@ -408,12 +408,14 @@ export default function BookAppointment() {
                   <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
                     <span className="text-brand-500 mr-2">/</span>Visit Details
                   </h3>
-                  <div className={clsx(
-                    "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
-                    selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-                  )}>
-                    {selectedAppointment.status}
-                  </div>
+                    <div className={clsx(
+                      "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
+                      selectedAppointment.status === 'pending' ? "bg-amber-100 text-amber-700" : 
+                      (selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') ? "bg-rose-100 text-rose-700" :
+                      "bg-emerald-100 text-emerald-700"
+                    )}>
+                      {selectedAppointment.status}
+                    </div>
                 </div>
                 <button onClick={() => setIsDrawerOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
                   <FiX className="w-6 h-6" />

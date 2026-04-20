@@ -10,28 +10,25 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AppointmentCreated implements ShouldBroadcast
+class AppointmentDeleted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $appointment;
+    public $appointmentId;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Appointment $appointment)
+    public function __construct($appointmentId)
     {
-        $this->appointment = $appointment->load(['pet.owner', 'service', 'vet']);
+        $this->appointmentId = $appointmentId;
     }
 
     /**
      * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
-        // Admin appointments channel
         return [
             new PrivateChannel('admin.appointments'),
         ];
@@ -42,6 +39,6 @@ class AppointmentCreated implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'appointment.created';
+        return 'appointment.deleted';
     }
 }

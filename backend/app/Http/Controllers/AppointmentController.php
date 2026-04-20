@@ -101,8 +101,8 @@ class AppointmentController extends Controller
             $query->where('date', $request->date);
         }
 
-        // Default sort by date desc, then time desc
-        $query->orderBy('date', 'desc')->orderBy('time', 'desc');
+        // Default sort by newest request first
+        $query->orderBy('id', 'desc');
 
         $perPage = $request->get('per_page', 15);
         
@@ -384,8 +384,13 @@ class AppointmentController extends Controller
     {
         $this->authorize('delete', $appointment);
         $ownerId = $appointment->pet?->owner_id;
+        $appointmentId = $appointment->id;
         $appointment->delete();
+        
         $this->invalidatePortalCache($ownerId);
+
+        // Broadcast for real-time sync
+        event(new \App\Events\AppointmentDeleted($appointmentId));
 
         return response()->json(null, 204);
     }

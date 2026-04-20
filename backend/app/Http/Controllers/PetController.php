@@ -131,6 +131,9 @@ class PetController extends Controller
 
         $this->invalidatePortalCache($pet->owner_id);
 
+        // Broadcast for real-time dashboard stats
+        event(new \App\Events\EntityCreated('pet', $pet->id));
+
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])->append(['total_paid', 'total_due', 'last_visit', 'next_due']), 201);
     }
 
