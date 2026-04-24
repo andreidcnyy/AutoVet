@@ -113,7 +113,9 @@ class SuperAdminDashboardController extends Controller
             $validated['logo'] = $path;
         }
 
-        $clinic->update($validated);
+        $clinic->update(array_merge($validated, [
+            'logo' => $validated['logo'] ?? $clinic->logo
+        ]));
 
         return response()->json([
             'message' => 'Clinic updated successfully',
@@ -218,18 +220,42 @@ class SuperAdminDashboardController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'message' => 'required|string',
-            'type' => 'required|string|in:info,warning,success,error',
+            'message' => 'nullable|string',
+            'type' => 'nullable|string|in:info,warning,success,error',
             'active_until' => 'nullable|date',
             'is_active' => 'boolean'
         ]);
 
         $announcement = SystemAnnouncement::create([
             ...$validated,
+            'type' => $validated['type'] ?? 'info',
+            'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
             'created_by' => auth()->id()
         ]);
 
         return response()->json(['message' => 'Announcement broadcasted successfully', 'announcement' => $announcement], 201);
+    }
+
+    /**
+     * POWER 3: Update System Announcement
+     */
+    public function updateAnnouncement(Request $request, SystemAnnouncement $announcement): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'message' => 'nullable|string',
+            'type' => 'nullable|string|in:info,warning,success,error',
+            'active_until' => 'nullable|date',
+            'is_active' => 'boolean'
+        ]);
+
+        $announcement->update([
+            ...$validated,
+            'type' => $validated['type'] ?? 'info',
+            'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
+        ]);
+
+        return response()->json(['message' => 'Announcement updated successfully', 'announcement' => $announcement]);
     }
 
     /**

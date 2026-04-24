@@ -9,6 +9,7 @@ function NavItem({ item, onClose }) {
   return (
     <NavLink
       to={item.path}
+      end={item.end}
       onClick={onClose}
       className={({ isActive }) =>
         clsx(

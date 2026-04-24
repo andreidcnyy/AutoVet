@@ -12,6 +12,7 @@ import SystemPreferencesTab from "./SystemPreferencesTab";
 import ArchiveRecoveryTab from "./ArchiveRecoveryTab";
 import AuditLogTab from "./AuditLogTab";
 import BackupRestoreTab from "./BackupRestoreTab";
+import DataImportTab from "./DataImportTab";
 
 import SpeciesBreedsTab from "./SpeciesBreedsTab";
 import VetScheduleTab from "./VetScheduleTab";
@@ -28,6 +29,7 @@ const tabs = [
   { id: "audit", label: "System Audit Logs", icon: FiActivity, allowedRoles: VET_AND_ADMIN },
   { id: "backup", label: "Backup & Restore", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
   { id: "archive", label: "Archive & Recovery", icon: FiArchive, allowedRoles: VET_AND_ADMIN },
+  { id: "import", label: "Data Import", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
   { id: "client_notifications", label: "Notification Templates", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
 ];
 
@@ -88,6 +90,7 @@ function Settings() {
         { activeTab === "audit" && <AuditLogTab /> }
         { activeTab === "backup" && <BackupRestoreTab /> }
         { activeTab === "archive" && <ArchiveRecoveryTab /> }
+        { activeTab === "import" && <DataImportTab /> }
         { activeTab === "client_notifications" && <NotificationTemplatesManager /> }
       </main>
     </div>

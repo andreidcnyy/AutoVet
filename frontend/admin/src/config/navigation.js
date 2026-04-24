@@ -15,9 +15,9 @@ import logo from "../assets/logo.png";
 
 export const primaryNavigation = [
   // Platform Level (Super Admin Only)
-  { id: "super-dashboard", label: "Clinic Management", path: "/super-admin", icon: FiHome, allowedRoles: SUPER_ADMIN_ONLY },
-  { id: "super-announcements", label: "System Broadcasts", path: "/super-admin/announcements", icon: FiVolume2, allowedRoles: SUPER_ADMIN_ONLY },
-  { id: "super-logs", label: "System Logs", path: "/super-admin/logs", icon: FiActivity, allowedRoles: SUPER_ADMIN_ONLY },
+  { id: "super-dashboard", label: "Clinic Management", path: "/super-admin", icon: FiHome, allowedRoles: SUPER_ADMIN_ONLY, end: true },
+  { id: "super-announcements", label: "System Broadcasts", path: "/super-admin/announcements", icon: FiVolume2, allowedRoles: SUPER_ADMIN_ONLY, end: true },
+  { id: "super-logs", label: "System Logs", path: "/super-admin/logs", icon: FiActivity, allowedRoles: SUPER_ADMIN_ONLY, end: true },
   
   // Clinic Level (Clinic Staff Only)
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid, allowedRoles: CLINIC_STAFF_ROLES },

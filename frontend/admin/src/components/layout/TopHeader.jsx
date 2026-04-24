@@ -32,6 +32,7 @@ const iconToneStyles = {
 };
 
 function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
+  const isSuperAdmin = user?.role === 'super_admin';
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [openNotifMenu, setOpenNotifMenu] = useState(false);
@@ -74,8 +75,8 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur transition-colors duration-300 dark:border-dark-border dark:bg-dark-card/95">
-      <div className="grid h-20 grid-cols-2 items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_1.1fr_auto] lg:px-8">
-        <div className="flex items-center gap-3">
+      <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={onMenuToggle}
@@ -87,26 +88,28 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-3xl">{title}</h1>
         </div>
 
-        <label className="col-span-2 flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 transition-colors duration-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 lg:col-span-1 relative">
-          <FiSearch className="h-4 w-4 shrink-0" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500 pr-8"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <FiX className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </label>
+        {!isSuperAdmin && (
+          <label className="hidden md:flex h-11 flex-1 max-w-md items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 transition-colors duration-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 relative">
+            <FiSearch className="h-4 w-4 shrink-0" />
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500 pr-8"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <FiX className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </label>
+        )}
 
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="flex items-center gap-4 ml-auto">
           {localStorage.getItem('super_admin_session') && (
             <button
               onClick={handleStopImpersonating}

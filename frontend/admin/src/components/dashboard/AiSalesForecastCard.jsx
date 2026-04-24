@@ -25,6 +25,8 @@ function AiSalesForecastCard({ initialData }) {
     const [isDataset, setIsDataset] = useState(!!initialData?.is_dataset_prediction);
     const [predictionSource, setPredictionSource] = useState(initialData?.prediction_source || "live");
     const [isLoading, setIsLoading] = useState(!initialData);
+    const [aiProgress, setAiProgress] = useState(initialData?.ai_intelligence_progress || 0);
+    const [progressMessage, setProgressMessage] = useState(initialData?.message || "");
 
     // Planning Mode States
     const [isPlanningMode, setIsPlanningMode] = useState(false);
@@ -45,10 +47,12 @@ function AiSalesForecastCard({ initialData }) {
         })
             .then(res => res.json())
             .then(fetchedData => {
-                const { data: forecastData, model: modelData, insights: insightData, is_dataset_prediction, prediction_source } = fetchedData;
+                const { data: forecastData, model: modelData, insights: insightData, is_dataset_prediction, prediction_source, ai_intelligence_progress, message } = fetchedData;
                 
                 setIsDataset(!!is_dataset_prediction);
                 setPredictionSource(prediction_source || "live");
+                setAiProgress(ai_intelligence_progress || 0);
+                setProgressMessage(message || "");
 
                 if (Array.isArray(forecastData) && forecastData.length === 0 && modelData?.training_months === 0) {
                     setData([]);
@@ -289,9 +293,23 @@ function AiSalesForecastCard({ initialData }) {
                 ) : safeData.length === 0 ? (
                     <div className="h-[330px] w-full flex flex-col items-center justify-center text-center px-6">
                         <LuSparkles className="w-12 h-12 text-emerald-300 mb-4 opacity-50" />
-                        <h4 className="text-zinc-700 dark:text-zinc-200 font-bold italic">Insufficient Data for AI Forecasting</h4>
-                        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500 max-w-[200px]">
-                            Once you have recorded sales over several weeks, our algorithm will begin projecting your future revenue.
+                        <h4 className="text-zinc-700 dark:text-zinc-200 font-bold italic">AI Intelligence Progress</h4>
+                        
+                        <div className="mt-4 w-full max-w-[240px]">
+                            <div className="flex justify-between mb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                                <span>Learning Progress</span>
+                                <span>{aiProgress}%</span>
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                                <div 
+                                    className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
+                                    style={{ width: `${aiProgress}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <p className="mt-4 text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-[280px]">
+                            {progressMessage || "Once you have recorded sales over several weeks, our algorithm will begin projecting your future revenue."}
                         </p>
                     </div>
                 ) : (

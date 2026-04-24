@@ -210,6 +210,11 @@ class DashboardController extends Controller
 
             $chartData = array_merge($weeklyData, [$forecastNext1, $forecastNext2]);
 
+            // AI Intelligence Progress (Threshold: 3 weeks with data)
+            $weeksWithData = count(array_filter($weeklyData, fn($val) => $val > 0));
+            $progressPercent = min(100, round(($weeksWithData / 3) * 100));
+            $needed = max(0, 3 - $weeksWithData);
+
             // Per-day appointment counts for the current + next 7 days (for bar chart)
             $days = [];
             for ($i = 0; $i < 7; $i++) {
@@ -254,6 +259,10 @@ class DashboardController extends Controller
             return [
                 'insight'         => $insight,
                 'hints'           => $hints,
+                'ai_intelligence_progress' => $progressPercent,
+                'message' => $progressPercent < 100 
+                    ? "AI Intelligence: {$progressPercent}% — Need {$needed} more week" . ($needed > 1 ? 's' : '') . " of data for live projection."
+                    : "AI Analysis Active.",
                 'model'           => [
                     'slope'            => round($m, 4),
                     'intercept'        => round($b, 4),
@@ -817,6 +826,10 @@ class DashboardController extends Controller
 
             $nLiveMonths = count($modelDataPoints);
 
+            // AI Intelligence Progress (Threshold: 3 months)
+            $progressPercent = min(100, round(($nLiveMonths / 3) * 100));
+            $needed = max(0, 3 - $nLiveMonths);
+
             // Level 2: Dataset Fallback if live data is insufficient (< 2 months of history)
             if ($nLiveMonths < 2) {
                 $datasetResult = $this->inventoryForecastService->runGlobalSalesForecast('storage/datasets/sales.csv', 'revenue', $monthsToFetch);
@@ -842,14 +855,18 @@ class DashboardController extends Controller
                         ]),
                         'insights' => $aiInsights,
                         'is_dataset_prediction' => true,
-                        'prediction_source' => 'dataset'
+                        'prediction_source' => 'dataset',
+                        'ai_intelligence_progress' => $progressPercent,
+                        'message' => "AI Intelligence: {$progressPercent}% — Need {$needed} more month" . ($needed > 1 ? 's' : '') . " of completed transactions for live trends."
                     ];
                 }
 
                 return [
                     'data' => [],
                     'model' => null,
-                    'insights' => [['type' => 'info', 'text' => 'Not enough revenue history for forecasting.']]
+                    'insights' => [['type' => 'info', 'text' => "AI Intelligence: {$progressPercent}% — Need {$needed} more month" . ($needed > 1 ? 's' : '') . " of completed transactions."]],
+                    'ai_intelligence_progress' => $progressPercent,
+                    'prediction_status' => 'Insufficient Data'
                 ];
             }
 
@@ -998,6 +1015,11 @@ class DashboardController extends Controller
                 $historicalData[$key][$cat] += (int) $appt->count;
             }
 
+            // AI Intelligence Progress Calculation (Threshold: 3 months with data)
+            $monthsWithData = count($historicalData);
+            $progressPercent = min(100, round(($monthsWithData / 3) * 100));
+            $needed = max(0, 3 - $monthsWithData);
+
             $chartData = [];
             $forecastResults = [];
             $totalForecastedServices = 0;
@@ -1098,6 +1120,10 @@ class DashboardController extends Controller
                     'total_forecasted_services' => round($totalForecastedServices),
                     'others_forecast' => round($othersForecastTotal, 1),
                 ],
+                'ai_intelligence_progress' => $progressPercent,
+                'message' => $progressPercent < 100 
+                    ? "AI Intelligence: {$progressPercent}% — Need {$needed} more month" . ($needed > 1 ? 's' : '') . " of historical data for full accuracy."
+                    : "AI Analysis Optimal.",
                 'chart_data' => $chartData,
                 'model_meta' => [
                     'algorithm' => 'Multi-category Linear Regression (Hardened)',

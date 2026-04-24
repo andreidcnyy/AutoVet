@@ -12,6 +12,7 @@ import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 import api from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
 import clsx from "clsx";
+import { FiX } from "react-icons/fi";
 
 function AppLayout() {
   const { user, loading, login: setUser } = useAuth();
@@ -36,16 +37,25 @@ function AppLayout() {
 
   // Fetch active announcements for clinic users
   React.useEffect(() => {
-    if (user && !isSuperAdmin) {
-       api.get('/api/system-announcements')
-        .then(res => {
-          if (Array.isArray(res)) setAnnouncements(res);
-        })
-        .catch(err => {
-          console.error("Failed to load announcements", err);
-          setAnnouncements([]);
-        });
+    if (!user || isSuperAdmin) {
+       setAnnouncements([]);
+       return;
     }
+
+    const fetchAnnouncements = () => {
+        api.get('/api/system-announcements')
+            .then(res => {
+                if (Array.isArray(res)) setAnnouncements(res);
+            })
+            .catch(err => {
+                console.error("Failed to load announcements", err);
+                setAnnouncements([]);
+            });
+    };
+
+    fetchAnnouncements();
+    const interval = setInterval(fetchAnnouncements, 30000); // Re-fetch every 30s
+    return () => clearInterval(interval);
   }, [user, isSuperAdmin]);
 
   // Dynamically change browser tab branding for Super Admin ONLY
@@ -155,15 +165,22 @@ function AppLayout() {
           {/* System Announcements */}
           {announcements.map(ann => (
             <div key={ann.id} className={clsx(
-              "mb-6 rounded-2xl p-4 shadow-sm border-l-4 animate-in slide-in-from-top duration-300",
+              "mb-6 rounded-2xl p-4 shadow-sm border-l-4 animate-in slide-in-from-top duration-300 relative group",
               ann.type === 'warning' ? "bg-amber-50 border-amber-500 text-amber-800" :
               ann.type === 'error' ? "bg-rose-50 border-rose-500 text-rose-800" :
               ann.type === 'success' ? "bg-emerald-50 border-emerald-500 text-emerald-800" :
               "bg-blue-50 border-blue-500 text-blue-800"
             )}>
+              <button 
+                onClick={() => setAnnouncements(prev => prev.filter(a => a.id !== ann.id))}
+                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Dismiss"
+              >
+                <FiX className="h-4 w-4" />
+              </button>
               <div className="flex items-center gap-3">
                  <span className="text-lg">📢</span>
-                 <div>
+                 <div className="pr-8">
                     <p className="font-black uppercase text-[10px] tracking-widest opacity-60">{ann.title}</p>
                     <p className="font-bold text-sm">{ann.message}</p>
                  </div>

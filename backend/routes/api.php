@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\InventoryForecastController;
+use App\Http\Controllers\ImportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
@@ -136,7 +137,15 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
     Route::post('vet-schedules/bulk',    [VetScheduleController::class, 'bulkStore']);
     Route::apiResource('vet-schedules',   VetScheduleController::class);
-    Route::post('owners/import',          [PatientOwnerController::class, 'import']);
+    
+    // Data Import Routes
+    Route::prefix('import')->group(function () {
+        Route::post('/owners', [ImportController::class, 'importOwners']);
+        Route::post('/appointments', [ImportController::class, 'importAppointments']);
+        Route::post('/invoices', [ImportController::class, 'importInvoices']);
+        Route::post('/inventory-usage', [ImportController::class, 'importInventoryUsage']);
+        Route::post('/services', [ImportController::class, 'importServices']);
+    });
 
     // -----------------------------------------------------------------------
     // Client Notifications
@@ -182,7 +191,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
             \App\Models\SystemAnnouncement::where('is_active', true)
                 ->where(function($q) {
                     $q->whereNull('active_until')
-                      ->orWhere('active_until', '>=', now());
+                      ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
                 })
                 ->orderBy('created_at', 'desc')
                 ->get()
@@ -203,6 +212,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/super-admin/system-logs', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'systemLogs']);
         Route::get('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'announcements']);
         Route::post('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeAnnouncement']);
+        Route::put('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateAnnouncement']);
         Route::delete('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'destroyAnnouncement']);
     });
 
