@@ -120,9 +120,11 @@ class ServicesSeeder extends Seeder
             ],
         ];
 
+        $clinic = \App\Models\Clinic::first();
+
         foreach ($services as $svc) {
             Service::updateOrCreate(
-                ['name' => $svc['name']],
+                ['name' => $svc['name'], 'clinic_id' => $clinic->id],
                 [
                     'category' => $svc['category'],
                     'pricing_mode' => $svc['pricing_mode'],
@@ -132,6 +134,7 @@ class ServicesSeeder extends Seeder
                     'pricing_type' => ($svc['pricing_mode'] === 'size_based') ? 'tiered' : 'fixed',
                     'measurement_basis' => ($svc['pricing_mode'] === 'size_based') ? 'weight' : 'none',
                     'uuid' => (string) Str::uuid(),
+                    'clinic_id' => $clinic->id,
                 ]
             );
         }

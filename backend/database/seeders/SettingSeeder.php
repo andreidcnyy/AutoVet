@@ -22,10 +22,12 @@ class SettingSeeder extends Seeder
             ['key' => 'invoice_notes_template', 'value' => 'Thank you for trusting {clinic_name} with {pet_name}\'s care. Please continue monthly prevention as prescribed.'],
         ];
 
+        $clinic = \App\Models\Clinic::first();
+
         foreach ($settings as $setting) {
             \App\Models\Setting::updateOrCreate(
-                ['key' => $setting['key']],
-                ['value' => $setting['value']]
+                ['key' => $setting['key'], 'clinic_id' => $clinic->id],
+                ['value' => $setting['value'], 'clinic_id' => $clinic->id]
             );
         }
     }

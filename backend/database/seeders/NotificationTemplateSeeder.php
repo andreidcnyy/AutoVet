@@ -63,10 +63,12 @@ class NotificationTemplateSeeder extends Seeder
             ],
         ];
 
+        $clinic = \App\Models\Clinic::first();
+
         foreach ($templates as $template) {
             NotificationTemplate::updateOrCreate(
-                ['event_key' => $template['event_key'], 'channel' => $template['channel']],
-                $template
+                ['event_key' => $template['event_key'], 'channel' => $template['channel'], 'clinic_id' => $clinic->id],
+                array_merge($template, ['clinic_id' => $clinic->id])
             );
         }
     }
