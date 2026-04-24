@@ -15,14 +15,16 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $clinic = \App\Models\Clinic::first();
+
         Admin::updateOrCreate(
             ['email' => 'admin@autovet.com'],
             [
                 'name' => 'Administrator',
                 'password' => Hash::make('password123'),
                 'role' => Roles::ADMIN->value,
-
                 'status' => 'active',
+                'clinic_id' => $clinic->id,
             ]
         );
     }

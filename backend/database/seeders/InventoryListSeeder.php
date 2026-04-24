@@ -46,6 +46,8 @@ class InventoryListSeeder extends Seeder
             24 => 'INV-010', // Syringe 1 mL
         ];
 
+        $clinic = \App\Models\Clinic::first();
+
         foreach ($data as $item) {
             $itemId = $item['id'];
             $isConsumable = stripos($item['item_name'] ?? '', 'syringe') !== false 
@@ -59,7 +61,7 @@ class InventoryListSeeder extends Seeder
             $finalCode = $aiMapping[$itemId] ?? ('INV-' . str_pad($itemId, 3, '0', STR_PAD_LEFT));
 
             Inventory::updateOrCreate(
-                ['item_name' => $item['item_name']],
+                ['item_name' => $item['item_name'], 'clinic_id' => $clinic->id],
                 [
                     'inventory_category_id' => $isConsumable ? $consumableCategory->id : $medicationCategory->id,
                     'code' => $finalCode,
@@ -71,6 +73,7 @@ class InventoryListSeeder extends Seeder
                     'status' => 'Active',
                     'is_billable' => true,
                     'is_consumable' => $isConsumable,
+                    'clinic_id' => $clinic->id,
                 ]
             );
         }
