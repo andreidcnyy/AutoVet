@@ -12,13 +12,16 @@ use App\Enums\Roles;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Traits\HasClinic;
+
 class PortalUser extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasAuditTrail;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasAuditTrail, HasClinic;
 
     protected $table = 'portal_users';
 
     protected $fillable = [
+        'clinic_id',
         'name',
         'email',
         'phone',

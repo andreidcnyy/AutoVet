@@ -12,9 +12,12 @@ class ServiceForecastAggregator
      */
     public function getMonthlyData(): array
     {
+        $clinicId = auth()->user()->clinic_id;
+
         $query = DB::table('invoices as i')
             ->join('invoice_items as ii', 'ii.invoice_id', '=', 'i.id')
             ->join('services as s', 's.id', '=', 'ii.service_id')
+            ->where('i.clinic_id', $clinicId)
             ->whereIn('i.status', ['Finalized', 'Paid', 'Partially Paid'])
             ->select(
                 DB::raw("DATE_FORMAT(i.created_at, '%Y-%m') AS month"),

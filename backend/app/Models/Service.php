@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
+use App\Traits\HasClinic;
+
 class Service extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
     protected $fillable = [
+        'clinic_id',
         'name',
         'description',
         'price',

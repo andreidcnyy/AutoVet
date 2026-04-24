@@ -99,7 +99,7 @@ def forecast_stockout(csv_filepath, min_stock_level):
         except ValueError:
             pass
 
-    if len(df) < 3:
+    if len(df) < 3:     
         return {
             "prediction_status": "Insufficient Data",
             "forecast_status": "Insufficient Data",

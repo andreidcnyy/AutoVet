@@ -8,10 +8,13 @@ use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Traits\HasClinic;
+
 class Appointment extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
     protected $fillable = [
+        'clinic_id',
         'title',
         'date',
         'time',

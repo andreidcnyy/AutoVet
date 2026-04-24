@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Note: Zacbel X fonts are not yet present in the portal, but defined to match admin styling */
+@font-face {
+  font-family: 'Zacbel X';
+  src: url('./assets/fonts/zacbelx-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Zacbel X';
+  src: url('./assets/fonts/zacbelx-extrabold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-50 text-zinc-800 antialiased font-sans transition-colors duration-300;
+    @apply dark:bg-dark-bg dark:text-zinc-100;
+    /* Prevent the "typing cursor" (text selection) from appearing randomly on the UI */
+    user-select: none;
+    cursor: default;
+  }
+
+  /* Allow text selection in specific areas where it's needed */
+  input, 
+  textarea, 
+  [contenteditable="true"],
+  .selectable-text {
+    user-select: text;
+    cursor: auto;
+  }
+
+  /* Ensure buttons and links still show the hand pointer */
+  button, 
+  a, 
+  [role="button"] {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+
+  /* Main card / panel surface */
+  .card-shell {
+    @apply rounded-2xl border border-zinc-200/70 bg-white shadow-md transition-all duration-300;
+    @apply dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft;
+  }
+
+  .card-shell-hover {
+    @apply hover:shadow-xl hover:-translate-y-1 transition-all duration-300;
+  }
+
+  /* Reusable input style for dark mode forms */
+  .input-field {
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:bg-zinc-800;
+  }
+
+  /* Reusable select style for dark mode forms */
+  .select-field {
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-none appearance-none pr-10 transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 4s ease-in-out infinite;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-500 { animation-delay: 500ms; }

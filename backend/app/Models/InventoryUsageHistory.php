@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasClinic;
+
 class InventoryUsageHistory extends Model
 {
+    use HasClinic;
+
     protected $table = 'inventory_usage_history';
 
     /**
@@ -15,6 +19,7 @@ class InventoryUsageHistory extends Model
     public const FORECASTING_SAFE_SOURCES = ['retail_sale', 'service_consumable', 'manual_adjustment'];
 
     protected $fillable = [
+        'clinic_id',
         'inventory_id',
         'invoice_id',
         'invoice_item_id',

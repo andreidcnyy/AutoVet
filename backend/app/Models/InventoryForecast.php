@@ -4,11 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasClinic;
+
 class InventoryForecast extends Model
 {
+    use HasClinic;
+
     protected $table = 'inventory_forecasts';
 
     protected $fillable = [
+        'clinic_id',
         'inventory_id',
         'predicted_demand',
         'average_daily_consumption',

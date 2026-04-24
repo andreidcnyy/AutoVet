@@ -19,10 +19,12 @@ use App\Models\Appointment;
 use App\Models\MedicalRecord;
 use App\Models\Invoice;
 
+use App\Traits\HasClinic;
+
 class Pet extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
-    
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+
     protected static function boot()
     {
         parent::boot();
@@ -86,6 +88,7 @@ class Pet extends Model
     }
 
     protected $fillable = [
+        'clinic_id',
         'owner_id', 'name', 'species_id', 'breed_id', 'date_of_birth', 'age_group',
         'sex', 'color', 'weight', 'weight_unit', 'size_category_id', 'status',
         'allergies', 'medication', 'notes', 'photo',

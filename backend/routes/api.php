@@ -177,6 +177,35 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // System Administration
     // -----------------------------------------------------------------------
+    Route::get('/system-announcements', function() {
+        return response()->json(
+            \App\Models\SystemAnnouncement::where('is_active', true)
+                ->where(function($q) {
+                    $q->whereNull('active_until')
+                      ->orWhere('active_until', '>=', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->get()
+        );
+    });
+
+    Route::group(['middleware' => 'role:super_admin'], function () {
+        Route::get('/super-admin/stats', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'stats']);
+        Route::get('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinics']);
+        Route::post('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeClinic']);
+        Route::put('/super-admin/clinics/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateClinic']);
+        Route::post('/super-admin/clinics/{clinic}/toggle-status', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'toggleStatus']);
+        
+        // Super Admin Powers
+        Route::get('/super-admin/clinics/{clinic}/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinicAdmins']);
+        Route::post('/super-admin/clinics/{clinic}/admins/{admin}/reset-password', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'resetClinicAdminPassword']);
+        Route::post('/super-admin/impersonate/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'impersonate']);
+        Route::get('/super-admin/system-logs', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'systemLogs']);
+        Route::get('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'announcements']);
+        Route::post('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeAnnouncement']);
+        Route::delete('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'destroyAnnouncement']);
+    });
+
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
         // Audit Logs
         Route::get('/audit-logs', [AuditLogController::class, 'index']);

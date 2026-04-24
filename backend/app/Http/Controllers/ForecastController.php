@@ -58,7 +58,10 @@ class ForecastController extends Controller
     public function services(): JsonResponse
     {
         try {
-            $result = Cache::remember('service_forecast_v7', 3600, function () {
+            $clinicId = auth()->user()->clinic_id;
+            $cacheKey = "service_forecast_v8_clinic_{$clinicId}";
+
+            $result = Cache::remember($cacheKey, 3600, function () {
                 $aggregator = new ServiceForecastAggregator();
                 $historical = $aggregator->getMonthlyData();
 

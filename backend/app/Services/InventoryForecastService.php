@@ -40,19 +40,23 @@ class InventoryForecastService
                 ];
             }
 
-            $insufficientDataResponse = [
-                'prediction_status' => 'Insufficient Data',
-                'message'           => 'Not enough real-world sales history. AI requires at least 3 verified usage records from finalized invoices to generate a trend.',
-                'current_stock'     => $inventory->stock_level,
-                'min_stock_level'   => $inventory->min_stock_level,
-                'item_name'         => $inventory->item_name,
-            ];
-
             // Require at least 3 verified sale rows (forecasting-safe sources only)
             $usageCount = InventoryUsageHistory::forecastingSafe()
                 ->where('inventory_id', $inventoryId)
                 ->count();
                 
+            $progressPercent = min(100, round(($usageCount / 3) * 100));
+            $needed = max(0, 3 - $usageCount);
+
+            $insufficientDataResponse = [
+                'prediction_status' => 'Insufficient Data',
+                'ai_intelligence_progress' => $progressPercent,
+                'message'           => "AI Intelligence: {$progressPercent}% — Need {$needed} more completed transaction" . ($needed > 1 ? 's' : '') . " to generate a trend.",
+                'current_stock'     => $inventory->stock_level,
+                'min_stock_level'   => $inventory->min_stock_level,
+                'item_name'         => $inventory->item_name,
+            ];
+
             if ($usageCount < 3) {
                 // FALLBACK 0: Demo dataset check (Strict control for INV-001/002)
                 $demoPath = base_path('storage/datasets/inventory_demo.csv');

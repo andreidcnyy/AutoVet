@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Zacbel X';
+  src: url('./assets/fonts/zacbelx-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Zacbel X';
+  src: url('./assets/fonts/zacbelx-extrabold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-50 text-zinc-800 antialiased font-sans transition-colors duration-300;
+    @apply dark:bg-dark-bg dark:text-zinc-100;
+    /* Prevent the "typing cursor" (text selection) from appearing randomly on the UI */
+    user-select: none;
+    cursor: default;
+  }
+
+  /* Allow text selection in specific areas where it's needed */
+  input, 
+  textarea, 
+  [contenteditable="true"],
+  .selectable-text {
+    user-select: text;
+    cursor: auto;
+  }
+
+  /* Ensure buttons and links still show the hand pointer */
+  button, 
+  a, 
+  [role="button"] {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+
+  /* Main card / panel surface */
+  .card-shell {
+    @apply rounded-2xl border border-zinc-200/70 bg-white shadow-soft transition-colors duration-300;
+    @apply dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft;
+  }
+
+  /* Reusable input style for dark mode forms */
+  .input-field {
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:bg-zinc-800;
+  }
+
+  /* Reusable select style for dark mode forms */
+  .select-field {
+    @apply h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-none appearance-none pr-10 transition-colors duration-150;
+    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500;
+  }
+
+  /* Thin scrollbar for calendar cells */
+  .slim-scroll {
+    scrollbar-width: thin;
+  }
+
+  .slim-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .slim-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .slim-scroll::-webkit-scrollbar-thumb {
+    @apply bg-zinc-300 rounded-full dark:bg-zinc-600;
+  }
+}
+
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the invoice container and its children */
+  .printable-invoice, .printable-invoice * {
+    visibility: visible;
+  }
+  
+  /* Reset background and layout for printing */
+  .printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide scrollbars during print */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -6,9 +6,11 @@ use App\Traits\HasAuditTrail;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasClinic;
+
 class Invoice extends Model
 {
-    use HasSyncFields, HasAuditTrail;
+    use HasSyncFields, HasAuditTrail, HasClinic;
 
     protected $guarded = [];
 

@@ -115,6 +115,7 @@ class AuthController extends Controller
                     }
                 } else {
                     $user = PortalUser::create([
+                        'clinic_id' => 1, // Default clinic
                         'name' => $request->name,
                         'email' => $email,
                         'phone' => $request->phone,
@@ -134,6 +135,7 @@ class AuthController extends Controller
 
                 if (!$ownerExists) {
                     Owner::create([
+                        'clinic_id' => 1, // Default clinic
                         'name' => $request->name,
                         'email' => $email,
                         'phone' => $request->phone,
@@ -212,6 +214,7 @@ class AuthController extends Controller
 
         $responseData = [
             'id' => $user->id,
+            'clinic_id' => $user->clinic_id,
             'name' => $user->name,
             'email' => $user->email,
             'role' => $is_admin ? $user->role : Roles::OWNER->value,

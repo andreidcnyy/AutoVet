@@ -33,6 +33,12 @@ class RoleMiddleware
         }
 
         $userRole = strtolower($userRole);
+
+        // Super Admin bypasses all role checks
+        if ($userRole === Roles::SUPER_ADMIN->value) {
+            return $next($request);
+        }
+
         $lowercasedRoles = array_map('strtolower', $roles);
 
         if (!in_array($userRole, $lowercasedRoles)) {

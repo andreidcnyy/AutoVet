@@ -4,9 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasClinic;
+
 class AuditLog extends Model
 {
+    use HasClinic;
+
     protected $fillable = [
+        'clinic_id',
         'user_id',
         'action',
         'model_type',

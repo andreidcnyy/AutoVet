@@ -12,13 +12,16 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Enums\Roles;
 use Illuminate\Support\Facades\DB;
 
+use App\Traits\HasClinic;
+
 class Admin extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable, HasAuditTrail;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable, HasAuditTrail, HasClinic;
 
     protected $table = 'admins';
 
     protected $fillable = [
+        'clinic_id',
         'name',
         'email',
         'password',

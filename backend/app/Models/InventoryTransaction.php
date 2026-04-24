@@ -4,9 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\HasClinic;
+
 class InventoryTransaction extends Model
 {
+    use HasClinic;
+
     protected $fillable = [
+        'clinic_id',
         'inventory_id',
         'transaction_type',
         'quantity',

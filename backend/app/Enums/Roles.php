@@ -10,17 +10,18 @@ namespace App\Enums;
  */
 enum Roles: string
 {
-    case ADMIN        = 'admin';
+    case SUPER_ADMIN  = 'super_admin';
+    case CLINIC_ADMIN = 'clinic_admin';
     case VETERINARIAN = 'veterinarian';
     case STAFF        = 'staff';
-    case OWNER        = 'owner';
+    case OWNER        = 'owner'; // Portal Client
 
     /**
      * Roles that can perform administrative write operations.
      */
     public static function adminRoles(): array
     {
-        return [self::ADMIN->value, self::VETERINARIAN->value];
+        return [self::SUPER_ADMIN->value, self::CLINIC_ADMIN->value, self::VETERINARIAN->value];
     }
 
     /**
@@ -28,7 +29,7 @@ enum Roles: string
      */
     public static function clinicalRoles(): array
     {
-        return [self::VETERINARIAN->value, self::ADMIN->value];
+        return [self::VETERINARIAN->value, self::CLINIC_ADMIN->value];
     }
 
     /**
@@ -44,7 +45,7 @@ enum Roles: string
      */
     public static function employeeRoles(): array
     {
-        return [self::ADMIN->value, self::VETERINARIAN->value, self::STAFF->value];
+        return [self::CLINIC_ADMIN->value, self::VETERINARIAN->value, self::STAFF->value];
     }
 
     /**
