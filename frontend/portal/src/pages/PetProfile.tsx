@@ -16,6 +16,7 @@ import {
 import { LuPawPrint } from 'react-icons/lu';
 import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
+import { getActualPetImageUrl } from '../utils/petImages';
 
 function PetProfile() {
   const { id } = useParams<{ id: string }>();

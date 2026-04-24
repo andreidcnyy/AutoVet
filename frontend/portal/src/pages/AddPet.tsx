@@ -271,7 +271,7 @@ export default function AddPet() {
                 {watch("age_group") ? (
                   <>
                     <span>{watch("age_group")}</span>
-                    <span className="text-[10px] text-zinc-400 font-medium">{calculateAgeDisplay(dobValue)}</span>
+                    <span className="text-[10px] text-zinc-400 font-medium">{dobValue && calculateAgeDisplay(dobValue)}</span>
                   </>
                 ) : "Enter birth date to calculate"}
               </div>

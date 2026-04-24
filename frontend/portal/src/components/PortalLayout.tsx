@@ -76,7 +76,7 @@ export default function PortalLayout({ children }: LayoutProps) {
                 <item.icon className="w-5 h-5" />
                 {item.name}
               </div>
-              {item.badge > 0 && (
+              {item.badge !== undefined && item.badge > 0 && (
                 <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg shadow-sm">
                   {item.badge}
                 </span>
