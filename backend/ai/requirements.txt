@@ -1,2 +1,5 @@
 pandas
 scikit-learn
+fastapi
+uvicorn
+python-multipart

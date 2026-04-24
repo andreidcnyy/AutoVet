@@ -309,6 +309,32 @@ class InventoryForecastService
      */
     private function runSalesForecast(string $inventoryCode): array
     {
+        $apiUrl = env('AI_API_URL');
+        if ($apiUrl) {
+            try {
+                $salesCsvPath = base_path('storage/datasets/sales.csv');
+                $csvData = file_get_contents($salesCsvPath);
+                
+                $response = \Illuminate\Support\Facades\Http::post("{$apiUrl}/forecast/sales", [
+                    'csv_data' => $csvData,
+                    'code' => $inventoryCode,
+                    'mode' => 'quantity',
+                    'range_months' => 6
+                ]);
+
+                if ($response->successful()) {
+                    $result = $response->json();
+                    return [
+                        'predicted_daily_sales'   => $result['predicted_daily_sales'] ?? null,
+                        'predicted_weekly_sales'  => $result['predicted_weekly_sales'] ?? null,
+                        'predicted_monthly_sales' => $result['predicted_monthly_sales'] ?? null,
+                    ];
+                }
+            } catch (\Exception $e) {
+                Log::error("AI API Sales Forecast failed: " . $e->getMessage());
+            }
+        }
+
         $salesCsvPath = base_path('storage/datasets/sales.csv');
         if (!file_exists($salesCsvPath)) {
             Log::warning("InventoryForecastService: sales.csv not found at {$salesCsvPath}.");
@@ -378,6 +404,34 @@ class InventoryForecastService
                 $fileContent = file($csvPath);
                 if (!$fileContent || count($fileContent) < 3) {
                     return null; // header + fewer than 2 data rows
+                }
+            }
+
+            $apiUrl = env('AI_API_URL');
+            if ($apiUrl) {
+                try {
+                    $csvData = file_get_contents($csvPath);
+                    $response = \Illuminate\Support\Facades\Http::post("{$apiUrl}/forecast/inventory", [
+                        'min_stock_level' => $inventory->min_stock_level ?? 0,
+                        'csv_data' => $csvData,
+                        'code' => $inventory->code,
+                        'current_stock' => $inventory->stock_level,
+                        'history_days' => $historyDays
+                    ]);
+
+                    if ($response->successful()) {
+                        $forecastResult = $response->json();
+                        // Merge Sales Forecast data
+                        $salesForecast = $this->runSalesForecast($inventory->code);
+                        $forecastResult = array_merge($forecastResult, $salesForecast);
+
+                        $forecastResult['item_name']    = $inventory->item_name;
+                        $forecastResult['inventory_id'] = $inventory->id;
+
+                        return $forecastResult;
+                    }
+                } catch (\Exception $e) {
+                    Log::error("AI API Inventory Forecast failed: " . $e->getMessage());
                 }
             }
 
