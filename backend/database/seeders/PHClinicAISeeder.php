@@ -21,6 +21,8 @@ class PHClinicAISeeder extends Seeder
 {
     public function run(): void
     {
+        $clinic = \App\Models\Clinic::first();
+
         // Disable foreign key checks temporarily (for idempotency of updateOrCreate)
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('invoice_items')->truncate();
@@ -34,20 +36,20 @@ class PHClinicAISeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 1. Setup Master Data
-        $canine = Species::updateOrCreate(['name' => 'Canine'], ['status' => 'Active']);
-        $feline = Species::updateOrCreate(['name' => 'Feline'], ['status' => 'Active']);
-        $medCategory = InventoryCategory::updateOrCreate(['name' => 'Medications'], ['status' => 'Active']);
+        $canine = Species::updateOrCreate(['name' => 'Canine', 'clinic_id' => $clinic->id], ['status' => 'Active', 'clinic_id' => $clinic->id]);
+        $feline = Species::updateOrCreate(['name' => 'Feline', 'clinic_id' => $clinic->id], ['status' => 'Active', 'clinic_id' => $clinic->id]);
+        $medCategory = InventoryCategory::updateOrCreate(['name' => 'Medications', 'clinic_id' => $clinic->id], ['status' => 'Active', 'clinic_id' => $clinic->id]);
 
-        $golden = Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id]);
-        $persian = Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id]);
+        $golden = Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id, 'clinic_id' => $clinic->id], ['clinic_id' => $clinic->id]);
+        $persian = Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id, 'clinic_id' => $clinic->id], ['clinic_id' => $clinic->id]);
 
         // Core Vaccines for AI Dataset (INV-001 to INV-005)
-        $dhppi = Inventory::where('code', 'INV-001')->first();
-        $rabies = Inventory::where('code', 'INV-002')->first();
-        $l4 = Inventory::where('code', 'INV-003')->first();
-        $kc = Inventory::where('code', 'INV-004')->first();
-        $tricat = Inventory::where('code', 'INV-005')->first();
-        $vaccine = Inventory::where('code', 'VAC-PARVO-AI')->first(); // Legacy AI seeder vaccine
+        $dhppi = Inventory::where('code', 'INV-001')->where('clinic_id', $clinic->id)->first();
+        $rabies = Inventory::where('code', 'INV-002')->where('clinic_id', $clinic->id)->first();
+        $l4 = Inventory::where('code', 'INV-003')->where('clinic_id', $clinic->id)->first();
+        $kc = Inventory::where('code', 'INV-004')->where('clinic_id', $clinic->id)->first();
+        $tricat = Inventory::where('code', 'INV-005')->where('clinic_id', $clinic->id)->first();
+        $vaccine = Inventory::where('code', 'VAC-PARVO-AI')->where('clinic_id', $clinic->id)->first(); // Legacy AI seeder vaccine
 
         if (!$dhppi) {
             $this->command->error('Core vaccine DHPPI (INV-001) not found. Please ensure InventoryListSeeder has run correctly.');
@@ -66,14 +68,15 @@ class PHClinicAISeeder extends Seeder
         $owners = [];
         // Add specific portal user owner to the pool
         $portalOwner = Owner::updateOrCreate(
-            ['email' => 'portal@autovet.com'],
+            ['email' => 'portal@autovet.com', 'clinic_id' => $clinic->id],
             [
                 'name' => 'John Doe',
                 'phone' => '1234567890',
                 'address' => '123 Pet St',
                 'city' => 'Anytown',
                 'province' => 'Anyprovince',
-                'zip' => '12345'
+                'zip' => '12345',
+                'clinic_id' => $clinic->id,
             ]
         );
         $owners[] = $portalOwner;
@@ -83,7 +86,8 @@ class PHClinicAISeeder extends Seeder
                 'name' => "PH Client {$i}",
                 'email' => "client{$i}@example.ph",
                 'phone' => "091700000" . str_pad($i, 2, '0', STR_PAD_LEFT),
-                'address' => "Metro Manila, Philippines"
+                'address' => "Metro Manila, Philippines",
+                'clinic_id' => $clinic->id,
             ]);
         }
 
@@ -99,7 +103,8 @@ class PHClinicAISeeder extends Seeder
                 'weight' => rand(3, 25),
                 'weight_unit' => 'kg',
                 'sex' => $index % 3 == 0 ? 'Female' : 'Male',
-                'status' => 'Active'
+                'status' => 'Active',
+                'clinic_id' => $clinic->id,
             ]);
             
             // Sync to legacy patients table
@@ -110,6 +115,7 @@ class PHClinicAISeeder extends Seeder
                 'owner_name' => $owner->name,
                 'owner_email' => $owner->email,
                 'status' => 'Healthy',
+                'clinic_id' => $clinic->id,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -159,6 +165,7 @@ class PHClinicAISeeder extends Seeder
                         'status' => 'Paid',
                         'total' => $total,
                         'subtotal' => $total,
+                        'clinic_id' => $clinic->id,
                         'created_at' => $currentDate->copy()->addHours(rand(8, 17)),
                         'updated_at' => $currentDate->copy(),
                         'uuid' => (string) Str::uuid(),
@@ -176,7 +183,7 @@ class PHClinicAISeeder extends Seeder
                         if (str_contains($targetVac->item_name, 'Rabies')) $serviceName = 'Anti-Rabies Vaccine';
                         elseif (str_contains($targetVac->item_name, '5-in-1') || str_contains($targetVac->item_name, 'DHPPI')) $serviceName = '5 in 1 Vaccine (Dogs)';
                         
-                        $service = \App\Models\Service::where('name', 'like', "%{$serviceName}%")->first();
+                        $service = \App\Models\Service::where('name', 'like', "%{$serviceName}%")->where('clinic_id', $clinic->id)->first();
 
                         $itemId = DB::table('invoice_items')->insertGetId([
                             'invoice_id' => $invoiceId,
@@ -187,6 +194,7 @@ class PHClinicAISeeder extends Seeder
                             'qty' => $qty,
                             'unit_price' => $targetVac->selling_price,
                             'amount' => $targetVac->selling_price,
+                            'clinic_id' => $clinic->id,
                             'created_at' => $currentDate->copy(),
                             'updated_at' => $currentDate->copy(),
                             'uuid' => (string) Str::uuid(),
@@ -202,6 +210,7 @@ class PHClinicAISeeder extends Seeder
                             'usage_date'   => $currentDate->copy()->toDateString(),
                             'source_type'  => 'retail_sale',
                             'unit_price'   => $targetVac->selling_price,
+                            'clinic_id'    => $clinic->id,
                             'created_at'   => $currentDate->copy(),
                             'updated_at'   => $currentDate->copy(),
                         ]);
@@ -218,6 +227,7 @@ class PHClinicAISeeder extends Seeder
                     'date' => $currentDate->toDateString(),
                     'time' => rand(8, 16) . ':00',
                     'status' => $currentDate < Carbon::now() ? 'Completed' : 'Scheduled',
+                    'clinic_id' => $clinic->id,
                     'created_at' => $currentDate->copy()->subDays(rand(1, 7))
                 ]);
             }
@@ -230,6 +240,7 @@ class PHClinicAISeeder extends Seeder
             'title' => 'PH AI Model Trained',
             'message' => 'Dashboard AI has been populated with 2 years of Philippine-specific trends (Summer, Rainy Season, and Holidays).',
             'type' => 'System',
+            'clinic_id' => $clinic->id,
             'created_at' => Carbon::now()
         ]);
     }
