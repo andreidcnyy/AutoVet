@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('clinics', function (Blueprint $table) {
-            $table->string('contact_number')->change(); // Remove the default 20 char limit if any
+            $table->string('contact_number')->nullable()->change(); // Remove the default 20 char limit if any
             $table->string('contact_number_2')->nullable()->after('contact_number');
         });
     }
