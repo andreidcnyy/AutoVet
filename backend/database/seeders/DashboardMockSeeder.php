@@ -13,6 +13,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Appointment;
 use App\Models\Notification;
+use App\Models\Clinic;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,6 +22,8 @@ class DashboardMockSeeder extends Seeder
 {
     public function run(): void
     {
+        $clinic = Clinic::first();
+
         // Disable foreign key checks for clean seeding
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('invoice_items')->truncate();
@@ -33,11 +36,11 @@ class DashboardMockSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 1. Species & Breeds
-        $canine = Species::updateOrCreate(['name' => 'Canine'], ['status' => 'Active']);
-        $feline = Species::updateOrCreate(['name' => 'Feline'], ['status' => 'Active']);
+        $canine = Species::updateOrCreate(['name' => 'Canine', 'clinic_id' => $clinic->id], ['status' => 'Active', 'clinic_id' => $clinic->id]);
+        $feline = Species::updateOrCreate(['name' => 'Feline', 'clinic_id' => $clinic->id], ['status' => 'Active', 'clinic_id' => $clinic->id]);
 
-        Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id]);
-        Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id]);
+        Breed::updateOrCreate(['name' => 'Golden Retriever', 'species_id' => $canine->id, 'clinic_id' => $clinic->id], ['clinic_id' => $clinic->id]);
+        Breed::updateOrCreate(['name' => 'Persian Cat', 'species_id' => $feline->id, 'clinic_id' => $clinic->id], ['clinic_id' => $clinic->id]);
 
         // 2. Owners
         $owners = [];
@@ -49,7 +52,8 @@ class DashboardMockSeeder extends Seeder
                 'address' => "Quezon City, PH",
                 'city' => 'Quezon City',
                 'province' => 'Metro Manila',
-                'zip' => '1100'
+                'zip' => '1100',
+                'clinic_id' => $clinic->id,
             ]);
         }
 
@@ -67,7 +71,8 @@ class DashboardMockSeeder extends Seeder
                 'weight' => rand(5, 20),
                 'weight_unit' => 'kg',
                 'status' => 'Active',
-                'sex' => (rand(0, 1) == 0) ? 'Male' : 'Female'
+                'sex' => (rand(0, 1) == 0) ? 'Male' : 'Female',
+                'clinic_id' => $clinic->id,
             ]);
 
             // Sync to patients table
@@ -78,6 +83,7 @@ class DashboardMockSeeder extends Seeder
                 'owner_name' => $owner->name,
                 'owner_email' => $owner->email,
                 'status' => 'Healthy',
+                'clinic_id' => $clinic->id,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -86,11 +92,11 @@ class DashboardMockSeeder extends Seeder
         }
 
         // 4. Inventory
-        $medCategory = InventoryCategory::where('name', 'Medications')->first();
+        $medCategory = InventoryCategory::where('name', 'Medications')->where('clinic_id', $clinic->id)->first();
         $meds = ['Paracetamol', 'Antibiotics', 'Vitamins', 'Anti-flea'];
         foreach ($meds as $index => $med) {
             Inventory::updateOrCreate(
-                ['item_name' => $med],
+                ['item_name' => $med, 'clinic_id' => $clinic->id],
                 [
                     'inventory_category_id' => $medCategory->id ?? 1,
                     'sku' => 'MED-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
@@ -100,7 +106,8 @@ class DashboardMockSeeder extends Seeder
                     'price' => rand(50, 200),
                     'selling_price' => rand(250, 500),
                     'status' => 'Active',
-                    'is_billable' => true
+                    'is_billable' => true,
+                    'clinic_id' => $clinic->id,
                 ]
             );
         }
@@ -112,12 +119,13 @@ class DashboardMockSeeder extends Seeder
                 'title' => 'General Checkup for ' . $pet->name,
                 'date' => Carbon::now()->addDays(rand(1, 10))->toDateString(),
                 'time' => '10:00 AM',
-                'status' => 'Scheduled'
+                'status' => 'Scheduled',
+                'clinic_id' => $clinic->id,
             ]);
         }
 
         // 6. Invoices
-        $inventoryItems = Inventory::all();
+        $inventoryItems = Inventory::where('clinic_id', $clinic->id)->get();
         for ($m = 5; $m >= 0; $m--) {
             $date = Carbon::now()->subMonths($m);
             for ($i = 0; $i < 3; $i++) {
@@ -130,6 +138,7 @@ class DashboardMockSeeder extends Seeder
                     'status' => 'Paid',
                     'total' => $total,
                     'subtotal' => $total,
+                    'clinic_id' => $clinic->id,
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
@@ -138,7 +147,7 @@ class DashboardMockSeeder extends Seeder
                 ]);
 
                 // Service item
-                $service = \App\Models\Service::where('category', 'Consultation')->first();
+                $service = \App\Models\Service::where('category', 'Consultation')->where('clinic_id', $clinic->id)->first();
                 DB::table('invoice_items')->insert([
                     'invoice_id' => $invoiceId,
                     'name' => 'Consultation',
@@ -147,6 +156,7 @@ class DashboardMockSeeder extends Seeder
                     'qty' => 1,
                     'unit_price' => $total * 0.8,
                     'amount' => $total * 0.8,
+                    'clinic_id' => $clinic->id,
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
@@ -164,6 +174,7 @@ class DashboardMockSeeder extends Seeder
                     'qty' => $qty,
                     'unit_price' => $inv->selling_price,
                     'amount' => $inv->selling_price * 1, // simplified
+                    'clinic_id' => $clinic->id,
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
@@ -179,8 +190,9 @@ class DashboardMockSeeder extends Seeder
                     'usage_date'   => $date->copy()->subDays(rand(1, 25))->toDateString(),
                     'source_type'  => 'retail_sale',
                     'unit_price'   => $inv->selling_price,
-                    'created_at'   => $date->copy(),
-                    'updated_at'   => $date->copy(),
+                    'clinic_id' => $clinic->id,
+                    'created_at' => $date->copy(),
+                    'updated_at' => $date->copy(),
                 ]);
             }
         }
@@ -190,6 +202,7 @@ class DashboardMockSeeder extends Seeder
             'title' => 'Database Connected',
             'message' => 'The Admin Dashboard is now showing live data from the Laravel API.',
             'type' => 'System',
+            'clinic_id' => $clinic->id,
             'created_at' => Carbon::now()
         ]);
     }

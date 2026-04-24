@@ -7,6 +7,7 @@ use App\Models\Inventory;
 use App\Models\InventoryForecast;
 use App\Models\MedicalRecord;
 use App\Models\Pet;
+use App\Models\Clinic;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -14,11 +15,15 @@ class DashboardAIForecastSeeder extends Seeder
 {
     public function run(): void
     {
+        $clinic = Clinic::first();
+
         // 1. Clear existing forecasts and medical records to prevent duplicates
-        DB::table('inventory_forecasts')->truncate();
+        DB::table('inventory_forecasts')->where('clinic_id', $clinic->id)->delete();
         
         // 2. Populate Inventory Forecasts for matched items
-        $items = Inventory::whereIn('code', ['INV-001', 'INV-002', 'INV-003', 'INV-004', 'INV-005'])->get();
+        $items = Inventory::whereIn('code', ['INV-001', 'INV-002', 'INV-003', 'INV-004', 'INV-005'])
+            ->where('clinic_id', $clinic->id)
+            ->get();
 
         foreach ($items as $item) {
             $avgDaily = match($item->code) {
@@ -47,6 +52,7 @@ class DashboardAIForecastSeeder extends Seeder
             };
 
             InventoryForecast::create([
+                'clinic_id' => $clinic->id,
                 'inventory_id' => $item->id,
                 'predicted_demand' => $avgDaily,
                 'average_daily_consumption' => $avgDaily,
@@ -67,12 +73,13 @@ class DashboardAIForecastSeeder extends Seeder
         }
 
         // 3. Populate Medical Records with Follow-up Dates for "Patient Visit Predictions"
-        $pets = Pet::all();
+        $pets = Pet::where('clinic_id', $clinic->id)->get();
         if ($pets->count() > 0) {
             // Some overdue
             for ($i = 0; $i < 3; $i++) {
                 $pet = $pets->random();
                 MedicalRecord::create([
+                    'clinic_id' => $clinic->id,
                     'pet_id' => $pet->id,
                     'vet_id' => 1,
                     'created_at' => Carbon::now()->subMonths(1),
@@ -87,6 +94,7 @@ class DashboardAIForecastSeeder extends Seeder
             for ($i = 0; $i < 5; $i++) {
                 $pet = $pets->random();
                 MedicalRecord::create([
+                    'clinic_id' => $clinic->id,
                     'pet_id' => $pet->id,
                     'vet_id' => 1,
                     'created_at' => Carbon::now()->subDays(15),

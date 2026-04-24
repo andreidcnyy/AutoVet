@@ -6,14 +6,14 @@ use Illuminate\Database\Seeder;
 use App\Models\PetSizeCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\WeightRange;
+use App\Models\Clinic;
 
 class MeasurementSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+        $clinic = Clinic::first();
+
         // Pet Size Categories
         $sizes = [
             ['name' => 'Small', 'description' => 'Up to 10kg'],
@@ -23,7 +23,7 @@ class MeasurementSeeder extends Seeder
         ];
 
         foreach ($sizes as $size) {
-            PetSizeCategory::updateOrCreate(['name' => $size['name']], $size);
+            PetSizeCategory::updateOrCreate(['name' => $size['name'], 'clinic_id' => $clinic->id], array_merge($size, ['clinic_id' => $clinic->id]));
         }
 
         // Weight Ranges
@@ -35,10 +35,10 @@ class MeasurementSeeder extends Seeder
         ];
 
         foreach ($weightRanges as $range) {
-            $category = PetSizeCategory::where('name', $range['label'])->first();
+            $category = PetSizeCategory::where('name', $range['label'])->where('clinic_id', $clinic->id)->first();
             WeightRange::updateOrCreate(
-                ['label' => $range['label']],
-                array_merge($range, ['size_category_id' => $category?->id])
+                ['label' => $range['label'], 'clinic_id' => $clinic->id],
+                array_merge($range, ['size_category_id' => $category?->id, 'clinic_id' => $clinic->id])
             );
         }
 
@@ -49,7 +49,7 @@ class MeasurementSeeder extends Seeder
         ];
 
         foreach ($units as $unit) {
-            UnitOfMeasure::updateOrCreate(['abbreviation' => $unit['abbreviation']], $unit);
+            UnitOfMeasure::updateOrCreate(['abbreviation' => $unit['abbreviation'], 'clinic_id' => $clinic->id], array_merge($unit, ['clinic_id' => $clinic->id]));
         }
     }
 }

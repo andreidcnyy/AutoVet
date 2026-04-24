@@ -7,32 +7,27 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Species;
 use App\Models\PetSizeCategory;
 use App\Models\Breed;
+use App\Models\Clinic;
 
 class StandardBreedsSeeder extends Seeder
 {
     public function run(): void
     {
-        $speciesNames = [
-            'Canine',
-            'Feline',
-            'Rabbit',
-            'Hamster',
-            'Guinea Pig',
-            'Bird'
-        ];
+        $clinic = Clinic::first();
+        $speciesNames = ['Canine', 'Feline', 'Rabbit', 'Hamster', 'Guinea Pig', 'Bird'];
 
         foreach ($speciesNames as $name) {
             Species::updateOrCreate(
-                ['name' => $name],
-                ['status' => 'Active']
+                ['name' => $name, 'clinic_id' => $clinic->id],
+                ['status' => 'Active', 'clinic_id' => $clinic->id]
             );
         }
 
         $sizeMap = [
-            'Small' => PetSizeCategory::where('name', 'Small')->value('id'),
-            'Medium' => PetSizeCategory::where('name', 'Medium')->value('id'),
-            'Large' => PetSizeCategory::where('name', 'Large')->value('id'),
-            'Giant' => PetSizeCategory::where('name', 'Giant')->value('id'),
+            'Small' => PetSizeCategory::where('name', 'Small')->where('clinic_id', $clinic->id)->value('id'),
+            'Medium' => PetSizeCategory::where('name', 'Medium')->where('clinic_id', $clinic->id)->value('id'),
+            'Large' => PetSizeCategory::where('name', 'Large')->where('clinic_id', $clinic->id)->value('id'),
+            'Giant' => PetSizeCategory::where('name', 'Giant')->where('clinic_id', $clinic->id)->value('id'),
         ];
 
         $data = [
@@ -68,7 +63,7 @@ class StandardBreedsSeeder extends Seeder
         ];
 
         foreach ($data as $speciesName => $sizes) {
-            $species = Species::where('name', $speciesName)->first();
+            $species = Species::where('name', $speciesName)->where('clinic_id', $clinic->id)->first();
             if (!$species) continue;
 
             foreach ($sizes as $sizeName => $breeds) {
@@ -78,11 +73,13 @@ class StandardBreedsSeeder extends Seeder
                     Breed::updateOrCreate(
                         [
                             'species_id' => $species->id,
-                            'name' => $breedName
+                            'name' => $breedName,
+                            'clinic_id' => $clinic->id
                         ],
                         [
                             'default_size_category_id' => $sizeId,
-                            'status' => 'Active'
+                            'status' => 'Active',
+                            'clinic_id' => $clinic->id
                         ]
                     );
                 }
