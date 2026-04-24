@@ -25,10 +25,12 @@ class ServicesSeeder extends Seeder
             'Imaging',
         ];
 
+        $clinic = \App\Models\Clinic::first();
+
         foreach ($categories as $catName) {
             ServiceCategory::updateOrCreate(
-                ['name' => $catName],
-                ['status' => 'Active']
+                ['name' => $catName, 'clinic_id' => $clinic->id],
+                ['status' => 'Active', 'clinic_id' => $clinic->id]
             );
         }
 

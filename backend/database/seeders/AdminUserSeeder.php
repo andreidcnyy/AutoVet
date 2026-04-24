@@ -22,7 +22,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Administrator',
                 'password' => Hash::make('password123'),
-                'role' => Roles::ADMIN->value,
+                'role' => Roles::CLINIC_ADMIN->value,
                 'status' => 'active',
                 'clinic_id' => $clinic->id,
             ]

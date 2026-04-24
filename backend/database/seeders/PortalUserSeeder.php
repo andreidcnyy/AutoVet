@@ -15,19 +15,22 @@ class PortalUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $clinic = \App\Models\Clinic::first();
+
         // 1. Create the Portal User in the portal_users table
         $user = \App\Models\PortalUser::updateOrCreate(
-            ['email' => 'portal@autovet.com'],
+            ['email' => 'portal@autovet.com', 'clinic_id' => $clinic->id],
             [
                 'name' => 'John Doe (Pet Owner)',
                 'password' => Hash::make('password123'),
                 'status' => 'active',
+                'clinic_id' => $clinic->id,
             ]
         );
 
         // 2. Create the associated Owner record
         \App\Models\Owner::updateOrCreate(
-            ['email' => 'portal@autovet.com'],
+            ['email' => 'portal@autovet.com', 'clinic_id' => $clinic->id],
             [
                 'name' => 'John Doe',
                 'user_id' => $user->id,
@@ -35,7 +38,8 @@ class PortalUserSeeder extends Seeder
                 'address' => '123 Pet St',
                 'city' => 'Anytown',
                 'province' => 'Anyprovince',
-                'zip' => '12345'
+                'zip' => '12345',
+                'clinic_id' => $clinic->id,
             ]
         );
     }
