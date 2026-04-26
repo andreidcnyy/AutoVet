@@ -4,18 +4,15 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 // --- START: MODIFIED AUTH HANDLING ---
 let _token = null;
 
-// New function to directly set the token from outside
 export function setAuthToken(token) {
   _token = token;
 }
 
-// The rest of the app will use this to get the token
 function getToken() {
   return _token;
 }
 // --- END: MODIFIED AUTH HANDLING ---
 
-// Resolve the Base URL for API calls
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
 const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
@@ -47,7 +44,6 @@ export function invalidateCache(urlPattern) {
 }
 
 async function request(method, url, { body, params, signal, cache = false, ttl } = {}) {
-  // 1. Build the path correctly
   let path = url;
   if (path.startsWith('/api')) {
     path = path.substring(4);
@@ -56,16 +52,11 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     path = '/' + path;
   }
 
-  // 2. Decide the prefix (/api or not)
   const isSanctum = path.includes('sanctum/');
   const prefix = isSanctum ? '' : '/api';
+  const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${prefix}${path}`;
 
-  // 3. Assemble full URL
-  const fullUrl = url.startsWith('http') 
-    ? url 
-    : `${BASE_URL}${prefix}${path}`;
-
-  console.log(`[API REQUEST] ${method} ${fullUrl}`, { body, params });
+  console.log(`[API REQUEST] ${method} ${fullUrl}`);
 
   let requestUrl = fullUrl;
   if (params) {
@@ -94,7 +85,7 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     clearTimeout(timeout);
     
     if (!res.ok) {
-      console.error(`[API ERROR] ${res.status} ${res.statusText} from ${requestUrl}`);
+      console.error(`[API ERROR] ${res.status} from ${requestUrl}`);
       const err = new Error(`API error ${res.status}`);
       err.status = res.status;
       if (res.status === 401) {
@@ -104,11 +95,18 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
       throw err;
     }
     
+    // FIX: Only parse JSON if the response is not empty (Status 204)
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+      return null;
+    }
+
     const data = await res.json();
     if (cache && method === 'GET') cacheSet(requestUrl, data, ttl);
     return data;
   } catch (err) {
     clearTimeout(timeout);
+    // Silent fail for non-critical errors to avoid crashing UI
+    if (err.name === 'SyntaxError') return null; 
     console.error(`[API FETCH ERROR]`, err);
     throw err;
   }
