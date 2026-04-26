@@ -16,9 +16,8 @@ function getToken() {
 // --- END: MODIFIED AUTH HANDLING ---
 
 // Resolve the Base URL for API calls
-// Ensure it ends with /api for consistency with the routes
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '');
+const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 function getHeaders(extra = {}) {
   const token = getToken();
@@ -48,16 +47,25 @@ export function invalidateCache(urlPattern) {
 }
 
 async function request(method, url, { body, params, signal, cache = false, ttl } = {}) {
-  // If the URL is relative, prepend the BASE_URL
-  // But handle /sanctum calls specially if they shouldn't have /api
-  const isSanctum = url.includes('sanctum/');
-  const prefix = isSanctum ? BASE_URL : `${BASE_URL}/api`;
-  
-  // Clean up double slashes
-  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-  const finalPath = isSanctum ? cleanUrl.replace(/^\/api/, '') : cleanUrl.replace(/^\/api/, '');
-  
-  const fullUrl = url.startsWith('http') ? url : `${prefix}${finalPath}`;
+  // 1. Build the path correctly
+  let path = url;
+  if (path.startsWith('/api')) {
+    path = path.substring(4);
+  }
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+
+  // 2. Decide the prefix (/api or not)
+  const isSanctum = path.includes('sanctum/');
+  const prefix = isSanctum ? '' : '/api';
+
+  // 3. Assemble full URL
+  const fullUrl = url.startsWith('http') 
+    ? url 
+    : `${BASE_URL}${prefix}${path}`;
+
+  console.log(`[API REQUEST] ${method} ${fullUrl}`, { body, params });
 
   let requestUrl = fullUrl;
   if (params) {
@@ -71,7 +79,7 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
   const effectiveSignal = signal ?? controller.signal;
 
   try {
@@ -80,10 +88,13 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
       headers: getHeaders(),
       signal: effectiveSignal,
       body: body != null ? JSON.stringify(body) : undefined,
-      credentials: 'include', // Important for Sanctum/Cookies
+      credentials: 'include',
     });
+    
     clearTimeout(timeout);
+    
     if (!res.ok) {
+      console.error(`[API ERROR] ${res.status} ${res.statusText} from ${requestUrl}`);
       const err = new Error(`API error ${res.status}`);
       err.status = res.status;
       if (res.status === 401) {
@@ -92,11 +103,13 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
       }
       throw err;
     }
+    
     const data = await res.json();
     if (cache && method === 'GET') cacheSet(requestUrl, data, ttl);
     return data;
   } catch (err) {
     clearTimeout(timeout);
+    console.error(`[API FETCH ERROR]`, err);
     throw err;
   }
 }
