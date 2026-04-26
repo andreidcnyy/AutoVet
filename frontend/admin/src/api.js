@@ -15,6 +15,11 @@ function getToken() {
 }
 // --- END: MODIFIED AUTH HANDLING ---
 
+// Resolve the Base URL for API calls
+// Ensure it ends with /api for consistency with the routes
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '');
+
 function getHeaders(extra = {}) {
   const token = getToken();
   return {
@@ -43,14 +48,25 @@ export function invalidateCache(urlPattern) {
 }
 
 async function request(method, url, { body, params, signal, cache = false, ttl } = {}) {
-  let fullUrl = url;
+  // If the URL is relative, prepend the BASE_URL
+  // But handle /sanctum calls specially if they shouldn't have /api
+  const isSanctum = url.includes('sanctum/');
+  const prefix = isSanctum ? BASE_URL : `${BASE_URL}/api`;
+  
+  // Clean up double slashes
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  const finalPath = isSanctum ? cleanUrl.replace(/^\/api/, '') : cleanUrl.replace(/^\/api/, '');
+  
+  const fullUrl = url.startsWith('http') ? url : `${prefix}${finalPath}`;
+
+  let requestUrl = fullUrl;
   if (params) {
     const qs = new URLSearchParams(params).toString();
-    fullUrl = `${url}?${qs}`;
+    requestUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}${qs}`;
   }
 
   if (cache && method === 'GET') {
-    const cached = cacheGet(fullUrl);
+    const cached = cacheGet(requestUrl);
     if (cached !== null) return cached;
   }
 
@@ -59,25 +75,25 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
   const effectiveSignal = signal ?? controller.signal;
 
   try {
-    const res = await fetch(fullUrl, {
+    const res = await fetch(requestUrl, {
       method,
       headers: getHeaders(),
       signal: effectiveSignal,
       body: body != null ? JSON.stringify(body) : undefined,
+      credentials: 'include', // Important for Sanctum/Cookies
     });
     clearTimeout(timeout);
     if (!res.ok) {
       const err = new Error(`API error ${res.status}`);
       err.status = res.status;
       if (res.status === 401) {
-        // If we get a 401, clear the token and potentially trigger a logout
         setAuthToken(null);
         window.dispatchEvent(new Event('auth-failure'));
       }
       throw err;
     }
     const data = await res.json();
-    if (cache && method === 'GET') cacheSet(fullUrl, data, ttl);
+    if (cache && method === 'GET') cacheSet(requestUrl, data, ttl);
     return data;
   } catch (err) {
     clearTimeout(timeout);

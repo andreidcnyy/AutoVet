@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/autovet-logo.png";
 import DarkModeToggle from "../components/ui/DarkModeToggle";
@@ -41,22 +42,12 @@ function LoginPage() {
 
     try {
       // 1. Fetch CSRF cookie before login
-      await fetch("/sanctum/csrf-cookie", { credentials: "include" });
+      await api.get("/sanctum/csrf-cookie");
 
       // 2. Attempt login
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await api.post("/api/login", { email, password });
 
-      const data = await res.json();
-
-      if (res.ok && !data.error) {
+      if (data && !data.error) {
         login(data); 
         if (data.must_change_password) {
           navigate("/change-password");
