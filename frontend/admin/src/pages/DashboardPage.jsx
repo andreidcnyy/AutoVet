@@ -212,7 +212,9 @@ function DashboardPage() {
   // Derive Jump Options
   const historicalYears = useMemo(() => {
     const years = historical.map(h => h.month.split('-')[0]);
-    return [...new Set(years)].sort((a, b) => b.localeCompare(a));
+    // Ensure we always have 2024, 2025, 2026 as options even if data is loading or missing
+    const baseYears = ['2024', '2025', '2026'];
+    return [...new Set([...baseYears, ...years])].sort((a, b) => b.localeCompare(a));
   }, [historical]);
 
   const currentYearSelected = displayPoint?.month.split('-')[0];
@@ -374,15 +376,29 @@ function DashboardPage() {
                 <p className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-widest ml-8">Historical-Data-Based Projection · Current-Month Aligned</p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-widest">History Jump:</span>
-                  <div className="flex gap-1">
-                    <select value={currentMonthSelected} onChange={(e) => handleJumpChange('month', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
-                      {MONTH_NAMES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
-                    </select>
-                    <select value={currentYearSelected} onChange={(e) => handleJumpChange('year', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
-                      {historicalYears.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => {
+                      localStorage.removeItem('dashboard_service_forecast_v8_cache');
+                      api.invalidateCache?.(['dashboard-service-forecast']);
+                      refetchForecast();
+                      toast.info("Refetching forecast data...");
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-purple-500 transition-all border border-zinc-200 dark:border-zinc-700"
+                    title="Refresh Forecast"
+                  >
+                    <Icons.FiRefreshCw className={clsx("h-4 w-4")} />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-widest">History Jump:</span>
+                    <div className="flex gap-1">
+                      <select value={currentMonthSelected} onChange={(e) => handleJumpChange('month', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
+                        {MONTH_NAMES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
+                      </select>
+                      <select value={currentYearSelected} onChange={(e) => handleJumpChange('year', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
+                        {historicalYears.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
