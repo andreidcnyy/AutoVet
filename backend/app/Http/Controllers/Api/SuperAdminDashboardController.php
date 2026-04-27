@@ -124,6 +124,25 @@ class SuperAdminDashboardController extends Controller
     }
 
     /**
+     * Permanently delete a clinic and all its data
+     */
+    public function destroyClinic(Clinic $clinic): JsonResponse
+    {
+        // Delete clinic logo if exists
+        if ($clinic->logo) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($clinic->logo);
+        }
+
+        // We use forceDelete because the model uses SoftDeletes, 
+        // and the user specifically wants to "actually delete" it.
+        $clinic->forceDelete();
+
+        return response()->json([
+            'message' => 'Clinic and all associated data permanently deleted.'
+        ]);
+    }
+
+    /**
      * POWER 1: Get Admins for a specific clinic (Account Recovery)
      */
     public function clinicAdmins(Clinic $clinic): JsonResponse

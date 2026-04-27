@@ -203,6 +203,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinics']);
         Route::post('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeClinic']);
         Route::put('/super-admin/clinics/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateClinic']);
+        Route::delete('/super-admin/clinics/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'destroyClinic']);
         Route::post('/super-admin/clinics/{clinic}/toggle-status', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'toggleStatus']);
         
         // Super Admin Powers

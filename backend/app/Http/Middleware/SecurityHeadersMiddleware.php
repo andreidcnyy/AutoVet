@@ -17,10 +17,11 @@ class SecurityHeadersMiddleware
     {
         $response = $next($request);
 
-        $csp = "default-src 'self' http: https: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* http://127.0.0.1:* http://autovet.test; img-src 'self' http: https: data:; frame-ancestors 'self';";
+        // More permissive CSP for connect-src to allow Vercel and local dev
+        $csp = "default-src 'self' http: https: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http: https: ws: wss:; img-src 'self' http: https: data:; frame-ancestors 'self';";
         
+        // Even in production, we should allow Vercel domains to connect
         if (app()->environment('production')) {
-            $csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost http://127.0.0.1 http://localhost:5173 http://localhost:5174 http://autovet.test; frame-ancestors 'none'; upgrade-insecure-requests;";
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 

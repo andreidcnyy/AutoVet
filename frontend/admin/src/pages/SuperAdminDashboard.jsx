@@ -3,7 +3,7 @@ import {
   FiHome, FiPlus, FiActivity, FiCheckCircle, FiAlertCircle, 
   FiMail, FiPhone, FiMapPin, FiEdit2, FiUpload, FiImage, 
   FiMap, FiUsers, FiLock, FiLogOut, FiCalendar, FiStar,
-  FiChevronLeft, FiChevronRight, FiFilter
+  FiChevronLeft, FiChevronRight, FiFilter, FiTrash2
 } from 'react-icons/fi';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
@@ -284,6 +284,23 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleDeleteClinic = async () => {
+    if (!window.confirm(`PERMANENT ACTION: Are you sure you want to delete ${selectedClinic.clinic_name}? This will permanently remove all patients, records, and data associated with this clinic.`)) return;
+    
+    setIsSubmitting(true);
+    try {
+      await api.delete(`/api/super-admin/clinics/${selectedClinic.id}`);
+      toast.success("Clinic permanently deleted.");
+      setIsModalOpen(false);
+      setSelectedClinic(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete clinic.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-zinc-500 font-black uppercase tracking-widest text-sm animate-pulse">Platform Syncing...</div>;
 
   return (
@@ -355,7 +372,18 @@ export default function SuperAdminDashboard() {
                   </td>
                   <td className="px-6 py-5 text-right">
                     <div className="flex items-center justify-end gap-2">
-                       <button onClick={(e) => { e.stopPropagation(); openEditModal(clinic); }} className="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-400 hover:text-autovet-teal dark:border-dark-border dark:bg-dark-card transition-all"><FiEdit2 className="h-4 w-4" /></button>
+                       <button onClick={(e) => { e.stopPropagation(); openEditModal(clinic); }} className="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-400 hover:text-autovet-teal dark:border-dark-border dark:bg-dark-card transition-all" title="Edit Clinic"><FiEdit2 className="h-4 w-4" /></button>
+                       <button 
+                         onClick={(e) => { 
+                           e.stopPropagation(); 
+                           setSelectedClinic(clinic);
+                           setTimeout(() => handleDeleteClinic(), 0);
+                         }} 
+                         className="rounded-lg border border-rose-200 bg-white p-2 text-rose-400 hover:text-rose-600 dark:border-dark-border dark:bg-dark-card transition-all"
+                         title="Delete Clinic"
+                       >
+                         <FiTrash2 className="h-4 w-4" />
+                       </button>
                        <button onClick={(e) => handleToggleStatus(e, clinic)} className={clsx("rounded-lg border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all", clinic.status === 'active' ? "border-rose-200 text-rose-600 hover:bg-rose-50" : "border-autovet-teal/30 text-autovet-teal hover:bg-autovet-teal/5")}>{clinic.status === 'active' ? 'Deactivate' : 'Activate'}</button>
                     </div>
                   </td>
@@ -495,7 +523,18 @@ export default function SuperAdminDashboard() {
                    )}
                 </div>
 
-                <div className="mt-10 flex gap-3 pt-6 border-t border-zinc-100 dark:border-dark-border"><button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-4 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>{selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}</button><button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-4 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button></div>
+                <div className="mt-10 flex gap-3 pt-6 border-t border-zinc-100 dark:border-dark-border">
+                  <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-4 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
+                    {selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}
+                  </button>
+                  <button 
+                    onClick={handleDeleteClinic}
+                    className="flex-1 rounded-2xl bg-rose-600 py-4 font-black uppercase text-xs tracking-widest text-white hover:bg-rose-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <FiTrash2 className="h-4 w-4" /> Permanent Delete
+                  </button>
+                  <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-4 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
+                </div>
              </div>
           </div>
         </div>
@@ -559,7 +598,20 @@ export default function SuperAdminDashboard() {
                  </div>
               </div>
 
-              <div className="flex gap-3 pt-6 border-t border-zinc-100 dark:border-dark-border mt-8"><button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 font-black uppercase text-zinc-400 hover:text-autovet-navy tracking-widest text-xs">Cancel</button><button type="submit" disabled={isSubmitting} className="flex-2 rounded-2xl bg-autovet-teal px-10 py-4 font-black uppercase text-white hover:opacity-90 shadow-xl shadow-autovet-teal/20 disabled:opacity-50 tracking-widest text-xs">{isSubmitting ? 'Saving...' : (editMode ? 'Update Clinic' : 'Complete Registration')}</button></div>
+              <div className="flex items-center gap-3 pt-6 border-t border-zinc-100 dark:border-dark-border mt-8">
+                {editMode && (
+                  <button 
+                    type="button" 
+                    onClick={handleDeleteClinic}
+                    disabled={isSubmitting}
+                    className="flex-1 rounded-2xl border border-rose-200 bg-rose-50 py-4 font-black uppercase text-rose-600 hover:bg-rose-100 transition-all tracking-widest text-xs flex items-center justify-center gap-2"
+                  >
+                    <FiTrash2 className="h-4 w-4" /> Delete
+                  </button>
+                )}
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 font-black uppercase text-zinc-400 hover:text-autovet-navy tracking-widest text-xs">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-2 rounded-2xl bg-autovet-teal px-10 py-4 font-black uppercase text-white hover:opacity-90 shadow-xl shadow-autovet-teal/20 disabled:opacity-50 tracking-widest text-xs">{isSubmitting ? 'Saving...' : (editMode ? 'Update Clinic' : 'Complete Registration')}</button>
+              </div>
             </form>
           </div>
         </div>
