@@ -5,15 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Owner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Traits\IdentifiesPortalOwner;
 
 class PatientOwnerController extends Controller
 {
+    use IdentifiesPortalOwner;
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $user = auth('admin_api')->user() ?? auth('portal_api')->user();
+        $user = auth()->user();
 
         // Optimized query with required relationships and total paid sum calculation
         $query = Owner::with(['pets', 'user'])
@@ -27,8 +30,8 @@ class PatientOwnerController extends Controller
         // Always hide AI Training Records from the list for Admins/Staff
         $query->where('email', '!=', 'dataset.seeder@autovet.ai');
 
-        if ($user instanceof \App\Models\PortalUser) {
-            $query->where('id', $user->owner?->id);
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $query->where('id', $ownerId);
         }
 
         // Add Search functionality
@@ -60,7 +63,7 @@ class PatientOwnerController extends Controller
      */
     public function store(Request $request)
     {
-        $user = auth('admin_api')->user() ?? auth('portal_api')->user();
+        $user = auth()->user();
         if ($user instanceof \App\Models\PortalUser) {
              return response()->json(['message' => 'Unauthorized'], 403);
         }

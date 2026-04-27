@@ -18,7 +18,7 @@ return [
         ],
         'admin_api' => [
             'driver' => 'sanctum',
-            'provider' => 'users',
+            'provider' => 'admins',
         ],
         'portal_api' => [
             'driver' => 'sanctum',
@@ -30,6 +30,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class,
         ],
         'portal_users' => [
             'driver' => 'eloquent',
