@@ -8,15 +8,19 @@ use App\Enums\Roles;
 
 // Emergency Database Setup Route
 Route::get('/init-db', function () {
+    // 1. Prevent Timeouts for large data seeding
+    set_time_limit(300); // 5 minutes
+    ini_set('memory_limit', '512M');
+
     try {
-        // 1. Run Migrations
+        // 2. Run Migrations
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
-        // 2. Run FULL Database Seeder
-        // This will now include the 50+ records and Standard Pet Sizes
+        // 3. Run FULL Database Seeder
+        // This includes the 50+ records and Standard Pet Sizes
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         
-        // 3. Identify the main clinic
+        // 4. Identify the main clinic
         $clinic = \App\Models\Clinic::first();
         if (!$clinic) {
             $clinic = \App\Models\Clinic::create([
@@ -28,18 +32,15 @@ Route::get('/init-db', function () {
         $clinicId = $clinic->id;
         $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
         
-        // 4. Align ALL Admins to this clinic and reset passwords
-        $admins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get();
-        foreach ($admins as $admin) {
-            $admin->update([
-                'password' => $newPassword,
-                'status' => 'active',
-                'deleted_at' => null,
-                'clinic_id' => $clinicId
-            ]);
-        }
+        // 5. Align ALL Admins & Reset Passwords (Bulk Update)
+        \App\Models\Admin::withoutGlobalScopes()->withTrashed()->update([
+            'password' => $newPassword,
+            'status' => 'active',
+            'deleted_at' => null,
+            'clinic_id' => $clinicId
+        ]);
 
-        // 5. Comprehensive alignment of ALL tables that have clinic_id
+        // 6. Comprehensive alignment of ALL tables (Optimized)
         $tables = [
             'owners', 'pets', 'patients', 'appointments', 'invoices', 'invoice_items',
             'inventories', 'services', 'medical_records', 'notifications', 
@@ -51,29 +52,26 @@ Route::get('/init-db', function () {
         
         foreach ($tables as $table) {
             if (\Illuminate\Support\Facades\Schema::hasTable($table) && \Illuminate\Support\Facades\Schema::hasColumn($table, 'clinic_id')) {
-                \Illuminate\Support\Facades\DB::table($table)->update(['clinic_id' => $clinicId]);
+                \Illuminate\Support\Facades\DB::table($table)->where('clinic_id', '!=', $clinicId)->orWhereNull('clinic_id')->update(['clinic_id' => $clinicId]);
             }
         }
 
-        // 6. Force seeded appointments/invoices to modern dates so they show on dashboard
+        // 7. Force seeded appointments/invoices to modern dates
         $today = \Carbon\Carbon::now('Asia/Manila')->toDateString();
         \Illuminate\Support\Facades\DB::table('appointments')->update(['date' => $today]);
         \Illuminate\Support\Facades\DB::table('invoices')->update(['created_at' => now(), 'updated_at' => now()]);
 
-        // 7. Clear Cache to ensure dashboard doesn't show old empty results
-        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        // 8. Reset ALL Portal Users (Bulk Update)
+        \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->update([
+            'password' => $newPassword,
+            'status' => 'active',
+            'deleted_at' => null,
+            'email_verified_at' => now(),
+            'clinic_id' => $clinicId
+        ]);
 
-        // 8. Reset ALL Portal Users
-        $portalUsers = \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->get();
-        foreach ($portalUsers as $pUser) {
-            $pUser->update([
-                'password' => $newPassword,
-                'status' => 'active',
-                'deleted_at' => null,
-                'email_verified_at' => now(),
-                'clinic_id' => $clinicId
-            ]);
-        }
+        // 9. Clear Cache
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
         
         return response()->json([
             'success' => true, 
@@ -84,8 +82,6 @@ Route::get('/init-db', function () {
                 'pets' => \App\Models\Pet::withoutGlobalScopes()->count(),
                 'appointments' => \App\Models\Appointment::withoutGlobalScopes()->count(),
                 'invoices' => \App\Models\Invoice::withoutGlobalScopes()->count(),
-                'inventories' => \App\Models\Inventory::withoutGlobalScopes()->count(),
-                'services' => \App\Models\Service::withoutGlobalScopes()->count(),
                 'pet_sizes' => \Illuminate\Support\Facades\DB::table('pet_size_categories')->count(),
             ]
         ]);
@@ -93,7 +89,8 @@ Route::get('/init-db', function () {
         return response()->json([
             'success' => false, 
             'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
         ], 500);
     }
 });
