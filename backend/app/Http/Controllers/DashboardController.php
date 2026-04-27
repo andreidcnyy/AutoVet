@@ -355,19 +355,28 @@ class DashboardController extends Controller
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
 
         // Unified Confirmed Statuses (Confirmed Appointments)
-        // USER REQUEST: Only show APPROVED status for today, not COMPLETED.
-        $confirmedStatuses = ['Approved', 'approved', 'Scheduled', 'scheduled'];
+        // USER REQUEST: Only show APPROVED status for today.
+        $confirmedStatuses = ['Approved', 'approved'];
         
         $apptsToday = Appointment::whereDate('date', $today)
             ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
             
         $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
             
         $cancelledDeclined = Appointment::whereDate('date', $today)
             ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
+            ->whereHas('pet.owner', function($q) {
+                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            })
             ->count();
 
         return response()->json([
@@ -1214,8 +1223,8 @@ class DashboardController extends Controller
         $tz = 'Asia/Manila';
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $perPage = $request->query('per_page', 10);
-        // USER REQUEST: Only show APPROVED/Scheduled for today
-        $confirmedStatuses = ['Approved', 'approved', 'Scheduled', 'scheduled'];
+        // USER REQUEST: Only show APPROVED status for today
+        $confirmedStatuses = ['Approved', 'approved'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $today)
@@ -1255,7 +1264,8 @@ class DashboardController extends Controller
         $tz = 'Asia/Manila';
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
         $perPage = $request->query('per_page', 10);
-        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed'];
+        // USER REQUEST: Only show APPROVED status for tomorrow
+        $confirmedStatuses = ['Approved', 'approved'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $tomorrow)

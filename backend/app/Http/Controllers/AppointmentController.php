@@ -92,8 +92,9 @@ class AppointmentController extends Controller
 
         // If no specific status is requested, or if 'all' is requested,
         // we still want to hide 'Scheduled' (mock) data by default to keep the UI clean.
+        // USER REQUEST: Only show APPROVED and CANCELLED (which includes Declined) by default
         if (!$request->has('status') || $request->status === 'all') {
-             $query->whereNotIn('status', ['Scheduled', 'scheduled']);
+             $query->whereIn('status', ['Approved', 'approved', 'Cancelled', 'cancelled', 'Declined', 'declined', 'Declined (System)', 'Rejected']);
         }
 
         if ($request->has('status') && $request->status !== 'all') {
