@@ -6,92 +6,100 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
 
-// Emergency Database Setup Route
-Route::get('/init-db', function () {
-    // 1. Prevent Timeouts for large data seeding
-    set_time_limit(300); // 5 minutes
-    ini_set('memory_limit', '512M');
-
+// Chunked Setup Wizard Endpoint
+Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
+    set_time_limit(120);
+    $step = $request->query('step');
+    
     try {
-        // 2. Run Migrations
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
-        // 3. Run FULL Database Seeder
-        // This includes the 50+ records and Standard Pet Sizes
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        
-        // 4. Identify the main clinic
-        $clinic = \App\Models\Clinic::first();
-        if (!$clinic) {
-            $clinic = \App\Models\Clinic::create([
-                'clinic_name' => 'AutoVet Headquarters',
-                'email' => 'system@autovet.com',
-                'status' => 'active',
-            ]);
+        switch ($step) {
+            case 'migrate':
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                
+                // Ensure Clinic exists immediately
+                if (!\App\Models\Clinic::first()) {
+                    \App\Models\Clinic::create([
+                        'clinic_name' => 'AutoVet Headquarters',
+                        'email' => 'system@autovet.com',
+                        'status' => 'active',
+                    ]);
+                }
+                break;
+                
+            case 'seed_core':
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'MasterDataSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'MeasurementSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'StandardPetSizesSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'StandardBreedsSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'SettingSeeder', '--force' => true]);
+                break;
+                
+            case 'seed_users':
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'AdminUserSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'PortalUserSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'PatientPetSeeder', '--force' => true]);
+                break;
+
+            case 'seed_ai':
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'InventoryListSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'PHClinicAISeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'ServicesSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DashboardAIForecastSeeder', '--force' => true]);
+                break;
+
+            case 'seed_bulk':
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'BulkProductionMockSeeder', '--force' => true]);
+                break;
+
+            case 'align':
+                $clinicId = \App\Models\Clinic::first()->id;
+                $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
+
+                \App\Models\Admin::withoutGlobalScopes()->withTrashed()->update([
+                    'password' => $newPassword,
+                    'status' => 'active',
+                    'deleted_at' => null,
+                    'clinic_id' => $clinicId
+                ]);
+
+                $tables = [
+                    'owners', 'pets', 'patients', 'appointments', 'invoices', 'invoice_items',
+                    'inventories', 'services', 'medical_records', 'notifications', 
+                    'client_notifications', 'inventory_transactions', 'inventory_forecasts',
+                    'inventory_usage_history', 'inventory_categories', 'service_categories',
+                    'species', 'breeds', 'vet_schedules', 'audit_logs', 'cms_contents', 'settings',
+                    'pet_size_categories'
+                ];
+                
+                foreach ($tables as $table) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable($table) && \Illuminate\Support\Facades\Schema::hasColumn($table, 'clinic_id')) {
+                        \Illuminate\Support\Facades\DB::table($table)->where('clinic_id', '!=', $clinicId)->orWhereNull('clinic_id')->update(['clinic_id' => $clinicId]);
+                    }
+                }
+
+                $today = \Carbon\Carbon::now('Asia/Manila')->toDateString();
+                \Illuminate\Support\Facades\DB::table('appointments')->update(['date' => $today]);
+                \Illuminate\Support\Facades\DB::table('invoices')->update(['created_at' => now(), 'updated_at' => now()]);
+
+                \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->update([
+                    'password' => $newPassword,
+                    'status' => 'active',
+                    'deleted_at' => null,
+                    'email_verified_at' => now(),
+                    'clinic_id' => $clinicId
+                ]);
+
+                \Illuminate\Support\Facades\Artisan::call('cache:clear');
+                break;
+                
+            default:
+                return response()->json(['error' => 'Unknown step'], 400);
         }
-        $clinicId = $clinic->id;
-        $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
-        
-        // 5. Align ALL Admins & Reset Passwords (Bulk Update)
-        \App\Models\Admin::withoutGlobalScopes()->withTrashed()->update([
-            'password' => $newPassword,
-            'status' => 'active',
-            'deleted_at' => null,
-            'clinic_id' => $clinicId
-        ]);
 
-        // 6. Comprehensive alignment of ALL tables (Optimized)
-        $tables = [
-            'owners', 'pets', 'patients', 'appointments', 'invoices', 'invoice_items',
-            'inventories', 'services', 'medical_records', 'notifications', 
-            'client_notifications', 'inventory_transactions', 'inventory_forecasts',
-            'inventory_usage_history', 'inventory_categories', 'service_categories',
-            'species', 'breeds', 'vet_schedules', 'audit_logs', 'cms_contents', 'settings',
-            'pet_size_categories'
-        ];
-        
-        foreach ($tables as $table) {
-            if (\Illuminate\Support\Facades\Schema::hasTable($table) && \Illuminate\Support\Facades\Schema::hasColumn($table, 'clinic_id')) {
-                \Illuminate\Support\Facades\DB::table($table)->where('clinic_id', '!=', $clinicId)->orWhereNull('clinic_id')->update(['clinic_id' => $clinicId]);
-            }
-        }
+        return response()->json(['success' => true]);
 
-        // 7. Force seeded appointments/invoices to modern dates
-        $today = \Carbon\Carbon::now('Asia/Manila')->toDateString();
-        \Illuminate\Support\Facades\DB::table('appointments')->update(['date' => $today]);
-        \Illuminate\Support\Facades\DB::table('invoices')->update(['created_at' => now(), 'updated_at' => now()]);
-
-        // 8. Reset ALL Portal Users (Bulk Update)
-        \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->update([
-            'password' => $newPassword,
-            'status' => 'active',
-            'deleted_at' => null,
-            'email_verified_at' => now(),
-            'clinic_id' => $clinicId
-        ]);
-
-        // 9. Clear Cache
-        \Illuminate\Support\Facades\Artisan::call('cache:clear');
-        
-        return response()->json([
-            'success' => true, 
-            'message' => 'FULL PRODUCTION SYNC complete. All 50+ records and maintenance labels are live.',
-            'diagnostic_stats' => [
-                'admins' => \App\Models\Admin::withoutGlobalScopes()->count(),
-                'owners' => \App\Models\Owner::withoutGlobalScopes()->count(),
-                'pets' => \App\Models\Pet::withoutGlobalScopes()->count(),
-                'appointments' => \App\Models\Appointment::withoutGlobalScopes()->count(),
-                'invoices' => \App\Models\Invoice::withoutGlobalScopes()->count(),
-                'pet_sizes' => \Illuminate\Support\Facades\DB::table('pet_size_categories')->count(),
-            ]
-        ]);
     } catch (\Exception $e) {
-        return response()->json([
-            'success' => false, 
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ], 500);
+        return response()->json(['error' => $e->getMessage()], 500);
     }
 });
 
