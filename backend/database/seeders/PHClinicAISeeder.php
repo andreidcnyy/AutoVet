@@ -58,24 +58,23 @@ class PHClinicAISeeder extends Seeder
         
         $this->command->info("Seeding 3 Years of History (2023-2025) for Clinic: {$clinic->clinic_name}");
 
+        $appointments = [];
+        $invoices = [];
         $currentDate = $startDate->copy();
+        
         while ($currentDate <= $endDate) {
             $month = $currentDate->month;
-            
-            // Philippine Seasonal logic
             $seasonMult = 1.0;
-            if (in_array($month, [3, 4, 5])) $seasonMult = 1.3; // Summer peak
-            if ($month == 12) $seasonMult = 1.6; // Christmas peak
+            if (in_array($month, [3, 4, 5])) $seasonMult = 1.3;
+            if ($month == 12) $seasonMult = 1.6;
 
-            // Daily volume logic (2-5 visits per day scaled by season)
             $dailyVisits = (int)(rand(2, 4) * $seasonMult);
             
             for ($v = 0; $v < $dailyVisits; $v++) {
                 $pet = $pets->random();
                 $svc = $services->random();
                 
-                // Create Appointment
-                Appointment::create([
+                $appointments[] = [
                     'pet_id' => $pet->id,
                     'service_id' => $svc->id,
                     'title' => $svc->category . ' - ' . $pet->name,
@@ -83,13 +82,13 @@ class PHClinicAISeeder extends Seeder
                     'time' => rand(8, 17) . ':00',
                     'status' => $currentDate->isPast() ? 'Completed' : 'Approved',
                     'clinic_id' => $clinic->id,
-                    'created_at' => $currentDate->copy()->subDays(rand(1, 10))
-                ]);
+                    'created_at' => $currentDate->copy()->subDays(rand(1, 10)),
+                    'updated_at' => now(),
+                ];
 
-                // Create Invoice for Sales AI
                 if ($currentDate->isPast()) {
                     $total = $svc->price + rand(100, 500);
-                    Invoice::create([
+                    $invoices[] = [
                         'invoice_number' => 'AI-' . strtoupper(Str::random(8)),
                         'pet_id' => $pet->id,
                         'status' => 'Paid',
@@ -98,12 +97,27 @@ class PHClinicAISeeder extends Seeder
                         'clinic_id' => $clinic->id,
                         'created_at' => $currentDate->copy(),
                         'updated_at' => $currentDate->copy(),
-                    ]);
+                        'uuid' => (string) Str::uuid(),
+                        'sync_status' => 'local_only',
+                    ];
+                }
+
+                // Chunked insert to prevent memory overflow
+                if (count($appointments) >= 500) {
+                    Appointment::insert($appointments);
+                    $appointments = [];
+                }
+                if (count($invoices) >= 500) {
+                    Invoice::insert($invoices);
+                    $invoices = [];
                 }
             }
-
             $currentDate->addDay();
         }
+
+        // Final inserts
+        if (!empty($appointments)) Appointment::insert($appointments);
+        if (!empty($invoices)) Invoice::insert($invoices);
 
         Notification::create([
             'title' => '3-Year AI Dataset Loaded',

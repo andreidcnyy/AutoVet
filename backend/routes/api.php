@@ -8,7 +8,7 @@ use App\Enums\Roles;
 
 // Chunked Setup Wizard Endpoint
 Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
-    set_time_limit(120);
+    set_time_limit(600); // 10 minutes total
     $step = $request->query('step');
     
     try {
