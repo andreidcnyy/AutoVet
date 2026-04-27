@@ -980,7 +980,8 @@ class DashboardController extends Controller
             $allCategories = array_merge($majorCategories, ['Others']);
             
             // Get all appointments (Include Approved/Scheduled for trends)
-            $appointments = Appointment::join('services', 'appointments.service_id', '=', 'services.id')
+            $appointments = Appointment::withoutGlobalScopes()
+                ->join('services', 'appointments.service_id', '=', 'services.id')
                 ->whereIn('appointments.status', ['completed', 'Approved', 'approved', 'Scheduled', 'scheduled'])
                 ->where('appointments.date', '>=', $now->copy()->subMonths(12)->toDateString())
                 ->select(
@@ -1083,10 +1084,13 @@ class DashboardController extends Controller
             // Summary stats
             $totalPets = Pet::count();
             $totalClients = Owner::count();
-            $totalAppointments = Appointment::count();
-            $apptsToday = Appointment::whereDate('date', now()->toDateString())->count();
-            $upcomingAppts = Appointment::where('date', '>', now()->toDateString())->count();
-            $cancelledAppts = Appointment::where('status', 'cancelled')->count();
+            // Match our confirmed statuses for consistency
+            $confirmedStatuses = ['Approved', 'approved', 'Scheduled', 'scheduled', 'Completed', 'completed'];
+            
+            $totalAppointments = Appointment::whereIn('status', $confirmedStatuses)->count();
+            $apptsToday = Appointment::whereDate('date', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
+            $upcomingAppts = Appointment::where('date', '>', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
+            $cancelledAppts = Appointment::whereIn('status', ['cancelled', 'declined', 'Rejected'])->count();
 
             return [
                 'summary' => [
@@ -1099,9 +1103,8 @@ class DashboardController extends Controller
                 ],
                 'ai_forecast' => [
                     'estimated_revenue' => round($estimatedRevenue),
-                    'estimated_customers' => round($totalForecastedServices * 0.9), // Approx 90% unique customers
+                    'estimated_customers' => round($totalForecastedServices * 0.85), 
                     'total_forecasted_services' => round($totalForecastedServices),
-                    'others_forecast' => round($othersForecastTotal, 1),
                 ],
                 'ai_intelligence_progress' => $progressPercent,
                 'message' => $progressPercent < 100 
