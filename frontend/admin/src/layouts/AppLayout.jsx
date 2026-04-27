@@ -99,7 +99,7 @@ function AppLayout() {
                 ? data.clinic_logo 
                 : (data.clinic_logo.startsWith('data:') 
                     ? data.clinic_logo 
-                    : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet/${data.clinic_logo}`);
+                    : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${data.clinic_logo}`);
               setClinic((prev) => ({ ...prev, logo: logoUrl }));
             }
           }

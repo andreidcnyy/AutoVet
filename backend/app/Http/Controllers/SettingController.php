@@ -39,13 +39,14 @@ class SettingController extends Controller
                     $imageName = 'logo_' . time() . '.png';
                     $fullPath = 'logos/' . $imageName;
                     
-                    // Upload to Supabase
-                    $success = \Illuminate\Support\Facades\Storage::disk('s3')->put($fullPath, base64_decode($image));
-                    
+                    $disk = \Illuminate\Support\Facades\Storage::disk('s3');
+                    $success = $disk->put($fullPath, base64_decode($image), 'public');
+
                     if ($success) {
-                        $valueToStore = $fullPath;
+                        $valueToStore = $disk->url($fullPath);
                     } else {
                         \Illuminate\Support\Facades\Log::error("Supabase put() returned false for: " . $fullPath);
+                        $valueToStore = null;
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Logo Upload Exception: " . $e->getMessage());
