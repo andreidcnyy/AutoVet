@@ -21,17 +21,19 @@ class DatabaseSeeder extends Seeder
             ClinicSeeder::class,
             MasterDataSeeder::class,
             MeasurementSeeder::class,
+            StandardPetSizesSeeder::class, // Added
             StandardBreedsSeeder::class,
             InventoryListSeeder::class,
             SettingSeeder::class,
             NotificationTemplateSeeder::class,
             AdminUserSeeder::class,
-            PHClinicAISeeder::class, // Run before PortalUserSeeder because it truncates owners
+            PHClinicAISeeder::class,
             PortalUserSeeder::class,
             ServicesSeeder::class,
             ServiceForecastDatasetSeeder::class,
             DashboardAIForecastSeeder::class,
             PatientPetSeeder::class,
+            BulkProductionMockSeeder::class, // Added for 50+ records
         ]);
     }
 }

@@ -12,8 +12,8 @@ Route::get('/init-db', function () {
         // 1. Run Migrations
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
-        // 2. Run FULL Database Seeder if not already seeded
-        // We'll run it to ensure all tables are populated
+        // 2. Run FULL Database Seeder
+        // This will now include the 50+ records and Standard Pet Sizes
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         
         // 3. Identify the main clinic
@@ -45,7 +45,8 @@ Route::get('/init-db', function () {
             'inventories', 'services', 'medical_records', 'notifications', 
             'client_notifications', 'inventory_transactions', 'inventory_forecasts',
             'inventory_usage_history', 'inventory_categories', 'service_categories',
-            'species', 'breeds', 'vet_schedules', 'audit_logs', 'cms_contents', 'settings'
+            'species', 'breeds', 'vet_schedules', 'audit_logs', 'cms_contents', 'settings',
+            'pet_size_categories'
         ];
         
         foreach ($tables as $table) {
@@ -76,7 +77,7 @@ Route::get('/init-db', function () {
         
         return response()->json([
             'success' => true, 
-            'message' => 'FULL SYSTEM SYNC & SEED complete. All data and users aligned to Clinic: ' . $clinic->clinic_name,
+            'message' => 'FULL PRODUCTION SYNC complete. All 50+ records and maintenance labels are live.',
             'diagnostic_stats' => [
                 'admins' => \App\Models\Admin::withoutGlobalScopes()->count(),
                 'owners' => \App\Models\Owner::withoutGlobalScopes()->count(),
@@ -85,9 +86,7 @@ Route::get('/init-db', function () {
                 'invoices' => \App\Models\Invoice::withoutGlobalScopes()->count(),
                 'inventories' => \App\Models\Inventory::withoutGlobalScopes()->count(),
                 'services' => \App\Models\Service::withoutGlobalScopes()->count(),
-                'medical_records' => \App\Models\MedicalRecord::withoutGlobalScopes()->count(),
-                'breeds' => \App\Models\Breed::withoutGlobalScopes()->count(),
-                'species' => \App\Models\Species::withoutGlobalScopes()->count(),
+                'pet_sizes' => \Illuminate\Support\Facades\DB::table('pet_size_categories')->count(),
             ]
         ]);
     } catch (\Exception $e) {
