@@ -41,10 +41,7 @@ function LoginPage() {
     setError("");
 
     try {
-      // 1. Fetch CSRF cookie before login
-      await api.get("/sanctum/csrf-cookie");
-
-      // 2. Attempt login
+      // 1. Attempt login directly (API uses Bearer tokens, not sessions)
       const data = await api.post("/api/login", { email, password });
 
       if (data && !data.error) {
