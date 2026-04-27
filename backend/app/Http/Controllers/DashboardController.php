@@ -979,9 +979,9 @@ class DashboardController extends Controller
             $majorCategories = ['Consultation', 'Grooming', 'Vaccination', 'Laboratory'];
             $allCategories = array_merge($majorCategories, ['Others']);
             
-            // Get all appointments (COMPLETED ONLY)
+            // Get all appointments (Include Approved/Scheduled for trends)
             $appointments = Appointment::join('services', 'appointments.service_id', '=', 'services.id')
-                ->where('appointments.status', 'completed')
+                ->whereIn('appointments.status', ['completed', 'Approved', 'approved', 'Scheduled', 'scheduled'])
                 ->where('appointments.date', '>=', $now->copy()->subMonths(12)->toDateString())
                 ->select(
                     DB::raw('YEAR(appointments.date) as year'),
