@@ -97,7 +97,9 @@ function AppLayout() {
             if (data.clinic_logo && typeof data.clinic_logo === 'string') {
               const logoUrl = data.clinic_logo.startsWith('http') 
                 ? data.clinic_logo 
-                : (data.clinic_logo.startsWith('data:') ? data.clinic_logo : `${import.meta.env.VITE_API_URL}/storage/${data.clinic_logo}`);
+                : (data.clinic_logo.startsWith('data:') 
+                    ? data.clinic_logo 
+                    : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet/${data.clinic_logo}`);
               setClinic((prev) => ({ ...prev, logo: logoUrl }));
             }
           }

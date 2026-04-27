@@ -36,10 +36,10 @@ class SettingController extends Controller
                     $image = str_replace(' ', '+', explode(',', $value)[1]);
                     $imageName = 'clinic_logo_' . time() . '.' . $format;
                     
-                    // Upload to Supabase (configured via FILESYSTEM_PUBLIC=s3)
-                    \Illuminate\Support\Facades\Storage::disk('public')->put('logos/' . $imageName, base64_decode($image));
+                    // Explicitly use 's3' disk (Supabase) for these uploads
+                    \Illuminate\Support\Facades\Storage::disk('s3')->put('logos/' . $imageName, base64_decode($image));
                     
-                    // Store the PATH, not the Base64 text
+                    // Store the full path for the frontend
                     $valueToStore = 'logos/' . $imageName;
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Logo Upload Failed: " . $e->getMessage());
