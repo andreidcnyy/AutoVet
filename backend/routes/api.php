@@ -9,9 +9,10 @@ use App\Enums\Roles;
 // Emergency Database Setup Route
 Route::get('/init-db', function () {
     try {
+        // 1. Run Migrations
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
-        // 1. Ensure at least one clinic exists
+        // 2. Ensure at least one clinic exists
         $clinic = \App\Models\Clinic::first();
         if (!$clinic) {
             $clinic = \App\Models\Clinic::create([
@@ -24,27 +25,32 @@ Route::get('/init-db', function () {
         $clinicId = $clinic->id;
         $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
         
-        // 2. Align ALL Admins to this clinic and reset passwords
+        // 3. Align ALL Admins to this clinic and reset passwords
         $admins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get();
         foreach ($admins as $admin) {
             $admin->update([
                 'password' => $newPassword,
                 'status' => 'active',
                 'deleted_at' => null,
-                'clinic_id' => $clinicId // Force alignment
+                'clinic_id' => $clinicId
             ]);
         }
 
-        // 3. Align ALL seeded data to this clinic ID
-        \Illuminate\Support\Facades\DB::table('owners')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('pets')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('patients')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('appointments')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('invoices')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('inventories')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('services')->update(['clinic_id' => $clinicId]);
+        // 4. Run Seeders if database is empty of core data
+        if (\App\Models\Owner::count() === 0) {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'MasterDataSeeder', '--force' => true]);
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DashboardMockSeeder', '--force' => true]);
+        }
 
-        // 4. Reset ALL Portal Users
+        // 5. Final forced alignment of all tables
+        $tables = ['owners', 'pets', 'patients', 'appointments', 'invoices', 'inventories', 'services', 'medical_records', 'notifications'];
+        foreach ($tables as $table) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                \Illuminate\Support\Facades\DB::table($table)->update(['clinic_id' => $clinicId]);
+            }
+        }
+
+        // 6. Reset ALL Portal Users
         $portalUsers = \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->get();
         foreach ($portalUsers as $pUser) {
             $pUser->update([
@@ -58,9 +64,13 @@ Route::get('/init-db', function () {
         
         return response()->json([
             'success' => true, 
-            'message' => 'System sync complete. All users aligned to Clinic ID: ' . $clinicId,
-            'admin_count' => $admins->count(),
-            'clinic_name' => $clinic->clinic_name
+            'message' => 'System SYNC and SEED complete. All data aligned to Clinic ID: ' . $clinicId,
+            'stats' => [
+                'admins' => \App\Models\Admin::count(),
+                'owners' => \App\Models\Owner::count(),
+                'pets' => \App\Models\Pet::count(),
+                'inventories' => \App\Models\Inventory::count()
+            ]
         ]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
