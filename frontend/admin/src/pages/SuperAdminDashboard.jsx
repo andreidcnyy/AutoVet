@@ -11,6 +11,15 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
+const resolveLogoUrl = (logo) => {
+  if (!logo || typeof logo !== 'string') return null;
+  const v = logo.trim();
+  if (v.length < 5) return null;
+  if (v.startsWith('http') || v.startsWith('data:')) return v;
+  if (!/\.(png|jpe?g|webp|gif|svg)$/i.test(v)) return null;
+  return `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
+};
+
 // Simple Map Preview Component
 const MapPreview = ({ address }) => {
   if (!address || address.length < 5) return (
@@ -189,7 +198,7 @@ export default function SuperAdminDashboard() {
       subscription_expires_at: clinic.subscription_expires_at ? clinic.subscription_expires_at.split('T')[0] : ''
     });
     setLogoFile(null);
-    setLogoPreview(clinic.logo ? `/storage/${clinic.logo}` : null);
+    setLogoPreview(resolveLogoUrl(clinic.logo));
     setDebouncedAddress(clinic.address || '');
     setIsModalOpen(true);
   };
@@ -341,8 +350,8 @@ export default function SuperAdminDashboard() {
                 <tr key={clinic.id} onClick={() => handleRowClick(clinic)} className="hover:bg-autovet-navy-light/30 transition-colors dark:hover:bg-dark-surface/40 cursor-pointer group">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
-                      {clinic.logo ? (
-                        <img src={`/storage/${clinic.logo}`} className="h-12 w-12 rounded-2xl object-cover shadow-sm bg-white" alt="logo" />
+                      {resolveLogoUrl(clinic.logo) ? (
+                        <img src={resolveLogoUrl(clinic.logo)} className="h-12 w-12 rounded-2xl object-cover shadow-sm bg-white" alt="logo" />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-lg dark:bg-zinc-800 group-hover:scale-110 transition-transform text-2xl">🏥</div>
                       )}
@@ -401,7 +410,7 @@ export default function SuperAdminDashboard() {
              <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative">
                 <div className="absolute -bottom-8 left-8">
                    <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
-                     {selectedClinic.logo ? <img src={`/storage/${selectedClinic.logo}`} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
+                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
                    </div>
                 </div>
                 <div className="absolute top-6 right-6 flex gap-2">
