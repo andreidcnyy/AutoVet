@@ -1,0 +1,33 @@
+# Railway / Nixpacks build hooks for AutoVet backend.
+# Ensures the public storage symlink, permissions, and Laravel optimizations
+# are in place on every deploy. The DB migrate / dataset seed steps are
+# intentionally NOT run here — those live in the chunked /setup-wizard flow
+# to avoid build-time timeouts on the 36-month dataset import.
+
+[phases.setup]
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "python3", "python3Packages.pip"]
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+  "npm ci || npm install",
+  "pip3 install --no-cache-dir -r ai/requirements.txt || true"
+]
+
+[phases.build]
+cmds = [
+  "npm run build || true",
+  # Create the public/storage symlink so /storage/... URLs resolve to
+  # storage/app/public/... on disk. --force replaces a stale link.
+  "php artisan storage:link --force",
+  # Ensure upload target directories exist before any user uploads.
+  "mkdir -p storage/app/public/clinics/logos storage/app/public/pets storage/app/public/avatars",
+  # Permissions: web user must be able to write storage and bootstrap/cache.
+  "chmod -R ug+rwx storage bootstrap/cache",
+  # Laravel runtime optimizations.
+  "php artisan config:cache",
+  "php artisan route:cache"
+]
+
+[start]
+cmd = "php artisan serve --host 0.0.0.0 --port $PORT"
