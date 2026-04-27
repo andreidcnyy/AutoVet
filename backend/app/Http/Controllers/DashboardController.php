@@ -347,39 +347,27 @@ class DashboardController extends Controller
     {
         // No cache for real-time data accuracy
         $tz = 'Asia/Manila';
-        $totalPets = Pet::whereHas('owner', function($q) {
-            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
-        })->count();
+        $totalPets = Pet::count();
         
-        $totalOwners = \App\Models\Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
+        $totalOwners = \App\Models\Owner::count();
 
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
 
         // Unified Confirmed Statuses (Confirmed Appointments)
-        // We exclude 'Pending' so that 'Approve' action 'adds' to the count
-        // We exclude 'Scheduled' as it is often used for mock/seeded data
-        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed'];
+        // We include 'Scheduled' to ensure seeded/mock data is visible immediately
+        $confirmedStatuses = ['Approved', 'Completed', 'approved', 'completed', 'Scheduled', 'scheduled'];
         
         $apptsToday = Appointment::whereDate('date', $today)
             ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
-            })
             ->count();
             
         $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
-            })
             ->count();
             
         $cancelledDeclined = Appointment::whereDate('date', $today)
             ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
-            })
             ->count();
 
         return response()->json([

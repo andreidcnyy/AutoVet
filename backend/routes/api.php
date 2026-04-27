@@ -54,7 +54,15 @@ Route::get('/init-db', function () {
             }
         }
 
-        // 6. Reset ALL Portal Users
+        // 6. Force seeded appointments/invoices to modern dates so they show on dashboard
+        $today = \Carbon\Carbon::now('Asia/Manila')->toDateString();
+        \Illuminate\Support\Facades\DB::table('appointments')->update(['date' => $today]);
+        \Illuminate\Support\Facades\DB::table('invoices')->update(['created_at' => now(), 'updated_at' => now()]);
+
+        // 7. Clear Cache to ensure dashboard doesn't show old empty results
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+
+        // 8. Reset ALL Portal Users
         $portalUsers = \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->get();
         foreach ($portalUsers as $pUser) {
             $pUser->update([
