@@ -25,9 +25,10 @@ cmds = [
   # Permissions: web user must be able to write storage and bootstrap/cache.
   "chmod -R ug+rwx storage bootstrap/cache",
   # Laravel runtime optimizations.
-  "php artisan config:cache",
   "php artisan route:cache"
 ]
 
 [start]
-cmd = "php artisan serve --host 0.0.0.0 --port $PORT"
+# Clear any stale config cache so newly-added Railway env vars (AWS_*, etc.)
+# are picked up at runtime, then start the server.
+cmd = "php artisan config:clear && php artisan serve --host 0.0.0.0 --port $PORT"
