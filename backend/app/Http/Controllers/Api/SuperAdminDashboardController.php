@@ -68,7 +68,11 @@ class SuperAdminDashboardController extends Controller
             if ($contents === false) {
                 throw new \RuntimeException('Could not read uploaded file from temp path');
             }
-            $ok = $disk->put($name, $contents, 'public');
+            $mime = $file->getMimeType() ?: 'image/png';
+            $ok = $disk->put($name, $contents, [
+                'ContentType' => $mime,
+                'CacheControl' => 'public, max-age=31536000',
+            ]);
             if (!$ok) {
                 \Illuminate\Support\Facades\Log::error('uploadClinicLogo: put returned false for ' . $name);
                 return null;
