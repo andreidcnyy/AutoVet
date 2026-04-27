@@ -11,7 +11,7 @@ class ServiceForecastAggregator
     public function getMonthlyData(): array
     {
         $user = auth()->user();
-        $clinicId = $user->clinic_id;
+        $clinicId = $user ? ($user->clinic_id ?? null) : null;
 
         $query = DB::table('invoices as i')
             ->join('invoice_items as ii', 'ii.invoice_id', '=', 'i.id')
@@ -42,12 +42,8 @@ class ServiceForecastAggregator
             ->orderBy('month', 'ASC')
             ->get();
 
-        if ($results->isEmpty()) {
-            return [];
-        }
-
-        // GAP FILLING LOGIC - Force 2023-01 to 2026-06
-        $dataMap = $results->keyBy('month');
+        // GAP FILLING LOGIC - Force 2023-01 to 2026-06 even when DB is empty
+        $dataMap = $results->isEmpty() ? collect() : $results->keyBy('month');
         $start = Carbon::parse('2023-01-01');
         $end   = Carbon::parse('2026-06-01');
         

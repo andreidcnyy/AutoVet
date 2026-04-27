@@ -1068,16 +1068,11 @@ class DashboardController extends Controller
 
             return response()->json($data);
         } catch (\Throwable $e) {
-            return response()->json(['error' => true, 'message' => $e->getMessage()], 200);
-        }
-    }
-        } catch (\Throwable $e) {
-            Log::error("SERVICE FORECAST 500 ERROR: " . $e->getMessage());
+            Log::error("SERVICE FORECAST ERROR: " . $e->getMessage() . " @ line " . $e->getLine());
             return response()->json([
                 'error' => true,
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
             ], 200);
         }
     }
