@@ -12,29 +12,38 @@ Route::get('/init-db', function () {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
         $email = 'superadmin@autovet.com';
-        $admin = \App\Models\Admin::where('email', $email)->first();
         
-        if (!$admin) {
-            $clinic = \App\Models\Clinic::first();
-            if (!$clinic) {
-                $clinic = \App\Models\Clinic::create([
-                    'clinic_name' => 'AutoVet Headquarters',
-                    'email' => 'system@autovet.com',
-                    'status' => 'active',
-                ]);
-            }
+        // Ensure a clinic exists for the user
+        $clinic = \App\Models\Clinic::first();
+        if (!$clinic) {
+            $clinic = \App\Models\Clinic::create([
+                'clinic_name' => 'AutoVet Headquarters',
+                'email' => 'system@autovet.com',
+                'status' => 'active',
+            ]);
+        }
 
-            \App\Models\Admin::create([
+        // Force create or update the superadmin password to password123
+        $admin = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->updateOrCreate(
+            ['email' => $email],
+            [
                 'name' => 'Super Administrator',
-                'email' => $email,
                 'password' => \Illuminate\Support\Facades\Hash::make('password123'),
                 'role' => \App\Enums\Roles::SUPER_ADMIN->value,
                 'status' => 'active',
                 'clinic_id' => $clinic->id,
-            ]);
-            return response()->json(['success' => true, 'message' => 'Super Admin created.', 'email' => $email]);
-        }
-        return response()->json(['success' => true, 'message' => 'Super Admin already exists.', 'email' => $email]);
+                'deleted_at' => null // Ensure they aren't soft-deleted
+            ]
+        );
+
+        $allAdmins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get(['email', 'role', 'status', 'deleted_at']);
+        
+        return response()->json([
+            'success' => true, 
+            'message' => 'Super Admin password has been RESET to: password123',
+            'target_user' => $email,
+            'database_users' => $allAdmins
+        ]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
