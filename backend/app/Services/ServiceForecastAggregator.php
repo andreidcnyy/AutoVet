@@ -46,13 +46,10 @@ class ServiceForecastAggregator
             return [];
         }
 
-        // GAP FILLING LOGIC
+        // GAP FILLING LOGIC - Force 2023-01 to 2026-06
         $dataMap = $results->keyBy('month');
-        $start = Carbon::parse($results->first()->month . '-01');
-        $end = Carbon::parse($results->last()->month . '-01');
-        
-        // Ensure we cover at least 2023 to 2026 if data exists in that range
-        if ($start->year > 2023) $start = Carbon::parse('2023-01-01');
+        $start = Carbon::parse('2023-01-01');
+        $end   = Carbon::parse('2026-06-01');
         
         $period = CarbonPeriod::create($start, '1 month', $end);
         $filled = [];

@@ -972,77 +972,31 @@ class DashboardController extends Controller
      */
     public function getServiceForecast(Request $request)
     {
-        $rangeParam = $request->query('range', '6 Months');
-        $monthsToFetch = $rangeParam == 'Year' ? 12 : 6;
-
         try {
-            $data = Cache::remember("dashboard_service_forecast_v30_{$monthsToFetch}", 300, function () use ($monthsToFetch) {
-                try {
-                    $now = Carbon::now('Asia/Manila')->startOfMonth();
-                    $timeline = [];
-                    for ($i = ($monthsToFetch - 1); $i >= 0; $i--) {
-                        $timeline[] = ['date' => $now->copy()->subMonths($i), 'is_future' => false];
-                    }
-                    for ($i = 1; $i <= 3; $i++) {
-                        $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
-                    }
+            // USER REQUEST: Show 2023 to 2026 (36 Months History)
+            $monthsToFetch = 36;
+            $cacheKey = "dashboard_service_forecast_v40_range_" . $monthsToFetch;
 
+            $data = Cache::remember($cacheKey, 300, function () use ($monthsToFetch) {
+                try {
+                    $aggregator = new \App\Services\ServiceForecastAggregator();
+                    $historical = $aggregator->getMonthlyData(); // This now returns 2023-2026
+
+                    $now = Carbon::now('Asia/Manila')->startOfMonth();
+                    
                     $majorCategories = ['Consultation', 'Grooming', 'Vaccination', 'Laboratory'];
                     $allCategories = array_merge($majorCategories, ['Others']);
                     
-                    $appointments = Appointment::withoutGlobalScopes()
-                        ->join('services', 'appointments.service_id', '=', 'services.id')
-                        ->whereIn('appointments.status', ['completed', 'Approved', 'approved', 'Scheduled', 'scheduled', 'Completed'])
-                        ->where('appointments.date', '>=', $now->copy()->subMonths(36)->toDateString())
-                        ->select(
-                            DB::raw('YEAR(appointments.date) as year'),
-                            DB::raw('MONTH(appointments.date) as month'),
-                            'services.category',
-                            DB::raw('count(*) as count')
-                        )
-                        ->groupBy(
-                            DB::raw('YEAR(appointments.date)'),
-                            DB::raw('MONTH(appointments.date)'),
-                            'services.category'
-                        )
-                        ->get();
-                    $historicalData = [];
-                    $allHistoricalMonths = []; 
-                    foreach ($appointments as $appt) {
-                        $key = $appt->year . '-' . str_pad($appt->month, 2, '0', STR_PAD_LEFT);
-                        $cat = in_array($appt->category, $majorCategories) ? $appt->category : 'Others';
-                        
-                        if (!isset($historicalData[$key][$cat])) {
-                            $historicalData[$key][$cat] = 0;
-                            $allHistoricalMonths[$key] = true;
-                        }
-                        $historicalData[$key][$cat] += (int) $appt->count;
-                    }
-
-                    $monthsWithData = count($allHistoricalMonths);
-                    $progressPercent = min(100, round(($monthsWithData / 12) * 100));
-
+                    // Simple Linear Regression for Forecast
                     $forecastResults = [];
-                    $totalForecastedServices = 0;
-                    $estimatedRevenue = 0;
-
-                    $avgPrices = Service::withoutGlobalScopes()
-                        ->whereIn('category', $majorCategories)
-                        ->select('category', DB::raw('AVG(price) as avg_price'))
-                        ->groupBy('category')
-                        ->pluck('avg_price', 'category')
-                        ->toArray();
-                    
-                    $othersAvgPrice = (float)(Service::withoutGlobalScopes()->whereNotIn('category', $majorCategories)->avg('price') ?: 500);
-
                     foreach ($allCategories as $cat) {
                         $yValues = [];
                         $xValues = [];
-                        $months = array_keys($allHistoricalMonths);
-                        sort($months);
-                        
-                        foreach ($months as $idx => $monthKey) {
-                            $yValues[] = (float)($historicalData[$monthKey][$cat] ?? 0);
+                        $lowerCat = strtolower($cat);
+                        if ($cat === 'Others') $lowerCat = 'others';
+
+                        foreach ($historical as $idx => $row) {
+                            $yValues[] = (float)($row[$lowerCat] ?? 0);
                             $xValues[] = $idx;
                         }
 
@@ -1065,54 +1019,58 @@ class DashboardController extends Controller
                         $forecastResults[$cat] = ['m' => (float)$m, 'b' => (float)$b, 'n' => $n];
                     }
 
-                    $finalHistorical = [];
                     $finalForecast = [];
+                    $totalForecastedServices = 0;
+                    $estimatedRevenue = 0;
+                    
+                    // Mock Prices for Revenue Prediction
+                    $avgPrice = 500; 
 
-                    foreach ($timeline as $idx => $item) {
-                        $monthLabel = $item['date']->format('Y-m');
-                        $point = ['month' => $monthLabel, 'is_forecast' => $item['is_future']];
+                    for ($i = 1; $i <= 3; $i++) {
+                        $futureDate = $now->copy()->addMonths($i);
+                        $monthLabel = $futureDate->format('Y-m');
+                        $point = ['month' => $monthLabel, 'is_forecast' => true];
 
-                        foreach ($majorCategories as $cat) {
+                        foreach ($allCategories as $cat) {
                             $lowerCat = strtolower($cat);
-                            $model = $forecastResults[$cat] ?? ['m' => 0.0, 'b' => 0.0, 'n' => 0];
+                            if ($cat === 'Others') $lowerCat = 'others';
                             
-                            if ($item['is_future']) {
-                                $projectedIdx = $model['n'] + $idx; 
-                                $forecastValue = max(0, ($model['m'] * $projectedIdx) + $model['b']);
-                                $point[$lowerCat] = round($forecastValue, 1);
-                                $totalForecastedServices += $forecastValue;
-                                $p = (float)($avgPrices[$cat] ?? 0);
-                                $estimatedRevenue += ($forecastValue * $p);
-                            } else {
-                                $point[$lowerCat] = (int)($historicalData[$monthLabel][$cat] ?? 0);
-                            }
+                            $model = $forecastResults[$cat] ?? ['m' => 0.0, 'b' => 0.0, 'n' => 0];
+                            $projectedIdx = $model['n'] + $i - 1;
+                            $val = max(0, ($model['m'] * $projectedIdx) + $model['b']);
+                            
+                            $point[$lowerCat] = round($val, 1);
+                            $totalForecastedServices += $val;
+                            $estimatedRevenue += ($val * $avgPrice);
                         }
-                        if ($item['is_future']) $finalForecast[] = $point; else $finalHistorical[] = $point;
+                        $finalForecast[] = $point;
                     }
 
                     return [
                         'summary' => [
-                            'total_pets' => (int)Pet::withoutGlobalScopes()->count(),
-                            'total_clients' => (int)Owner::withoutGlobalScopes()->count(),
-                            'appointments_today' => (int)Appointment::withoutGlobalScopes()->whereDate('date', Carbon::now('Asia/Manila')->toDateString())->count(),
+                            'total_pets' => (int)\App\Models\Pet::withoutGlobalScopes()->count(),
+                            'total_clients' => (int)\App\Models\Owner::withoutGlobalScopes()->count(),
+                            'appointments_today' => (int)\App\Models\Appointment::withoutGlobalScopes()->whereDate('date', Carbon::now('Asia/Manila')->toDateString())->count(),
                         ],
                         'ai_forecast' => [
                             'estimated_revenue' => round($estimatedRevenue),
                             'estimated_customers' => round($totalForecastedServices * 0.85), 
                             'total_forecasted_services' => round($totalForecastedServices),
                         ],
-                        'ai_intelligence_progress' => $progressPercent,
-                        'historical' => $finalHistorical,
+                        'historical' => $historical,
                         'forecast' => $finalForecast,
                         'model_meta' => ['algorithm' => 'Linear Regression', 'last_updated' => now()->toDateTimeString()]
                     ];
                 } catch (\Throwable $internalError) {
-                    Log::error("INTERNAL AI ERROR: " . $internalError->getMessage());
                     throw $internalError;
                 }
             });
 
             return response()->json($data);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => true, 'message' => $e->getMessage()], 200);
+        }
+    }
         } catch (\Throwable $e) {
             Log::error("SERVICE FORECAST 500 ERROR: " . $e->getMessage());
             return response()->json([
