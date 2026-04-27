@@ -209,13 +209,25 @@ function DashboardPage() {
     return visibleForecast[0] || historical[historical.length - 1];
   }, [selectedPoint, historical, visibleForecast, currentMonthStr]);
 
-  // Derive Jump Options
+  // Auto-set initial page based on current date
+  useEffect(() => {
+    if (historical.length > 0 && !selectedPoint) {
+       const idx = historical.findIndex(h => h.month === currentMonthStr);
+       if (idx !== -1) {
+          const page = Math.floor((historical.length - 1 - idx) / HISTORICAL_WINDOW);
+          setHistoryPage(page);
+       } else {
+          // If current month not found, show latest page
+          setHistoryPage(0);
+       }
+    }
+  }, [historical, currentMonthStr, selectedPoint]);
+
+  // Derive Jump Options - Strictly 2023-2026
   const historicalYears = useMemo(() => {
-    const years = historical.map(h => h.month.split('-')[0]);
-    // Ensure we always have 2024, 2025, 2026 as options even if data is loading or missing
-    const baseYears = ['2024', '2025', '2026'];
-    return [...new Set([...baseYears, ...years])].sort((a, b) => b.localeCompare(a));
-  }, [historical]);
+    const years = ['2023', '2024', '2025', '2026'];
+    return years.sort((a, b) => b.localeCompare(a));
+  }, []);
 
   const currentYearSelected = displayPoint?.month.split('-')[0];
   const currentMonthSelected = displayPoint?.month.split('-')[1];
