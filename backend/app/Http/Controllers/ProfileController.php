@@ -41,7 +41,8 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:' . $table . ',email,' . $user->id,
             'role' => 'nullable|string|max:255',
-            'avatar' => 'nullable|string|max:1000000'
+            // ~5MB base64 cap so phone photos are accepted
+            'avatar' => 'nullable|string|max:7000000'
         ]);
 
         $user->update($validated);

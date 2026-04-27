@@ -1,228 +1,113 @@
 /*
  * AutoVet Admin — Mobile / Tablet experience layer.
  * Loaded only via <link media="(max-width: 1023px)"> so desktop is untouched.
- * Goal: make the web app *feel* like a native mobile application —
- * dynamic, interactive, polished. Glass surfaces, fluid motion, real depth.
+ *
+ * Design principle: respect what the app's Tailwind responsive classes
+ * already do (md:translate-x-0 on the sidebar, md:grid-cols-N etc.) and only
+ * fix the things that are actually broken on small screens. Phones get the
+ * heavier collapse; tablets keep most of the Tailwind responsive layout.
  */
 
+/* =====================================================================
+ * Shared foundation for ≤1023px (tablet + phone)
+ * ===================================================================== */
 @media (max-width: 1023px) {
   :root {
     --m-gutter: 16px;
-    --m-radius-sm: 12px;
-    --m-radius: 18px;
-    --m-radius-lg: 24px;
-    --m-bg: #f6f7fb;
-    --m-card: #ffffff;
-    --m-ink: #0f172a;
-    --m-muted: #64748b;
-    --m-line: rgba(15, 23, 42, 0.06);
+    --m-radius: 16px;
+    --m-line: rgba(15, 23, 42, 0.08);
     --m-accent: #2563eb;
-    --m-accent-2: #7c3aed;
-    --m-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --m-shadow-2: 0 8px 24px -10px rgba(15, 23, 42, 0.18);
-    --m-shadow-3: 0 20px 50px -20px rgba(15, 23, 42, 0.35);
     --m-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
     --m-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --m-bg: #0b0f1a;
-      --m-card: #11172a;
-      --m-ink: #e2e8f0;
-      --m-muted: #94a3b8;
-      --m-line: rgba(255, 255, 255, 0.08);
-    }
+    --m-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -10px rgba(15, 23, 42, 0.18);
   }
 
-  /* ---------- Foundation ---------- */
   html, body, #root {
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
-    background: var(--m-bg);
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
       "Segoe UI", Roboto, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    color: var(--m-ink);
     overscroll-behavior-y: contain;
-  }
-  *, *::before, *::after { -webkit-overflow-scrolling: touch; }
-  *::-webkit-scrollbar { display: none; }
-  * { scrollbar-width: none; }
-
-  /* Subtle ambient gradient so the canvas doesn't feel flat */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: -10% -10% auto -10%;
-    height: 280px;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(60% 100% at 20% 0%, rgba(37, 99, 235, 0.10), transparent 60%),
-      radial-gradient(60% 100% at 90% 0%, rgba(124, 58, 237, 0.10), transparent 60%);
-  }
-  #root { position: relative; z-index: 1; }
-
-  /* ---------- Reset desktop walls ---------- */
-  [class*="min-w-"]:not([class*="min-w-0"]),
-  [class*="w-["],
-  [style*="min-width:"][style*="px"] { min-width: 0 !important; }
-  [class*="w-screen"] { width: 100% !important; }
-
-  body, main, #root {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+  *::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 
-  main, [class*="max-w-"] {
-    max-width: 100% !important;
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: var(--m-gutter) !important;
-    padding-right: var(--m-gutter) !important;
+  /* Inputs: 16px to suppress iOS auto-zoom; comfortable tap height */
+  input, select, textarea {
+    font-size: 16px !important;
+    min-height: 44px;
   }
-
-  /* ---------- Page entrance animation ---------- */
-  @keyframes m-fade-up {
-    from { opacity: 0; transform: translate3d(0, 12px, 0); }
-    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  button, a[role="button"], .btn {
+    min-height: 44px;
+    transition: transform 160ms var(--m-ease), filter 160ms var(--m-ease);
   }
-  @keyframes m-pop {
-    0%   { transform: scale(0.96); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  @keyframes m-shimmer {
-    0%   { background-position: -300px 0; }
-    100% { background-position: 300px 0; }
-  }
-  main > *, [class*="page"] > *, [class*="Page"] > * {
-    animation: m-fade-up 360ms var(--m-ease) both;
-  }
-  main > *:nth-child(2) { animation-delay: 60ms; }
-  main > *:nth-child(3) { animation-delay: 120ms; }
-  main > *:nth-child(4) { animation-delay: 180ms; }
-  main > *:nth-child(5) { animation-delay: 240ms; }
-  main > *:nth-child(n+6) { animation-delay: 300ms; }
-
-  /* ---------- Grid behavior ---------- */
-  [class*="grid-cols-3"],
-  [class*="grid-cols-4"],
-  [class*="grid-cols-5"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-  [class*="grid-cols-6"],
-  [class*="grid-cols-7"],
-  [class*="grid-cols-8"],
-  [class*="grid-cols-9"],
-  [class*="grid-cols-10"],
-  [class*="grid-cols-11"],
-  [class*="grid-cols-12"] {
-    grid-template-columns: 1fr !important;
-    gap: 14px !important;
+  button:active, a[role="button"]:active, .btn:active {
+    transform: scale(0.97);
+    filter: brightness(0.96);
   }
 
-  /* ---------- Cards: real depth, subtle motion ---------- */
-  [class*="rounded-xl"],
-  [class*="rounded-2xl"],
-  [class*="rounded-3xl"],
-  [class*="bg-white"],
-  [class*="bg-zinc-900"],
-  [class*="bg-slate-900"] {
-    border-radius: var(--m-radius) !important;
-  }
-  [class*="shadow"],
-  [class*="rounded-2xl"][class*="bg-"],
-  [class*="rounded-xl"][class*="bg-"] {
-    box-shadow: var(--m-shadow-1), var(--m-shadow-2) !important;
-    border: 1px solid var(--m-line) !important;
-    transition:
-      transform 260ms var(--m-ease),
-      box-shadow 260ms var(--m-ease) !important;
-  }
-  [class*="shadow"]:active,
-  [class*="rounded-2xl"][class*="bg-"]:active {
-    transform: scale(0.985);
-    box-shadow: var(--m-shadow-1) !important;
+  /* Sticky top header: glass effect on whatever the app uses */
+  header, [class*="TopHeader"], [class*="topbar"] {
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    padding-top: env(safe-area-inset-top);
   }
 
-  /* ---------- Sidebars stack ---------- */
-  aside, [class*="sidebar"], [class*="Sidebar"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    position: relative !important;
-    height: auto !important;
-    border-right: 0 !important;
-    border-bottom: 1px solid var(--m-line) !important;
-    background: transparent !important;
-  }
-
-  /* ---------- Sticky glass header ---------- */
-  header, [class*="Topbar"], [class*="topbar"], nav[class*="top"] {
-    position: sticky !important;
-    top: 0;
-    z-index: 50;
-    background: color-mix(in srgb, var(--m-card) 78%, transparent) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(18px);
-    backdrop-filter: saturate(180%) blur(18px);
-    border-bottom: 1px solid var(--m-line) !important;
-    padding-top: env(safe-area-inset-top) !important;
-  }
-
-  /* ---------- Bottom navigation feel for footer-like nav ---------- */
-  nav[class*="bottom"], [class*="BottomNav"], [class*="bottom-nav"] {
-    position: fixed !important;
-    left: 8px; right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    z-index: 60;
-    background: color-mix(in srgb, var(--m-card) 88%, transparent) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
-    border: 1px solid var(--m-line) !important;
-    border-radius: 22px !important;
-    box-shadow: var(--m-shadow-3) !important;
-    padding: 8px !important;
-  }
-  nav[class*="bottom"] a,
-  nav[class*="bottom"] button {
-    border-radius: 14px !important;
-    transition: background 200ms var(--m-ease), transform 200ms var(--m-ease);
-  }
-  nav[class*="bottom"] a:active,
-  nav[class*="bottom"] button:active { transform: scale(0.92); }
-
-  /* ---------- Tables → swipe rows ---------- */
+  /* --------------------------------------------------------------
+   * Tables: horizontally scrollable with a hint, sticky first cell,
+   * tighter rhythm. We DON'T turn the table into block on tablets —
+   * the table semantics stay intact.
+   * -------------------------------------------------------------- */
   table {
-    display: block !important;
-    overflow-x: auto !important;
     width: 100% !important;
-    white-space: nowrap;
-    scroll-snap-type: x proximity;
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    /* Right-edge fade so users see there's more to scroll */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
   }
-  table thead { background: transparent !important; }
+  table thead, table tbody, table tr { display: table; width: 100%; table-layout: fixed; min-width: 560px; }
   table thead th {
     font-size: 11px !important;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--m-muted) !important;
-    border-bottom: 1px solid var(--m-line) !important;
+    color: rgba(15, 23, 42, 0.55);
     padding: 10px 12px !important;
+    border-bottom: 1px solid var(--m-line);
+    text-align: left;
   }
-  table td { padding: 12px !important; border-bottom: 1px solid var(--m-line) !important; }
-  table tr:active td { background: rgba(37, 99, 235, 0.04); }
+  table td {
+    padding: 12px !important;
+    border-bottom: 1px solid var(--m-line);
+    vertical-align: middle;
+  }
+  /* Sticky first column for context while swiping */
+  table thead th:first-child,
+  table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    background: inherit;
+    z-index: 1;
+    box-shadow: 1px 0 0 var(--m-line);
+  }
 
-  /* ---------- Recharts: keep visible, polish ticks ---------- */
+  /* --------------------------------------------------------------
+   * Recharts: keep it visible at a usable size on small screens
+   * -------------------------------------------------------------- */
   .recharts-responsive-container,
   .recharts-wrapper {
     width: 100% !important;
-    min-height: 280px !important;
+    min-height: 280px;
     height: auto !important;
   }
   .recharts-responsive-container svg,
@@ -233,38 +118,37 @@
     max-width: none !important;
     overflow: visible !important;
   }
-  .recharts-cartesian-axis-tick text { font-size: 10px !important; fill: var(--m-muted) !important; }
-  .recharts-legend-wrapper { font-size: 11px !important; }
-  .recharts-cartesian-grid line { stroke-opacity: 0.35 !important; }
+  .recharts-cartesian-axis-tick text { font-size: 10px; }
+  .recharts-legend-wrapper { font-size: 11px; }
+  .recharts-cartesian-grid line { stroke-opacity: 0.35; }
 
-  /* ---------- Modals → animated bottom sheets ---------- */
-  @keyframes m-sheet-up {
-    from { transform: translate3d(0, 100%, 0); }
-    to   { transform: translate3d(0, 0, 0); }
-  }
+  /* --------------------------------------------------------------
+   * Modals → bottom sheets with drag handle (the app's modals all
+   * use role="dialog" or *Modal class names)
+   * -------------------------------------------------------------- */
+  @keyframes m-sheet-up { from { transform: translate3d(0, 100%, 0); } to { transform: translate3d(0, 0, 0); } }
   @keyframes m-fade-in { from { opacity: 0; } to { opacity: 1; } }
-  [role="dialog"], [class*="modal"]:not([class*="-modal"]), [class*="Modal"] {
+
+  [role="dialog"],
+  [class*="Modal"]:not([class*="Inner"]):not([class*="Card"]) {
     align-items: flex-end !important;
-    background: rgba(15, 23, 42, 0.45) !important;
+    background: rgba(15, 23, 42, 0.45);
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     animation: m-fade-in 220ms var(--m-ease) both;
   }
   [role="dialog"] > div,
-  [class*="modal"] > div,
   [class*="Modal"] > div {
     width: 100vw !important;
     max-width: 100vw !important;
     max-height: 92vh !important;
     margin: auto 0 0 0 !important;
-    border-radius: var(--m-radius-lg) var(--m-radius-lg) 0 0 !important;
-    box-shadow: 0 -16px 50px -10px rgba(0, 0, 0, 0.35) !important;
+    border-radius: 22px 22px 0 0 !important;
+    box-shadow: 0 -16px 50px -10px rgba(0, 0, 0, 0.35);
     padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
     animation: m-sheet-up 320ms var(--m-spring) both;
   }
-  /* Drag handle pill on top of sheets */
   [role="dialog"] > div::before,
-  [class*="modal"] > div::before,
   [class*="Modal"] > div::before {
     content: "";
     display: block;
@@ -275,108 +159,147 @@
     margin: 8px auto 14px;
   }
 
-  /* ---------- Typography ---------- */
-  h1, [class*="text-4xl"], [class*="text-5xl"] {
-    font-size: 1.55rem !important;
-    line-height: 1.2 !important;
-    letter-spacing: -0.015em;
-    font-weight: 700;
+  /* Cards get a unified soft radius + shadow */
+  [class*="rounded-xl"], [class*="rounded-2xl"], [class*="rounded-3xl"] {
+    border-radius: var(--m-radius) !important;
   }
-  h2, [class*="text-3xl"] { font-size: 1.25rem !important; line-height: 1.3 !important; font-weight: 700; }
-  h3, [class*="text-2xl"] { font-size: 1.1rem !important; font-weight: 600; }
-  p, li, td, span { font-size: 0.95rem; }
 
-  /* ---------- Trim oversized desktop padding ---------- */
+  /* Trim only the very large desktop paddings; keep medium ones */
   [class*="p-10"], [class*="p-12"] { padding: 18px !important; }
   [class*="px-10"], [class*="px-12"] { padding-left: 18px !important; padding-right: 18px !important; }
   [class*="py-10"], [class*="py-12"] { padding-top: 22px !important; padding-bottom: 22px !important; }
   [class*="gap-10"], [class*="gap-12"] { gap: 14px !important; }
 
-  /* ---------- Buttons: tactile ---------- */
-  button, a[role="button"], .btn, [class*="Button"] {
-    min-height: 44px;
-    border-radius: 14px !important;
-    font-weight: 600;
-    transition: transform 160ms var(--m-ease), box-shadow 200ms var(--m-ease), filter 160ms var(--m-ease) !important;
-  }
-  button:active, a[role="button"]:active, .btn:active, [class*="Button"]:active {
-    transform: scale(0.96);
-    filter: brightness(0.96);
-  }
-
-  /* Primary-ish buttons get a subtle gradient lift */
-  button[class*="bg-blue"],
-  button[class*="bg-indigo"],
-  button[class*="bg-violet"],
-  [class*="Button"][class*="primary"] {
-    background-image: linear-gradient(180deg, var(--m-accent), color-mix(in srgb, var(--m-accent) 85%, var(--m-accent-2))) !important;
-    color: #fff !important;
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.25) inset,
-      0 8px 20px -8px color-mix(in srgb, var(--m-accent) 80%, transparent) !important;
-  }
-
-  /* ---------- Inputs ---------- */
-  input, select, textarea {
-    font-size: 16px !important;
-    border-radius: 14px !important;
-    min-height: 44px;
-    transition: box-shadow 200ms var(--m-ease), border-color 200ms var(--m-ease);
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--m-accent) 22%, transparent) !important;
-  }
-
-  /* ---------- Lists ---------- */
-  ul[class*="divide-y"] > li, ol[class*="divide-y"] > li {
-    padding-top: 14px !important;
-    padding-bottom: 14px !important;
-    transition: background 200ms var(--m-ease);
-  }
-  ul[class*="divide-y"] > li:active, ol[class*="divide-y"] > li:active {
-    background: rgba(37, 99, 235, 0.05);
-  }
-
-  /* ---------- Skeleton shimmer for loading placeholders ---------- */
-  [class*="animate-pulse"], [class*="skeleton"], [class*="Skeleton"] {
-    background: linear-gradient(90deg,
-      color-mix(in srgb, var(--m-card) 92%, var(--m-line)) 0%,
-      color-mix(in srgb, var(--m-card) 80%, var(--m-line)) 50%,
-      color-mix(in srgb, var(--m-card) 92%, var(--m-line)) 100%) !important;
-    background-size: 600px 100% !important;
-    animation: m-shimmer 1.4s linear infinite !important;
-  }
-
-  /* ---------- Media safety ---------- */
+  /* Media safety */
   img, video, iframe, canvas {
-    max-width: 100% !important;
-    height: auto !important;
-    border-radius: var(--m-radius-sm);
-  }
-
-  /* ---------- Bottom safe-area cushion ---------- */
-  main, [class*="page"], [class*="Page"] {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+    max-width: 100%;
+    height: auto;
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
     }
   }
 }
 
-/* ---------- Phone-only refinements ---------- */
-@media (max-width: 640px) {
-  :root { --m-gutter: 14px; --m-radius: 16px; }
-  [class*="grid-cols-3"],
-  [class*="grid-cols-4"],
-  [class*="grid-cols-5"] {
-    grid-template-columns: 1fr !important;
+/* =====================================================================
+ * Tablet only (641px – 1023px)
+ * Mostly defer to the app's Tailwind md:* responsive classes.
+ * Just stretch tablet-friendly grid cols so things breathe.
+ * ===================================================================== */
+@media (min-width: 641px) and (max-width: 1023px) {
+  /* Force 4+ col grids down to 3 on tablets so cards aren't tiny */
+  [class*="grid-cols-4"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-5"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-6"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
-  h1, [class*="text-4xl"], [class*="text-5xl"] { font-size: 1.4rem !important; }
+  [class*="grid-cols-7"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-8"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-9"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-10"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-11"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]),
+  [class*="grid-cols-12"]:not([class*="md:grid-cols-"]):not([class*="lg:grid-cols-"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* =====================================================================
+ * Phone only (≤640px)
+ * ===================================================================== */
+@media (max-width: 640px) {
+  :root { --m-gutter: 14px; --m-radius: 14px; }
+
+  /* Make pages full-bleed with consistent gutter (only top-level wrappers) */
+  main > div,
+  main > section,
+  [class*="page"] > div {
+    padding-left: var(--m-gutter);
+    padding-right: var(--m-gutter);
+  }
+
+  /* Aggressive grid collapse: anything 3+ becomes 1 column */
+  [class*="grid-cols-3"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-4"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-5"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-6"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-7"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-8"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-9"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-10"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-11"]:not([class*="sm:grid-cols-"]),
+  [class*="grid-cols-12"]:not([class*="sm:grid-cols-"]) {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* 2-col grids stay 2 (compact stat cards), unless they have big children */
+
+  /* Long horizontal flex rows wrap on phones */
+  .flex:not([class*="flex-col"]):not(nav):not([role="tablist"]):not(thead):not(tbody):not(tr) {
+    flex-wrap: wrap;
+  }
+
+  /* Typography rhythm */
+  h1, [class*="text-4xl"], [class*="text-5xl"] {
+    font-size: 1.4rem !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.015em;
+  }
+  h2, [class*="text-3xl"] { font-size: 1.2rem !important; line-height: 1.3 !important; }
+  h3, [class*="text-2xl"] { font-size: 1.05rem !important; }
+  [class*="text-xl"] { font-size: 1rem !important; }
+
+  /* Tighter card paddings on phones — avoid the chopped feeling */
+  [class*="p-8"] { padding: 14px !important; }
+  [class*="px-8"] { padding-left: 14px !important; padding-right: 14px !important; }
+  [class*="py-8"] { padding-top: 16px !important; padding-bottom: 16px !important; }
+
+  /* Buttons stretch to comfortable width when stacked alone */
+  [class*="flex-col"] > button,
+  [class*="flex-col"] > a[role="button"] {
+    width: 100%;
+  }
+
+  /* Forms: labels above inputs always */
+  label + input, label + select, label + textarea { width: 100% !important; }
+
+  /* Bottom cushion so floating UI doesn't cover content */
+  main, [class*="page"], [class*="Page"] {
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
+  }
+
+  /* Tabs row: scroll horizontally instead of wrapping awkwardly */
+  [role="tablist"] {
+    display: flex !important;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    gap: 6px;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+  }
+  [role="tablist"] > * { scroll-snap-align: start; flex-shrink: 0; }
+
+  /* Toolbars (filters/search rows above tables): stack with full-width search */
+  .flex.items-center.justify-between:has(> input),
+  .flex.items-center.gap-2:has(> input) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+  .flex.items-center.justify-between:has(> input) > *,
+  .flex.items-center.gap-2:has(> input) > * { width: 100%; }
+
+  /* Page-load entrance — subtle */
+  @keyframes m-fade-up {
+    from { opacity: 0; transform: translate3d(0, 8px, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+  main > * { animation: m-fade-up 280ms var(--m-ease) both; }
+  main > *:nth-child(2) { animation-delay: 50ms; }
+  main > *:nth-child(3) { animation-delay: 100ms; }
+  main > *:nth-child(4) { animation-delay: 150ms; }
+  main > *:nth-child(n+5) { animation-delay: 200ms; }
 }
