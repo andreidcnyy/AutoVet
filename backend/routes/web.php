@@ -77,6 +77,19 @@ Route::get('/status', function () {
     return response()->json(['status' => 'running', 'env' => app()->environment()]);
 });
 
+// One-shot fix: rewrite stale Supabase URLs that point at the old `autovet`
+// bucket to the new `autovet-storage` bucket. Safe to call multiple times.
+Route::get('/fix-logo-urls', function () {
+    $a = \Illuminate\Support\Facades\DB::table('clinics')
+        ->where('logo', 'like', '%/public/autovet/%')
+        ->update(['logo' => \Illuminate\Support\Facades\DB::raw("REPLACE(logo, '/public/autovet/', '/public/autovet-storage/')")]);
+    $b = \Illuminate\Support\Facades\DB::table('settings')
+        ->where('key', 'clinic_logo')
+        ->where('value', 'like', '%/public/autovet/%')
+        ->update(['value' => \Illuminate\Support\Facades\DB::raw("REPLACE(value, '/public/autovet/', '/public/autovet-storage/')")]);
+    return response()->json(['clinics_fixed' => $a, 'settings_fixed' => $b]);
+});
+
 /*
  * Public storage proxy.
  *
