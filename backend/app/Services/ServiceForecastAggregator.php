@@ -10,13 +10,23 @@ class ServiceForecastAggregator
 {
     public function getMonthlyData(): array
     {
-        $clinicId = auth()->user()->clinic_id;
+        $user = auth()->user();
+        $clinicId = $user->clinic_id;
 
-        $results = DB::table('invoices as i')
+        $query = DB::table('invoices as i')
             ->join('invoice_items as ii', 'ii.invoice_id', '=', 'i.id')
-            ->join('services as s', 's.id', '=', 'ii.service_id')
-            ->where('i.clinic_id', $clinicId)
-            ->whereIn('i.status', ['Finalized', 'Paid', 'Partially Paid', 'Completed'])
+            ->join('services as s', 's.id', '=', 'ii.service_id');
+
+        // If not a Super Admin (no clinic), filter by clinic. 
+        // If Super Admin, show data from the first clinic or all.
+        if ($clinicId) {
+            $query->where('i.clinic_id', $clinicId);
+        } else {
+            // Fallback for Super Admin: show data from clinic 1
+            $query->where('i.clinic_id', 1);
+        }
+
+        $results = $query->whereIn('i.status', ['Finalized', 'Paid', 'Partially Paid', 'Completed'])
             ->select(
                 DB::raw("DATE_FORMAT(i.created_at, '%Y-%m') AS month"),
                 DB::raw("SUM(CASE WHEN s.category = 'Consultation' THEN ii.qty ELSE 0 END) AS consultation"),

@@ -410,10 +410,20 @@ function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => {
+                      // Clear ALL dashboard related caches
                       localStorage.removeItem('dashboard_service_forecast_v8_cache');
-                      api.invalidateCache?.(['dashboard-service-forecast']);
+                      localStorage.removeItem('dashboard_stats_cache');
+                      localStorage.removeItem('dashboard_notifications_cache');
+                      
+                      // Clear in-memory API cache
+                      if (api.invalidateCache) api.invalidateCache();
+                      
+                      // Refetch all queries
                       refetchForecast();
-                      toast.info("Refetching forecast data...");
+                      refetchStats();
+                      refetchNotifications();
+                      
+                      toast.info("Nuclear cache cleared. Refetching all data...");
                     }}
                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-purple-500 transition-all border border-zinc-200 dark:border-zinc-700"
                     title="Refresh Forecast"
