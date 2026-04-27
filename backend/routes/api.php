@@ -41,7 +41,7 @@ Route::get('/init-db', function () {
         \Illuminate\Support\Facades\DB::table('patients')->update(['clinic_id' => $clinicId]);
         \Illuminate\Support\Facades\DB::table('appointments')->update(['clinic_id' => $clinicId]);
         \Illuminate\Support\Facades\DB::table('invoices')->update(['clinic_id' => $clinicId]);
-        \Illuminate\Support\Facades\DB::table('inventory')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('inventories')->update(['clinic_id' => $clinicId]);
         \Illuminate\Support\Facades\DB::table('services')->update(['clinic_id' => $clinicId]);
 
         // 4. Reset ALL Portal Users
