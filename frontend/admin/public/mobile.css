@@ -65,11 +65,26 @@
     width: 100% !important;
     -webkit-overflow-scrolling: touch;
   }
+  /* Recharts: ResponsiveContainer needs a real height; the generic SVG rule below
+     was collapsing the chart to 0 on mobile. Give chart wrappers a sensible
+     min-height and let the inner SVG keep its computed size. */
+  .recharts-responsive-container,
   .recharts-wrapper,
   [class*="chart"],
   [class*="Chart"] {
     max-width: 100% !important;
-    overflow-x: auto !important;
+    width: 100% !important;
+    min-height: 280px !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .recharts-responsive-container svg,
+  .recharts-wrapper svg,
+  svg.recharts-surface {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
   }
 
   /* Modals: use the full screen instead of a fixed centered panel */
@@ -104,8 +119,13 @@
     font-size: 16px !important; /* prevents iOS auto-zoom */
   }
 
-  /* Images and embedded media never overflow */
-  img, video, iframe, canvas, svg {
+  /* Images and embedded media never overflow.
+     Exclude Recharts SVGs — they are sized by ResponsiveContainer. */
+  img, video, iframe, canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  svg:not(.recharts-surface):not(.recharts-wrapper svg) {
     max-width: 100% !important;
     height: auto !important;
   }

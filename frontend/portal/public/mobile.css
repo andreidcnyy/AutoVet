@@ -58,11 +58,23 @@
     width: 100% !important;
     -webkit-overflow-scrolling: touch;
   }
+  .recharts-responsive-container,
   .recharts-wrapper,
   [class*="chart"],
   [class*="Chart"] {
     max-width: 100% !important;
-    overflow-x: auto !important;
+    width: 100% !important;
+    min-height: 280px !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .recharts-responsive-container svg,
+  .recharts-wrapper svg,
+  svg.recharts-surface {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
   }
 
   [role="dialog"],
@@ -90,7 +102,11 @@
   button, a, input, select, textarea { max-width: 100% !important; }
   input, select, textarea { font-size: 16px !important; }
 
-  img, video, iframe, canvas, svg {
+  img, video, iframe, canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  svg:not(.recharts-surface):not(.recharts-wrapper svg) {
     max-width: 100% !important;
     height: auto !important;
   }
