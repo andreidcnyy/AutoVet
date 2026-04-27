@@ -94,13 +94,15 @@ function AppLayout() {
               const name = typeof data.clinic_name === 'string' ? data.clinic_name : String(data.clinic_name?.message || data.clinic_name?.text || 'Pet Wellness');
               setClinic((prev) => ({ ...prev, name }));
             }
-            if (data.clinic_logo && typeof data.clinic_logo === 'string') {
-              const logoUrl = data.clinic_logo.startsWith('http') 
-                ? data.clinic_logo 
-                : (data.clinic_logo.startsWith('data:') 
-                    ? data.clinic_logo 
-                    : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${data.clinic_logo}`);
-              setClinic((prev) => ({ ...prev, logo: logoUrl }));
+            if (data.clinic_logo && typeof data.clinic_logo === 'string' && data.clinic_logo.length > 5) {
+              const v = data.clinic_logo.trim();
+              const looksValid = v.startsWith('http') || v.startsWith('data:') || /\.(png|jpe?g|webp|gif|svg)$/i.test(v);
+              if (looksValid) {
+                const logoUrl = v.startsWith('http') || v.startsWith('data:')
+                  ? v
+                  : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
+                setClinic((prev) => ({ ...prev, logo: logoUrl }));
+              }
             }
           }
         })
