@@ -27,6 +27,7 @@ class VerifyRegistration extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
+            ->mailer('verification')
             ->subject(Lang::get('Verify Your Email Address for AutoVet'))
             ->line(Lang::get('Thank you for registering! Please click the button below to verify your email address and complete your registration.'))
             ->action(Lang::get('Verify Email Address'), $this->verificationUrl)

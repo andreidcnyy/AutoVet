@@ -101,6 +101,19 @@ return [
             ],
         ],
 
+        'verification' => [
+            'transport' => 'smtp',
+            'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
+            'port' => env('MAIL_PORT', 587),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD_VERIFICATION'),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'from' => [
+                'address' => env('MAIL_FROM_ADDRESS'),
+                'name' => env('MAIL_FROM_NAME'),
+            ],
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
