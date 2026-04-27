@@ -991,9 +991,12 @@ class DashboardController extends Controller
                             'services.category',
                             DB::raw('count(*) as count')
                         )
-                        ->groupBy('year', 'month', 'services.category')
+                        ->groupBy(
+                            DB::raw('YEAR(appointments.date)'),
+                            DB::raw('MONTH(appointments.date)'),
+                            'services.category'
+                        )
                         ->get();
-
                     $historicalData = [];
                     $allHistoricalMonths = []; 
                     foreach ($appointments as $appt) {
@@ -1108,7 +1111,7 @@ class DashboardController extends Controller
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
-            ], 500);
+            ], 200);
         }
     }
 
