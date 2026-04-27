@@ -21,13 +21,14 @@ export const getActualPetImageUrl = (photoPath) => {
     return photoPath;
   }
 
-  // 2. If it already starts with /storage
-  if (typeof photoPath === 'string' && photoPath.startsWith("/storage")) {
-    return photoPath;
+  // 2. Bare relative path (legacy rows) — resolve to Supabase public URL
+  if (typeof photoPath === 'string') {
+    const v = photoPath.replace(/^\/+storage\/?/, '').trim();
+    if (v.length === 0) return null;
+    return `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
   }
 
-  // 3. Local Laravel storage path — served by the local backend via proxy
-  return `/storage/${photoPath}`;
+  return null;
 };
 
 /**

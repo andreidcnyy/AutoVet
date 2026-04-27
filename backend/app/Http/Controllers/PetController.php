@@ -16,6 +16,31 @@ class PetController extends Controller
         $this->authorizeResource(Pet::class, 'pet');
     }
 
+    private function uploadPetPhotoBytes(string $bytes, string $ext): string
+    {
+        $ext = $ext === 'jpeg' ? 'jpg' : $ext;
+        $name = 'pets/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $disk = \Illuminate\Support\Facades\Storage::disk('s3');
+        $ok = $disk->put($name, $bytes, [
+            'ContentType' => 'image/' . $ext,
+            'CacheControl' => 'public, max-age=31536000',
+        ]);
+        if (!$ok) {
+            throw new \RuntimeException('Pet photo upload failed: ' . $name);
+        }
+        return $disk->url($name);
+    }
+
+    private function uploadPetPhotoFile(\Illuminate\Http\UploadedFile $file): string
+    {
+        $contents = file_get_contents($file->getRealPath());
+        if ($contents === false) {
+            throw new \RuntimeException('Could not read uploaded pet photo from temp');
+        }
+        $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
+        return $this->uploadPetPhotoBytes($contents, $ext);
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -107,15 +132,10 @@ class PetController extends Controller
             'vet_id' => 'nullable|exists:admins,id',
         ]);
 
-        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,/', $request->photo)) {
-            $data = substr($request->photo, strpos($request->photo, ',') + 1);
-            $data = base64_decode($data);
-            $extension = explode('/', explode(':', substr($request->photo, 0, strpos($request->photo, ';')))[1])[1];
-            $fileName = uniqid() . '.' . $extension;
-            \Illuminate\Support\Facades\Storage::disk('public')->put('pets/' . $fileName, $data);
-            $validated['photo'] = 'pets/' . $fileName;
+        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,(.+)$/s', $request->photo, $m)) {
+            $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
         } elseif ($request->hasFile('photo')) {
-            $validated['photo'] = $request->file('photo')->store('pets', 'public');
+            $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));
         }
 
         $pet = Pet::create($validated);
@@ -185,15 +205,10 @@ class PetController extends Controller
             'vet_id' => 'nullable|exists:admins,id',
         ]);
 
-        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,/', $request->photo)) {
-            $data = substr($request->photo, strpos($request->photo, ',') + 1);
-            $data = base64_decode($data);
-            $extension = explode('/', explode(':', substr($request->photo, 0, strpos($request->photo, ';')))[1])[1];
-            $fileName = uniqid() . '.' . $extension;
-            \Illuminate\Support\Facades\Storage::disk('public')->put('pets/' . $fileName, $data);
-            $validated['photo'] = 'pets/' . $fileName;
+        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,(.+)$/s', $request->photo, $m)) {
+            $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
         } elseif ($request->hasFile('photo')) {
-            $validated['photo'] = $request->file('photo')->store('pets', 'public');
+            $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));
         } else {
             // Keep existing photo if a URL was sent back unchanged
             if (isset($request->photo) && !preg_match('/^data:image/', $request->photo)) {
