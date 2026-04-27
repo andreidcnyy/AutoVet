@@ -185,13 +185,16 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
     }
   }, [weightValue, speciesIdValue, weightRanges, setValue]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    try {
+      const { optimizeImage } = await import("../utils/imageOptimize");
+      const { dataUrl } = await optimizeImage(file, { maxDim: 1024, quality: 0.82 });
+      if (dataUrl) { setValue("photo", dataUrl); return; }
+    } catch {}
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setValue("photo", reader.result as string);
-    };
+    reader.onloadend = () => setValue("photo", reader.result as string);
     reader.readAsDataURL(file);
   };
 

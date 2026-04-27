@@ -162,10 +162,21 @@ export default function SuperAdminDashboard() {
     setAdminsPage(1);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setLogoFile(file);
+  const handleFileChange = async (e) => {
+    const original = e.target.files[0];
+    if (!original) return;
+    let file = original;
+    let preview = null;
+    try {
+      const { optimizeImage } = await import('../utils/imageOptimize');
+      const r = await optimizeImage(original, { maxDim: 512, quality: 0.85 });
+      file = r.file || original;
+      preview = r.dataUrl;
+    } catch {}
+    setLogoFile(file);
+    if (preview) {
+      setLogoPreview(preview);
+    } else {
       const reader = new FileReader();
       reader.onloadend = () => setLogoPreview(reader.result);
       reader.readAsDataURL(file);

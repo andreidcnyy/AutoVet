@@ -166,13 +166,19 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
         }
     }, [ownerCity, availableCities, setValue]);
 
-    const handlePhotoChange = (e) => {
+    const handlePhotoChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        try {
+            const { optimizeImage } = await import("../../utils/imageOptimize");
+            const { dataUrl } = await optimizeImage(file, { maxDim: 1024, quality: 0.82 });
+            if (dataUrl) {
+                setValue("photo", dataUrl, { shouldDirty: true });
+                return;
+            }
+        } catch {}
         const reader = new FileReader();
-        reader.onloadend = () => {
-            setValue("photo", reader.result, { shouldDirty: true });
-        };
+        reader.onloadend = () => setValue("photo", reader.result, { shouldDirty: true });
         reader.readAsDataURL(file);
     };
 
