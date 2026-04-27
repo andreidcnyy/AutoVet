@@ -1068,8 +1068,10 @@ class DashboardController extends Controller
                 ];
 
                 foreach ($majorCategories as $cat) {
-                    $model = $forecastResults[$cat];
                     $lowerCat = strtolower($cat);
+                    
+                    // Safety check: Ensure model exists for this category
+                    $model = $forecastResults[$cat] ?? ['m' => 0, 'b' => 0, 'n' => 0];
                     
                     if ($item['is_future']) {
                         $projectedIdx = $model['n'] + $idx; 
@@ -1079,6 +1081,7 @@ class DashboardController extends Controller
                         $totalForecastedServices += $forecastValue;
                         $estimatedRevenue += $forecastValue * ($avgPrices[$cat] ?? 0);
                     } else {
+                        // Safety check: Ensure historical month and category exists
                         $point[$lowerCat] = $historicalData[$monthLabel][$cat] ?? 0;
                     }
                 }
