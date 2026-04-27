@@ -44,8 +44,8 @@ class ServiceForecastDatasetSeeder extends Seeder
             $seedPet = Pet::updateOrCreate(
                 ['name' => 'DataModel-Pet', 'owner_id' => $seedOwner->id, 'clinic_id' => $clinic->id],
                 [
-                    'species_id' => Species::where('clinic_id', $clinic->id)->first()->id ?? 1,
-                    'breed_id' => Breed::where('clinic_id', $clinic->id)->first()->id ?? 1,
+                    'species_id' => Species::first()->id ?? 1,
+                    'breed_id' => Breed::first()->id ?? 1,
                     'sex' => 'Male',
                     'date_of_birth' => '2020-01-01',
                     'weight' => 10.0
@@ -114,8 +114,7 @@ class ServiceForecastDatasetSeeder extends Seeder
                             'name' => $service->name, 
                             'qty' => $quantity, 
                             'unit_price' => $price, 
-                            'amount' => $revenue, 
-                            'clinic_id' => $clinic->id
+                            'amount' => $revenue
                         ]
                     ];
                     
