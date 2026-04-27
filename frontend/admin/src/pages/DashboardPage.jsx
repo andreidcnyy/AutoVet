@@ -227,13 +227,28 @@ function DashboardPage() {
     if (type === 'month') targetMonth = value;
 
     const targetStr = `${targetYear}-${targetMonth}`;
-    const idx = historical.findIndex(p => p.month === targetStr);
+    let idx = historical.findIndex(p => p.month === targetStr);
     
+    // Fallback: if year selected but month doesn't exist, find first month of that year
+    if (idx === -1 && type === 'year') {
+      idx = historical.findIndex(p => p.month.startsWith(`${value}-`));
+    }
+    
+    // Final fallback: if year selected and still no match, find ANY available month in that year
+    if (idx === -1 && type === 'year') {
+        const monthsInYear = historical.filter(p => p.month.startsWith(`${value}-`));
+        if (monthsInYear.length > 0) {
+            idx = historical.indexOf(monthsInYear[0]);
+        }
+    }
+
     if (idx !== -1) {
       const found = historical[idx];
       setSelectedPoint(found);
       const page = Math.floor((historical.length - 1 - idx) / HISTORICAL_WINDOW);
       setHistoryPage(page);
+    } else {
+      toast.error(`No data available for ${targetYear}${type === 'month' ? '-' + targetMonth : ''}`);
     }
   };
 
