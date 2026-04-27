@@ -30,26 +30,32 @@ class SettingController extends Controller
             $valueToStore = $value;
 
             // Handle Clinic Logo Upload to Supabase/S3
-            if ($key === 'clinic_logo' && !empty($value) && str_starts_with($value, 'data:image')) {
+            if ($key === 'clinic_logo' && is_string($value) && str_starts_with($value, 'data:image')) {
+                \Illuminate\Support\Facades\Log::info("Logo upload START len=" . strlen($value));
                 try {
-                    $parts = explode(',', $value);
-                    if (count($parts) < 2) continue;
-
-                    $image = str_replace(' ', '+', $parts[1]);
-                    $imageName = 'logo_' . time() . '.png';
-                    $fullPath = 'logos/' . $imageName;
-                    
-                    $disk = \Illuminate\Support\Facades\Storage::disk('s3');
-                    $success = $disk->put($fullPath, base64_decode($image), 'public');
-
-                    if ($success) {
-                        $valueToStore = $disk->url($fullPath);
-                    } else {
-                        \Illuminate\Support\Facades\Log::error("Supabase put() returned false for: " . $fullPath);
-                        $valueToStore = null;
+                    if (!preg_match('/^data:image\/(\w+);base64,(.+)$/s', $value, $m)) {
+                        throw new \RuntimeException('Invalid data URI');
                     }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Logo Upload Exception: " . $e->getMessage());
+                    $ext = strtolower($m[1]) === 'jpeg' ? 'jpg' : strtolower($m[1]);
+                    $binary = base64_decode(str_replace(' ', '+', $m[2]), true);
+                    if ($binary === false || strlen($binary) === 0) {
+                        throw new \RuntimeException('base64_decode failed (len=' . strlen($m[2]) . ')');
+                    }
+
+                    $fullPath = 'logos/logo_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+                    $disk = \Illuminate\Support\Facades\Storage::disk('s3');
+                    $success = $disk->put($fullPath, $binary, 'public');
+
+                    if (!$success) {
+                        throw new \RuntimeException('Storage::put() returned false for ' . $fullPath);
+                    }
+                    $valueToStore = $disk->url($fullPath);
+                    \Illuminate\Support\Facades\Log::info("Logo upload OK: " . $valueToStore);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Logo Upload FAILED: " . $e->getMessage());
+                    return response()->json([
+                        'message' => 'Logo upload failed: ' . $e->getMessage(),
+                    ], 500);
                 }
             }
 
