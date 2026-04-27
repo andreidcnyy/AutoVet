@@ -3,28 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/logo.png" />
-    <meta name="viewport" id="dynamic-viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      // Non-invasive responsive shim: on narrow devices, fit the full desktop layout
-      // into the viewport so phones/tablets see a scaled-down version without
-      // requiring any component or CSS changes.
-      (function () {
-        var DESKTOP_WIDTH = 1440;
-        var BREAKPOINT = 1024;
-        function applyViewport() {
-          var vp = document.getElementById('dynamic-viewport');
-          if (!vp) return;
-          var w = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
-          if (w && w < BREAKPOINT) {
-            vp.setAttribute('content', 'width=' + DESKTOP_WIDTH + ', user-scalable=yes');
-          } else {
-            vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
-          }
-        }
-        applyViewport();
-        window.addEventListener('orientationchange', applyViewport);
-      })();
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/mobile.css" media="(max-width: 1023px)" />
     <title>AutoVet - Pet Owner Portal</title>
     <script>
       // Global Emergency Error Interceptor
