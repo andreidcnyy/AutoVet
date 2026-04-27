@@ -257,6 +257,38 @@
   [class*="px-8"] { padding-left: 14px !important; padding-right: 14px !important; }
   [class*="py-8"] { padding-top: 16px !important; padding-bottom: 16px !important; }
 
+  /* Forms inside modals (long admin edit forms): inputs get a full row */
+  form .grid[class*="grid-cols-2"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  form input, form select, form textarea {
+    width: 100% !important;
+  }
+  /* Modal/footer action button rows: stack vertically when 3+ buttons */
+  form > div.flex:last-child,
+  [role="dialog"] .flex.items-center.gap-3,
+  [class*="Modal"] .flex.items-center.gap-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  form > div.flex:last-child > button,
+  [role="dialog"] .flex.items-center.gap-3 > button,
+  [class*="Modal"] .flex.items-center.gap-3 > button {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+
+  /* Long inline footer rows in detail panels (Activate/Delete/Close) — stack */
+  .mt-10.flex.gap-3,
+  .mt-8.flex.gap-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .mt-10.flex.gap-3 > *,
+  .mt-8.flex.gap-3 > * { width: 100% !important; }
+
   /* Buttons stretch to comfortable width when stacked alone */
   [class*="flex-col"] > button,
   [class*="flex-col"] > a[role="button"] {

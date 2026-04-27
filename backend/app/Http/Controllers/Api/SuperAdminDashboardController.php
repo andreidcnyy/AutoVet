@@ -67,7 +67,7 @@ class SuperAdminDashboardController extends Controller
             'contact_number' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'address' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp,gif|max:8192',
             'subscription_tier' => 'nullable|string|max:255',
             'subscription_expires_at' => 'nullable|date',
         ]);
@@ -100,7 +100,7 @@ class SuperAdminDashboardController extends Controller
             'contact_number' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'address' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp,gif|max:8192',
             'subscription_tier' => 'nullable|string|max:255',
             'subscription_expires_at' => 'nullable|date',
         ]);
