@@ -41,10 +41,7 @@ Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
                 break;
 
             case 'seed_ai':
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'InventoryListSeeder', '--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'PHClinicAISeeder', '--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'ServicesSeeder', '--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DashboardAIForecastSeeder', '--force' => true]);
+                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
                 break;
 
             case 'seed_bulk':

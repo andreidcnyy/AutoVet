@@ -1057,6 +1057,9 @@ class DashboardController extends Controller
                 $forecastResults[$cat] = ['m' => $m, 'b' => $b, 'n' => $n];
             }
 
+            $finalHistorical = [];
+            $finalForecast = [];
+
             foreach ($timeline as $idx => $item) {
                 $monthLabel = $item['date']->format('Y-m');
                 $point = [
@@ -1069,7 +1072,6 @@ class DashboardController extends Controller
                     $lowerCat = strtolower($cat);
                     
                     if ($item['is_future']) {
-                        // Project using the slope calculated from 3 years of data
                         $projectedIdx = $model['n'] + $idx; 
                         $forecastValue = max(0, ($model['m'] * $projectedIdx) + $model['b']);
                         
@@ -1081,16 +1083,11 @@ class DashboardController extends Controller
                     }
                 }
 
-                // Others
-                $oModel = $forecastResults['Others'];
                 if ($item['is_future']) {
-                    $pIdx = $oModel['n'] + $idx;
-                    $fVal = max(0, ($oModel['m'] * $pIdx) + $oModel['b']);
-                    $totalForecastedServices += $fVal;
-                    $estimatedRevenue += $fVal * $othersAvgPrice;
+                    $finalForecast[] = $point;
+                } else {
+                    $finalHistorical[] = $point;
                 }
-
-                $chartData[] = $point;
             }
 
             // Summary stats (Global count to ensure 101/50 show up)
@@ -1119,9 +1116,10 @@ class DashboardController extends Controller
                 ],
                 'ai_intelligence_progress' => $progressPercent,
                 'message' => $progressPercent < 100 
-                    ? "AI Intelligence: {$progressPercent}% — Need {$needed} more month" . ($needed > 1 ? 's' : '') . " of historical data for full accuracy."
+                    ? "AI Intelligence: {$progressPercent}% — Need more historical data."
                     : "AI Analysis Optimal.",
-                'chart_data' => $chartData,
+                'historical' => $finalHistorical,
+                'forecast' => $finalForecast,
                 'model_meta' => [
                     'algorithm' => 'Multi-category Linear Regression (Hardened)',
                     'scope' => 'Standardized Clinical Categories',
