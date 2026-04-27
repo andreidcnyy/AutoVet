@@ -25,12 +25,8 @@ class ClinicScope implements Scope
         $user = Auth::user();
 
         if ($user) {
-            // Super admins are system owners, they should NOT see clinic-specific 
-            // data (appointments, pets, etc.) by default. 
-            // They should manage clinics from the platform dashboard.
+            // Super admins should see ALL data across ALL clinics.
             if (method_exists($user, 'hasRole') && $user->hasRole(Roles::SUPER_ADMIN->value)) {
-                // Return no results for clinic-specific models when accessed by super_admin
-                $builder->whereRaw('1 = 0'); 
                 return;
             }
 

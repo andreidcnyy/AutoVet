@@ -11,34 +11,56 @@ Route::get('/init-db', function () {
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
+        // 1. Ensure at least one clinic exists
+        $clinic = \App\Models\Clinic::first();
+        if (!$clinic) {
+            $clinic = \App\Models\Clinic::create([
+                'clinic_name' => 'AutoVet Headquarters',
+                'email' => 'system@autovet.com',
+                'status' => 'active',
+            ]);
+        }
+
+        $clinicId = $clinic->id;
         $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
         
-        // 1. Reset ALL Admins
+        // 2. Align ALL Admins to this clinic and reset passwords
         $admins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get();
         foreach ($admins as $admin) {
             $admin->update([
                 'password' => $newPassword,
                 'status' => 'active',
-                'deleted_at' => null
+                'deleted_at' => null,
+                'clinic_id' => $clinicId // Force alignment
             ]);
         }
 
-        // 2. Reset ALL Portal Users
+        // 3. Align ALL seeded data to this clinic ID
+        \Illuminate\Support\Facades\DB::table('owners')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('pets')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('patients')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('appointments')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('invoices')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('inventory')->update(['clinic_id' => $clinicId]);
+        \Illuminate\Support\Facades\DB::table('services')->update(['clinic_id' => $clinicId]);
+
+        // 4. Reset ALL Portal Users
         $portalUsers = \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->get();
         foreach ($portalUsers as $pUser) {
             $pUser->update([
                 'password' => $newPassword,
                 'status' => 'active',
                 'deleted_at' => null,
-                'email_verified_at' => now()
+                'email_verified_at' => now(),
+                'clinic_id' => $clinicId
             ]);
         }
         
         return response()->json([
             'success' => true, 
-            'message' => 'ALL system users (Admins and Portal Users) have been reset to: password123',
+            'message' => 'System sync complete. All users aligned to Clinic ID: ' . $clinicId,
             'admin_count' => $admins->count(),
-            'portal_user_count' => $portalUsers->count()
+            'clinic_name' => $clinic->clinic_name
         ]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
