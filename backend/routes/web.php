@@ -31,12 +31,12 @@ Route::get('/setup-wizard', function () {
 
         <script>
             const steps = [
-                { id: 'migrate', name: 'Running Migrations...' },
-                { id: 'seed_core', name: 'Seeding Core Data (Sizes, Breeds, Settings)...' },
-                { id: 'seed_users', name: 'Seeding Admins & Users...' },
-                { id: 'seed_ai', name: 'Seeding AI Forecasts & Services...' },
-                { id: 'seed_bulk', name: 'Seeding 50+ Production Records (Takes a moment)...' },
-                { id: 'align', name: 'Aligning all data to your Clinic & Resetting Passwords...' }
+                { id: 'migrate', name: 'Optimizing Database Schema...' },
+                { id: 'seed_core', name: 'Syncing Maintenance Labels & Categories...' },
+                { id: 'seed_users', name: 'Checking System Administrators...' },
+                { id: 'seed_ai', name: 'Calculating AI Service Models...' },
+                { id: 'seed_bulk', name: 'Generating Precise Production Dataset (50 Clients, 101 Pets)...' },
+                { id: 'align', name: 'Finalizing Clinic Alignment & Intelligence Sync...' }
             ];
 
             async function startSetup() {

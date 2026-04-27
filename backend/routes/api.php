@@ -77,9 +77,9 @@ Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
                     }
                 }
 
-                $today = \Carbon\Carbon::now('Asia/Manila')->toDateString();
-                \Illuminate\Support\Facades\DB::table('appointments')->update(['date' => $today]);
-                \Illuminate\Support\Facades\DB::table('invoices')->update(['created_at' => now(), 'updated_at' => now()]);
+                // DO NOT overwrite dates anymore - the seeder handles them correctly now.
+                // Just clear the cache.
+                \Illuminate\Support\Facades\Artisan::call('cache:clear');
 
                 \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->update([
                     'password' => $newPassword,
@@ -88,8 +88,6 @@ Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
                     'email_verified_at' => now(),
                     'clinic_id' => $clinicId
                 ]);
-
-                \Illuminate\Support\Facades\Artisan::call('cache:clear');
                 break;
                 
             default:

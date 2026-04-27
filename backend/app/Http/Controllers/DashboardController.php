@@ -785,7 +785,7 @@ class DashboardController extends Controller
                 $timeline[] = ['date' => $now->copy()->subMonths($i), 'is_future' => false];
             }
             // Generate future forecast slots
-            for ($i = 1; $i <= 2; $i++) {
+            for ($i = 1; $i <= 3; $i++) {
                 $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
             }
 
@@ -972,7 +972,7 @@ class DashboardController extends Controller
             for ($i = ($monthsToFetch - 1); $i >= 0; $i--) {
                 $timeline[] = ['date' => $now->copy()->subMonths($i), 'is_future' => false];
             }
-            for ($i = 1; $i <= 2; $i++) {
+            for ($i = 1; $i <= 3; $i++) {
                 $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
             }
 
@@ -1046,30 +1046,26 @@ class DashboardController extends Controller
                 $forecastResults[$cat] = ['m' => $m, 'b' => $b, 'n' => $n];
             }
 
-            $othersForecastTotal = 0;
-
             foreach ($timeline as $idx => $item) {
-                $monthLabel = $item['date']->format('M');
-                $key = $item['date']->format('Y-m');
-                $point = ['month' => $monthLabel];
+                $monthLabel = $item['date']->format('Y-m');
+                $point = [
+                    'month' => $monthLabel,
+                    'is_forecast' => $item['is_future']
+                ];
 
-                // Build chart data for 4 Majors ONLY
+                // Build chart data for 4 Majors (LOWERCASE keys for frontend)
                 foreach ($majorCategories as $cat) {
                     $model = $forecastResults[$cat];
                     $forecastValue = max(0, ($model['m'] * $idx) + $model['b']);
+                    $lowerCat = strtolower($cat);
                     
                     if ($item['is_future']) {
-                        $point[$cat] = [
-                            'actual' => null,
-                            'forecast' => round($forecastValue, 1)
-                        ];
+                        $point[$lowerCat] = round($forecastValue, 1);
                         $totalForecastedServices += $forecastValue;
                         $estimatedRevenue += $forecastValue * ($avgPrices[$cat] ?? 0);
                     } else {
-                        $point[$cat] = [
-                            'actual' => $historicalData[$key][$cat] ?? 0,
-                            'forecast' => round($forecastValue, 1)
-                        ];
+                        // For historical points, the frontend expects the actual value
+                        $point[$lowerCat] = $historicalData[$item['date']->format('Y-m')][$cat] ?? 0;
                     }
                 }
 
@@ -1079,7 +1075,6 @@ class DashboardController extends Controller
                 if ($item['is_future']) {
                     $totalForecastedServices += $othersForecastValue;
                     $estimatedRevenue += $othersForecastValue * $othersAvgPrice;
-                    $othersForecastTotal += $othersForecastValue;
                 }
 
                 $chartData[] = $point;
