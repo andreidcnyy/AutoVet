@@ -10,7 +10,6 @@ use App\Models\Breed;
 use App\Models\Clinic;
 use App\Models\Appointment;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,34 +22,39 @@ class BulkProductionMockSeeder extends Seeder
         $clinic = Clinic::first();
         if (!$clinic) return;
 
+        // Truncate existing data to reach EXACT numbers requested
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Owner::truncate();
+        Pet::truncate();
+        DB::table('patients')->truncate();
+        Appointment::truncate();
+        Invoice::truncate();
+        DB::table('invoice_items')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         $canine = Species::where('name', 'Canine')->first();
         $feline = Species::where('name', 'Feline')->first();
-
         $breeds = Breed::all();
-        if ($breeds->isEmpty()) {
-            $this->call(StandardBreedsSeeder::class);
-            $breeds = Breed::all();
-        }
-
         $services = Service::all();
-        if ($services->isEmpty()) {
-            $this->call(ServicesSeeder::class);
-            $services = Service::all();
-        }
 
-        // Create 55 more owners to reach 50+ total
-        for ($i = 1; $i <= 55; $i++) {
+        // GOAL: 50 Total Clients, 101 Total Pets
+        // Strategy: 49 clients with 2 pets each (98 pets) + 1 client with 3 pets = 101 pets.
+        
+        $totalPetsCreated = 0;
+
+        for ($i = 1; $i <= 50; $i++) {
             $owner = Owner::create([
                 'name' => "Production Client {$i}",
                 'email' => "client.prod.{$i}@autovet.ph",
-                'phone' => "0917" . str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT),
+                'phone' => "0917" . str_pad($i, 7, '0', STR_PAD_LEFT),
                 'address' => "Metro Manila",
                 'clinic_id' => $clinic->id,
             ]);
 
-            // Each owner has 1-2 pets
-            $numPets = rand(1, 2);
-            for ($j = 1; $j <= $numPets; $j++) {
+            // Assign pets: 49 owners get 2, last owner gets 3
+            $petsToCreate = ($i < 50) ? 2 : 3;
+
+            for ($j = 1; $j <= $petsToCreate; $j++) {
                 $species = rand(0, 1) == 0 ? $canine : $feline;
                 $breed = $breeds->where('species_id', $species->id)->random();
                 
@@ -67,28 +71,29 @@ class BulkProductionMockSeeder extends Seeder
                     'clinic_id' => $clinic->id,
                 ]);
 
-                // Also create an appointment for some pets
-                if (rand(0, 1) == 0) {
+                // Sync to patients
+                DB::table('patients')->insert([
+                    'id' => $pet->id,
+                    'name' => $pet->name,
+                    'species' => $species->name,
+                    'owner_name' => $owner->name,
+                    'owner_email' => $owner->email,
+                    'status' => 'Healthy',
+                    'clinic_id' => $clinic->id,
+                ]);
+
+                $totalPetsCreated++;
+
+                // Create a reasonable amount of appointments (not 1750!)
+                // Let's create about 10-15 appointments for "Today"
+                if ($totalPetsCreated <= 15) {
                     Appointment::create([
                         'pet_id' => $pet->id,
                         'service_id' => $services->random()->id,
                         'title' => 'Routine Checkup',
-                        'date' => Carbon::now()->addDays(rand(-30, 30))->toDateString(),
-                        'time' => '09:00 AM',
-                        'status' => rand(0, 1) == 0 ? 'Completed' : 'Scheduled',
-                        'clinic_id' => $clinic->id,
-                    ]);
-                }
-
-                // Create some invoices
-                if (rand(0, 1) == 0) {
-                    $total = rand(500, 5000);
-                    Invoice::create([
-                        'invoice_number' => 'INV-PROD-' . strtoupper(Str::random(6)),
-                        'pet_id' => $pet->id,
-                        'status' => 'Paid',
-                        'total' => $total,
-                        'subtotal' => $total,
+                        'date' => Carbon::now('Asia/Manila')->toDateString(),
+                        'time' => str_pad(rand(8, 11), 2, '0', STR_PAD_LEFT) . ':00 AM',
+                        'status' => 'Approved', // Match our new filter
                         'clinic_id' => $clinic->id,
                     ]);
                 }
