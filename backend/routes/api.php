@@ -91,27 +91,14 @@ Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
-// Emergency Database Setup Route
-Route::get('/init-db', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        // Only seed if Admin table is empty to avoid duplicates
-        if (\App\Models\Admin::count() === 0) {
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            return response()->json(['message' => 'Database migrated and seeded successfully.']);
-        }
-        return response()->json(['message' => 'Database already migrated. User count: ' . \App\Models\Admin::count()]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
-
 // Test endpoint to check API status
 Route::get('/status', function () {
     $dbStatus = 'disconnected';
+    $userCount = 0;
     try {
         \Illuminate\Support\Facades\DB::connection()->getPdo();
         $dbStatus = 'connected';
+        $userCount = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->count();
     } catch (\Exception $e) {
         // Leave as disconnected
     }
@@ -120,6 +107,7 @@ Route::get('/status', function () {
         'status'    => 'success',
         'message'   => 'AutoVet Laravel API is up and running!',
         'database'  => $dbStatus,
+        'user_count' => $userCount,
         'environment' => app()->environment(),
         'timestamp' => now()->toIso8601String(),
     ]);
