@@ -95,7 +95,10 @@ function AppLayout() {
               setClinic((prev) => ({ ...prev, name }));
             }
             if (data.clinic_logo && typeof data.clinic_logo === 'string') {
-              setClinic((prev) => ({ ...prev, logo: data.clinic_logo }));
+              const logoUrl = data.clinic_logo.startsWith('http') 
+                ? data.clinic_logo 
+                : (data.clinic_logo.startsWith('data:') ? data.clinic_logo : `${import.meta.env.VITE_API_URL}/storage/${data.clinic_logo}`);
+              setClinic((prev) => ({ ...prev, logo: logoUrl }));
             }
           }
         })
