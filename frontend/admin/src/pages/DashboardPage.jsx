@@ -20,6 +20,7 @@ const AVG_PRICE_PER_CATEGORY = {
   grooming:     750,
   vaccination:  887.50,
   laboratory:   800,
+  others:       450,
 };
 
 const CATEGORY_LABELS = {
@@ -27,6 +28,7 @@ const CATEGORY_LABELS = {
   grooming:     'Grooming',
   vaccination:  'Vaccination',
   laboratory:   'Laboratory',
+  others:       'Others / Preventive',
 };
 
 const CATEGORY_SUBTITLES = {
@@ -34,6 +36,7 @@ const CATEGORY_SUBTITLES = {
   grooming:     'Basic & full grooming sessions',
   vaccination:  'All vaccine types combined',
   laboratory:   'Lab service requests',
+  others:       'Preventive care, deworming, and misc.',
 };
 
 const CATEGORY_COLORS = {
@@ -41,6 +44,7 @@ const CATEGORY_COLORS = {
   grooming:     '#a855f7',
   vaccination:  '#3b82f6',
   laboratory:   '#f59e0b',
+  others:       '#6366f1',
 };
 
 const MONTH_NAMES = [
