@@ -42,10 +42,10 @@ class ServiceForecastAggregator
             ->orderBy('month', 'ASC')
             ->get();
 
-        // GAP FILLING LOGIC - Force 2023-01 to 2026-06 even when DB is empty
+        // GAP FILLING LOGIC - Force 2023-01 through current month (no future months in history)
         $dataMap = $results->isEmpty() ? collect() : $results->keyBy('month');
         $start = Carbon::parse('2023-01-01');
-        $end   = Carbon::parse('2026-06-01');
+        $end   = Carbon::now('Asia/Manila')->startOfMonth();
         
         $period = CarbonPeriod::create($start, '1 month', $end);
         $filled = [];
