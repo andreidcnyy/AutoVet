@@ -10,11 +10,12 @@ return [
         'http://127.0.0.1:5174',
         'http://autovet.test',
         'https://auto-vet-v1qy.vercel.app',
-        'https://autovet-admin.vercel.app', // Adding common possible variations
+        'https://autovet-admin.vercel.app',
         'https://autovet-portal.vercel.app',
-        '*' // Keep * for non-credentialed if needed, but origins above take precedence
     ],
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https:\/\/.*\.vercel\.app$/',
+    ],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
