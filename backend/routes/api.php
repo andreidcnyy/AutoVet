@@ -11,38 +11,34 @@ Route::get('/init-db', function () {
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
-        $email = 'superadmin@autovet.com';
+        $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
         
-        // Ensure a clinic exists for the user
-        $clinic = \App\Models\Clinic::first();
-        if (!$clinic) {
-            $clinic = \App\Models\Clinic::create([
-                'clinic_name' => 'AutoVet Headquarters',
-                'email' => 'system@autovet.com',
+        // 1. Reset ALL Admins
+        $admins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get();
+        foreach ($admins as $admin) {
+            $admin->update([
+                'password' => $newPassword,
                 'status' => 'active',
+                'deleted_at' => null
             ]);
         }
 
-        // Force create or update the superadmin password to password123
-        $admin = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => 'Super Administrator',
-                'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-                'role' => \App\Enums\Roles::SUPER_ADMIN->value,
+        // 2. Reset ALL Portal Users
+        $portalUsers = \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->get();
+        foreach ($portalUsers as $pUser) {
+            $pUser->update([
+                'password' => $newPassword,
                 'status' => 'active',
-                'clinic_id' => $clinic->id,
-                'deleted_at' => null // Ensure they aren't soft-deleted
-            ]
-        );
-
-        $allAdmins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get(['email', 'role', 'status', 'deleted_at']);
+                'deleted_at' => null,
+                'email_verified_at' => now()
+            ]);
+        }
         
         return response()->json([
             'success' => true, 
-            'message' => 'Super Admin password has been RESET to: password123',
-            'target_user' => $email,
-            'database_users' => $allAdmins
+            'message' => 'ALL system users (Admins and Portal Users) have been reset to: password123',
+            'admin_count' => $admins->count(),
+            'portal_user_count' => $portalUsers->count()
         ]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
