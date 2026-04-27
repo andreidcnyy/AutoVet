@@ -58,6 +58,28 @@ class SuperAdminDashboardController extends Controller
     /**
      * Register a new clinic
      */
+    private function uploadClinicLogo(\Illuminate\Http\UploadedFile $file): ?string
+    {
+        try {
+            $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
+            $name = 'clinics/logos/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $disk = \Illuminate\Support\Facades\Storage::disk('s3');
+            $stream = fopen($file->getRealPath(), 'r');
+            $ok = $disk->put($name, $stream, 'public');
+            if (is_resource($stream)) fclose($stream);
+            if (!$ok) {
+                \Illuminate\Support\Facades\Log::error('uploadClinicLogo: put returned false for ' . $name);
+                return null;
+            }
+            $url = $disk->url($name);
+            \Illuminate\Support\Facades\Log::info('uploadClinicLogo OK: ' . $url);
+            return $url;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('uploadClinicLogo EXCEPTION: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     public function storeClinic(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -73,8 +95,9 @@ class SuperAdminDashboardController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('clinics/logos', 'public');
-            $validated['logo'] = $path;
+            $validated['logo'] = $this->uploadClinicLogo($request->file('logo'));
+        } else {
+            \Illuminate\Support\Facades\Log::warning('storeClinic: no logo file in request. files=' . json_encode(array_keys($request->allFiles())));
         }
 
         $clinic = Clinic::create([
@@ -106,11 +129,9 @@ class SuperAdminDashboardController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            if ($clinic->logo) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($clinic->logo);
-            }
-            $path = $request->file('logo')->store('clinics/logos', 'public');
-            $validated['logo'] = $path;
+            $validated['logo'] = $this->uploadClinicLogo($request->file('logo'));
+        } else {
+            \Illuminate\Support\Facades\Log::warning('updateClinic: no logo file in request. files=' . json_encode(array_keys($request->allFiles())));
         }
 
         $clinic->update(array_merge($validated, [
