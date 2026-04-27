@@ -975,7 +975,7 @@ class DashboardController extends Controller
         try {
             // USER REQUEST: Show 2023 to 2026 (36 Months History)
             $monthsToFetch = 36;
-            $cacheKey = "dashboard_service_forecast_v40_range_" . $monthsToFetch;
+            $cacheKey = "dashboard_service_forecast_v41_curmonth_" . Carbon::now('Asia/Manila')->format('Y-m');
 
             $data = Cache::remember($cacheKey, 300, function () use ($monthsToFetch) {
                 try {
