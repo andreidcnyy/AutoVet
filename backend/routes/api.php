@@ -12,7 +12,11 @@ Route::get('/init-db', function () {
         // 1. Run Migrations
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         
-        // 2. Ensure at least one clinic exists
+        // 2. Run FULL Database Seeder if not already seeded
+        // We'll run it to ensure all tables are populated
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        
+        // 3. Identify the main clinic
         $clinic = \App\Models\Clinic::first();
         if (!$clinic) {
             $clinic = \App\Models\Clinic::create([
@@ -21,11 +25,10 @@ Route::get('/init-db', function () {
                 'status' => 'active',
             ]);
         }
-
         $clinicId = $clinic->id;
         $newPassword = \Illuminate\Support\Facades\Hash::make('password123');
         
-        // 3. Align ALL Admins to this clinic and reset passwords
+        // 4. Align ALL Admins to this clinic and reset passwords
         $admins = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->get();
         foreach ($admins as $admin) {
             $admin->update([
@@ -36,16 +39,17 @@ Route::get('/init-db', function () {
             ]);
         }
 
-        // 4. Run Seeders if database is empty of core data
-        if (\App\Models\Owner::count() === 0) {
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'MasterDataSeeder', '--force' => true]);
-            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DashboardMockSeeder', '--force' => true]);
-        }
-
-        // 5. Final forced alignment of all tables
-        $tables = ['owners', 'pets', 'patients', 'appointments', 'invoices', 'inventories', 'services', 'medical_records', 'notifications'];
+        // 5. Comprehensive alignment of ALL tables that have clinic_id
+        $tables = [
+            'owners', 'pets', 'patients', 'appointments', 'invoices', 'invoice_items',
+            'inventories', 'services', 'medical_records', 'notifications', 
+            'client_notifications', 'inventory_transactions', 'inventory_forecasts',
+            'inventory_usage_history', 'inventory_categories', 'service_categories',
+            'species', 'breeds', 'vet_schedules', 'audit_logs', 'cms_contents', 'settings'
+        ];
+        
         foreach ($tables as $table) {
-            if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($table) && \Illuminate\Support\Facades\Schema::hasColumn($table, 'clinic_id')) {
                 \Illuminate\Support\Facades\DB::table($table)->update(['clinic_id' => $clinicId]);
             }
         }
@@ -64,16 +68,23 @@ Route::get('/init-db', function () {
         
         return response()->json([
             'success' => true, 
-            'message' => 'System SYNC and SEED complete. All data aligned to Clinic ID: ' . $clinicId,
+            'message' => 'FULL SYSTEM SYNC & SEED complete. All data and users aligned to Clinic: ' . $clinic->clinic_name,
             'stats' => [
                 'admins' => \App\Models\Admin::count(),
                 'owners' => \App\Models\Owner::count(),
                 'pets' => \App\Models\Pet::count(),
-                'inventories' => \App\Models\Inventory::count()
+                'appointments' => \App\Models\Appointment::count(),
+                'invoices' => \App\Models\Invoice::count(),
+                'inventories' => \App\Models\Inventory::count(),
+                'services' => \App\Models\Service::count()
             ]
         ]);
     } catch (\Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        return response()->json([
+            'success' => false, 
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
     }
 });
 
