@@ -23,53 +23,51 @@ class BulkProductionMockSeeder extends Seeder
         if (!$clinic) return;
 
         // TARGET: 50 Total Clients, 101 Total Pets
-        $currentOwners = Owner::count();
-        if ($currentOwners >= 50) {
+        $currentOwnersCount = Owner::withoutGlobalScopes()->count();
+        $totalPetsCreatedCount = Pet::withoutGlobalScopes()->count();
+
+        if ($currentOwnersCount >= 50 && $totalPetsCreatedCount >= 101) {
             return;
         }
 
         $canine = Species::where('name', 'Canine')->first();
         $feline = Species::where('name', 'Feline')->first();
-        
-        // Safety: Create species if missing
         if (!$canine) $canine = Species::create(['name' => 'Canine', 'status' => 'Active', 'clinic_id' => $clinic->id]);
         if (!$feline) $feline = Species::create(['name' => 'Feline', 'status' => 'Active', 'clinic_id' => $clinic->id]);
 
         $breeds = Breed::all();
-        
-        // Ensure services exist for proper categorization
         $pool = Service::whereIn('category', ['Consultation', 'Vaccination', 'Grooming', 'Laboratory'])->get();
         if ($pool->isEmpty()) {
             $this->call(ServicesSeeder::class);
             $pool = Service::whereIn('category', ['Consultation', 'Vaccination', 'Grooming', 'Laboratory'])->get();
         }
 
-        $ownersToCreate = 50 - $currentOwners;
-        $totalPetsCreated = Pet::count();
+        $ownersToCreate = max(0, 50 - $currentOwnersCount);
+        $totalPets = $totalPetsCreatedCount;
         $now = Carbon::now('Asia/Manila');
 
         for ($i = 1; $i <= $ownersToCreate; $i++) {
             $owner = Owner::create([
-                'name' => "Production Client " . ($currentOwners + $i),
-                'email' => "client.prod." . ($currentOwners + $i) . "@autovet.ph",
+                'name' => "Production Client " . ($currentOwnersCount + $i),
+                'email' => "client.prod." . ($currentOwnersCount + $i) . "@autovet.ph",
                 'phone' => "0917" . str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT),
                 'address' => "Metro Manila",
                 'clinic_id' => $clinic->id,
             ]);
 
             // Assign pets to reach exactly 101 total in DB
-            $petsToCreate = 2;
-            if (($totalPetsCreated + $petsToCreate) > 101) {
-                $petsToCreate = 101 - $totalPetsCreated;
+            $petsForThisOwner = 2;
+            if (($totalPets + $petsForThisOwner) > 101) {
+                $petsForThisOwner = 101 - $totalPets;
             }
 
-            for ($j = 1; $j <= $petsToCreate; $j++) {
+            for ($j = 1; $j <= $petsForThisOwner; $j++) {
                 $species = rand(0, 1) == 0 ? $canine : $feline;
                 $speciesBreeds = $breeds->where('species_id', $species->id);
                 $breed = $speciesBreeds->count() > 0 ? $speciesBreeds->random() : Breed::first();
                 
                 $pet = Pet::create([
-                    'name' => "Pet " . ($currentOwners + $i) . "-{$j}",
+                    'name' => "Pet " . ($currentOwnersCount + $i) . "-{$j}",
                     'owner_id' => $owner->id,
                     'species_id' => $species->id,
                     'breed_id' => $breed->id,
@@ -81,7 +79,6 @@ class BulkProductionMockSeeder extends Seeder
                     'clinic_id' => $clinic->id,
                 ]);
 
-                // Sync to patients table
                 DB::table('patients')->insert([
                     'id' => $pet->id,
                     'name' => $pet->name,
@@ -94,13 +91,12 @@ class BulkProductionMockSeeder extends Seeder
                     'updated_at' => now()
                 ]);
 
-                $totalPetsCreated++;
+                $totalPets++;
 
-                // AI TREND SEEDING: Spread data over last 4 months
+                // Small amount of history for each NEW pet to boost AI
                 for ($m = 0; $m <= 3; $m++) {
                     $monthDate = $now->copy()->subMonths($m);
                     $svc = $pool->random();
-                    
                     Appointment::create([
                         'pet_id' => $pet->id,
                         'service_id' => $svc->id,
@@ -109,17 +105,6 @@ class BulkProductionMockSeeder extends Seeder
                         'time' => '09:00 AM',
                         'status' => 'Approved',
                         'clinic_id' => $clinic->id,
-                    ]);
-
-                    $total = rand(800, 4500);
-                    Invoice::create([
-                        'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
-                        'pet_id' => $pet->id,
-                        'status' => 'Paid',
-                        'total' => $total,
-                        'subtotal' => $total,
-                        'clinic_id' => $clinic->id,
-                        'created_at' => $monthDate->copy()->subDays(rand(1, 25)),
                     ]);
                 }
             }

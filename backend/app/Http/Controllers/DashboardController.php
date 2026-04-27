@@ -979,7 +979,7 @@ class DashboardController extends Controller
             $majorCategories = ['Consultation', 'Grooming', 'Vaccination', 'Laboratory'];
             $allCategories = array_merge($majorCategories, ['Others']);
             
-            // Get all appointments (Include Approved/Scheduled for trends)
+            // Get all appointments (Match original 12-month lookback)
             $appointments = Appointment::withoutGlobalScopes()
                 ->join('services', 'appointments.service_id', '=', 'services.id')
                 ->whereIn('appointments.status', ['completed', 'Approved', 'approved', 'Scheduled', 'scheduled'])
@@ -994,20 +994,22 @@ class DashboardController extends Controller
                 ->get();
 
             $historicalData = [];
+            $allHistoricalMonths = []; // Track all months for regression
             foreach ($appointments as $appt) {
                 $key = $appt->year . '-' . str_pad($appt->month, 2, '0', STR_PAD_LEFT);
                 $cat = in_array($appt->category, $majorCategories) ? $appt->category : 'Others';
                 
                 if (!isset($historicalData[$key][$cat])) {
                     $historicalData[$key][$cat] = 0;
+                    $allHistoricalMonths[$key] = true;
                 }
                 $historicalData[$key][$cat] += (int) $appt->count;
             }
 
             // AI Intelligence Progress Calculation (Threshold: 3 months with data)
-            $monthsWithData = count($historicalData);
-            $progressPercent = min(100, round(($monthsWithData / 3) * 100));
-            $needed = max(0, 3 - $monthsWithData);
+            $monthsWithData = count($allHistoricalMonths);
+            $progressPercent = min(100, round(($monthsWithData / 12) * 100)); // 12 months for 100% intelligence
+            $needed = max(0, 12 - $monthsWithData);
 
             $chartData = [];
             $forecastResults = [];
@@ -1015,24 +1017,32 @@ class DashboardController extends Controller
             $estimatedRevenue = 0;
 
             // Average prices per category for revenue estimation
-            // For Others, we use a general average of all services not in major categories
-            $othersAvgPrice = Service::whereNotIn('category', $majorCategories)->avg('price') ?: 500;
-            $avgPrices = Service::whereIn('category', $majorCategories)
+            $avgPrices = Service::withoutGlobalScopes()
+                ->whereIn('category', $majorCategories)
                 ->select('category', DB::raw('AVG(price) as avg_price'))
                 ->groupBy('category')
                 ->pluck('avg_price', 'category');
+            $othersAvgPrice = Service::withoutGlobalScopes()->whereNotIn('category', $majorCategories)->avg('price') ?: 500;
 
             foreach ($allCategories as $cat) {
                 $yValues = [];
-                foreach ($timeline as $idx => $item) {
-                    if (!$item['is_future']) {
-                        $key = $item['date']->format('Y-m');
-                        $yValues[] = $historicalData[$key][$cat] ?? 0;
-                    }
+                $xValues = [];
+                
+                // We use the FULL 3 years of data for the regression line
+                $months = array_keys($allHistoricalMonths);
+                sort($months);
+                
+                foreach ($months as $idx => $monthKey) {
+                    $yValues[] = $historicalData[$monthKey][$cat] ?? 0;
+                    $xValues[] = $idx;
                 }
 
                 $n = count($yValues);
-                $xValues = range(0, $n - 1);
+                if ($n < 2) {
+                    $forecastResults[$cat] = ['m' => 0, 'b' => $yValues[0] ?? 0, 'n' => $n];
+                    continue;
+                }
+
                 $sumX = array_sum($xValues);
                 $sumY = array_sum($yValues);
                 $sumXY = 0; $sumX2 = 0;
@@ -1042,7 +1052,7 @@ class DashboardController extends Controller
                 }
                 $denom = ($n * $sumX2) - ($sumX * $sumX);
                 $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
-                $b = $n > 0 ? ($sumY - ($m * $sumX)) / $n : 0;
+                $b = ($sumY - ($m * $sumX)) / $n;
 
                 $forecastResults[$cat] = ['m' => $m, 'b' => $b, 'n' => $n];
             }
@@ -1054,43 +1064,44 @@ class DashboardController extends Controller
                     'is_forecast' => $item['is_future']
                 ];
 
-                // Build chart data for 4 Majors (LOWERCASE keys for frontend)
                 foreach ($majorCategories as $cat) {
                     $model = $forecastResults[$cat];
-                    $forecastValue = max(0, ($model['m'] * $idx) + $model['b']);
                     $lowerCat = strtolower($cat);
                     
                     if ($item['is_future']) {
+                        // Project using the slope calculated from 3 years of data
+                        $projectedIdx = $model['n'] + $idx; 
+                        $forecastValue = max(0, ($model['m'] * $projectedIdx) + $model['b']);
+                        
                         $point[$lowerCat] = round($forecastValue, 1);
                         $totalForecastedServices += $forecastValue;
                         $estimatedRevenue += $forecastValue * ($avgPrices[$cat] ?? 0);
                     } else {
-                        // For historical points, the frontend expects the actual value
-                        $point[$lowerCat] = $historicalData[$item['date']->format('Y-m')][$cat] ?? 0;
+                        $point[$lowerCat] = $historicalData[$monthLabel][$cat] ?? 0;
                     }
                 }
 
-                // Internal Others Calculation
-                $othersModel = $forecastResults['Others'];
-                $othersForecastValue = max(0, ($othersModel['m'] * $idx) + $othersModel['b']);
+                // Others
+                $oModel = $forecastResults['Others'];
                 if ($item['is_future']) {
-                    $totalForecastedServices += $othersForecastValue;
-                    $estimatedRevenue += $othersForecastValue * $othersAvgPrice;
+                    $pIdx = $oModel['n'] + $idx;
+                    $fVal = max(0, ($oModel['m'] * $pIdx) + $oModel['b']);
+                    $totalForecastedServices += $fVal;
+                    $estimatedRevenue += $fVal * $othersAvgPrice;
                 }
 
                 $chartData[] = $point;
             }
 
-            // Summary stats
-            $totalPets = Pet::count();
-            $totalClients = Owner::count();
-            // Match our confirmed statuses for consistency
+            // Summary stats (Global count to ensure 101/50 show up)
+            $totalPets = Pet::withoutGlobalScopes()->count();
+            $totalClients = Owner::withoutGlobalScopes()->count();
             $confirmedStatuses = ['Approved', 'approved', 'Scheduled', 'scheduled', 'Completed', 'completed'];
             
-            $totalAppointments = Appointment::whereIn('status', $confirmedStatuses)->count();
-            $apptsToday = Appointment::whereDate('date', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
-            $upcomingAppts = Appointment::where('date', '>', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
-            $cancelledAppts = Appointment::whereIn('status', ['cancelled', 'declined', 'Rejected'])->count();
+            $totalAppointments = Appointment::withoutGlobalScopes()->whereIn('status', $confirmedStatuses)->count();
+            $apptsToday = Appointment::withoutGlobalScopes()->whereDate('date', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
+            $upcomingAppts = Appointment::withoutGlobalScopes()->where('date', '>', now()->toDateString())->whereIn('status', $confirmedStatuses)->count();
+            $cancelledAppts = Appointment::withoutGlobalScopes()->whereIn('status', ['cancelled', 'declined', 'Rejected'])->count();
 
             return [
                 'summary' => [

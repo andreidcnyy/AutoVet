@@ -77,24 +77,22 @@ Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
                     }
                 }
 
-                // DO NOT overwrite dates anymore - the seeder handles them correctly now.
-                // Just clear the cache.
                 \Illuminate\Support\Facades\Artisan::call('cache:clear');
-
-                \App\Models\PortalUser::withoutGlobalScopes()->withTrashed()->update([
-                    'password' => $newPassword,
-                    'status' => 'active',
-                    'deleted_at' => null,
-                    'email_verified_at' => now(),
-                    'clinic_id' => $clinicId
-                ]);
                 break;
                 
             default:
                 return response()->json(['error' => 'Unknown step'], 400);
         }
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'diagnostic' => [
+                'pets' => \App\Models\Pet::withoutGlobalScopes()->count(),
+                'owners' => \App\Models\Owner::withoutGlobalScopes()->count(),
+                'appts' => \App\Models\Appointment::withoutGlobalScopes()->count(),
+                'sizes' => \Illuminate\Support\Facades\DB::table('pet_size_categories')->count(),
+            ]
+        ]);
 
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
