@@ -30,16 +30,16 @@ class BulkProductionMockSeeder extends Seeder
 
         $canine = Species::where('name', 'Canine')->first();
         $feline = Species::where('name', 'Feline')->first();
+        
+        // Safety: Create species if missing
+        if (!$canine) $canine = Species::create(['name' => 'Canine', 'status' => 'Active', 'clinic_id' => $clinic->id]);
+        if (!$feline) $feline = Species::create(['name' => 'Feline', 'status' => 'Active', 'clinic_id' => $clinic->id]);
+
         $breeds = Breed::all();
         
         // Ensure services exist for proper categorization
-        $consultationSvc = Service::where('category', 'Consultation')->first();
-        $vaccinationSvc = Service::where('category', 'Vaccination')->first();
-        $groomingSvc = Service::where('category', 'Grooming')->first();
-        $labSvc = Service::where('category', 'Laboratory')->first();
-
-        $pool = array_filter([$consultationSvc, $vaccinationSvc, $groomingSvc, $labSvc]);
-        if (empty($pool)) {
+        $pool = Service::whereIn('category', ['Consultation', 'Vaccination', 'Grooming', 'Laboratory'])->get();
+        if ($pool->isEmpty()) {
             $this->call(ServicesSeeder::class);
             $pool = Service::whereIn('category', ['Consultation', 'Vaccination', 'Grooming', 'Laboratory'])->get();
         }
@@ -60,8 +60,6 @@ class BulkProductionMockSeeder extends Seeder
             // Assign pets to reach exactly 101 total in DB
             $petsToCreate = 2;
             if (($totalPetsCreated + $petsToCreate) > 101) {
-                $petsToCreate = 101 - $totalPetsCreated;
-            } elseif ($i == $ownersToCreate && ($totalPetsCreated + $petsToCreate) < 101) {
                 $petsToCreate = 101 - $totalPetsCreated;
             }
 
