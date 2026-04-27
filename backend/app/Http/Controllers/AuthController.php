@@ -169,28 +169,37 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        \Log::info('Login attempt', ['email' => $request->email]);
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // Try Admin first
-        $user = Admin::where('email', $request->email)->first();
+        \Log::info('Login attempt', ['email' => $request->email]);
+
+        // Try Admin first - use withoutGlobalScopes to bypass ClinicScope 
+        // and withTrashed() to ensure we find the user even if soft-deleted
+        $user = Admin::withoutGlobalScopes()->withTrashed()->where('email', $request->email)->first();
         $is_admin = true;
 
         if (!$user) {
             // Try PortalUser
-            $user = PortalUser::where('email', $request->email)->first();
+            $user = PortalUser::withoutGlobalScopes()->withTrashed()->where('email', $request->email)->first();
             $is_admin = false;
         }
 
         if (!$user) {
-            \Log::warning('Login failed: User not found in either table', ['email' => $request->email]);
+            \Log::warning('Login failed: User not found in database', ['email' => $request->email]);
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
+        // Check if user is soft-deleted
+        if ($user->deleted_at) {
+            \Log::warning('Login failed: User account is deactivated/deleted', ['email' => $request->email]);
+            return response()->json(['error' => 'This account has been deactivated.'], 403);
+        }
+
         if (!$is_admin && !$user->hasVerifiedEmail()) {
+            \Log::info('Login attempt: Email not verified', ['email' => $request->email]);
             // Backfill: earlier versions of verifyRegistration() silently dropped
             // email_verified_at on create (field wasn't in $fillable). If this user
             // has a linked Owner, they completed verification — mark them verified now.

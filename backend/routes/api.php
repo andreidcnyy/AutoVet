@@ -6,6 +6,40 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
 
+// Emergency Database Setup Route
+Route::get('/init-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        
+        $email = 'superadmin@autovet.com';
+        $admin = \App\Models\Admin::where('email', $email)->first();
+        
+        if (!$admin) {
+            $clinic = \App\Models\Clinic::first();
+            if (!$clinic) {
+                $clinic = \App\Models\Clinic::create([
+                    'clinic_name' => 'AutoVet Headquarters',
+                    'email' => 'system@autovet.com',
+                    'status' => 'active',
+                ]);
+            }
+
+            \App\Models\Admin::create([
+                'name' => 'Super Administrator',
+                'email' => $email,
+                'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+                'role' => \App\Enums\Roles::SUPER_ADMIN->value,
+                'status' => 'active',
+                'clinic_id' => $clinic->id,
+            ]);
+            return response()->json(['success' => true, 'message' => 'Super Admin created.', 'email' => $email]);
+        }
+        return response()->json(['success' => true, 'message' => 'Super Admin already exists.', 'email' => $email]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentStatusController;
@@ -47,6 +81,21 @@ Route::post('/register',        [AuthController::class, 'register']);
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
+
+// Emergency Database Setup Route
+Route::get('/init-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        // Only seed if Admin table is empty to avoid duplicates
+        if (\App\Models\Admin::count() === 0) {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            return response()->json(['message' => 'Database migrated and seeded successfully.']);
+        }
+        return response()->json(['message' => 'Database already migrated. User count: ' . \App\Models\Admin::count()]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 
 // Test endpoint to check API status
 Route::get('/status', function () {
