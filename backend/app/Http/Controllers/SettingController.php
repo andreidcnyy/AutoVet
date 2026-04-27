@@ -32,18 +32,23 @@ class SettingController extends Controller
             // Handle Clinic Logo Upload to Supabase/S3
             if ($key === 'clinic_logo' && !empty($value) && str_starts_with($value, 'data:image')) {
                 try {
-                    $format = explode('/', explode(':', substr($value, 0, strpos($value, ';')))[1])[1];
-                    $image = str_replace(' ', '+', explode(',', $value)[1]);
-                    $imageName = 'clinic_logo_' . time() . '.' . $format;
+                    $parts = explode(',', $value);
+                    if (count($parts) < 2) continue;
+
+                    $image = str_replace(' ', '+', $parts[1]);
+                    $imageName = 'logo_' . time() . '.png';
+                    $fullPath = 'logos/' . $imageName;
                     
-                    // Explicitly use 's3' disk (Supabase) for these uploads
-                    \Illuminate\Support\Facades\Storage::disk('s3')->put('logos/' . $imageName, base64_decode($image));
+                    // Upload to Supabase
+                    $success = \Illuminate\Support\Facades\Storage::disk('s3')->put($fullPath, base64_decode($image));
                     
-                    // Store the full path for the frontend
-                    $valueToStore = 'logos/' . $imageName;
+                    if ($success) {
+                        $valueToStore = $fullPath;
+                    } else {
+                        \Illuminate\Support\Facades\Log::error("Supabase put() returned false for: " . $fullPath);
+                    }
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Logo Upload Failed: " . $e->getMessage());
-                    // Fallback to original value if upload fails
+                    \Illuminate\Support\Facades\Log::error("Logo Upload Exception: " . $e->getMessage());
                 }
             }
 
