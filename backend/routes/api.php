@@ -77,14 +77,17 @@ Route::get('/init-db', function () {
         return response()->json([
             'success' => true, 
             'message' => 'FULL SYSTEM SYNC & SEED complete. All data and users aligned to Clinic: ' . $clinic->clinic_name,
-            'stats' => [
-                'admins' => \App\Models\Admin::count(),
-                'owners' => \App\Models\Owner::count(),
-                'pets' => \App\Models\Pet::count(),
-                'appointments' => \App\Models\Appointment::count(),
-                'invoices' => \App\Models\Invoice::count(),
-                'inventories' => \App\Models\Inventory::count(),
-                'services' => \App\Models\Service::count()
+            'diagnostic_stats' => [
+                'admins' => \App\Models\Admin::withoutGlobalScopes()->count(),
+                'owners' => \App\Models\Owner::withoutGlobalScopes()->count(),
+                'pets' => \App\Models\Pet::withoutGlobalScopes()->count(),
+                'appointments' => \App\Models\Appointment::withoutGlobalScopes()->count(),
+                'invoices' => \App\Models\Invoice::withoutGlobalScopes()->count(),
+                'inventories' => \App\Models\Inventory::withoutGlobalScopes()->count(),
+                'services' => \App\Models\Service::withoutGlobalScopes()->count(),
+                'medical_records' => \App\Models\MedicalRecord::withoutGlobalScopes()->count(),
+                'breeds' => \App\Models\Breed::withoutGlobalScopes()->count(),
+                'species' => \App\Models\Species::withoutGlobalScopes()->count(),
             ]
         ]);
     } catch (\Exception $e) {
