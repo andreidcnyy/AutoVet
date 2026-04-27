@@ -7,6 +7,63 @@
     <link rel="stylesheet" href="/mobile.css" media="(max-width: 1023px)" />
     <title>AutoVet - Pet Owner Portal</title>
     <script>
+      // Offline-first service worker registration + status pill.
+      // Purely additive — no React/component code is touched.
+      (function () {
+        if (!('serviceWorker' in navigator)) return;
+        var ok = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        if (!ok) return;
+
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+
+        var pill;
+        function ensurePill() {
+          if (pill) return pill;
+          pill = document.createElement('div');
+          pill.id = 'autovet-net-pill';
+          pill.style.cssText = [
+            'position:fixed','left:50%','top:calc(env(safe-area-inset-top, 0px) + 10px)',
+            'transform:translateX(-50%)','z-index:99999','padding:6px 14px',
+            'border-radius:999px','font:600 12px/1 -apple-system,BlinkMacSystemFont,system-ui,sans-serif',
+            'color:#fff','box-shadow:0 6px 18px -8px rgba(0,0,0,.35)',
+            'transition:opacity 240ms ease, transform 240ms ease','opacity:0','pointer-events:none'
+          ].join(';');
+          document.body.appendChild(pill);
+          return pill;
+        }
+        function show(text, color) {
+          var p = ensurePill();
+          p.textContent = text; p.style.background = color; p.style.opacity = '1';
+        }
+        function hide() { if (pill) pill.style.opacity = '0'; }
+
+        function refresh() {
+          if (!navigator.onLine) { show('Offline — changes will sync', '#ef4444'); return; }
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('queue-count');
+            navigator.serviceWorker.controller.postMessage('replay-queue');
+          } else { hide(); }
+        }
+        navigator.serviceWorker.addEventListener('message', function (e) {
+          var d = e.data || {};
+          if (d.type === 'queue-count') {
+            if (d.count > 0) show('Syncing ' + d.count + ' pending…', '#f59e0b'); else hide();
+          } else if (d.type === 'queued') {
+            show((d.count || 1) + ' pending — will sync', '#f59e0b');
+          } else if (d.type === 'syncing') {
+            show('Syncing ' + d.count + '…', '#f59e0b');
+          } else if (d.type === 'synced') {
+            show('Synced', '#10b981'); setTimeout(hide, 1600);
+          }
+        });
+        window.addEventListener('online', refresh);
+        window.addEventListener('offline', refresh);
+        document.addEventListener('DOMContentLoaded', refresh);
+      })();
+    </script>
+    <script>
       // Global Emergency Error Interceptor
       window.onerror = function(message) {
         if (message.includes('Minified React error #31')) {
