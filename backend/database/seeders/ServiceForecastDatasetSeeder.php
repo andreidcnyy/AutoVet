@@ -28,7 +28,7 @@ class ServiceForecastDatasetSeeder extends Seeder
         }
 
         $dataFiles = [
-            'autovet_daily_services_2024.csv', 
+            'autovet_daily_services_2024.csv', // Actually contains 2023 and 2024
             'autovet_daily_services_2025.csv', 
             'autovet_daily_services_jan_apr_2026_full.csv'
         ];
@@ -59,28 +59,29 @@ class ServiceForecastDatasetSeeder extends Seeder
                     continue;
                 }
 
+                $this->command->info("  - Processing file: {$fileName}");
+
                 $handle = fopen($filePath, 'r');
                 fgetcsv($handle); // skip header
-                $invoicesBatch = []; $apptsBatch = []; $count = 0;
+                $invoicesBatch = []; $apptsBatch = []; $count = 0; $skipped = 0;
 
                 while (($row = fgetcsv($handle)) !== false) {
                     if (count($row) < 6) continue;
                     [$dateStr, $name, $category, $quantity, $price, $revenue] = $row;
                     
-                    // Robust Date Parsing
+                    // IMPROVED Date Parsing
+                    $timestamp = null;
                     try {
-                        // Try D/MM/YY first for 2025/2026 files
                         if (strpos($dateStr, '/') !== false) {
-                            $timestamp = Carbon::createFromFormat('j/m/y', $dateStr);
+                            // The 2025/2026 files use M/D/YY (e.g. 1/20/25)
+                            $timestamp = Carbon::createFromFormat('n/j/y', $dateStr)->startOfDay();
                         } else {
-                            $timestamp = Carbon::parse($dateStr);
+                            // The 2024 file uses YYYY-MM-DD
+                            $timestamp = Carbon::parse($dateStr)->startOfDay();
                         }
                     } catch (\Exception $e) {
-                        try {
-                             $timestamp = Carbon::parse($dateStr);
-                        } catch (\Exception $e2) {
-                            continue; // Skip unparseable dates
-                        }
+                        $skipped++;
+                        continue; 
                     }
 
                     $service = Service::where('name', $name)->where('clinic_id', $clinic->id)->first();
@@ -100,7 +101,7 @@ class ServiceForecastDatasetSeeder extends Seeder
                         'invoice' => [
                             'invoice_number' => $invoiceNum, 
                             'pet_id' => $seedPet->id, 
-                            'status' => 'Paid', // Using 'Paid' for maximum visibility
+                            'status' => 'Paid', 
                             'subtotal' => (float)$revenue, 
                             'total' => (float)$revenue, 
                             'amount_paid' => (float)$revenue, 
@@ -135,20 +136,21 @@ class ServiceForecastDatasetSeeder extends Seeder
                     
                     $count++;
 
-                    if ($count % 200 === 0) {
+                    if ($count % 500 === 0) {
                         $this->flushBatches($invoicesBatch, $apptsBatch);
                         $invoicesBatch = []; $apptsBatch = [];
                     }
                 }
                 if (!empty($invoicesBatch)) $this->flushBatches($invoicesBatch, $apptsBatch);
                 fclose($handle);
+                $this->command->info("    Added {$count} records (Skipped {$skipped} due to date format).");
             }
             
             // Clear cache for this clinic
             Cache::forget("service_forecast_v8_clinic_{$clinic->id}");
         }
         
-        $this->command->info("Seeding complete. All months in 2024, 2025, and 2026 (partial) should be populated.");
+        $this->command->info("Seeding complete. 2023, 2024, 2025, and 2026 are now populated.");
     }
 
     private function flushBatches($invoices, $appts)
