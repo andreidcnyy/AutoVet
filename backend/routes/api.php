@@ -208,8 +208,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
-    // Service Forecasts
-    Route::get('/forecast/services',         [ForecastController::class, 'services']);
+    // Service Forecasts (Stable PHP Engine)
+    Route::get('/forecast/services',         [DashboardController::class, 'getServiceForecast']);
     Route::get('/forecast/services/history', [ForecastController::class, 'history']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
