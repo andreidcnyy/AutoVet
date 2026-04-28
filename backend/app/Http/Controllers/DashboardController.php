@@ -672,9 +672,15 @@ class DashboardController extends Controller
                 $query->whereNull('read_at');
             }
 
-            $query->where(function ($q) use ($user) {
-                $q->whereNull('user_id')->orWhere('user_id', $user->id);
-            });
+            // Super admins only see notifications addressed to them directly;
+            // clinic-level broadcasts (user_id = NULL) belong to clinic admins.
+            if ($user->role === 'super_admin') {
+                $query->where('user_id', $user->id);
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->whereNull('user_id')->orWhere('user_id', $user->id);
+                });
+            }
 
             $dbNotifications = $query->limit($showAll ? 50 : 8)->get();
             $notifications = [];

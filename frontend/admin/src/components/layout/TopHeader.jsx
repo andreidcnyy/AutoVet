@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX, 
-  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity 
+import {
+  FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX,
+  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity
 } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
@@ -12,15 +12,15 @@ import { getUserAvatarUrl } from "../../utils/userImages";
 import clsx from "clsx";
 
 const iconMap = {
-  FiBell: FiBell,
-  FiAlertTriangle: FiAlertTriangle,
-  FiPackage: FiPackage,
-  FiPlusCircle: FiPlusCircle,
-  FiCheck: FiCheck,
-  FiInfo: FiInfo,
-  FiActivity: FiActivity,
-  FiCalendar: FiPlusCircle, // Fallback for calendar icons
-  FiFileText: FiInfo,       // Fallback for invoice icons
+  FiBell,
+  FiAlertTriangle,
+  FiPackage,
+  FiPlusCircle,
+  FiCheck,
+  FiInfo,
+  FiActivity,
+  FiCalendar,
+  FiFileText,
 };
 
 const iconToneStyles = {
@@ -37,6 +37,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [openNotifMenu, setOpenNotifMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedNotif, setSelectedNotif] = useState(null);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
@@ -164,7 +165,11 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                       {notifications.map((notif) => {
                         const Icon = iconMap[notif.iconName] || FiBell;
                         return (
-                          <div key={notif.id} className="group relative flex gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors">
+                          <div
+                            key={notif.id}
+                            onClick={() => { setSelectedNotif(notif); setOpenNotifMenu(false); }}
+                            className="group relative flex gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors cursor-pointer"
+                          >
                             <span className={clsx(
                               "mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                               iconToneStyles[notif.tone] || iconToneStyles.neutral
@@ -176,8 +181,8 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                               <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">{notif.message}</p>
                               <p className="mt-1 text-[10px] font-medium text-zinc-400 uppercase tracking-tight">{notif.time}</p>
                             </div>
-                            <button 
-                              onClick={() => dismissNotification(notif.id)}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); dismissNotification(notif.id); }}
                               className="absolute right-2 top-3 p-1 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-all"
                             >
                               <FiX className="h-3 w-3" />
@@ -251,6 +256,53 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           </div>
         </div>
       </div>
+      {selectedNotif && (() => {
+        const Icon = iconMap[selectedNotif.iconName] || FiBell;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedNotif(null)}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div
+              className="relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-4 p-6">
+                <span className={clsx(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                  iconToneStyles[selectedNotif.tone] || iconToneStyles.neutral
+                )}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{selectedNotif.title}</p>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-semibold">{selectedNotif.time}</p>
+                </div>
+                <button onClick={() => setSelectedNotif(null)} className="p-1 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">
+                  <FiX className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="px-6 pb-4">
+                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{selectedNotif.message}</p>
+              </div>
+              <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-dark-border px-6 py-4">
+                {!selectedNotif.read_at && (
+                  <button
+                    onClick={() => { dismissNotification(selectedNotif.id); setSelectedNotif(null); }}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-emerald-700"
+                  >
+                    Mark as Read
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedNotif(null)}
+                  className="rounded-xl border border-zinc-200 dark:border-dark-border px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </header>
   );
 }
