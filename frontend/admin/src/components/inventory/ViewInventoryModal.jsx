@@ -319,11 +319,25 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     {product.stock_level <= 0 ? (
                         <span className="text-rose-600 uppercase font-black italic">Stockout Occurred</span>
                     ) : aiForecastData.predicted_stockout_date ? (
-                      <>Predicted Stockout: <span className="text-rose-600">
-                        {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span></>
+                      <>
+                        Predicted Stockout: <span className="text-rose-600">
+                          {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        {typeof aiForecastData.confidence_score === 'number' && (
+                          <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                            · {Math.round(Math.max(0, Math.min(1, aiForecastData.confidence_score)) * 100)}% confidence
+                          </span>
+                        )}
+                      </>
                     ) : (
-                      <span className="text-emerald-600">{aiForecastData.message || "Monitoring usage..."}</span>
+                      <span className="text-emerald-600">
+                        {aiForecastData.message || "No stockout predicted — usage trend is stable or rising."}
+                        {typeof aiForecastData.confidence_score === 'number' && (
+                          <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                            · {Math.round(Math.max(0, Math.min(1, aiForecastData.confidence_score)) * 100)}% confidence
+                          </span>
+                        )}
+                      </span>
                     )}
                   </p>
 

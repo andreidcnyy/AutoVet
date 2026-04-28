@@ -345,11 +345,20 @@ function InventoryView() {
                                     {row.stock_level <= 0 ? "Out of Stock" : row.latest_forecast.forecast_status}
                                 </span>
                                 <span className={clsx(
-                                    "text-[10px] font-bold italic", 
+                                    "text-[10px] font-bold italic",
                                     row.stock_level <= 0 ? "text-rose-500" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-500" : "text-zinc-500 dark:text-zinc-400")
                                 )}>
-                                    {row.stock_level <= 0 ? "Immediate reorder required" : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`}
+                                    {row.stock_level <= 0
+                                        ? "Immediate reorder required"
+                                        : (row.latest_forecast.days_until_stockout == null
+                                            ? "Stable trend — no stockout predicted"
+                                            : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
                                 </span>
+                                {typeof row.latest_forecast.confidence_score === 'number' && row.stock_level > 0 && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                        Confidence {Math.round(Math.max(0, Math.min(1, row.latest_forecast.confidence_score)) * 100)}%
+                                    </span>
+                                )}
                             </div>
                          ) : <span className="text-xs text-zinc-300 font-bold uppercase">No Analysis</span>}
                       </td>
