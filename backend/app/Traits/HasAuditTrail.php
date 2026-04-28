@@ -35,7 +35,18 @@ trait HasAuditTrail
                 $userId = $user->id;
             }
 
+            // Derive clinic_id: prefer the audited model's own clinic_id,
+            // fall back to the authenticated user's clinic_id. Skip the
+            // audit insert entirely if we can't determine one (audit_logs.clinic_id
+            // is NOT NULL, so a missing value would throw and we'd lose nothing
+            // observable by suppressing the row).
+            $clinicId = $this->clinic_id ?? ($user->clinic_id ?? null);
+            if ($clinicId === null) {
+                return;
+            }
+
             AuditLog::create([
+                'clinic_id' => $clinicId,
                 'user_id' => $userId,
                 'action' => $action,
                 'model_type' => get_class($this),
