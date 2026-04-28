@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('app:refresh-all-inventory-forecasts')->dailyAt('00:00');
+Schedule::command('app:sync-to-portal')->everyMinute()->withoutOverlapping();

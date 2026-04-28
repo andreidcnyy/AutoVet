@@ -30,6 +30,22 @@ class SyncOutbox extends Model
         'processed_at' => 'datetime',
     ];
 
+    public function scopePending($query)
+    {
+        return $query->whereIn('status', ['pending', 'failed'])
+                     ->where('retry_count', '<', 5);
+    }
+
+    public function scopeOldestFirst($query)
+    {
+        return $query->orderBy('queued_at', 'asc');
+    }
+
+    public function markProcessing(): void
+    {
+        $this->update(['status' => 'processing']);
+    }
+
     public function markSynced(): void
     {
         $this->update([
