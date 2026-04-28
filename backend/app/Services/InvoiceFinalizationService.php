@@ -54,37 +54,44 @@ class InvoiceFinalizationService
                         continue;
                     }
 
-                    // If it's a service and we have logic for consumables, we'd check that here.
-                    // For now, any item with an inventory_id attached is treated as needing deduction
-                    // if it's explicitly billed as a product OR if it's a linked consumable.
-
-                    // Stock shortage no longer blocks the invoice. Billing must
-                    // remain possible even when consumables are short — we log
-                    // the shortage, skip the deduction, and let the invoice
-                    // finalize so the clinic can still bill the client.
+                    // Stock shortage handling depends on item type.
+                    //   Retail product (item_type === 'inventory'): block. You
+                    //     cannot sell what you do not have on hand.
+                    //   Service consumable (item_type === 'service'): allow,
+                    //     because the procedure has already been performed and
+                    //     the client must still be billable. Log the shortage,
+                    //     skip the deduction, and continue.
                     if ($inventoryItem->stock_level < $item->qty) {
-                        \Illuminate\Support\Facades\Log::warning(
-                            "[INVOICE-STOCK-SHORTAGE] Skipping deduction for invoice #{$invoice->invoice_number}",
-                            [
-                                'inventory_id' => $inventoryItem->id,
-                                'item_name'    => $inventoryItem->item_name,
-                                'required'     => $item->qty,
-                                'available'    => $inventoryItem->stock_level,
-                            ]
-                        );
+                        if ($item->item_type === 'service') {
+                            \Illuminate\Support\Facades\Log::warning(
+                                "[INVOICE-SERVICE-CONSUMABLE-SHORTAGE] Skipping deduction for invoice #{$invoice->invoice_number}",
+                                [
+                                    'inventory_id' => $inventoryItem->id,
+                                    'item_name'    => $inventoryItem->item_name,
+                                    'required'     => $item->qty,
+                                    'available'    => $inventoryItem->stock_level,
+                                ]
+                            );
 
-                        $this->createInternalNotification(
-                            'StockShortage',
-                            'Stock Shortage on Finalized Invoice',
-                            "Invoice #{$invoice->invoice_number} finalized but '{$inventoryItem->item_name}' could not be deducted (required {$item->qty}, available {$inventoryItem->stock_level}). Reorder needed.",
-                            ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
-                        );
+                            $this->createInternalNotification(
+                                'StockShortage',
+                                'Service Consumable Shortage',
+                                "Invoice #{$invoice->invoice_number} finalized but service consumable '{$inventoryItem->item_name}' could not be deducted (required {$item->qty}, available {$inventoryItem->stock_level}). Reorder needed.",
+                                ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
+                            );
 
-                        if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
-                            event(new LowStockDetected($inventoryItem));
+                            if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
+                                event(new LowStockDetected($inventoryItem));
+                            }
+
+                            continue;
                         }
 
-                        continue;
+                        if ($inventoryItem->stock_level <= 0) {
+                            throw new Exception("Cannot bill retail item '{$inventoryItem->item_name}'. Item is currently OUT OF STOCK.");
+                        }
+
+                        throw new Exception("Insufficient stock for retail item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}. Remove or restock before finalizing.");
                     }
 
                     $oldStock = $inventoryItem->stock_level;
