@@ -1,5 +1,8 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
 [phases.install]
-cmds = ["pip install --no-cache-dir -r requirements.txt"]
+cmds = ["python3.11 -m pip install --no-cache-dir -r requirements.txt"]
 
 [start]
-cmd = "python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+cmd = "python3.11 -m uvicorn main:app --host 0.0.0.0 --port $PORT"
