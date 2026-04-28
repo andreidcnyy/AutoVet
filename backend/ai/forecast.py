@@ -165,25 +165,45 @@ def forecast_stockout(csv_filepath, min_stock_level):
             "current_stock": last_stock
         }
 
-    # Predict stockout days based on current stock
-    # Logic: how many days until current_stock hits min_stock_level?
-    stock_to_deplete = max(0, last_stock - min_stock_level)
-    predicted_days_to_min = math.ceil(stock_to_deplete / average_daily_consumption)
-
-    # FINAL RULE: stockout date must never be in the past. 
-    # Use localized 'now' since this is a relative forecast based on current live state.
-    base_date = datetime.now()
-    
-    # If last_stock is already below min, days might be negative if we stayed strictly by formula
-    # but the earlier check handles last_stock <= min_stock_level.
-    predicted_date_to_min = base_date + timedelta(days=max(0, predicted_days_to_min))
-
-    # Scikit-learn LinearRegression for explainability (shows trend)
-    X = np.arange(len(df)).reshape(-1, 1)
-    y = df['stock_level'].values
+    # Fit Linear Regression on stock_level over day-index. The model itself drives
+    # the prediction: solve model(x) = min_stock_level for x, then convert x to a date.
+    # This is the actual ML-based forecast, not a moving average.
+    day_index = (df['date'] - df['date'].min()).dt.days.values.astype(float)
+    X = day_index.reshape(-1, 1)
+    y = df['stock_level'].values.astype(float)
     model = LinearRegression()
     model.fit(X, y)
     lr_r2 = round(float(r2_score(y, model.predict(X))), 4)
+
+    slope = float(model.coef_[0])      # stock change per day
+    intercept = float(model.intercept_)
+    last_day_index = float(day_index.max())
+
+    base_date = datetime.now()
+
+    # If trend is flat or rising, regression sees no stockout risk.
+    if slope >= 0:
+        return {
+            "prediction_status": "Success",
+            "forecast_status": "Safe",
+            "message": "Linear regression shows non-decreasing stock trend; no stockout predicted.",
+            "average_daily_consumption": round(average_daily_consumption, 2),
+            "predicted_monthly_sales": round(average_daily_consumption * 30, 2),
+            "days_until_stockout": None,
+            "predicted_stockout_date": None,
+            "current_stock": last_stock,
+            "confidence_score": lr_r2,
+            "ml_algorithm": "scikit-learn LinearRegression",
+            "regression_slope": round(slope, 4),
+            "regression_intercept": round(intercept, 4),
+            "historical_period_end": last_date.strftime('%Y-%m-%d')
+        }
+
+    # Solve LR equation: min_stock_level = slope * x + intercept  ->  x = (min - b) / m
+    x_at_min = (min_stock_level - intercept) / slope
+    predicted_days_to_min = int(math.ceil(max(0.0, x_at_min - last_day_index)))
+
+    predicted_date_to_min = base_date + timedelta(days=predicted_days_to_min)
 
     # Determine status based on days remaining
     if predicted_days_to_min < 7:
@@ -216,6 +236,8 @@ def forecast_stockout(csv_filepath, min_stock_level):
         "predicted_monthly_sales": round(average_daily_consumption * 30, 2),
         "confidence_score": lr_r2,
         "ml_algorithm": "scikit-learn LinearRegression",
+        "regression_slope": round(slope, 4),
+        "regression_intercept": round(intercept, 4),
         "historical_period_end": last_date.strftime('%Y-%m-%d')
     }
 

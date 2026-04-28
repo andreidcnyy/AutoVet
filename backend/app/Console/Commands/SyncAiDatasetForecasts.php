@@ -87,13 +87,11 @@ class SyncAiDatasetForecasts extends Command
                 continue;
             }
 
-            // Also run sales forecast via service
-            $salesResult = $this->runSalesForecast($code);
-            $result = array_merge($result, $salesResult);
-
-            // Label correctly as dataset source (set AFTER merge to prevent overwriting)
-            $result['prediction_status'] = 'Using dataset-guided prediction';
-            $result['message']           = "Historical dataset is used to estimate demand behavior. Final stockout date is based on current live stock.";
+            // Label honestly so the UI/panel can distinguish dataset-only output
+            // from a live regression prediction. No silent fallback.
+            $result['prediction_status'] = 'Dataset-only (no live data)';
+            $result['prediction_source'] = 'dataset';
+            $result['message']           = "This forecast was computed from a static dataset, not from live transactions. Live regression prediction is unavailable until enough real usage history is recorded.";
 
             // Save forecast
             $inventoryForecastService->saveForecast($inventory->id, $result);

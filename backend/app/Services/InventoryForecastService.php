@@ -421,10 +421,6 @@ class InventoryForecastService
 
                     if ($response->successful()) {
                         $forecastResult = $response->json();
-                        // Merge Sales Forecast data
-                        $salesForecast = $this->runSalesForecast($inventory->code);
-                        $forecastResult = array_merge($forecastResult, $salesForecast);
-
                         $forecastResult['item_name']    = $inventory->item_name;
                         $forecastResult['inventory_id'] = $inventory->id;
 
@@ -471,10 +467,6 @@ class InventoryForecastService
                 Log::error("InventoryForecastService: JSON decode error for inventory ID {$inventoryId}: " . json_last_error_msg());
                 return null;
             }
-
-            // Merge Sales Forecast data
-            $salesForecast = $this->runSalesForecast($inventoryCode);
-            $forecastResult = array_merge($forecastResult, $salesForecast);
 
             $forecastResult['item_name']    = $inventory->item_name;
             $forecastResult['inventory_id'] = $inventory->id;
