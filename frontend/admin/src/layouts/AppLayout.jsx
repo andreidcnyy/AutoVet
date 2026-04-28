@@ -9,7 +9,7 @@ import {
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
-import api from "../api";
+import api, { triggerSync } from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
 import clsx from "clsx";
 import { FiX } from "react-icons/fi";
@@ -34,6 +34,21 @@ function AppLayout() {
   const matches = useMatches();
   const navigate = useNavigate();
   const [isMaintenance, setIsMaintenance] = useState(false);
+
+  // --- AUTOMATIC SYNC HEARTBEAT ---
+  // This triggers a background sync every 5 seconds as long as the dashboard is open.
+  React.useEffect(() => {
+    if (!user || isSuperAdmin) return;
+
+    // Initial trigger
+    triggerSync().catch(() => {});
+
+    const interval = setInterval(() => {
+      triggerSync().catch(() => {});
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [user, isSuperAdmin]);
 
   // Fetch active announcements for clinic users
   React.useEffect(() => {

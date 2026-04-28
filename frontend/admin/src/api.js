@@ -121,4 +121,6 @@ const api = {
   invalidateCache,
 };
 
+export const triggerSync = () => api.post('/sync/trigger');
+
 export default api;
