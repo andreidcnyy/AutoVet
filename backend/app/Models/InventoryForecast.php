@@ -30,6 +30,8 @@ class InventoryForecast extends Model
         'prediction_source',
         'trigger_source',
         'estimated_monthly_revenue',
+        'trend_fit_score',
+        'confidence_score',
     ];
 
     protected $casts = [
@@ -41,6 +43,8 @@ class InventoryForecast extends Model
         'predicted_weekly_sales'    => 'decimal:2',
         'predicted_monthly_sales'   => 'decimal:2',
         'estimated_monthly_revenue' => 'decimal:2',
+        'trend_fit_score'           => 'decimal:4',
+        'confidence_score'          => 'decimal:4',
     ];
 
     public function inventory()

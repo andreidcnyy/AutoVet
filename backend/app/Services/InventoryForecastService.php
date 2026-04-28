@@ -171,6 +171,8 @@ class InventoryForecastService
             'prediction_source'         => $isDataset ? 'dataset' : 'live',
             'trigger_source'            => $triggerSource,
             'notes'                     => $forecastResult['message'] ?? null,
+            'trend_fit_score'           => $forecastResult['trend_fit_score'] ?? $forecastResult['confidence_score'] ?? null,
+            'confidence_score'          => $forecastResult['confidence_score'] ?? $forecastResult['trend_fit_score'] ?? null,
         ]);
 
         $this->generateAiNotification($inventory, $forecastResult);
