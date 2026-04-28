@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  FiHome, FiPlus, FiActivity, FiCheckCircle, FiAlertCircle, 
-  FiMail, FiPhone, FiMapPin, FiEdit2, FiUpload, FiImage, 
+import {
+  FiHome, FiPlus, FiActivity, FiCheckCircle, FiAlertCircle,
+  FiMail, FiPhone, FiMapPin, FiEdit2, FiUpload, FiImage,
   FiMap, FiUsers, FiLock, FiLogOut, FiCalendar, FiStar,
-  FiChevronLeft, FiChevronRight, FiFilter, FiTrash2
+  FiChevronLeft, FiChevronRight, FiFilter, FiTrash2, FiUserPlus, FiX
 } from 'react-icons/fi';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
@@ -82,6 +82,11 @@ export default function SuperAdminDashboard() {
   const [clinicAdminsData, setClinicAdminsData] = useState({ data: [], current_page: 1, last_page: 1 });
   const [loadingAdmins, setLoadingAdmins] = useState(false);
   const [adminsPage, setAdminsPage] = useState(1);
+
+  // Add user to clinic state
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({ name: '', email: '', password: '', role: 'staff' });
+  const [addUserSubmitting, setAddUserSubmitting] = useState(false);
 
   const toast = useToast();
   const { login } = useAuth();
@@ -289,6 +294,22 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleAddClinicUser = async (e) => {
+    e.preventDefault();
+    setAddUserSubmitting(true);
+    try {
+      await api.post(`/api/super-admin/clinics/${selectedClinic.id}/users`, addUserForm);
+      toast.success('User created successfully.');
+      setAddUserModalOpen(false);
+      setAddUserForm({ name: '', email: '', password: '', role: 'staff' });
+      fetchAdmins(selectedClinic.id, adminsPage);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to create user.');
+    } finally {
+      setAddUserSubmitting(false);
+    }
+  };
+
   const handleImpersonate = async () => {
     if (!window.confirm(`Are you sure you want to log in as ${selectedClinic.clinic_name}?`)) return;
     
@@ -488,6 +509,15 @@ export default function SuperAdminDashboard() {
 
                    {activeTab === 'admins' && (
                      <div className="animate-in fade-in duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Clinic Staff & Users</p>
+                          <button
+                            onClick={() => { setAddUserForm({ name: '', email: '', password: '', role: 'staff' }); setAddUserModalOpen(true); }}
+                            className="inline-flex items-center gap-2 rounded-xl bg-autovet-teal px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:opacity-90 shadow-md transition-all"
+                          >
+                            <FiUserPlus className="h-3.5 w-3.5" /> Add User
+                          </button>
+                        </div>
                         {loadingAdmins ? (
                            <p className="text-sm font-black uppercase tracking-widest text-zinc-500 py-12 text-center animate-pulse">Synchronizing Staff Data...</p>
                         ) : (!clinicAdminsData.data || clinicAdminsData.data.length === 0) ? (
@@ -556,6 +586,48 @@ export default function SuperAdminDashboard() {
                   <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-4 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
                 </div>
              </div>
+          </div>
+        </div>
+      )}
+
+      {addUserModalOpen && selectedClinic && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-autovet-navy/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-autovet-navy dark:text-zinc-50 uppercase tracking-tight">Add User</h3>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-0.5">{selectedClinic.clinic_name}</p>
+              </div>
+              <button onClick={() => setAddUserModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><FiX size={20} /></button>
+            </div>
+            <form onSubmit={handleAddClinicUser} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-autovet-navy dark:text-zinc-400 mb-1">Full Name</label>
+                <input required type="text" value={addUserForm.name} onChange={e => setAddUserForm({ ...addUserForm, name: e.target.value })} className="input-field text-xs font-bold" placeholder="e.g. Maria Santos" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-autovet-navy dark:text-zinc-400 mb-1">Email Address</label>
+                <input required type="email" value={addUserForm.email} onChange={e => setAddUserForm({ ...addUserForm, email: e.target.value })} className="input-field text-xs font-bold" placeholder="user@clinic.com" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-autovet-navy dark:text-zinc-400 mb-1">Role</label>
+                <select value={addUserForm.role} onChange={e => setAddUserForm({ ...addUserForm, role: e.target.value })} className="input-field text-xs font-bold bg-white dark:bg-dark-surface">
+                  <option value="clinic_admin">Clinic Admin</option>
+                  <option value="veterinarian">Veterinarian</option>
+                  <option value="staff">Staff</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-autovet-navy dark:text-zinc-400 mb-1">Password</label>
+                <input required type="password" value={addUserForm.password} onChange={e => setAddUserForm({ ...addUserForm, password: e.target.value })} className="input-field text-xs font-bold" placeholder="Min. 8 characters" minLength={8} />
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-zinc-100 dark:border-dark-border mt-6">
+                <button type="button" onClick={() => setAddUserModalOpen(false)} className="flex-1 py-3 font-black uppercase text-xs tracking-widest text-zinc-400 hover:text-autovet-navy">Cancel</button>
+                <button type="submit" disabled={addUserSubmitting} className="flex-1 rounded-2xl bg-autovet-teal py-3 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 disabled:opacity-50 shadow-lg">
+                  {addUserSubmitting ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

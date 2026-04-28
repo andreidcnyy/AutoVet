@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
             <SuperAdminLogs />
           </ProtectedRoute>
         ),
-        handle: { title: "System Audit Logs" },
+        handle: { title: "Super Admin Management" },
       },
       {
         path: "super-admin/announcements",

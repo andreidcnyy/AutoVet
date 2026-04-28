@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 use App\Models\Clinic;
 use App\Models\Admin;
@@ -170,17 +171,80 @@ class SuperAdminDashboardController extends Controller
     }
 
     /**
-     * POWER 1: Get Admins for a specific clinic (Account Recovery)
+     * POWER 1: Get Admins/Staff for a specific clinic
      */
     public function clinicAdmins(Clinic $clinic): JsonResponse
     {
         $admins = Admin::withoutGlobalScopes()
             ->where('clinic_id', $clinic->id)
-            ->whereIn('role', [Roles::CLINIC_ADMIN->value, Roles::VETERINARIAN->value]) 
+            ->whereIn('role', [Roles::CLINIC_ADMIN->value, Roles::VETERINARIAN->value, Roles::STAFF->value])
             ->orderBy('name', 'asc')
-            ->paginate(5); // Show 5 per page for the modal view
-            
+            ->paginate(5);
+
         return response()->json($admins);
+    }
+
+    /**
+     * Create a clinic-level user (clinic_admin / veterinarian / staff) for a specific clinic
+     */
+    public function storeClinicUser(Request $request, Clinic $clinic): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:admins,email',
+            'password' => 'required|string|min:8',
+            'role'     => ['required', 'string', Rule::in([
+                Roles::CLINIC_ADMIN->value,
+                Roles::VETERINARIAN->value,
+                Roles::STAFF->value,
+            ])],
+        ]);
+
+        $admin = Admin::create([
+            'name'       => $validated['name'],
+            'email'      => $validated['email'],
+            'password'   => Hash::make($validated['password']),
+            'role'       => $validated['role'],
+            'clinic_id'  => $clinic->id,
+            'status'     => 'active',
+        ]);
+
+        return response()->json(['message' => 'User created successfully.', 'admin' => $admin], 201);
+    }
+
+    /**
+     * List all super_admin accounts
+     */
+    public function superAdmins(): JsonResponse
+    {
+        $admins = Admin::withoutGlobalScopes()
+            ->where('role', Roles::SUPER_ADMIN->value)
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json($admins);
+    }
+
+    /**
+     * Create a new super_admin account
+     */
+    public function storeSuperAdmin(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:admins,email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $admin = Admin::create([
+            'name'     => $validated['name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role'     => Roles::SUPER_ADMIN->value,
+            'status'   => 'active',
+        ]);
+
+        return response()->json(['message' => 'Super Admin created successfully.', 'admin' => $admin], 201);
     }
 
     /**

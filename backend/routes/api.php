@@ -455,9 +455,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         
         // Super Admin Powers
         Route::get('/super-admin/clinics/{clinic}/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinicAdmins']);
+        Route::post('/super-admin/clinics/{clinic}/users', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeClinicUser']);
         Route::post('/super-admin/clinics/{clinic}/admins/{admin}/reset-password', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'resetClinicAdminPassword']);
         Route::post('/super-admin/impersonate/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'impersonate']);
         Route::get('/super-admin/system-logs', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'systemLogs']);
+        Route::get('/super-admin/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'superAdmins']);
+        Route::post('/super-admin/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeSuperAdmin']);
         Route::get('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'announcements']);
         Route::post('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeAnnouncement']);
         Route::put('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateAnnouncement']);
