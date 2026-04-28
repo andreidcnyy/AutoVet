@@ -196,6 +196,57 @@ Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
         $report['recent_appointments'] = 'error: ' . $e->getMessage();
     }
 
+    if ($apptId = $request->query('repro')) {
+        try {
+            $appt = \App\Models\Appointment::withoutGlobalScopes()->find($apptId);
+            if (!$appt) {
+                $report['repro'] = ['error' => 'appt not found'];
+            } else {
+                $pet = \App\Models\Pet::withoutGlobalScopes()->find($appt->pet_id);
+                $owner = $pet ? \App\Models\Owner::withoutGlobalScopes()->find($pet->owner_id) : null;
+                $portalUser = $owner && $owner->user_id ? \App\Models\PortalUser::withoutGlobalScopes()->find($owner->user_id) : null;
+
+                if (!$portalUser) {
+                    $report['repro'] = ['error' => 'no portal user for this appointment owner'];
+                } else {
+                    \Illuminate\Support\Facades\Auth::login($portalUser);
+
+                    $apptScoped = \App\Models\Appointment::find($apptId);
+                    if ($apptScoped) {
+                        $apptScoped->load('pet.owner');
+                    }
+
+                    $report['repro'] = [
+                        'logged_in_as' => ['portal_user_id' => $portalUser->id, 'clinic_id' => $portalUser->clinic_id, 'email' => $portalUser->email],
+                        'appt_loadable_under_scope' => (bool) $apptScoped,
+                        'pet_loadable_under_scope' => (bool) ($apptScoped?->pet),
+                        'owner_loadable_under_scope' => (bool) ($apptScoped?->pet?->owner),
+                        'owner_email_under_scope' => $apptScoped?->pet?->owner?->email,
+                    ];
+
+                    if ($apptScoped?->pet?->owner) {
+                        try {
+                            $svc = app(\App\Services\ClientNotificationService::class);
+                            $svc->sendFromTemplate(
+                                $apptScoped->pet->owner,
+                                'appointment_created',
+                                'email',
+                                ['date' => $apptScoped->date, 'time' => $apptScoped->time, 'title' => $apptScoped->title],
+                                'automated',
+                                $apptScoped
+                            );
+                            $report['repro']['send_result'] = 'ok';
+                        } catch (\Throwable $e) {
+                            $report['repro']['send_result'] = ['error' => $e->getMessage(), 'class' => get_class($e)];
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $report['repro'] = ['error' => $e->getMessage()];
+        }
+    }
+
     if ($apptId = $request->query('appt')) {
         try {
             $appt = \App\Models\Appointment::withoutGlobalScopes()->find($apptId);
