@@ -138,6 +138,61 @@ Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
+// Diagnostic: report the live mail/notification configuration and (optionally)
+// send a test email directly via the Brevo transport. Visible in JSON so we
+// don't need access to runtime logs to debug delivery.
+// Pass ?to=someone@example.com to actually attempt a send.
+Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
+    $report = [
+        'mail_mailer_env' => env('MAIL_MAILER'),
+        'brevo_key_present' => !empty(env('BREVO_API_KEY')),
+        'brevo_key_tail' => env('BREVO_API_KEY') ? substr(env('BREVO_API_KEY'), -6) : null,
+        'mail_from_address' => env('MAIL_FROM_ADDRESS'),
+        'mail_from_name' => env('MAIL_FROM_NAME'),
+        'frontend_portal_url' => env('FRONTEND_PORTAL_URL'),
+        'app_env' => app()->environment(),
+        'migrations_pending' => null,
+        'notification_templates' => [],
+        'send_attempt' => null,
+    ];
+
+    try {
+        $report['migrations_pending'] = collect(\Illuminate\Support\Facades\Artisan::call('migrate:status') === 0
+            ? explode("\n", \Illuminate\Support\Facades\Artisan::output())
+            : [])->filter(fn($l) => str_contains($l, 'Pending'))->values()->all();
+    } catch (\Throwable $e) {
+        $report['migrations_pending'] = 'error: ' . $e->getMessage();
+    }
+
+    try {
+        $report['notification_templates'] = \Illuminate\Support\Facades\DB::table('notification_templates')
+            ->select('id', 'clinic_id', 'event_key', 'channel', 'is_active', 'name')
+            ->get()
+            ->map(fn($t) => (array) $t)
+            ->all();
+    } catch (\Throwable $e) {
+        $report['notification_templates'] = 'error: ' . $e->getMessage();
+    }
+
+    if ($to = $request->query('to')) {
+        try {
+            \Illuminate\Support\Facades\Mail::mailer('appointment')
+                ->to($to)
+                ->send(new \App\Mail\ClientNotificationMail('Debug send', 'If you can read this, Brevo + the appointment mailer work end-to-end.'));
+            $report['send_attempt'] = ['ok' => true, 'to' => $to];
+        } catch (\Throwable $e) {
+            $report['send_attempt'] = [
+                'ok' => false,
+                'to' => $to,
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+            ];
+        }
+    }
+
+    return response()->json($report, 200, [], JSON_PRETTY_PRINT);
+});
+
 // Test endpoint to check API status
 Route::get('/status', function () {
     $dbStatus = 'disconnected';
