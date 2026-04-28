@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\ClientNotificationService;
 use App\Traits\HasInternalNotifications;
 use App\Traits\IdentifiesPortalOwner;
+use App\Enums\Roles;
 use Illuminate\Support\Facades\Log;
 
 class AppointmentStatusController extends Controller
@@ -18,7 +19,7 @@ class AppointmentStatusController extends Controller
     public function __construct(ClientNotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
-        $this->middleware('role:Admin,Veterinarian');
+        $this->middleware('role:' . implode(',', Roles::adminRoles()));
     }
 
     public function approve(Request $request, Appointment $appointment)
