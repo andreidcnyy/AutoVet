@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './Login';
@@ -15,6 +16,7 @@ import Invoices from './pages/Invoices';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
+import { triggerSync } from './api';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -28,6 +30,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const { user } = useAuth();
+
+  // --- AUTOMATIC SYNC HEARTBEAT ---
+  // This triggers a background sync every 5 seconds as long as the app is open.
+  useEffect(() => {
+    if (!user) return;
+
+    // Initial trigger
+    triggerSync().catch(() => {});
+
+    const interval = setInterval(() => {
+      triggerSync().catch(() => {});
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   const router = createBrowserRouter([
     {

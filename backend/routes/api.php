@@ -399,6 +399,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
     Route::put('/notifications/{id}',             [ClientNotificationController::class, 'markAsRead']);
 
+    // Synchronization Trigger
+    Route::post('/sync/trigger', function (\App\Services\SyncService $syncService) {
+        $syncService->pushToPortal();
+        return response()->json(['status' => 'triggered']);
+    });
+
     // -----------------------------------------------------------------------
     // Master Data Management
     // -----------------------------------------------------------------------

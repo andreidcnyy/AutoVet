@@ -76,6 +76,9 @@ export const markNotificationAsRead = (id: number) => api.put(`/notifications/${
 export const getProfile = () => api.get('/profile');
 export const updateProfile = (data: any) => api.put('/profile', data);
 
+// Sync
+export const triggerSync = () => api.post('/sync/trigger');
+
 // Settings
 export const getSettings = () => api.get('/settings');
 
