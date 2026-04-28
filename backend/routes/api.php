@@ -196,6 +196,24 @@ Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
         $report['recent_appointments'] = 'error: ' . $e->getMessage();
     }
 
+    if ($apptId = $request->query('appt')) {
+        try {
+            $appt = \App\Models\Appointment::withoutGlobalScopes()->find($apptId);
+            $pet = $appt ? \App\Models\Pet::withoutGlobalScopes()->find($appt->pet_id) : null;
+            $owner = $pet ? \App\Models\Owner::withoutGlobalScopes()->find($pet->owner_id) : null;
+            $report['inspect_appt'] = [
+                'appt_id' => $apptId,
+                'appointment' => $appt ? $appt->toArray() : null,
+                'pet' => $pet ? $pet->toArray() : null,
+                'pet_owner_id' => $pet?->owner_id,
+                'owner' => $owner ? $owner->toArray() : null,
+                'owner_email' => $owner?->email,
+            ];
+        } catch (\Throwable $e) {
+            $report['inspect_appt'] = ['error' => $e->getMessage()];
+        }
+    }
+
     if ($to = $request->query('to')) {
         try {
             \Illuminate\Support\Facades\Mail::mailer('appointment')
