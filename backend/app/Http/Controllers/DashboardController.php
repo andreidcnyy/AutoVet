@@ -360,23 +360,17 @@ class DashboardController extends Controller
         
         $apptsToday = Appointment::whereDate('date', $today)
             ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', 'NOT LIKE', 'dataset.seeder%');
-            })
+            ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
-            
+
         $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', 'NOT LIKE', 'dataset.seeder%');
-            })
+            ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
-            
+
         $cancelledDeclined = Appointment::whereDate('date', $today)
             ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', 'NOT LIKE', 'dataset.seeder%');
-            })
+            ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
 
         return response()->json([
