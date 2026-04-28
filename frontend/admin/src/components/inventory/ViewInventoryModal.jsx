@@ -425,15 +425,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           {isAdmin && (
             <>
               <button
-                onClick={handleRunForecast}
-                disabled={isLoadingForecast || isSaving}
-                className="mr-auto inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20"
-              >
-                <LuSparkles className={clsx("h-4 w-4", isLoadingForecast && "animate-spin")} />
-                {isLoadingForecast ? "Analyzing..." : "Re-Sync AI"}
-              </button>
-              
-              <button
                 onClick={() => onDeleteRequest(product)}
                 className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
               >
