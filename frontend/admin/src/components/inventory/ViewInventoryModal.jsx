@@ -366,7 +366,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   )}
 
                   <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest">
-                    Live Stock: {product.stock_level} | Min Stock Level: {aiForecastData.min_stock_level ?? 0} | As of: {aiForecastData.last_recorded_date ?? aiForecastData.historical_period_end ?? '—'}
+                    Live Stock: {product.stock_level} | Min Stock Level: {aiForecastData.min_stock_level ?? 0} | As of: {new Date().toLocaleDateString()}
                   </p>
                 </div>
               )}
