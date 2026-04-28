@@ -46,4 +46,16 @@ class Owner extends Model
             throw new \Exception("Cannot permanently delete this owner because they still have registered pets.");
         }
     }
+
+    /**
+     * Excludes seeded mock data (AI training dataset + bulk production mock
+     * clients) from the query. The rows stay in the DB so the AI engine can
+     * still train on them — they're just hidden from the UI.
+     */
+    public function scopeRealClients($query)
+    {
+        return $query
+            ->where('email', '!=', 'dataset.seeder@autovet.ai')
+            ->where('email', 'not like', 'client.prod.%@autovet.ph');
+    }
 }

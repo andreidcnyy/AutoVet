@@ -1183,7 +1183,7 @@ class DashboardController extends Controller
             ->whereDate('date', $today)
             ->whereIn('status', $confirmedStatuses)
             ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+                $q->realClients();
             })
             ->orderBy('time', 'asc')
             ->paginate($perPage);
@@ -1224,7 +1224,7 @@ class DashboardController extends Controller
             ->whereDate('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
             ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+                $q->realClients();
             })
             ->orderBy('date', 'asc')
             ->orderBy('time', 'asc')

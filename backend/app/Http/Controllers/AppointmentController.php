@@ -38,7 +38,7 @@ class AppointmentController extends Controller
         // Always hide AI Training Records from the list for Admins/Staff
         // but keep them in the DB for forecasting logic.
         $query->whereHas('pet.owner', function($q) {
-            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+            $q->realClients();
         });
 
         // Access control: Portal users only see their own appointments
@@ -136,7 +136,7 @@ class AppointmentController extends Controller
             ->where('date', '>=', $request->date_from)
             ->where('date', '<=', $request->date_to)
             ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+                $q->realClients();
             })
             ->groupBy('date');
 

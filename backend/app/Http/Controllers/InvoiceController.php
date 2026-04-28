@@ -49,6 +49,10 @@ class InvoiceController extends Controller
         ])
         ->withCount('items');
 
+        $query->whereHas('pet.owner', function ($q) {
+            $q->realClients();
+        });
+
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
                 $q->where('owner_id', $ownerId);
