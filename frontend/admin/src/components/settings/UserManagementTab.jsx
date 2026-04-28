@@ -6,6 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
 import { ROLES } from "../../constants/roles";
 
+const isSuperAdmin = (role) => role === ROLES.SUPER_ADMIN;
+
 export default function UserManagementTab() {
   const toast = useToast();
   const [users, setUsers] = useState([]);
@@ -179,6 +181,10 @@ export default function UserManagementTab() {
     }
   };
 
+  const visibleUsers = isSuperAdmin(user?.role)
+    ? users
+    : users.filter((u) => u.role !== ROLES.SUPER_ADMIN);
+
   if (loading) return <div className="p-6 text-zinc-500">Loading users...</div>;
 
   return (
@@ -206,7 +212,7 @@ export default function UserManagementTab() {
             </tr>
           </thead>
           <tbody>
-            {users.map((member) => (
+            {visibleUsers.map((member) => (
               <tr key={member.id} className="border-b border-zinc-200/80 dark:border-dark-border">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
@@ -236,9 +242,11 @@ export default function UserManagementTab() {
                     <button onClick={() => { setResetingUser(member); setResetModalOpen(true); }} className="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:border-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:bg-emerald-50">
                       Reset
                     </button>
-                    <button onClick={() => handleDelete(member.id)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30 hover:bg-rose-50">
-                      <FiTrash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {(!isSuperAdmin(member.role) || isSuperAdmin(user?.role)) && (
+                      <button onClick={() => handleDelete(member.id)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30 hover:bg-rose-50">
+                        <FiTrash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -267,7 +275,10 @@ export default function UserManagementTab() {
                 <div>
                   <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Role</label>
                   <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
-                    <option value={ROLES.CLINIC_ADMIN}>Admin</option>
+                    {isSuperAdmin(user?.role) && (
+                      <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+                    )}
+                    <option value={ROLES.CLINIC_ADMIN}>Clinic Admin</option>
                     <option value={ROLES.VETERINARIAN}>Veterinarian</option>
                     <option value={ROLES.STAFF}>Staff</option>
                   </select>
