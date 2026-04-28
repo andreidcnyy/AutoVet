@@ -27,13 +27,13 @@ async def get_inventory_forecast(
         f.write(csv_data)
     
     try:
-        # Mock sys.argv or refactor forecast.py slightly
-        # For now, we'll refactor the call to accept arguments directly
-        import sys
-        # We need to preserve the sys.argv behavior for now or refactor forecast_stockout
-        # Refactoring to accept args directly is better.
-        
-        result = forecast_stockout(temp_file, min_stock_level)
+        result = forecast_stockout(
+            temp_file,
+            min_stock_level,
+            code=code,
+            current_stock=current_stock,
+            history_days=history_days,
+        )
         return json.loads(json.dumps(result, cls=NumpyEncoder))
     finally:
         if os.path.exists(temp_file):

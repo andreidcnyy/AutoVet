@@ -35,15 +35,18 @@ def _model_meta(slope, intercept, r2):
     }
 
 
-def forecast_stockout(csv_filepath, min_stock_level):
+def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=None, history_days=None):
     try:
         min_stock_level = int(min_stock_level)
     except (ValueError, TypeError):
         return {"error": "Invalid min_stock_level provided. Must be an integer."}
 
-    target_code = next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--code=')), None)
-    current_stock_arg = next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--current_stock=')), None)
-    history_days_arg = next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--history_days=')), None)
+    # Accept args directly (FastAPI path) or fall back to sys.argv (CLI path).
+    target_code = code or next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--code=')), None)
+    current_stock_arg = (str(current_stock) if current_stock is not None
+                         else next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--current_stock=')), None))
+    history_days_arg = (str(history_days) if history_days is not None
+                        else next((arg.split('=')[1] for arg in sys.argv if arg.startswith('--history_days=')), None))
 
     try:
         df = pd.read_csv(csv_filepath)
