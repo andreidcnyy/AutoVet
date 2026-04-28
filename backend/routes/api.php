@@ -174,6 +174,28 @@ Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
         $report['notification_templates'] = 'error: ' . $e->getMessage();
     }
 
+    try {
+        $report['recent_client_notifications'] = \Illuminate\Support\Facades\DB::table('client_notifications')
+            ->orderBy('id', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(fn($n) => (array) $n)
+            ->all();
+    } catch (\Throwable $e) {
+        $report['recent_client_notifications'] = 'error: ' . $e->getMessage();
+    }
+
+    try {
+        $report['recent_appointments'] = \Illuminate\Support\Facades\DB::table('appointments')
+            ->orderBy('id', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(fn($n) => (array) $n)
+            ->all();
+    } catch (\Throwable $e) {
+        $report['recent_appointments'] = 'error: ' . $e->getMessage();
+    }
+
     if ($to = $request->query('to')) {
         try {
             \Illuminate\Support\Facades\Mail::mailer('appointment')
