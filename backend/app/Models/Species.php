@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use Illuminate\Database\Eloquent\Model;
 
 class Species extends Model
 {
-    use HasAuditTrail;
-    protected $fillable = ['name', 'status'];
+    use HasAuditTrail, HasClinic;
+    protected $fillable = ['clinic_id', 'name', 'status'];
 
     public function breeds()
     {

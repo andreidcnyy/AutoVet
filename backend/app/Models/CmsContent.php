@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,11 +22,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class CmsContent extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail;
+    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
 
     protected $table = 'cms_contents';
 
     protected $fillable = [
+        'clinic_id',
         'uuid',
         'type',
         'title',

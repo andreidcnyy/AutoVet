@@ -3,12 +3,27 @@
 namespace App\Models;
 
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 
 class InvoiceItem extends Model
 {
-    use HasSyncFields, HasAuditTrail;
+    use HasSyncFields, HasAuditTrail, HasClinic;
+
+    protected static function booted(): void
+    {
+        static::creating(function (InvoiceItem $item) {
+            if (!$item->clinic_id && $item->invoice_id) {
+                $invoiceClinicId = Invoice::withoutGlobalScopes()
+                    ->whereKey($item->invoice_id)
+                    ->value('clinic_id');
+                if ($invoiceClinicId) {
+                    $item->clinic_id = $invoiceClinicId;
+                }
+            }
+        });
+    }
 
     protected $guarded = [];
 
