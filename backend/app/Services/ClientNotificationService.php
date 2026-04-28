@@ -44,6 +44,7 @@ class ClientNotificationService
     public function send(Owner $owner, string $channel, string $message, ?string $title = null, ?string $type = 'manual', $relatedModel = null, ?string $eventKey = null)
     {
         $notification = ClientNotification::create([
+            'clinic_id' => $owner->clinic_id,
             'owner_id' => $owner->id,
             'channel' => $channel,
             'type' => $type,

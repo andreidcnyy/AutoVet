@@ -138,11 +138,13 @@ Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
-// Diagnostic: report the live mail/notification configuration and (optionally)
-// send a test email directly via the Brevo transport. Visible in JSON so we
-// don't need access to runtime logs to debug delivery.
-// Pass ?to=someone@example.com to actually attempt a send.
+// Diagnostic endpoint — gated to prevent unauthenticated data exposure.
+// Set DEBUG_MAIL_TOKEN on Railway and call ?token=<value> to access.
 Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
+    $expected = env('DEBUG_MAIL_TOKEN');
+    if (empty($expected) || $request->query('token') !== $expected) {
+        return response()->json(['error' => 'forbidden'], 403);
+    }
     $report = [
         'mail_mailer_env' => env('MAIL_MAILER'),
         'brevo_key_present' => !empty(env('BREVO_API_KEY')),
