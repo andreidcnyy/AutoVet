@@ -104,24 +104,4 @@ class SyncAiDatasetForecasts extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * Helper to run sales forecast via CLI (matches service logic)
-     */
-    private function runSalesForecast(string $code): array
-    {
-        $salesCsvPath = base_path('storage/datasets/sales.csv');
-        $salesScriptPath = base_path('ai/sales_forecast.py');
-        $pythonExecutable = env('PYTHON_BIN_PATH') ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
-
-        $command = $pythonExecutable
-                 . ' ' . escapeshellarg($salesScriptPath)
-                 . ' ' . escapeshellarg($salesCsvPath)
-                 . ' ' . escapeshellarg("--code={$code}");
-
-        $process = \Illuminate\Support\Facades\Process::run($command);
-        if ($process->failed()) return [];
-
-        $res = json_decode($process->output(), true);
-        return (json_last_error() === JSON_ERROR_NONE && !isset($res['error'])) ? $res : [];
-    }
 }

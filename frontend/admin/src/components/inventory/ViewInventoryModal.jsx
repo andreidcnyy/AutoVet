@@ -323,18 +323,18 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                         Predicted Stockout: <span className="text-rose-600">
                           {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        {typeof aiForecastData.confidence_score === 'number' && (
+                        {typeof (aiForecastData.trend_fit_score ?? aiForecastData.confidence_score) === 'number' && (
                           <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            · {Math.round(Math.max(0, Math.min(1, aiForecastData.confidence_score)) * 100)}% confidence
+                            · Trend Fit {Math.round(Math.max(0, Math.min(1, aiForecastData.trend_fit_score ?? aiForecastData.confidence_score)) * 100)}%
                           </span>
                         )}
                       </>
                     ) : (
                       <span className="text-emerald-600">
                         {aiForecastData.message || "No stockout predicted — usage trend is stable or rising."}
-                        {typeof aiForecastData.confidence_score === 'number' && (
+                        {typeof (aiForecastData.trend_fit_score ?? aiForecastData.confidence_score) === 'number' && (
                           <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            · {Math.round(Math.max(0, Math.min(1, aiForecastData.confidence_score)) * 100)}% confidence
+                            · Trend Fit {Math.round(Math.max(0, Math.min(1, aiForecastData.trend_fit_score ?? aiForecastData.confidence_score)) * 100)}%
                           </span>
                         )}
                       </span>
@@ -366,7 +366,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   )}
 
                   <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest">
-                    Live Stock: {product.stock_level} | Min Stock Level: {aiForecastData.min_stock_level ?? 0} | As of: {aiForecastData.last_recorded_date}
+                    Live Stock: {product.stock_level} | Min Stock Level: {aiForecastData.min_stock_level ?? 0} | As of: {aiForecastData.last_recorded_date ?? aiForecastData.historical_period_end ?? '—'}
                   </p>
                 </div>
               )}

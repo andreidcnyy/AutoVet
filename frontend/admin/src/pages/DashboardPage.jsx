@@ -82,7 +82,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <p className="text-white font-black text-xs mb-1 uppercase tracking-widest">{label}</p>
       <p className="text-white font-black text-xl">{d.value} visits</p>
       <p className={`text-[10px] font-black uppercase tracking-tighter mt-1 ${isFc ? 'text-purple-400' : 'text-emerald-400'}`}>
-        {isFc ? '🔮 AI forecast' : '📊 Actual Data'}
+        {isFc ? '📈 Trend Projection' : '📊 Actual Data'}
       </p>
     </div>
   );
@@ -469,7 +469,7 @@ function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex gap-6">
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[activeCategory] }} /><span className="text-zinc-900 dark:text-zinc-100 text-[10px] font-black uppercase">ACTUAL DATA</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm opacity-50 border-2" style={{ borderColor: CATEGORY_COLORS[activeCategory], backgroundColor: 'transparent' }} /><span className="text-zinc-900 dark:text-zinc-100 text-[10px] font-black uppercase">AI forecast</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm opacity-50 border-2" style={{ borderColor: CATEGORY_COLORS[activeCategory], backgroundColor: 'transparent' }} /><span className="text-zinc-900 dark:text-zinc-100 text-[10px] font-black uppercase">Trend Projection</span></div>
               </div>
               <div className="flex items-center gap-2">
                 <button disabled={(historyPage + 1) * HISTORICAL_WINDOW >= historical.length} onClick={() => setHistoryPage(p => p + 1)} className="h-8 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 disabled:opacity-30 border border-zinc-300 dark:border-zinc-700"><Icons.FiChevronLeft className="inline mr-1" /> Prev 12 Months</button>

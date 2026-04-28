@@ -354,9 +354,9 @@ function InventoryView() {
                                             ? "Stable trend — no stockout predicted"
                                             : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
                                 </span>
-                                {typeof row.latest_forecast.confidence_score === 'number' && row.stock_level > 0 && (
+                                {typeof (row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score) === 'number' && row.stock_level > 0 && (
                                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                        Confidence {Math.round(Math.max(0, Math.min(1, row.latest_forecast.confidence_score)) * 100)}%
+                                        Trend Fit {Math.round(Math.max(0, Math.min(1, row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score)) * 100)}%
                                     </span>
                                 )}
                             </div>

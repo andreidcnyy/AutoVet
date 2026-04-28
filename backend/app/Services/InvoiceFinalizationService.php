@@ -58,14 +58,33 @@ class InvoiceFinalizationService
                     // For now, any item with an inventory_id attached is treated as needing deduction
                     // if it's explicitly billed as a product OR if it's a linked consumable.
 
-                    // Mandatory Rule: Reject if stock is already zero or below
-                    if ($inventoryItem->stock_level <= 0) {
-                        throw new Exception("Cannot deduct '{$inventoryItem->item_name}'. Item is currently OUT OF STOCK.");
-                    }
-
-                    // Mandatory Rule: Reject if deduction causes negative stock
+                    // Stock shortage no longer blocks the invoice. Billing must
+                    // remain possible even when consumables are short — we log
+                    // the shortage, skip the deduction, and let the invoice
+                    // finalize so the clinic can still bill the client.
                     if ($inventoryItem->stock_level < $item->qty) {
-                        throw new Exception("Insufficient stock for item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}. Transaction rejected to prevent negative stock.");
+                        \Illuminate\Support\Facades\Log::warning(
+                            "[INVOICE-STOCK-SHORTAGE] Skipping deduction for invoice #{$invoice->invoice_number}",
+                            [
+                                'inventory_id' => $inventoryItem->id,
+                                'item_name'    => $inventoryItem->item_name,
+                                'required'     => $item->qty,
+                                'available'    => $inventoryItem->stock_level,
+                            ]
+                        );
+
+                        $this->createInternalNotification(
+                            'StockShortage',
+                            'Stock Shortage on Finalized Invoice',
+                            "Invoice #{$invoice->invoice_number} finalized but '{$inventoryItem->item_name}' could not be deducted (required {$item->qty}, available {$inventoryItem->stock_level}). Reorder needed.",
+                            ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
+                        );
+
+                        if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
+                            event(new LowStockDetected($inventoryItem));
+                        }
+
+                        continue;
                     }
 
                     $oldStock = $inventoryItem->stock_level;
