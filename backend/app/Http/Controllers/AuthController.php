@@ -218,8 +218,14 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Generate Sanctum API token
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Generate Sanctum API token with device info
+        $deviceName = $this->parseDeviceName($request->userAgent() ?? '');
+        $newToken = $user->createToken($deviceName);
+        $newToken->accessToken->forceFill([
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ])->save();
+        $token = $newToken->plainTextToken;
 
         $responseData = [
             'id' => $user->id,
@@ -312,7 +318,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid or expired token.'], 422);
         }
 
-        $user = Admin::where('email', $request->email)->first() 
+        $user = Admin::where('email', $request->email)->first()
              ?? PortalUser::where('email', $request->email)->first();
 
         if (!$user) {
@@ -323,5 +329,26 @@ class AuthController extends Controller
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
         return response()->json(['message' => 'Password reset successfully.']);
+    }
+
+    private function parseDeviceName(string $userAgent): string
+    {
+        $browser = 'Unknown Browser';
+        $os = 'Unknown OS';
+
+        if (str_contains($userAgent, 'Edg/'))       $browser = 'Edge';
+        elseif (str_contains($userAgent, 'OPR/') || str_contains($userAgent, 'Opera/')) $browser = 'Opera';
+        elseif (str_contains($userAgent, 'Chrome/')) $browser = 'Chrome';
+        elseif (str_contains($userAgent, 'Firefox/')) $browser = 'Firefox';
+        elseif (str_contains($userAgent, 'Safari/') && !str_contains($userAgent, 'Chrome')) $browser = 'Safari';
+        elseif (str_contains($userAgent, 'MSIE') || str_contains($userAgent, 'Trident/')) $browser = 'Internet Explorer';
+
+        if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad')) $os = 'iOS';
+        elseif (str_contains($userAgent, 'Android')) $os = 'Android';
+        elseif (str_contains($userAgent, 'Windows')) $os = 'Windows';
+        elseif (str_contains($userAgent, 'Macintosh') || str_contains($userAgent, 'Mac OS')) $os = 'macOS';
+        elseif (str_contains($userAgent, 'Linux')) $os = 'Linux';
+
+        return "{$browser} on {$os}";
     }
 }

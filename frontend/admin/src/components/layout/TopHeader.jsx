@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX,
-  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity
+  FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity, FiMonitor
 } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import ManageDevicesModal from "../profile/ManageDevicesModal";
 import clsx from "clsx";
 
 const iconMap = {
@@ -36,6 +37,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [openNotifMenu, setOpenNotifMenu] = useState(false);
+  const [showDevicesModal, setShowDevicesModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedNotif, setSelectedNotif] = useState(null);
   const menuRef = useRef(null);
@@ -229,6 +231,14 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                   <FiUser className="h-4 w-4" />
                   My Profile
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => { setShowDevicesModal(true); setOpenProfileMenu(false); }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-dark-surface"
+                >
+                  <FiMonitor className="h-4 w-4" />
+                  Manage Devices
+                </button>
                 <Link
                   to="/settings"
                   onClick={() => setOpenProfileMenu(false)}
@@ -256,6 +266,14 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           </div>
         </div>
       </div>
+      {showDevicesModal && (
+        <ManageDevicesModal
+          onClose={() => setShowDevicesModal(false)}
+          apiBase={import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '') || ''}
+          token={JSON.parse(localStorage.getItem('user') || '{}')?.token || ''}
+        />
+      )}
+
       {selectedNotif && (() => {
         const Icon = iconMap[selectedNotif.iconName] || FiBell;
         return (

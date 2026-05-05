@@ -23,6 +23,46 @@ class ProfileController extends Controller
         return response()->json($user);
     }
 
+    public function devices(Request $request)
+    {
+        $user = $request->user();
+        $currentTokenId = $user->currentAccessToken()->id;
+
+        $devices = $user->tokens()
+            ->select(['id', 'name', 'ip_address', 'user_agent', 'last_used_at', 'created_at'])
+            ->latest()
+            ->get()
+            ->map(fn($token) => [
+                'id'           => $token->id,
+                'name'         => $token->name,
+                'ip_address'   => $token->ip_address,
+                'user_agent'   => $token->user_agent,
+                'last_used_at' => $token->last_used_at,
+                'created_at'   => $token->created_at,
+                'is_current'   => $token->id === $currentTokenId,
+            ]);
+
+        return response()->json($devices);
+    }
+
+    public function revokeDevice(Request $request, $tokenId)
+    {
+        $user = $request->user();
+        $currentTokenId = $user->currentAccessToken()->id;
+
+        if ((int) $tokenId === $currentTokenId) {
+            return response()->json(['error' => 'Cannot revoke your current session.'], 422);
+        }
+
+        $deleted = $user->tokens()->where('id', $tokenId)->delete();
+
+        if (!$deleted) {
+            return response()->json(['error' => 'Session not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Device session revoked.']);
+    }
+
     public function update(Request $request)
     {
         $user = auth()->user();
