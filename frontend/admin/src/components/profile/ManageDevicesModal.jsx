@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   FiMonitor, FiSmartphone, FiTablet, FiX, FiTrash2, FiWifi,
   FiClock, FiCalendar, FiGlobe, FiShield,
@@ -116,7 +117,7 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
@@ -266,6 +267,7 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
