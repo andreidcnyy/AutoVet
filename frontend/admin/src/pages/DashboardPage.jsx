@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import MetricCard from "../components/dashboard/MetricCard";
-import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { LuSparkles } from "react-icons/lu";
@@ -503,7 +502,6 @@ function DashboardPage() {
         </section>
       )}
 
-      <RecentNotificationsCard items={mappedNotifications} onMarkAllRead={handleMarkAllRead} onClearAll={handleClearAll} onDismiss={handleDismiss} />
 
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" onClick={closeModal}>
