@@ -218,12 +218,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Generate Sanctum API token with device info
-        $deviceName = $this->parseDeviceName($request->userAgent() ?? '');
+        // One token per device — delete any existing token for this user agent before creating a new one
+        $currentUserAgent = $request->userAgent();
+        if ($currentUserAgent) {
+            $user->tokens()->where('user_agent', $currentUserAgent)->delete();
+        }
+
+        $deviceName = $this->parseDeviceName($currentUserAgent ?? '');
         $newToken = $user->createToken($deviceName);
         $newToken->accessToken->forceFill([
             'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+            'user_agent' => $currentUserAgent,
         ])->save();
         $token = $newToken->plainTextToken;
 
