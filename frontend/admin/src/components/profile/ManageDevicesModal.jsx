@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   FiMonitor, FiSmartphone, FiTablet, FiX, FiTrash2, FiWifi,
@@ -8,33 +8,48 @@ import clsx from "clsx";
 
 // ── UA parsing ────────────────────────────────────────────────────────────────
 function parseUA(ua) {
-  if (!ua) return { browser: "Unknown Browser", os: "Unknown OS", isMobile: false };
+  if (!ua) return { browser: "Unknown Browser", os: "Unknown OS", device: null, isMobile: false };
 
   let browser = "Unknown Browser";
-  let os = "Unknown OS";
+  let os      = "Unknown OS";
+  let device  = null;
   let isMobile = false;
 
-  // Browser (order matters — Edge/OPR must come before Chrome)
-  if (/Edg\//.test(ua))                          browser = "Microsoft Edge";
-  else if (/OPR\/|Opera\//.test(ua))             browser = "Opera";
-  else if (/SamsungBrowser\//.test(ua))          browser = "Samsung Browser";
-  else if (/Chrome\//.test(ua))                  browser = "Google Chrome";
-  else if (/Firefox\//.test(ua))                 browser = "Mozilla Firefox";
+  // Browser (order matters — Edge/Samsung/OPR must come before Chrome)
+  if (/Edg\//.test(ua))                               browser = "Microsoft Edge";
+  else if (/OPR\/|Opera\//.test(ua))                  browser = "Opera";
+  else if (/SamsungBrowser\//.test(ua))               browser = "Samsung Browser";
+  else if (/Chrome\//.test(ua))                       browser = "Google Chrome";
+  else if (/Firefox\//.test(ua))                      browser = "Mozilla Firefox";
   else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
-  else if (/MSIE|Trident\//.test(ua))            browser = "Internet Explorer";
+  else if (/MSIE|Trident\//.test(ua))                 browser = "Internet Explorer";
 
-  // OS
-  if (/iPhone/.test(ua))                         { os = "iPhone";   isMobile = true; }
-  else if (/iPad/.test(ua))                      { os = "iPad";     isMobile = true; }
-  else if (/Android/.test(ua))                   { os = "Android";  isMobile = true; }
-  else if (/Windows NT 10/.test(ua))             os = "Windows 10/11";
-  else if (/Windows NT 6\.3/.test(ua))           os = "Windows 8.1";
-  else if (/Windows NT 6\.1/.test(ua))           os = "Windows 7";
-  else if (/Windows/.test(ua))                   os = "Windows";
-  else if (/Macintosh|Mac OS X/.test(ua))        os = "macOS";
-  else if (/Linux/.test(ua))                     os = "Linux";
+  // Android — model IS in the UA string e.g. "Android 14; Pixel 7 Pro"
+  const androidMatch = ua.match(/Android ([\d.]+);\s*([^)]+)/);
+  if (androidMatch) {
+    os     = `Android ${androidMatch[1]}`;
+    device = androidMatch[2].trim();
+    isMobile = true;
+  // iPhone — Apple omits the model from browser UAs; best we can do is iOS version
+  } else if (/iPhone/.test(ua)) {
+    const v = (ua.match(/OS ([\d_]+)/) || [])[1];
+    os      = v ? `iOS ${v.replace(/_/g, ".")}` : "iOS";
+    device  = "iPhone";
+    isMobile = true;
+  // iPad — same situation as iPhone
+  } else if (/iPad/.test(ua)) {
+    const v = (ua.match(/OS ([\d_]+)/) || [])[1];
+    os      = v ? `iPadOS ${v.replace(/_/g, ".")}` : "iPadOS";
+    device  = "iPad";
+    isMobile = true;
+  } else if (/Windows NT 10/.test(ua))              os = "Windows 10/11";
+  else if (/Windows NT 6\.3/.test(ua))              os = "Windows 8.1";
+  else if (/Windows NT 6\.1/.test(ua))              os = "Windows 7";
+  else if (/Windows/.test(ua))                      os = "Windows";
+  else if (/Macintosh|Mac OS X/.test(ua))           os = "macOS";
+  else if (/Linux/.test(ua))                        os = "Linux";
 
-  return { browser, os, isMobile };
+  return { browser, os, device, isMobile };
 }
 
 function getDeviceIcon(ua) {
@@ -80,7 +95,7 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
   const [revokingAll, setRevokingAll] = useState(false);
   const [error, setError] = useState(null);
 
-  async function fetchDevices() {
+  const fetchDevices = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -94,9 +109,10 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [apiBase, token]);
 
-  useEffect(() => { fetchDevices(); }, []);
+  // Re-fetch whenever the active account token changes
+  useEffect(() => { fetchDevices(); }, [fetchDevices]);
 
   async function handleRevokeAll() {
     setRevokingAll(true);
@@ -188,7 +204,7 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
           {!loading && !error && devices.length > 0 && (
             <ul className="space-y-3">
               {devices.map((device) => {
-                const { browser, os, isMobile } = parseUA(device.user_agent);
+                const { browser, os, device: model, isMobile } = parseUA(device.user_agent);
                 const Icon = getDeviceIcon(device.user_agent);
                 const browserColor = getBrowserColor(browser);
                 const lastActive = device.last_used_at || device.created_at;
@@ -220,9 +236,14 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
+                          {/* Show Android model or iPhone/iPad prominently */}
+                          {model && (
+                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{model}</span>
+                          )}
+                          {model && <span className="text-zinc-300 dark:text-zinc-600">·</span>}
                           <span className={clsx("text-sm font-bold", browserColor)}>{browser}</span>
                           <span className="text-zinc-300 dark:text-zinc-600">·</span>
-                          <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{os}</span>
+                          <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{os}</span>
                           {isMobile && (
                             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                               Mobile
