@@ -7,6 +7,19 @@ import {
 import clsx from "clsx";
 
 // ── UA parsing ────────────────────────────────────────────────────────────────
+
+// Apple froze "CPU iPhone OS X_Y" at 18.x for backwards-compat even on iOS 26+.
+// Version/X.Y in the same UA tracks the real marketing version, so prefer it.
+function iosVersion(ua) {
+  const fromVersion = (ua.match(/Version\/([\d.]+)/) || [])[1];
+  const fromOS      = ((ua.match(/OS ([\d_]+)/) || [])[1] || "").replace(/_/g, ".");
+  if (!fromVersion && !fromOS) return "";
+  if (!fromVersion) return fromOS;
+  if (!fromOS)      return fromVersion;
+  // Take whichever is numerically higher
+  return parseFloat(fromVersion) >= parseFloat(fromOS) ? fromVersion : fromOS;
+}
+
 function parseUA(ua) {
   if (!ua) return { browser: "Unknown Browser", os: "Unknown OS", device: null, isMobile: false };
 
@@ -30,16 +43,16 @@ function parseUA(ua) {
     os     = `Android ${androidMatch[1]}`;
     device = androidMatch[2].trim();
     isMobile = true;
-  // iPhone — Apple omits the model from browser UAs; best we can do is iOS version
+  // iPhone — Apple omits the model from browser UAs.
+  // Use Version/ for the iOS version: Apple froze "CPU iPhone OS X_Y" at 18.x
+  // for compatibility even on iOS 26+, but Version/ tracks the real version.
   } else if (/iPhone/.test(ua)) {
-    const v = (ua.match(/OS ([\d_]+)/) || [])[1];
-    os      = v ? `iOS ${v.replace(/_/g, ".")}` : "iOS";
+    os      = `iOS ${iosVersion(ua)}`;
     device  = "iPhone";
     isMobile = true;
   // iPad — same situation as iPhone
   } else if (/iPad/.test(ua)) {
-    const v = (ua.match(/OS ([\d_]+)/) || [])[1];
-    os      = v ? `iPadOS ${v.replace(/_/g, ".")}` : "iPadOS";
+    os      = `iPadOS ${iosVersion(ua)}`;
     device  = "iPad";
     isMobile = true;
   } else if (/Windows NT 10/.test(ua))              os = "Windows 10/11";
