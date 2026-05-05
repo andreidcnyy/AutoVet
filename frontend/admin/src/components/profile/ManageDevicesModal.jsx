@@ -77,6 +77,7 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState(null);
+  const [revokingAll, setRevokingAll] = useState(false);
   const [error, setError] = useState(null);
 
   async function fetchDevices() {
@@ -96,6 +97,26 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
   }
 
   useEffect(() => { fetchDevices(); }, []);
+
+  async function handleRevokeAll() {
+    setRevokingAll(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/api/profile/devices`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "Failed to revoke other sessions.");
+      }
+      setDevices((prev) => prev.filter((d) => d.is_current));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRevokingAll(false);
+    }
+  }
 
   async function handleRevoke(deviceId) {
     setRevoking(deviceId);
@@ -256,9 +277,20 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between border-t border-zinc-100 px-7 py-4 dark:border-dark-border">
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            {devices.length} active session{devices.length !== 1 ? "s" : ""}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+              {devices.length} active session{devices.length !== 1 ? "s" : ""}
+            </p>
+            {devices.filter((d) => !d.is_current).length > 0 && (
+              <button
+                onClick={handleRevokeAll}
+                disabled={revokingAll}
+                className="text-xs font-semibold text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors dark:text-red-400"
+              >
+                {revokingAll ? "Signing out…" : "Sign out all other devices"}
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="rounded-xl border border-zinc-200 px-5 py-2 text-xs font-bold uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 transition-colors dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface"

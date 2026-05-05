@@ -63,6 +63,16 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Device session revoked.']);
     }
 
+    public function revokeOtherDevices(Request $request)
+    {
+        $user = $request->user();
+        $currentTokenId = $user->currentAccessToken()->id;
+
+        $count = $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+
+        return response()->json(['message' => "Revoked {$count} other session(s)."]);
+    }
+
     public function update(Request $request)
     {
         $user = auth()->user();
