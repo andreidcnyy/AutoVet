@@ -107,10 +107,11 @@ export default function ManageDevicesModal({ onClose, apiBase, token }) {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || "Failed to revoke other sessions.");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Request failed (${res.status}).`);
       }
-      setDevices((prev) => prev.filter((d) => d.is_current));
+      // Re-fetch from server — more reliable than filtering local state
+      await fetchDevices();
     } catch (e) {
       setError(e.message);
     } finally {

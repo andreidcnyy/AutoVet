@@ -270,7 +270,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
         <ManageDevicesModal
           onClose={() => setShowDevicesModal(false)}
           apiBase={import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '') || ''}
-          token={JSON.parse(localStorage.getItem('user') || '{}')?.token || ''}
+          token={user?.token || ''}
         />
       )}
 
