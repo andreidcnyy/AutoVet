@@ -32,7 +32,7 @@ class ClinicScope implements Scope
 
             // Everyone else is restricted to their clinic
             if (isset($user->clinic_id)) {
-                $builder->where($model->getTable() . '.clinic_id', $user->clinic_id);
+                $builder->where($model->getTable() . '.clinic_id', '=', $user->clinic_id);
             }
         }
     }

@@ -12,6 +12,11 @@ class AuditLogController extends Controller
         try {
             $query = AuditLog::with('user');
 
+            // Exclude logs where the user is a super_admin
+            $query->whereHas('user', function($q) {
+                $q->where('role', '!=', \App\Enums\Roles::SUPER_ADMIN->value);
+            });
+
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
             }
