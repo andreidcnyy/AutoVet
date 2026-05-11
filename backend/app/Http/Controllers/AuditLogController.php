@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use App\Enums\Roles;
 
 class AuditLogController extends Controller
 {
