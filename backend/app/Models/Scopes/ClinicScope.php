@@ -25,14 +25,31 @@ class ClinicScope implements Scope
         $user = Auth::user();
 
         if ($user) {
+            // Check for super_admin role more robustly
+            $role = null;
+            if (isset($user->role)) {
+                $role = $user->role;
+            }
+
             // Super admins should see ALL data across ALL clinics.
-            if (method_exists($user, 'hasRole') && $user->hasRole(Roles::SUPER_ADMIN->value)) {
+            if ($role === Roles::SUPER_ADMIN->value) {
                 return;
             }
 
             // Everyone else is restricted to their clinic
             if (isset($user->clinic_id)) {
                 $builder->where($model->getTable() . '.clinic_id', '=', $user->clinic_id);
+            } else {
+                // If user is authenticated but has no clinic_id and is not super_admin, 
+                // this might be an edge case or misconfiguration.
+                // We should probably still restrict them to nothing or log it.
+                // For now, if they are not super admin and have no clinic, they see nothing from clinic-scoped tables.
+                $builder->whereRaw('1 = 0');
+                
+                // Only log if not in a high-volume context to avoid log flooding
+                if (!app()->isProduction()) {
+                    \Illuminate\Support\Facades\Log::warning("ClinicScope applied to user without clinic_id: " . $user->id);
+                }
             }
         }
     }
