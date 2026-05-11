@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiActivity, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../api";
 import clsx from "clsx";
 
 function AuditLogTab() {
@@ -30,18 +31,19 @@ function AuditLogTab() {
     page === 1 && !f.action_type && !f.model_type && !f.date_from && !f.date_to;
 
   const applyResponse = (data) => {
+    if (!data) return;
     setLogs(data.data || []);
     setPagination({
-      current_page: data.current_page,
-      last_page: data.last_page,
-      total: data.total,
-      per_page: data.per_page
+      current_page: data.current_page || 1,
+      last_page: data.last_page || 1,
+      total: data.total || 0,
+      per_page: data.per_page || 20
     });
   };
 
   const controllerRef = React.useRef(null);
 
-  const fetchLogs = (page = 1) => {
+  const fetchLogs = async (page = 1) => {
     if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -63,31 +65,23 @@ function AuditLogTab() {
       setLoading(true);
     }
 
-    const params = new URLSearchParams({ ...filters, page });
-    fetch(`/api/audit-logs?${params.toString()}`, {
-      signal: controller.signal,
-      headers: {
-        "Authorization": `Bearer ${user?.token}`,
-        "Accept": "application/json"
-      }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch audit logs");
-        return res.json();
-      })
-      .then((data) => {
-        applyResponse(data);
-        if (isDefaultView(page, filters)) {
-          try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
-        }
-      })
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        toast.error(err.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+    try {
+      const data = await api.get("/audit-logs", {
+        params: { ...filters, page },
+        signal: controller.signal
       });
+      
+      applyResponse(data);
+      if (isDefaultView(page, filters)) {
+        try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error("AuditLogTab Error:", err);
+      toast.error(err.message || "Failed to fetch audit logs");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   };
 
   useEffect(() => {
