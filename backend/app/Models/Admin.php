@@ -73,7 +73,7 @@ class Admin extends Authenticatable
 
     public function isOwner(): bool
     {
-        return false; // Admins are never owners in the portal context
+        return false;
     }
 
     public function preventPermanentDeletionIfReferenced()
