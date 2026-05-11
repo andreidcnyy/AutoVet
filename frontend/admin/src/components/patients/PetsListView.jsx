@@ -24,8 +24,6 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
 
   // Modal State
   const [selectedPetId, setSelectedPetId] = useState(null);
@@ -34,7 +32,7 @@ function PetsListView() {
   const fetchPets = async () => {
     if (!user?.token) return;
     try {
-      const response = await fetch("/api/pets?per_page=100", {
+      const response = await fetch("/api/pets?per_page=1000", {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user.token}`
@@ -68,17 +66,6 @@ function PetsListView() {
     });
   }, [pets, searchQuery]);
 
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredPets.slice(indexOfFirstItem, indexOfLastItem);
-
   const getAge = (dob) => {
     if (!dob) return "N/A";
     const birthDate = new Date(dob);
@@ -96,63 +83,13 @@ function PetsListView() {
     setIsModalOpen(true);
   };
 
-  const Pagination = () => {
-    if (totalPages <= 1) return null;
-    return (
-      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 dark:border-dark-border dark:bg-dark-card shadow-sm">
-          <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-              Showing <span className="text-zinc-900 dark:text-zinc-50">{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredPets.length)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{filteredPets.length}</span> patients
-          </div>
-          
-          <div className="flex items-center gap-2">
-              <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-              >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-              </button>
-              
-              <div className="flex items-center gap-1.5">
-                  {[...Array(totalPages)].map((_, i) => (
-                      <button
-                          key={i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className={clsx(
-                              "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
-                              currentPage === i + 1
-                                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
-                                  : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
-                          )}
-                      >
-                          {i + 1}
-                      </button>
-                  ))}
-              </div>
-
-              <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
-              >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-              </button>
-          </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Directory</h2>
-          <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase">Patient Directory</h2>
+          <p className="mt-1 text-base font-bold text-emerald-600 uppercase tracking-tight">
             Total of {pets.length} patient records across all clients.
           </p>
         </div>
@@ -180,16 +117,14 @@ function PetsListView() {
         </div>
       </div>
 
-      <Pagination />
-
       {/* Grid List */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {isLoading ? (
             Array(8).fill(0).map((_, i) => (
                 <div key={i} className="card-shell h-64 animate-pulse bg-zinc-100 dark:bg-dark-card/50" />
             ))
-        ) : currentItems.length > 0 ? (
-            currentItems.map((pet) => (
+        ) : filteredPets.length > 0 ? (
+            filteredPets.map((pet) => (
                 <article 
                     key={pet.id} 
                     onClick={() => handlePetClick(pet.id)}
@@ -265,8 +200,6 @@ function PetsListView() {
             </div>
         )}
       </div>
-
-      <Pagination />
 
       {/* Detail Modal */}
       <ViewPatientModal 
