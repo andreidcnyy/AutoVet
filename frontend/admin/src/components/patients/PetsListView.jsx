@@ -24,6 +24,8 @@ function PetsListView() {
   const [pets, setPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Modal State
   const [selectedPetId, setSelectedPetId] = useState(null);
@@ -40,7 +42,6 @@ function PetsListView() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Laravel paginate() returns { data: [...] }
         setPets(data.data || []);
       }
     } catch (error) {
@@ -66,6 +67,17 @@ function PetsListView() {
     });
   }, [pets, searchQuery]);
 
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredPets.slice(indexOfFirstItem, indexOfLastItem);
+
   const getAge = (dob) => {
     if (!dob) return "N/A";
     const birthDate = new Date(dob);
@@ -88,7 +100,7 @@ function PetsListView() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase">Patient Directory</h2>
+          <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Patient Directory</h2>
           <p className="mt-1 text-base font-bold text-emerald-600 uppercase tracking-tight">
             Total of {pets.length} patient records across all clients.
           </p>
@@ -123,8 +135,8 @@ function PetsListView() {
             Array(8).fill(0).map((_, i) => (
                 <div key={i} className="card-shell h-64 animate-pulse bg-zinc-100 dark:bg-dark-card/50" />
             ))
-        ) : filteredPets.length > 0 ? (
-            filteredPets.map((pet) => (
+        ) : currentItems.length > 0 ? (
+            currentItems.map((pet) => (
                 <article 
                     key={pet.id} 
                     onClick={() => handlePetClick(pet.id)}
@@ -200,6 +212,44 @@ function PetsListView() {
             </div>
         )}
       </div>
+
+      {/* Single Pagination Control */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-sm"
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-2">
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                className={clsx(
+                  "flex h-12 w-12 items-center justify-center rounded-2xl text-xs font-black transition-all",
+                  currentPage === i + 1
+                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-110"
+                    : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
+                )}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-sm"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Detail Modal */}
       <ViewPatientModal 
