@@ -22,13 +22,17 @@ class RoleMiddleware
 
         // Determine user role
         $userRole = null;
-        if ($user instanceof \App\Models\Admin) {
+        if (isset($user->role)) {
             $userRole = $user->role;
-        } elseif ($user instanceof \App\Models\PortalUser || (method_exists($user, 'isOwner') && $user->isOwner())) {
+        } elseif (method_exists($user, 'isOwner') && $user->isOwner()) {
             $userRole = Roles::OWNER->value;
         }
 
         if (!$userRole) {
+            \Illuminate\Support\Facades\Log::warning("RoleMiddleware: Role not defined for user " . $user->id, [
+                'class' => get_class($user),
+                'attributes' => $user->getAttributes()
+            ]);
             return response()->json(['message' => 'Unauthorized. Role not defined.'], 403);
         }
 

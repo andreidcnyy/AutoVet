@@ -86,7 +86,19 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     
     if (!res.ok) {
       console.error(`[API ERROR] ${res.status} from ${requestUrl}`);
-      const err = new Error(`API error ${res.status}`);
+      let errorMsg = `API error ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData && errorData.message) {
+          errorMsg = errorData.message;
+        } else if (errorData && errorData.error) {
+          errorMsg = errorData.error;
+        }
+      } catch (e) {
+        // Fallback if not JSON
+      }
+      
+      const err = new Error(errorMsg);
       err.status = res.status;
       if (res.status === 401) {
         setAuthToken(null);

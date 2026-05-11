@@ -11,8 +11,21 @@ class AuditLogController extends Controller
     public function index(Request $request)
     {
         try {
-            // Start query without with('user') to see if that's the issue
-            $query = AuditLog::query();
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            // Use withoutGlobalScopes to manually control the query
+            $query = AuditLog::withoutGlobalScopes();
+
+            // Apply clinic restriction manually if not super_admin
+            if ($user->role !== Roles::SUPER_ADMIN->value) {
+                if (!$user->clinic_id) {
+                    return response()->json(['data' => [], 'total' => 0], 200);
+                }
+                $query->where('clinic_id', $user->clinic_id);
+            }
 
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
@@ -34,18 +47,14 @@ class AuditLogController extends Controller
                 $query->whereDate('created_at', '<=', $request->input('date_to'));
             }
 
-            // Get results and then load users, filtering out super_admins manually if needed
-            // Or just load them normally.
+            // Load user relation without scopes
             $result = $query->with(['user' => function($q) {
-                // We use withoutGlobalScopes if we suspect ClinicScope is interfering with user loading
                 $q->withoutGlobalScopes();
             }])->orderBy('created_at', 'desc')->paginate(20);
 
-            // Filter out super_admins from the current page items
-            // Note: This might cause the page to have fewer than 20 items.
-            // But for debugging, it's safer.
+            // Filter out super_admin logs manually for extra safety
             $items = $result->getCollection()->filter(function($log) {
-                return !$log->user || $log->user->role !== \App\Enums\Roles::SUPER_ADMIN->value;
+                return !$log->user || $log->user->role !== Roles::SUPER_ADMIN->value;
             });
             $result->setCollection($items->values());
 
