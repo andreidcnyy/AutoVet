@@ -16,6 +16,9 @@ class AuditLogController extends Controller
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
+            // Increase sort_buffer_size for this session to handle sorting of large data rows
+            \Illuminate\Support\Facades\DB::statement('SET SESSION sort_buffer_size = 1024 * 1024 * 2;'); // 2MB
+
             // Use withoutGlobalScopes to manually control the query
             $query = AuditLog::withoutGlobalScopes();
 
