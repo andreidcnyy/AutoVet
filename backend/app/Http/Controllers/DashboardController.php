@@ -150,51 +150,83 @@ class DashboardController extends Controller
     public function getAppointmentForecast()
     {
         return response()->json(\Illuminate\Support\Facades\Cache::remember('dashboard_appointment_forecast', 300, function () {
-            // Get last 8 weeks of appointment counts
-            $startDate = now()->startOfWeek()->subWeeks(7);
+            // Fetch 16 weeks for training; chart displays the most recent 8
+            $startDate = now()->startOfWeek()->subWeeks(15);
             $counts = \App\Models\Appointment::where('date', '>=', $startDate->toDateString())
                 ->select(DB::raw('date'), DB::raw('count(*) as count'))
                 ->groupBy('date')
                 ->get()
                 ->pluck('count', 'date');
 
-            $weeklyData = [];
-            for ($i = 7; $i >= 0; $i--) {
+            $allWeeklyData = [];
+            for ($i = 15; $i >= 0; $i--) {
                 $weekStart = now()->startOfWeek()->subWeeks($i);
                 $weekEnd = $weekStart->copy()->endOfWeek();
-                
                 $count = 0;
                 $current = $weekStart->copy();
                 while ($current <= $weekEnd) {
                     $count += $counts[$current->toDateString()] ?? 0;
                     $current->addDay();
                 }
-                $weeklyData[] = $count;
+                $allWeeklyData[] = $count;
             }
 
-            // Linear Regression on weekly appointment counts (x = week index, y = count)
-            $n = count($weeklyData);
+            // Last 8 weeks used for chart display and insight text
+            $weeklyData = array_slice($allWeeklyData, -8);
+
+            // Linear regression helper: returns [slope, intercept, r2]
+            $fitLR = function(array $x, array $y): array {
+                $n = count($x);
+                $sumX = array_sum($x); $sumY = array_sum($y);
+                $sumXY = 0; $sumX2 = 0;
+                for ($i = 0; $i < $n; $i++) {
+                    $sumXY += $x[$i] * $y[$i];
+                    $sumX2 += $x[$i] * $x[$i];
+                }
+                $denom = ($n * $sumX2) - ($sumX * $sumX);
+                $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
+                $b = ($sumY - ($m * $sumX)) / $n;
+                $meanY = $n > 0 ? $sumY / $n : 0;
+                $ssTot = array_sum(array_map(fn($yi) => pow($yi - $meanY, 2), $y));
+                $ssRes = 0;
+                for ($i = 0; $i < $n; $i++) {
+                    $ssRes += pow($y[$i] - ($m * $x[$i] + $b), 2);
+                }
+                $r2 = $ssTot > 0 ? round(1 - ($ssRes / $ssTot), 4) : 0.0;
+                return [$m, $b, $r2];
+            };
+
+            // 80/20 holdout: eval model scored on hidden 20%; production model trains on 100%
+            $n = count($allWeeklyData);
             $xValues = range(0, $n - 1);
-            $yValues = $weeklyData;
-            $sumX = array_sum($xValues);
-            $sumY = array_sum($yValues);
-            $sumXY = 0; $sumX2 = 0;
-            for ($i = 0; $i < $n; $i++) {
-                $sumXY += $xValues[$i] * $yValues[$i];
-                $sumX2 += $xValues[$i] * $xValues[$i];
-            }
-            $denom = ($n * $sumX2) - ($sumX * $sumX);
-            $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
-            $b = ($sumY - ($m * $sumX)) / $n;
+            $yValues = $allWeeklyData;
 
-            // R² for appointment model
-            $meanY = $sumY / $n;
-            $ssTot = array_sum(array_map(fn($y) => pow($y - $meanY, 2), $yValues));
-            $ssRes = 0;
-            for ($i = 0; $i < $n; $i++) {
-                $ssRes += pow($yValues[$i] - ($m * $xValues[$i] + $b), 2);
+            $_MIN_SPLIT = 10;
+            if ($n >= $_MIN_SPLIT) {
+                $split = (int)floor($n * 0.8);
+                $xTrain = array_slice($xValues, 0, $split);
+                $yTrain = array_slice($yValues, 0, $split);
+                $xTest  = array_slice($xValues, $split);
+                $yTest  = array_slice($yValues, $split);
+
+                [$evalM, $evalB] = $fitLR($xTrain, $yTrain);
+
+                // Score eval model on held-out test weeks
+                $meanYTest = array_sum($yTest) / count($yTest);
+                $ssTotTest = array_sum(array_map(fn($yi) => pow($yi - $meanYTest, 2), $yTest));
+                $ssResTest = 0;
+                foreach ($xTest as $idx => $xi) {
+                    $ssResTest += pow($yTest[$idx] - ($evalM * $xi + $evalB), 2);
+                }
+                $testR2 = $ssTotTest > 0 ? round(1 - ($ssResTest / $ssTotTest), 4) : 0.0;
+                $validationMethod = '80/20 holdout';
+
+                [$m, $b, $r2] = $fitLR($xValues, $yValues);
+            } else {
+                [$m, $b, $r2] = $fitLR($xValues, $yValues);
+                $testR2 = null;
+                $validationMethod = 'in-sample (insufficient data for split)';
             }
-            $r2 = $ssTot > 0 ? round(1 - ($ssRes / $ssTot), 4) : 0;
 
             // Forecast next 2 weeks
             $forecastNext1 = max(0, round($m * $n + $b));
@@ -264,12 +296,14 @@ class DashboardController extends Controller
                     ? "AI Intelligence: {$progressPercent}% — Need {$needed} more week" . ($needed > 1 ? 's' : '') . " of data for live projection."
                     : "AI Analysis Active.",
                 'model'           => [
-                    'slope'            => round($m, 4),
-                    'intercept'        => round($b, 4),
-                    'r2'               => $r2,
-                    'forecast_week_1'  => $forecastNext1,
-                    'forecast_week_2'  => $forecastNext2,
-                    'algorithm'        => 'Simple Linear Regression',
+                    'slope'             => round($m, 4),
+                    'intercept'         => round($b, 4),
+                    'r2'                => $r2,
+                    'test_r2'           => $testR2,
+                    'validation_method' => $validationMethod,
+                    'forecast_week_1'   => $forecastNext1,
+                    'forecast_week_2'   => $forecastNext2,
+                    'algorithm'         => 'Simple Linear Regression',
                 ],
                 'weekly_chart'    => [
                     'labels' => $weekLabels,
