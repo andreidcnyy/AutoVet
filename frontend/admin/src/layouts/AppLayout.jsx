@@ -157,7 +157,11 @@ function AppLayout() {
 
   const filteredPrimaryNav = useMemo(() => {
     if (!user || !user.role) return [];
-    return primaryNavigation.filter((item) => item.allowedRoles?.includes(user.role));
+    return primaryNavigation.filter((item) => {
+      if (!item.allowedRoles?.includes(user.role)) return false;
+      if (item.aiOnly && !user.ai_features_enabled) return false;
+      return true;
+    });
   }, [user]);
 
   const filteredBottomNav = useMemo(() => {

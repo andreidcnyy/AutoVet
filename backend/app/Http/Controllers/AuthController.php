@@ -241,6 +241,7 @@ class AuthController extends Controller
             'avatar' => $is_admin ? $user->avatar : null,
             'status' => $user->status,
             'must_change_password' => $is_admin ? $user->must_change_password : false,
+            'ai_features_enabled' => $is_admin ? (bool) $user->ai_features_enabled : false,
             'token' => $token,
         ];
 

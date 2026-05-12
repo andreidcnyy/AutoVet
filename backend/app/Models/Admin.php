@@ -29,7 +29,8 @@ class Admin extends Authenticatable
         'avatar',
         'status',
         'must_change_password',
-        'deleted_by', 
+        'ai_features_enabled',
+        'deleted_by',
         'restore_until'
     ];
 
@@ -41,8 +42,9 @@ class Admin extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'email_verified_at'    => 'datetime',
             'must_change_password' => 'boolean',
+            'ai_features_enabled'  => 'boolean',
         ];
     }
 

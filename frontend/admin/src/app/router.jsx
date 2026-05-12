@@ -17,6 +17,7 @@ import CalendarPage from "../pages/CalendarPage";
 import ChangePasswordPage from "../pages/ChangePasswordPage";
 import NotificationHistoryPage from "../pages/NotificationHistoryPage";
 import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
+import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
@@ -184,6 +185,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Client Notifications" },
+      },
+      {
+        path: "ai-clinical",
+        element: (
+          <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <AiClinicalSupportPage />
+          </ProtectedRoute>
+        ),
+        handle: { title: "AI Clinical Support" },
       }
     ],
   },

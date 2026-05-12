@@ -41,4 +41,8 @@ return [
         'secret' => env('SYNC_SECRET', 'autovet-sync-secret'),
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY', ''),
+    ],
+
 ];

@@ -334,6 +334,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
     Route::get('/portal/overview',                 [DashboardController::class, 'getPortalOverview']);
     Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
+    Route::post('/ai/clinical-support',             [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions']);
     Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
     Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markAllRead']);
     Route::post('/dashboard/notifications/clear-all', [DashboardController::class, 'clearAll']);
