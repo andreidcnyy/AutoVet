@@ -72,13 +72,27 @@ def forecast_sales(csv_filepath, target_code=None, mode='quantity', range_months
     model_df = df_monthly.tail(range_months).reset_index(drop=True)
     X_m = np.arange(len(model_df)).reshape(-1, 1)
     y_m = model_df[target_col].values.astype(float)
-    
+
     model_m = LinearRegression()
-    model_m.fit(X_m, y_m)
-    
+
+    # 80/20 holdout validation when enough monthly data is available.
+    # Eval model scores on held-out 20%; production model trains on 100%.
+    _MIN_SPLIT = 10
+    if len(X_m) >= _MIN_SPLIT:
+        split = int(len(X_m) * 0.8)
+        eval_m = LinearRegression()
+        eval_m.fit(X_m[:split], y_m[:split])
+        train_r2 = float(eval_m.score(X_m[:split], y_m[:split]))
+        test_r2  = float(eval_m.score(X_m[split:], y_m[split:]))
+        model_m.fit(X_m, y_m)
+    else:
+        model_m.fit(X_m, y_m)
+        train_r2 = float(model_m.score(X_m, y_m))
+        test_r2  = None
+
     m_slope = float(model_m.coef_[0])
     b_intercept = float(model_m.intercept_)
-    r2_score = float(model_m.score(X_m, y_m))
+    r2_score = train_r2
     
     # Stability: If slope is extreme (> 50% of avg monthly value), cap it for demo stability
     avg_monthly = y_m.mean() if len(y_m) > 0 else 0
@@ -138,6 +152,8 @@ def forecast_sales(csv_filepath, target_code=None, mode='quantity', range_months
             "slope": round(m_slope, 4),
             "intercept": round(b_intercept, 4),
             "r2": round(r2_score, 4),
+            "test_r2": round(test_r2, 4) if test_r2 is not None else None,
+            "validation_method": "80/20 holdout" if test_r2 is not None else "in-sample (insufficient data for split)",
             "next_forecast": round(max(0.0, m_slope * (len(model_df)) + b_intercept), 2),
             "algorithm": "Linear Regression (Optimized)"
         },

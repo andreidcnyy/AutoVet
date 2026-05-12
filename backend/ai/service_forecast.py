@@ -70,16 +70,36 @@ def forecast(historical: list, horizon: int = 6) -> dict:
 
     X_future_full = np.column_stack([X_future_idx, month_of_year_future])
 
+    # 80/20 holdout validation when enough months are available.
+    # Eval model scores on held-out 20%; production model trains on 100%.
+    _MIN_SPLIT = 10
+    use_split  = n >= _MIN_SPLIT
+    split_idx  = int(n * 0.8) if use_split else None
+
     # Train one model per category
     models = {}
-    r2_scores = {}
+    r2_scores      = {}
+    test_r2_scores = {}
     for col in columns:
         y_raw      = [float(h.get(col, 0)) for h in historical]
-        y_smoothed = smooth(y_raw)
-        model = LinearRegression()
-        model.fit(X_train_full, y_smoothed)
-        models[col]    = model
-        r2_scores[col] = round(r2_score(y_smoothed, model.predict(X_train_full)), 3)
+        y_smoothed = np.array(smooth(y_raw))
+
+        if use_split:
+            X_tr, X_te = X_train_full[:split_idx], X_train_full[split_idx:]
+            y_tr, y_te = y_smoothed[:split_idx],   y_smoothed[split_idx:]
+            eval_model = LinearRegression()
+            eval_model.fit(X_tr, y_tr)
+            r2_scores[col]      = round(r2_score(y_tr, eval_model.predict(X_tr)), 3)
+            test_r2_scores[col] = round(r2_score(y_te, eval_model.predict(X_te)), 3)
+            # Production model trained on all data for best predictions
+            model = LinearRegression()
+            model.fit(X_train_full, y_smoothed)
+        else:
+            model = LinearRegression()
+            model.fit(X_train_full, y_smoothed)
+            r2_scores[col] = round(r2_score(y_smoothed, model.predict(X_train_full)), 3)
+
+        models[col] = model
 
     results = []
     for i in range(horizon):
@@ -130,11 +150,13 @@ def forecast(historical: list, horizon: int = 6) -> dict:
     return {
         "forecast": results,
         "model_info": {
-            "algorithm":        "Linear Regression (per category) + Moving Average Smoothing",
-            "training_months":  n,
-            "forecast_horizon": horizon,
-            "r2_scores":        r2_scores,
-            "note":             "Surgery excluded. Not a clinical prediction tool."
+            "algorithm":         "Linear Regression (per category) + Moving Average Smoothing",
+            "training_months":   n,
+            "forecast_horizon":  horizon,
+            "r2_scores":         r2_scores,
+            "test_r2_scores":    test_r2_scores if use_split else None,
+            "validation_method": "80/20 holdout" if use_split else "in-sample (insufficient data for split)",
+            "note":              "Surgery excluded. Not a clinical prediction tool."
         }
     }
 
