@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiSearch, FiUser, FiX,
+  FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiUser, FiX,
   FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity, FiMonitor
 } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
@@ -32,13 +32,12 @@ const iconToneStyles = {
   neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 
-function TopHeader({ title, user, searchPlaceholder = "Search patients, records...", onMenuToggle }) {
+function TopHeader({ title, user, onMenuToggle }) {
   const isSuperAdmin = user?.role === 'super_admin';
   const toast = useToast();
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
   const [openNotifMenu, setOpenNotifMenu] = useState(false);
   const [showDevicesModal, setShowDevicesModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedNotif, setSelectedNotif] = useState(null);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
@@ -91,26 +90,6 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
           <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-3xl">{title}</h1>
         </div>
 
-        {!isSuperAdmin && (
-          <label className="hidden md:flex h-11 flex-1 max-w-md items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-zinc-500 transition-colors duration-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400 relative">
-            <FiSearch className="h-4 w-4 shrink-0" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500 pr-8"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <FiX className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </label>
-        )}
 
         <div className="flex items-center gap-4 ml-auto">
           {localStorage.getItem('super_admin_session') && (

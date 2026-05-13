@@ -628,7 +628,6 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
             { label: "Weight", value: patient.weight ? `${Number(patient.weight).toLocaleString('en-US', { maximumFractionDigits: 0 })} ${patient.weight_unit}` : "N/A" },
             { label: "Size", value: determinedSizeName },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
-            { label: "Status", value: patient.status || "N/A" },
             { label: "Last Visit", value: patient.last_visit || "N/A" },
             { label: "Next Due", value: patient.next_due || "N/A" },
           ].map((item) => (
