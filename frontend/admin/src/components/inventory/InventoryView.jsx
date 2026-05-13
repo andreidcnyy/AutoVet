@@ -16,7 +16,7 @@ import {
   FiChevronLeft,
   FiChevronRight
 } from "react-icons/fi";
-import { LuPill } from "react-icons/lu";
+import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
 import { useAuth } from "../../context/AuthContext";
@@ -36,6 +36,8 @@ function InventoryView() {
   const [viewedProduct, setViewedProduct] = useState(null);
   const [inventoryRows, setInventoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [forecastStatus, setForecastStatus] = useState({ percent: 0, message: "", is_running: false });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
@@ -80,6 +82,7 @@ function InventoryView() {
 
     const controller = new AbortController();
     fetchInventory(controller.signal);
+    handleForecast();
 
     const channel = echo.private('admin.inventory')
       .listen('.inventory.updated', (e) => {
@@ -119,6 +122,30 @@ function InventoryView() {
       toast.success(`${product.item_name} archived successfully.`);
     } catch (err) {
       toast.error(err.message || "An error occurred.");
+    }
+  };
+
+  const handleForecast = async () => {
+    setIsSimulating(true);
+    try {
+      await api.post('/api/dashboard/run-forecast');
+      const pollStatus = async () => {
+        try {
+          const data = await api.get('/api/dashboard/forecast-status');
+          setForecastStatus(data);
+          if (data.is_running) {
+            setTimeout(pollStatus, 2000);
+          } else {
+            setIsSimulating(false);
+            fetchInventory();
+          }
+        } catch (pollErr) {
+          setIsSimulating(false);
+        }
+      };
+      pollStatus();
+    } catch (err) {
+      setIsSimulating(false);
     }
   };
 
@@ -237,14 +264,15 @@ function InventoryView() {
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4">Pricing</th>
                 <th className="px-6 py-4 text-center">Stock</th>
+                <th className="px-6 py-4">AI Forecast Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {isLoading ? (
-                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
+                <tr><td colSpan="6" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
               ) : currentItems.length === 0 ? (
-                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
+                <tr><td colSpan="6" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
                 currentItems.map((row) => {
                   const isExpired = row.expiration_date && new Date(row.expiration_date) < new Date();
@@ -284,6 +312,42 @@ function InventoryView() {
                                 {row.stock_level <= 0 ? "OF STOCK" : (row.unit || "pcs")}
                             </span>
                          </div>
+                      </td>
+                      <td className="px-6 py-5">
+                         {row.latest_forecast ? (
+                            <div className={clsx(
+                                "flex flex-col gap-1 p-2 rounded-xl border",
+                                (row.latest_forecast.forecast_status === 'Low Stock' || row.stock_level <= 0)
+                                    ? (row.stock_level <= 0 ? "border-rose-200 bg-rose-50 dark:bg-rose-900/10" : "border-amber-200 bg-amber-50 dark:bg-amber-900/10")
+                                    : "border-emerald-100 bg-emerald-50/30 dark:bg-emerald-900/10 dark:border-emerald-800"
+                            )}>
+                                <span className={clsx(
+                                    "text-[9px] font-black uppercase leading-none tracking-widest",
+                                    row.stock_level <= 0 ? "text-rose-400" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-400" : "text-emerald-400")
+                                )}>AI projection</span>
+                                <span className={clsx(
+                                    "text-[11px] font-black uppercase",
+                                    row.stock_level <= 0 ? "text-rose-600 dark:text-rose-400" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")
+                                )}>
+                                    {row.stock_level <= 0 ? "Out of Stock" : row.latest_forecast.forecast_status}
+                                </span>
+                                <span className={clsx(
+                                    "text-[10px] font-bold italic",
+                                    row.stock_level <= 0 ? "text-rose-500" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-500" : "text-zinc-500 dark:text-zinc-400")
+                                )}>
+                                    {row.stock_level <= 0
+                                        ? "Immediate reorder required"
+                                        : (row.latest_forecast.days_until_stockout == null
+                                            ? "Stable trend — no stockout predicted"
+                                            : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
+                                </span>
+                                {typeof (row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score) === 'number' && row.stock_level > 0 && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                        Trend Fit {Math.round(Math.max(0, Math.min(1, row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score)) * 100)}%
+                                    </span>
+                                )}
+                            </div>
+                         ) : <span className="text-xs text-zinc-300 font-bold uppercase">No Analysis</span>}
                       </td>
                       <td className="px-6 py-5 text-right">
                         <button onClick={() => setViewedProduct(row)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
