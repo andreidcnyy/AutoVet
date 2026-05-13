@@ -17,12 +17,14 @@ import ChangePasswordPage from "../pages/ChangePasswordPage";
 import NotificationHistoryPage from "../pages/NotificationHistoryPage";
 import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
 import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
+import ReportPage from "../pages/ReportPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
   ALL_ROLES,
   VET_AND_ADMIN,
-  SUPER_ADMIN_ONLY
+  SUPER_ADMIN_ONLY,
+  CLINIC_ADMIN_GROUP,
 } from "../constants/roles";
 
 import RouterErrorElement from "../components/RouterErrorElement";
@@ -184,6 +186,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "AI Clinical Support" },
+      },
+      {
+        path: "reports",
+        element: (
+          <ProtectedRoute allowedRoles={CLINIC_ADMIN_GROUP}>
+            <ReportPage />
+          </ProtectedRoute>
+        ),
+        handle: { title: "Reports" },
       }
     ],
   },

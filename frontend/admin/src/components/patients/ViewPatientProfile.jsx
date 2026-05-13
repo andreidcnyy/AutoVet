@@ -18,6 +18,7 @@ import {
   FiClock,
   FiSearch,
   FiX,
+  FiFileText,
 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
@@ -36,6 +37,7 @@ const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
   { key: "medical", label: "Medical Records", icon: LuStethoscope },
   { key: "appointments", label: "Appointments", icon: FiCalendar },
+  { key: "reports", label: "Reports", icon: FiFileText },
 ];
 
 const statusStyles = {
@@ -516,6 +518,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
           {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
           {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
+          {activeTab === "reports" && <ReportsTab patient={patient} />}
         </div>
       </div>
 
@@ -1388,6 +1391,108 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ──────────────── Reports Tab ──────────────── */
+
+function ReportsTab({ patient }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    if (!user?.token || !patient?.id) return;
+    fetch(`/api/invoices?pet_id=${patient.id}&per_page=50`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+    .then(res => res.json())
+    .then(data => setReports(Array.isArray(data) ? data : (data?.data || [])))
+    .catch(err => console.error("Failed to load reports:", err))
+    .finally(() => setLoading(false));
+  }, [patient.id]);
+
+  if (loading) {
+    return <div className="py-10 text-center text-zinc-400 text-sm">Loading reports...</div>;
+  }
+
+  if (reports.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <FiFileText className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+        <p className="mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400">No Reports</p>
+        <p className="text-sm text-zinc-400 dark:text-zinc-500">
+          Service reports for this patient will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {reports.map(report => (
+        <div key={report.id} className="rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card overflow-hidden">
+          <button
+            onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center">
+                <FiFileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Report #{report.id}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">{formatDate(report.created_at)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={clsx(
+                "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                report.status === 'paid' ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                report.status === 'draft' ? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400" :
+                "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+              )}>
+                {report.status || 'draft'}
+              </span>
+              <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", expandedId === report.id && "rotate-180")} />
+            </div>
+          </button>
+          {expandedId === report.id && (
+            <div className="border-t border-zinc-100 dark:border-dark-border px-5 py-4 space-y-2">
+              {report.items?.length > 0 ? (
+                <>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-3">Services</div>
+                  {report.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">{item.name}</span>
+                        <span className="text-[10px] font-bold uppercase text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                          {item.item_type || 'service'}
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-zinc-500">× {item.qty}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <p className="text-sm text-zinc-400 italic">No services listed.</p>
+              )}
+              {report.notes_to_client && (
+                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-dark-border">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Notes</div>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 italic">"{report.notes_to_client}"</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
