@@ -80,31 +80,3 @@
   }
 }
 
-@media print {
-  /* Hide everything by default */
-  body * {
-    visibility: hidden;
-  }
-  
-  /* Show only the invoice container and its children */
-  .printable-invoice, .printable-invoice * {
-    visibility: visible;
-  }
-  
-  /* Reset background and layout for printing */
-  .printable-invoice {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Hide scrollbars during print */
-  ::-webkit-scrollbar {
-    display: none;
-  }
-}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiUpload, FiFileText, FiCalendar, FiPackage, FiUser, FiInfo, FiCheckCircle, FiAlertCircle, FiLoader, FiBriefcase } from "react-icons/fi";
+import { FiUpload, FiCalendar, FiPackage, FiUser, FiInfo, FiCheckCircle, FiAlertCircle, FiLoader, FiBriefcase } from "react-icons/fi";
 import { LuSparkles } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -21,14 +21,6 @@ const importOptions = [
         endpoint: "/api/import/appointments",
         fields: "pet_id, service_id, date, status",
         description: "Upload historical visit patterns to train the AI."
-    },
-    {
-        id: "invoices",
-        label: "Revenue/Invoices",
-        icon: FiFileText,
-        endpoint: "/api/import/invoices",
-        fields: "pet_id, total, status, created_at",
-        description: "Essential for financial and demand forecasting."
     },
     {
         id: "inventory_usage",

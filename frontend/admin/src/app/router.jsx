@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import AppointmentsPage from "../pages/AppointmentsPage";
-import InvoicePage from "../pages/InvoicePage";
 import DashboardPage from "../pages/DashboardPage";
 import InventoryPage from "../pages/InventoryPage";
 import PatientsPage from "../pages/PatientsPage";
@@ -140,15 +139,6 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Internal Inventory Management" },
-      },
-      {
-        path: "invoices",
-        element: (
-          <ProtectedRoute allowedRoles={ALL_ROLES}>
-            <InvoicePage />
-          </ProtectedRoute>
-        ),
-        handle: { title: "Invoices" },
       },
       {
         path: "settings",
