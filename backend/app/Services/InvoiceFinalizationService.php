@@ -145,8 +145,6 @@ class InvoiceFinalizationService
             $invoice->stock_deducted = true;
             $invoice->save();
 
-            // Clear Service Forecast Cache to reflect new live transaction
-            Cache::forget('service_forecast_v7');
 
             // Internal admin notification for invoice finalization
             $this->createInternalNotification(

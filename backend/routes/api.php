@@ -101,7 +101,6 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentStatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ForecastController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MedicalRecordController;
@@ -345,7 +344,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/dashboard/run-forecast',          [DashboardController::class, 'runForecastSync']);
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
     Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
-    Route::get('/dashboard/service-forecast',      [DashboardController::class, 'getServiceForecast']);
     Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
     Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
     Route::get('/dashboard/appointments/upcoming', [DashboardController::class, 'appointmentsUpcoming']);
@@ -360,9 +358,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
-    // Service Forecasts (Stable PHP Engine)
-    Route::get('/forecast/services',         [DashboardController::class, 'getServiceForecast']);
-    Route::get('/forecast/services/history', [ForecastController::class, 'history']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
     // Inventory and Specialized Forecast

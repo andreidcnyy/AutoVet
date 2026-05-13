@@ -30,7 +30,6 @@ class DatabaseSeeder extends Seeder
             PHClinicAISeeder::class,
             PortalUserSeeder::class,
             ServicesSeeder::class,
-            ServiceForecastDatasetSeeder::class,
             DashboardAIForecastSeeder::class,
             PatientPetSeeder::class,
             BulkProductionMockSeeder::class, // Added for 50+ records
