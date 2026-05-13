@@ -27,7 +27,6 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             NotificationTemplateSeeder::class,
             AdminUserSeeder::class,
-            PHClinicAISeeder::class,
             PortalUserSeeder::class,
             ServicesSeeder::class,
             DashboardAIForecastSeeder::class,

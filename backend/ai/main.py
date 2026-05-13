@@ -4,7 +4,6 @@ import pandas as pd
 import io
 import os
 from forecast import forecast_stockout, NumpyEncoder
-from sales_forecast import forecast_sales
 import json
 
 app = FastAPI(title="AutoVet AI Microservice")
@@ -39,23 +38,6 @@ async def get_inventory_forecast(
         if os.path.exists(temp_file):
             os.remove(temp_file)
 
-@app.post("/forecast/sales")
-async def get_sales_forecast(
-    csv_data: str,
-    code: Optional[str] = None,
-    mode: Optional[str] = "quantity",
-    range_months: Optional[int] = 6
-):
-    temp_file = "temp_sales.csv"
-    with open(temp_file, "w") as f:
-        f.write(csv_data)
-    
-    try:
-        result = forecast_sales(temp_file, code, mode, range_months)
-        return json.loads(json.dumps(result, cls=NumpyEncoder))
-    finally:
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
 
 if __name__ == "__main__":
     import uvicorn

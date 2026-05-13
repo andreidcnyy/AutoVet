@@ -339,7 +339,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/dashboard/notifications/clear-all', [DashboardController::class, 'clearAll']);
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
     Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
-    Route::get('/dashboard/sales-forecast',        [DashboardController::class, 'getSalesForecast']);
     Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecasts']);
     Route::post('/dashboard/run-forecast',          [DashboardController::class, 'runForecastSync']);
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);

@@ -353,48 +353,6 @@ class InventoryForecastService
     }
 
     /**
-     * Run the sales_forecast.py script against a global dataset (e.g. sales.csv)
-     */
-    public function runGlobalSalesForecast(string $datasetRelativePath, string $mode = 'revenue', int $range = 6): ?array
-    {
-        $datasetPath = base_path($datasetRelativePath);
-        if (!file_exists($datasetPath)) {
-            Log::error("InventoryForecastService: Dataset not found for global sales forecast at {$datasetPath}.");
-            return null;
-        }
-
-        $salesScriptPath = base_path('ai/sales_forecast.py');
-        if (!file_exists($salesScriptPath)) {
-            Log::error("InventoryForecastService: sales_forecast.py not found at {$salesScriptPath}.");
-            return null;
-        }
-
-        $pythonExecutable = env('PYTHON_BIN_PATH')
-            ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
-
-        $command = $pythonExecutable
-            . ' ' . escapeshellarg($salesScriptPath)
-            . ' ' . escapeshellarg($datasetPath)
-            . ' ' . escapeshellarg("--mode={$mode}")
-            . ' ' . escapeshellarg("--range={$range}");
-
-        $process = Process::run($command);
-
-        if ($process->failed()) {
-            Log::error("InventoryForecastService: Global sales forecast script failed: " . $process->errorOutput());
-            return null;
-        }
-
-        $result = json_decode($process->output(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::error("InventoryForecastService: JSON decode error in global sales forecast: " . json_last_error_msg());
-            return null;
-        }
-
-        return $result;
-    }
-
-    /**
      * Run batch forecast for multiple items in a single process.
      */
     public function runBatchForecast(array $inventoryIds, int $historyDays = 365, string $triggerSource = 'manual'): void
