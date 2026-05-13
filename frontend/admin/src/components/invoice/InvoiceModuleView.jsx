@@ -932,7 +932,6 @@ function InvoiceModuleView() {
         setInvoiceId(result.id);
 
         // Clear dashboard and invoice caches to ensure live data is reflected
-        localStorage.removeItem('dashboard_service_forecast_v7_cache');
         localStorage.removeItem('dashboard_stats_cache');
         localStorage.removeItem(INVOICES_CACHE_KEY);
 

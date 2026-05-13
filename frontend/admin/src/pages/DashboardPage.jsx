@@ -9,93 +9,7 @@ import { useApi } from "../hooks/useApi";
 import api from "../api";
 import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine, LabelList
-} from 'recharts';
 
-const AVG_PRICE_PER_CATEGORY = {
-  consultation: 375,
-  grooming:     750,
-  vaccination:  887.50,
-  laboratory:   800,
-  others:       450,
-};
-
-const CATEGORY_LABELS = {
-  consultation: 'Consultation',
-  grooming:     'Grooming',
-  vaccination:  'Vaccination',
-  laboratory:   'Laboratory',
-  others:       'Others / Preventive',
-};
-
-const CATEGORY_SUBTITLES = {
-  consultation: 'General check-ups & follow-ups',
-  grooming:     'Basic & full grooming sessions',
-  vaccination:  'All vaccine types combined',
-  laboratory:   'Lab service requests',
-  others:       'Preventive care, deworming, and misc.',
-};
-
-const CATEGORY_COLORS = {
-  consultation: '#10b981',
-  grooming:     '#a855f7',
-  vaccination:  '#3b82f6',
-  laboratory:   '#f59e0b',
-  others:       '#6366f1',
-};
-
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
-const HISTORICAL_WINDOW = 12;   
-const FORECAST_WINDOW   = 3;    
-
-// Helper: Format Month Label (Short)
-const formatMonth = (monthStr) => {
-  if (!monthStr) return '';
-  const parts = monthStr.split('-');
-  if (parts.length < 2) return monthStr;
-  const [year, month] = parts;
-  const labels = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  return `${labels[parseInt(month) - 1]} ${year.slice(2)}`;
-};
-
-// Helper: Format Month Label (Full)
-const formatMonthFull = (monthStr) => {
-  if (!monthStr) return '';
-  const parts = monthStr.split('-');
-  const [year, month] = parts;
-  return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
-};
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  const d    = payload[0];
-  const isFc = d?.payload?.type === 'forecast';
-  return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 shadow-2xl">
-      <p className="text-white font-black text-xs mb-1 uppercase tracking-widest">{label}</p>
-      <p className="text-white font-black text-xl">{d.value} visits</p>
-      <p className={`text-[10px] font-black uppercase tracking-tighter mt-1 ${isFc ? 'text-purple-400' : 'text-emerald-400'}`}>
-        {isFc ? '📈 Trend Projection' : '📊 Actual Data'}
-      </p>
-    </div>
-  );
-};
-
-const CategoryBadge = ({ category, service }) => {
-  const colors = { 'Consultation': 'bg-blue-500/20 text-blue-300', 'Grooming': 'bg-purple-500/20 text-purple-300', 'Vaccination': 'bg-teal-500/20 text-teal-300', 'Laboratory': 'bg-orange-500/20 text-orange-300', 'Preventive Care':'bg-yellow-500/20 text-yellow-300' };
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{service}</span>
-      <span className={clsx("text-[9px] font-black uppercase tracking-widest w-fit px-1.5 py-0.5 rounded", colors[category] ?? 'bg-white/10 text-white/60')}>{category}</span>
-    </div>
-  );
-};
 
 const StatusBadge = ({ status }) => {
   const colors = { 'Approved': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'Pending': 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'Completed': 'bg-blue-500/10 text-blue-600 dark:text-blue-400', 'Cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'Declined': 'bg-rose-600/10 text-rose-500', 'cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'declined': 'bg-rose-600/10 text-rose-500' };
@@ -107,10 +21,6 @@ function DashboardPage() {
   const toast = useToast();
   const isStaff = user?.role === ROLES.STAFF;
   const enabled = !!user?.token;
-
-  const [activeCategory, setActiveCategory] = useState('consultation');
-  const [selectedPoint, setSelectedPoint] = useState(null);
-  const [historyPage, setHistoryPage] = useState(0);
 
   // Unified Modal State
   const [modal, setModal] = useState({ open: false, type: null, title: "", data: null, loading: false, error: null, pagination: null });
@@ -140,7 +50,6 @@ function DashboardPage() {
 
   const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { enabled, cacheKey: 'dashboard_stats_cache' });
   const { data: notifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
-  const { data: serviceForecast, refetch: refetchForecast } = useApi(['dashboard-service-forecast'], '/api/forecast/services', { enabled: enabled && !isStaff, cacheKey: 'dashboard_service_forecast_v8_cache' });
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
@@ -181,153 +90,10 @@ function DashboardPage() {
   }, [lastUpdate]);
 
   useEffect(() => {
-    const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); refetchForecast?.(); };
+    const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); };
     window.addEventListener('inventory-forecast-refresh', handleRefresh);
     return () => window.removeEventListener('inventory-forecast-refresh', handleRefresh);
-  }, [refetchStats, refetchNotifications, refetchForecast]);
-
-  const historical = useMemo(() => serviceForecast?.historical || [], [serviceForecast]);
-  const forecast = serviceForecast?.forecast || [];
-
-  // Align forecast labels
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  
-  const visibleForecast = useMemo(() => (forecast.length > 0 ? forecast.slice(0, FORECAST_WINDOW) : []).map((m, index) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + index + 1, 1);
-    const alignedMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    return { ...m, month: alignedMonthStr, is_forecast: true };
-  }), [forecast, now]);
-
-  // Priority: Selected > Current Month (Actual) > Current Month (Forecast) > Next Forecast > Last Historical
-  const displayPoint = useMemo(() => {
-    if (selectedPoint) return selectedPoint;
-    
-    const currentActual = historical.find(h => h.month === currentMonthStr);
-    if (currentActual) return currentActual;
-    
-    const currentForecast = visibleForecast.find(f => f.month === currentMonthStr);
-    if (currentForecast) return currentForecast;
-
-    return visibleForecast[0] || historical[historical.length - 1];
-  }, [selectedPoint, historical, visibleForecast, currentMonthStr]);
-
-  // Auto-set initial page based on current date
-  useEffect(() => {
-    if (historical.length > 0 && !selectedPoint) {
-       const idx = historical.findIndex(h => h.month === currentMonthStr);
-       if (idx !== -1) {
-          const page = Math.floor((historical.length - 1 - idx) / HISTORICAL_WINDOW);
-          setHistoryPage(page);
-       } else {
-          // If current month not found, show latest page
-          setHistoryPage(0);
-       }
-    }
-  }, [historical, currentMonthStr, selectedPoint]);
-
-  // Derive Jump Options - Strictly 2023-2026
-  const historicalYears = useMemo(() => {
-    const years = ['2023', '2024', '2025', '2026'];
-    return years.sort((a, b) => b.localeCompare(a));
-  }, []);
-
-  const currentYearSelected = displayPoint?.month.split('-')[0];
-  const currentMonthSelected = displayPoint?.month.split('-')[1];
-
-  const handleJumpChange = (type, value) => {
-    let targetMonth = currentMonthSelected;
-    let targetYear = currentYearSelected;
-    if (type === 'year') targetYear = value;
-    if (type === 'month') targetMonth = value;
-
-    const targetStr = `${targetYear}-${targetMonth}`;
-    let idx = historical.findIndex(p => p.month === targetStr);
-    
-    // Fallback: if year selected but month doesn't exist, find first month of that year
-    if (idx === -1 && type === 'year') {
-      idx = historical.findIndex(p => p.month.startsWith(`${value}-`));
-    }
-    
-    // Final fallback: if year selected and still no match, find ANY available month in that year
-    if (idx === -1 && type === 'year') {
-        const monthsInYear = historical.filter(p => p.month.startsWith(`${value}-`));
-        if (monthsInYear.length > 0) {
-            idx = historical.indexOf(monthsInYear[0]);
-        }
-    }
-
-    if (idx !== -1) {
-      const found = historical[idx];
-      setSelectedPoint(found);
-      const page = Math.floor((historical.length - 1 - idx) / HISTORICAL_WINDOW);
-      setHistoryPage(page);
-    } else {
-      toast.error(`No data available for ${targetYear}${type === 'month' ? '-' + targetMonth : ''}`);
-    }
-  };
-
-  // Paged Chart Window
-  const chartHistorical = useMemo(() => {
-    const total = historical.length;
-    const end = Math.max(0, total - (historyPage * HISTORICAL_WINDOW));
-    const start = Math.max(0, end - HISTORICAL_WINDOW);
-    return historical.slice(start, end);
-  }, [historical, historyPage]);
-
-  const categoryData = displayPoint?.by_category?.[activeCategory] || {
-    volume: displayPoint?.[activeCategory] || 0,
-    estimated_revenue: (displayPoint?.[activeCategory] || 0) * (AVG_PRICE_PER_CATEGORY[activeCategory] || 0),
-    estimated_customers: Math.round((displayPoint?.[activeCategory] || 0) * 0.85) 
-  };
-
-  const cardCustomers = categoryData?.estimated_customers ?? 0;
-  const cardVolume    = categoryData?.volume              ?? 0;
-
-  // 1. Planning Baseline: Average of the last 3 available historical months (including current)
-  const stableBaselineVal = useMemo(() => {
-    if (historical.length === 0) return 0;
-    
-    // Use the last 3 months of history as the baseline for a 3-month planning window
-    const last3 = historical.slice(-3);
-    const sum = last3.reduce((acc, curr) => acc + (Number(curr[activeCategory]) || 0), 0);
-    return sum / (last3.length || 1);
-  }, [historical, activeCategory]);
-
-  // 2. Planning Target: Average of the next 3 forecasted months
-  const next3Avg = useMemo(() => {
-    if (visibleForecast.length === 0) return 0;
-    const sum = visibleForecast.reduce((acc, curr) => acc + (Number(curr[activeCategory]) || 0), 0);
-    return sum / (visibleForecast.length || 1);
-  }, [visibleForecast, activeCategory]);
-
-  const pctChange = (!stableBaselineVal || stableBaselineVal === 0) 
-    ? null 
-    : Math.round(((next3Avg - stableBaselineVal) / stableBaselineVal) * 100);
-
-  const pctLabel = pctChange === null ? 'N/A' : pctChange > 0 ? `+${pctChange}%` : `${pctChange}%`;
-  const pctColor = pctChange === null ? 'text-zinc-400 bg-zinc-500/10' : pctChange > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10';
-
-  const chartData = [
-    ...chartHistorical.map(m => ({ month: formatMonth(m.month), value: m[activeCategory] ?? 0, type: 'historical', raw: m })),
-    ...visibleForecast.map(m => ({ month: formatMonth(m.month), value: m[activeCategory] ?? 0, type: 'forecast', raw: m })),
-  ];
-
-  const visibleVals  = chartHistorical.map(m => m[activeCategory] ?? 0);
-  const avgPerMonth  = visibleVals.length ? Math.round(visibleVals.reduce((a, b) => a + b, 0) / visibleVals.length) : 0;
-  const peakVol      = visibleVals.length ? Math.max(...visibleVals) : 0;
-  const lowestVol    = visibleVals.length ? Math.min(...visibleVals) : 0;
-
-  const isFuture = displayPoint?.is_forecast || false;
-  const verb = isFuture ? 'Projected' : 'Recorded';
-  const period = displayPoint?.month ? formatMonthFull(displayPoint.month) : '';
-
-  const plainSummary = {
-    consultation: `${verb} ${cardVolume} consultation visits for ${period}. ${isFuture ? 'Based on AI trend analysis.' : 'Actual volume from system records.'}`,
-    grooming:     `${verb} ${cardVolume} grooming sessions for ${period}. ${isFuture ? 'Based on AI trend analysis.' : 'Actual volume from system records.'}`,
-    vaccination:  `${verb} ${cardVolume} vaccination visits for ${period}. ${isFuture ? 'Based on AI trend analysis.' : 'Actual volume from system records.'}`,
-    laboratory:   `${verb} ${cardVolume} lab requests for ${period}. ${isFuture ? 'Based on AI trend analysis.' : 'Actual volume from system records.'}`,
-  };
+  }, [refetchStats, refetchNotifications]);
 
   const mappedMetrics = (Array.isArray(stats) ? stats : [])
     .map(stat => {
@@ -394,113 +160,6 @@ function DashboardPage() {
         ))}
       </section>
 
-      {!isStaff && (
-        <section className="rounded-[32px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm overflow-hidden">
-          <div className="rounded-2xl border border-zinc-100 dark:border-white/10 bg-zinc-50 dark:bg-white/5 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="text-purple-600 text-xl font-black">✦</span>
-                  <h2 className="text-zinc-900 dark:text-zinc-50 font-black text-xl tracking-wide uppercase">Next 3 Months Planning Forecast</h2>
-                </div>
-                <p className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-widest ml-8">Historical-Data-Based Projection · Current-Month Aligned</p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => {
-                      // Clear ALL dashboard related caches
-                      localStorage.removeItem('dashboard_service_forecast_v8_cache');
-                      localStorage.removeItem('dashboard_stats_cache');
-                      localStorage.removeItem('dashboard_notifications_cache');
-                      
-                      // Clear in-memory API cache
-                      if (api.invalidateCache) api.invalidateCache();
-                      
-                      // Refetch all queries
-                      refetchForecast();
-                      refetchStats();
-                      refetchNotifications();
-                      
-                      toast.info("Nuclear cache cleared. Refetching all data...");
-                    }}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-purple-500 transition-all border border-zinc-200 dark:border-zinc-700"
-                    title="Refresh Forecast"
-                  >
-                    <Icons.FiRefreshCw className={clsx("h-4 w-4")} />
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-widest">History Jump:</span>
-                    <div className="flex gap-1">
-                      <select value={currentMonthSelected} onChange={(e) => handleJumpChange('month', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
-                        {MONTH_NAMES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
-                      </select>
-                      <select value={currentYearSelected} onChange={(e) => handleJumpChange('year', e.target.value)} className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-tight focus:outline-none cursor-pointer">
-                        {historicalYears.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="bg-white dark:bg-zinc-800/50 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-700 shadow-sm">
-                <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-3">👥 Est. Customers — {CATEGORY_LABELS[activeCategory]}</p>
-                <p className="text-4xl font-black text-purple-600 dark:text-purple-400 tracking-tighter">{cardCustomers}</p>
-                <p className="text-zinc-600 dark:text-zinc-300 text-[10px] font-black mt-2 uppercase tracking-tighter italic">Data for {formatMonthFull(displayPoint?.month)}</p>
-              </div>
-              <div className="bg-white dark:bg-zinc-800/50 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-700 shadow-sm">
-                <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-3">📋 Service Demand — {CATEGORY_LABELS[activeCategory]}</p>
-                <p className="text-4xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">{cardVolume}</p>
-                <p className="text-zinc-600 dark:text-zinc-300 text-[10px] font-black mt-2 uppercase tracking-tighter italic">Visits for {formatMonthFull(displayPoint?.month)}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              {['consultation', 'grooming', 'vaccination', 'laboratory'].map(cat => (
-                <button key={cat} onClick={() => setActiveCategory(cat)} className={clsx("px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all", activeCategory === cat ? "text-white shadow-lg" : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700")} style={activeCategory === cat ? { backgroundColor: CATEGORY_COLORS[cat], boxShadow: `0 4px 14px ${CATEGORY_COLORS[cat]}40` } : {}}>{CATEGORY_LABELS[cat]}</button>
-              ))}
-            </div>
-
-            <p className="text-zinc-900 dark:text-zinc-50 text-xs font-black italic mb-4 uppercase tracking-tight">{CATEGORY_SUBTITLES[activeCategory]}</p>
-
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex gap-6">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[activeCategory] }} /><span className="text-zinc-900 dark:text-zinc-100 text-[10px] font-black uppercase">ACTUAL DATA</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm opacity-50 border-2" style={{ borderColor: CATEGORY_COLORS[activeCategory], backgroundColor: 'transparent' }} /><span className="text-zinc-900 dark:text-zinc-100 text-[10px] font-black uppercase">Trend Projection</span></div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button disabled={(historyPage + 1) * HISTORICAL_WINDOW >= historical.length} onClick={() => setHistoryPage(p => p + 1)} className="h-8 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 disabled:opacity-30 border border-zinc-300 dark:border-zinc-700"><Icons.FiChevronLeft className="inline mr-1" /> Prev 12 Months</button>
-                <button disabled={historyPage === 0} onClick={() => setHistoryPage(p => p - 1)} className="h-8 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 disabled:opacity-30 border border-zinc-300 dark:border-zinc-700">Next 12 Months <Icons.FiChevronRight className="inline ml-1" /></button>
-              </div>
-            </div>
-
-            <div className="h-[320px] w-full min-h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} barSize={40} margin={{ top: 30, right: 10, left: -20, bottom: 0 }} onClick={(data) => { if (data && data.activePayload) setSelectedPoint(data.activePayload[0].payload.raw); }}>
-                  <XAxis dataKey="month" tick={{ fill: '#e4e4e7', fontSize: 11, fontWeight: '900' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} animationDuration={0} isAnimationActive={false} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]} isAnimationActive={true} className="cursor-pointer">
-                    <LabelList dataKey="value" position="top" offset={10} style={{ fill: '#ffffff', fontSize: '12px', fontWeight: '900' }} />
-                    {chartData.map((entry, index) => {
-                      const isSelected = displayPoint?.month === entry.raw.month;
-                      return <Cell key={index} fill={CATEGORY_COLORS[activeCategory]} fillOpacity={entry.type === 'historical' ? 1 : 0.4} stroke={isSelected ? '#fff' : (entry.type === 'forecast' ? CATEGORY_COLORS[activeCategory] : 'none')} strokeWidth={isSelected ? 3 : (entry.type === 'forecast' ? 2 : 0)} />;
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="mt-6 px-4 py-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-inner">
-              <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-wider mb-1">📌 Operational Insight</p>
-              <p className="text-zinc-900 dark:text-zinc-100 text-sm leading-relaxed font-black">{plainSummary[activeCategory]}</p>
-              <p className="text-zinc-600 dark:text-zinc-300 text-[10px] mt-2 italic font-black">⚠️ Forecast view aligned to current calendar month. Click a bar to select or use the window buttons to navigate blocks of 12 months.</p>
-            </div>
-          </div>
-        </section>
-      )}
 
 
       {modal.open && (
