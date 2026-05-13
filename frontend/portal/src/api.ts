@@ -64,10 +64,6 @@ export const getAvailability = (date: string, vetId?: string) => api.get('/appoi
 export const getMedicalRecords = (params?: any) => api.get('/medical-records', { params });
 export const getMedicalRecord = (id: number) => api.get(`/medical-records/${id}`);
 
-// Invoices
-export const getInvoices = (params?: any) => api.get('/invoices', { params });
-export const getInvoice = (id: number) => api.get(`/invoice/${id}`);
-
 // Notifications
 export const getNotifications = (params?: any) => api.get('/notifications', { params });
 export const markNotificationAsRead = (id: number) => api.put(`/notifications/${id}`, { is_read: true });

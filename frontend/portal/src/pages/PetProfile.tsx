@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getPet, getMedicalRecords, getInvoices } from '../api';
+import { getPet, getMedicalRecords } from '../api';
 import { 
-  FiArrowLeft, 
-  FiCalendar, 
-  FiFileText, 
-  FiDollarSign, 
+  FiArrowLeft,
+  FiCalendar,
+  FiFileText,
   FiActivity,
   FiInfo,
   FiClock,
@@ -23,9 +22,8 @@ function PetProfile() {
   const navigate = useNavigate();
   const [pet, setPet] = useState<any>(null);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'medical' | 'invoices'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'medical'>('summary');
 
   useEffect(() => {
     if (!id) return;
@@ -36,23 +34,19 @@ function PetProfile() {
     if (cached) {
       setPet(cached.pet);
       setMedicalRecords(cached.medicalRecords || []);
-      setInvoices(cached.invoices || []);
       setLoading(false);
     }
 
     Promise.all([
       getPet(petId),
-      getMedicalRecords(petId),
-      getInvoices(petId)
+      getMedicalRecords(petId)
     ])
-    .then(([petRes, medicalRes, invoiceRes]) => {
+    .then(([petRes, medicalRes]) => {
       setPet(petRes.data);
       setMedicalRecords(medicalRes.data);
-      setInvoices(invoiceRes.data);
       writeCache(CACHE_KEY, {
         pet: petRes.data,
         medicalRecords: medicalRes.data,
-        invoices: invoiceRes.data,
       });
       writeCache(`portal_pet_${petId}_cache`, petRes.data);
     })
@@ -66,7 +60,6 @@ function PetProfile() {
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical History', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiDollarSign },
   ];
 
   return (
@@ -223,41 +216,6 @@ function PetProfile() {
           </div>
         )}
 
-        {activeTab === 'invoices' && (
-          <div className="space-y-4">
-            {invoices.length > 0 ? (
-              invoices.map(invoice => (
-                <div key={invoice.id} className="card-shell p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
-                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
-                         <FiDollarSign className="w-6 h-6" />
-                      </div>
-                      <div>
-                         <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
-                         <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
-                         <div className="text-xs text-zinc-500">{new Date(invoice.created_at).toLocaleDateString()}</div>
-                      </div>
-                   </div>
-                   <div className="text-right">
-                      <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                        ₱{parseFloat(invoice.total).toLocaleString()}
-                      </div>
-                      <span className={clsx(
-                        "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
-                        invoice.status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                      )}>
-                        {invoice.status}
-                      </span>
-                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
-                No billing history found.
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

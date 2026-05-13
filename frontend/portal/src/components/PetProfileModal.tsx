@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getPet, getMedicalRecords, getInvoices } from '../api';
+import { getPet, getMedicalRecords } from '../api';
 import { 
   FiX,
   FiCalendar, 
-  FiFileText, 
-  FiCreditCard, 
+  FiFileText,
   FiActivity,
   FiInfo,
   FiUser,
@@ -48,9 +47,8 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const navigate = useNavigate();
   const [pet, setPet] = useState<any>(null);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'summary' | 'medical' | 'invoices'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'medical'>('summary');
   const [viewingRecord, setViewingRecord] = useState<any>(null);
 
   useEffect(() => {
@@ -60,7 +58,6 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
       if (cached) {
         setPet(cached.pet);
         setMedicalRecords(cached.medicalRecords || []);
-        setInvoices(cached.invoices || []);
         setLoading(false);
       } else {
         setLoading(true);
@@ -68,18 +65,15 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
 
       Promise.all([
         getPet(petId),
-        getMedicalRecords({ pet_id: petId }),
-        getInvoices({ pet_id: petId })
+        getMedicalRecords({ pet_id: petId })
       ])
-      .then(([petRes, medicalRes, invoiceRes]) => {
+      .then(([petRes, medicalRes]) => {
         const petData = petRes.data.data || petRes.data;
         const medicalData = Array.isArray(medicalRes.data) ? medicalRes.data : medicalRes.data.data || [];
-        const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data.data || [];
 
         setPet(petData);
         setMedicalRecords(medicalData);
-        setInvoices(invoiceData);
-        writeCache(CACHE_KEY, { pet: petData, medicalRecords: medicalData, invoices: invoiceData });
+        writeCache(CACHE_KEY, { pet: petData, medicalRecords: medicalData });
       })
       .catch(err => {
         console.error("PetProfileModal Fetch Error:", err);
@@ -89,7 +83,6 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
     } else {
       setPet(null);
       setMedicalRecords([]);
-      setInvoices([]);
       setActiveTab('summary');
       setViewingRecord(null);
     }
@@ -100,7 +93,6 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical History', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiCreditCard },
   ];
 
   return (
@@ -309,46 +301,6 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                   </div>
                 )}
 
-                {activeTab === 'invoices' && (
-                  <div className="space-y-4">
-                    {invoices.length > 0 ? (
-                      invoices.map(invoice => (
-                        <div key={invoice.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
-                                 <FiCreditCard className="w-6 h-6" />
-                              </div>
-                              <div>
-                                 <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
-                                 <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
-                                 <div className="text-xs text-zinc-500">
-  {formatPortalDate(invoice.created_at)}
-</div>
-                              </div>
-                           </div>
-                           <div className="text-right flex flex-col items-end gap-1">
-                              <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                                ₱{parseFloat(invoice.total).toLocaleString()}
-                              </div>
-                              <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
-                                Paid: ₱{parseFloat(invoice.formatted_amount_paid || invoice.amount_paid || 0).toLocaleString()}
-                              </div>
-                              <span className={clsx(
-                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit",
-                                ['paid', 'finalized'].includes(invoice.status?.toLowerCase()) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                              )}>
-                                {invoice.status}
-                              </span>
-                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
-                        No billing history found.
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           )}

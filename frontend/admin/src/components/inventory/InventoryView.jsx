@@ -262,7 +262,6 @@ function InventoryView() {
               <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 bg-zinc-50/50 dark:bg-dark-surface/30 border-b border-zinc-100 dark:border-dark-border">
                 <th className="px-6 py-4">Item Details</th>
                 <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Pricing</th>
                 <th className="px-6 py-4 text-center">Stock</th>
                 <th className="px-6 py-4">AI Forecast Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -270,9 +269,9 @@ function InventoryView() {
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {isLoading ? (
-                <tr><td colSpan="6" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
+                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
               ) : currentItems.length === 0 ? (
-                <tr><td colSpan="6" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
+                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
                 currentItems.map((row) => {
                   const isExpired = row.expiration_date && new Date(row.expiration_date) < new Date();
@@ -293,12 +292,6 @@ function InventoryView() {
                         <span className="text-[10px] font-black uppercase text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg">
                             {row.inventory_category?.name || "Unsorted"}
                         </span>
-                      </td>
-                      <td className="px-6 py-5">
-                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-zinc-400 font-mono">Buy: ₱{Number(row.price || 0).toFixed(2)}</span>
-                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-mono">Sell: ₱{Number(row.selling_price || 0).toFixed(2)}</span>
-                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
                          <div className="flex flex-col items-center">

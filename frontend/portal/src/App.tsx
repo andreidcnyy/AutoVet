@@ -12,7 +12,6 @@ import BookAppointment from './pages/BookAppointment';
 import PetProfile from './pages/PetProfile';
 import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
-import Invoices from './pages/Invoices';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
@@ -131,15 +130,6 @@ function AppContent() {
       element: (
         <ProtectedRoute>
           <Notifications />
-        </ProtectedRoute>
-      ),
-      errorElement: <RouterErrorElement />
-    },
-    {
-      path: "/invoices",
-      element: (
-        <ProtectedRoute>
-          <Invoices />
         </ProtectedRoute>
       ),
       errorElement: <RouterErrorElement />

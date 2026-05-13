@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiSearch, FiSettings, FiUser, FiX,
+  FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiSearch, FiUser, FiX,
   FiAlertTriangle, FiPackage, FiPlusCircle, FiCheck, FiInfo, FiActivity, FiMonitor
 } from "react-icons/fi";
 import DarkModeToggle from "../ui/DarkModeToggle";
@@ -216,7 +216,7 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
               <img src={user?.avatar || getUserAvatarUrl(user?.role, user?.name)} alt={user?.name} className="h-11 w-11 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface" />
               <div className="min-w-0 text-left">
                 <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50">{user?.name}</p>
-                <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user?.role}</p>
+                <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>
               </div>
               <FiChevronDown className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
             </button>
@@ -239,14 +239,6 @@ function TopHeader({ title, user, searchPlaceholder = "Search patients, records.
                   <FiMonitor className="h-4 w-4" />
                   Manage Devices
                 </button>
-                <Link
-                  to="/settings"
-                  onClick={() => setOpenProfileMenu(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-dark-surface"
-                >
-                  <FiSettings className="h-4 w-4" />
-                  Settings
-                </Link>
                 <div className="my-1 border-t border-zinc-200 dark:border-dark-border" />
                 <button
                   type="button"

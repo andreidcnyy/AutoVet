@@ -486,15 +486,6 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
               Archive
             </button>
           )}
-          <span
-            className={clsx(
-              "inline-flex rounded-full border px-4 py-1.5 text-sm font-semibold",
-              statusStyles[patient.status] ||
-                "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-            )}
-          >
-            {patient.status || "Unknown"}
-          </span>
         </div>
       </div>
 
@@ -635,8 +626,6 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
             { label: "Size", value: determinedSizeName },
             { label: "Date of Birth", value: formatDate(patient.date_of_birth) },
             { label: "Status", value: patient.status || "N/A" },
-            { label: "Total Paid", value: formatCurrency(patient.total_paid) },
-            { label: "Balance", value: formatCurrency(patient.total_due - patient.total_paid) },
             { label: "Last Visit", value: patient.last_visit || "N/A" },
             { label: "Next Due", value: patient.next_due || "N/A" },
           ].map((item) => (
