@@ -118,7 +118,6 @@ function PatientRecordsView({
                   <th className="px-6 py-4">Owner Identity</th>
                   <th className="px-6 py-4">Contact Details</th>
                   <th className="px-6 py-4 text-center">Pets</th>
-                  <th className="px-6 py-4 text-right">Total Paid</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -164,9 +163,6 @@ function PatientRecordsView({
                           {owner.pets?.length || 0}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-5 text-right font-black text-emerald-600 text-sm">
-                      ₱{(Number(owner.total_paid_sum) || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
