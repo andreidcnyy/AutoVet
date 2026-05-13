@@ -6,7 +6,6 @@ import { ROLES, ADMIN_ONLY, VET_AND_ADMIN, ALL_ROLES } from "../../constants/rol
 
 import ClinicProfileTab from "./ClinicProfileTab";
 import UserManagementTab from "./UserManagementTab";
-import ServiceManagementTab from "./ServiceManagementTab";
 import MasterDataManagementTab from "./MasterDataManagementTab";
 import SystemPreferencesTab from "./SystemPreferencesTab";
 import ArchiveRecoveryTab from "./ArchiveRecoveryTab";
@@ -21,7 +20,6 @@ import NotificationTemplatesManager from "../notifications/NotificationTemplates
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome, allowedRoles: VET_AND_ADMIN },
   { id: "data", label: "Master Data", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
-  { id: "services", label: "Service Management", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
   { id: "species", label: "Species & Breeds", icon: FiHome, allowedRoles: VET_AND_ADMIN },
   { id: "users", label: "Users / Roles", icon: FiUsers, allowedRoles: VET_AND_ADMIN },
   { id: "schedule", label: "Vet Schedule", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
@@ -70,19 +68,11 @@ function Settings() {
           </nav>
         </div>
         
-        {/* Help/Inspiration Card (Optional but looks premium) */}
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-indigo-700 p-4 text-white shadow-xl shadow-emerald-500/10">
-          <p className="text-xs font-bold uppercase tracking-wider opacity-60">Pro Tip</p>
-          <p className="mt-1 text-xs leading-relaxed font-medium">
-            Use Master Data to standardize categories across the entire clinic workflow.
-          </p>
-        </div>
       </aside>
 
       <main className="min-w-0">
         {activeTab === "clinic" && <ClinicProfileTab />}
         {activeTab === "data" && <MasterDataManagementTab />}
-        {activeTab === "services" && <ServiceManagementTab />}
         {activeTab === "species" && <SpeciesBreedsTab />}
         {activeTab === "users" && <UserManagementTab />}
         { activeTab === "schedule" && <VetScheduleTab /> }
