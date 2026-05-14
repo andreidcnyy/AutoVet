@@ -49,8 +49,8 @@ export default function AnalyticsChartsCard() {
       api.get("/dashboard/analytics/items-by-category"),
     ])
       .then(([clientRes, catRes]) => {
-        setClients(clientRes.data);
-        setCategories(catRes.data);
+        setClients(Array.isArray(clientRes) ? clientRes : []);
+        setCategories(Array.isArray(catRes) ? catRes : []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
