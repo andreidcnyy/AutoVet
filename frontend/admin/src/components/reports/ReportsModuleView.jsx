@@ -498,14 +498,24 @@ function ReportsModuleView() {
   };
 
   const submitReport = async (finalStatus) => {
-    if (items.length === 0)       { toast.error("Cannot save a report without items."); return; }
-    if (!selectedPatientId)       { toast.error("Please select a patient."); return; }
-    if (!selectedAppointmentId)   { toast.error("Please select an appointment."); return; }
+    if (items.length === 0)     { toast.error("Cannot save a report without items."); return; }
+    if (!selectedPatientId)     { toast.error("Please select a patient."); return; }
+    if (!selectedAppointmentId) { toast.error("Please select an appointment."); return; }
+
+    // If updating an existing draft, use PUT; otherwise create with POST
+    const isUpdate = !!reportId;
+    const url    = isUpdate ? `/api/invoices/${reportId}` : "/api/invoices";
+    const method = isUpdate ? "PUT" : "POST";
+
     const payload = {
-      pet_id: selectedPatientId, appointment_id: selectedAppointmentId, status: finalStatus,
+      pet_id: selectedPatientId,
+      appointment_id: selectedAppointmentId,
+      status: finalStatus,
       subtotal, discount_type: "fixed", discount_value: 0, tax_rate: 0,
       total: subtotal, amount_paid: 0, notes_to_client: notes,
       items: items.map((item) => ({
+        // Include DB id for existing items so the backend updates rather than duplicates
+        ...(item.id && !String(item.id).startsWith("li-") ? { id: item.id } : {}),
         item_type: item.item_type || "service",
         service_id: item.service_id, inventory_id: item.inventory_id,
         name: item.name, notes: item.notes, qty: item.qty,
@@ -514,23 +524,43 @@ function ReportsModuleView() {
         is_hidden: false,
       })),
     };
+
     try {
-      const res = await fetch("/api/invoices", {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${user?.token}` },
         body: JSON.stringify(payload),
       });
       clearErrors();
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        if (res.status === 422) { setLaravelErrors(err); toast.error("Validation error."); }
-        else throw new Error(err.message || "Failed to save report");
+        if (res.status === 422) {
+          setLaravelErrors(err);
+          // Surface the most useful message from Laravel validation errors
+          const firstMsg = err.errors ? Object.values(err.errors)[0]?.[0] : (err.message || "Validation error.");
+          toast.error(firstMsg);
+        } else {
+          toast.error(err.message || "Failed to save report");
+        }
         return;
       }
-      toast.success(`Report ${finalStatus === "Draft" ? "saved as draft" : "completed"} successfully.`);
+
+      const data = await res.json();
       localStorage.removeItem(REPORTS_CACHE_KEY);
       window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
-      resetForm();
+
+      if (finalStatus === "Draft") {
+        // Capture the ID so future saves update the same record
+        setReportId(data.id);
+        setStatus(data.status || "Draft");
+        toast.success("Report saved as draft.");
+      } else {
+        // Finalized — go straight to history so the user can see the new record
+        toast.success("Report completed. Stock deducted and AI data updated.");
+        resetForm();
+        setMainTab("history");
+        fetchReports(1, "", null, true);
+      }
     } catch (err) { toast.error(err.message || "Failed to save report"); }
   };
 
