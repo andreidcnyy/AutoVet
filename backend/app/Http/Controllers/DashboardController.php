@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -1104,4 +1104,56 @@ class DashboardController extends Controller
         ]);
     }
 
+
+    /**
+     * Monthly new client (owner) registrations — last 12 months.
+     */
+    public function getMonthlyClients(): JsonResponse
+    {
+        $months = 12;
+        $start = Carbon::now()->startOfMonth()->subMonths($months - 1);
+
+        $rows = Owner::realClients()
+            ->where('created_at', '>=', $start)
+            ->select(
+                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month');
+
+        $series = [];
+        for ($i = 0; $i < $months; $i++) {
+            $key = $start->copy()->addMonths($i)->format('Y-m');
+            $series[] = [
+                'month' => Carbon::createFromFormat('Y-m', $key)->format('M Y'),
+                'total' => (int) ($rows[$key] ?? 0),
+            ];
+        }
+
+        return response()->json($series);
+    }
+
+    /**
+     * Total items sold per inventory category from finalized/paid invoices.
+     */
+    public function getItemsByCategory(): JsonResponse
+    {
+        $data = DB::table('invoice_items')
+            ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
+            ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
+            ->whereNotNull('invoice_items.inventory_id')
+            ->select(
+                'mdm_inventory_categories.name as category',
+                DB::raw('SUM(invoice_items.qty) as total_qty')
+            )
+            ->groupBy('mdm_inventory_categories.name')
+            ->orderByDesc('total_qty')
+            ->get();
+
+        return response()->json($data);
+    }
 }

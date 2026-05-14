@@ -349,6 +349,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/dashboard/pets',                  [DashboardController::class, 'petsList']);
     Route::get('/dashboard/clients',               [DashboardController::class, 'clientsList']);
     Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
+    Route::get('/dashboard/analytics/monthly-clients',   [DashboardController::class, 'getMonthlyClients']);
+    Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
 
     // -----------------------------------------------------------------------
     // Core Modules

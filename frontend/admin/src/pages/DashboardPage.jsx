@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import MetricCard from "../components/dashboard/MetricCard";
+import AnalyticsChartsCard from "../components/dashboard/AnalyticsChartsCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { LuSparkles } from "react-icons/lu";
@@ -158,6 +159,10 @@ function DashboardPage() {
         {mappedMetrics.map((card) => (
           <MetricCard key={card.id || card.title} card={card} />
         ))}
+      </section>
+
+      <section className="grid grid-cols-1 gap-6">
+        <AnalyticsChartsCard />
       </section>
 
 
