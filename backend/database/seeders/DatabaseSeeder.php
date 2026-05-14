@@ -31,7 +31,8 @@ class DatabaseSeeder extends Seeder
             ServicesSeeder::class,
             DashboardAIForecastSeeder::class,
             PatientPetSeeder::class,
-            BulkProductionMockSeeder::class, // Added for 50+ records
+            BulkProductionMockSeeder::class,
+            AnalyticsMockSeeder::class,
         ]);
     }
 }
