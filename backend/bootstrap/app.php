@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/register',
         ]);
 
+        // Ensure CORS is handled first, before any auth or route middleware
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+
         $middleware->api(prepend: [
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);
