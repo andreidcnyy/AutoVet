@@ -13,8 +13,8 @@ function getToken() {
 }
 // --- END: MODIFIED AUTH HANDLING ---
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const BASE_URL = rawBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '').trim();
 
 function getHeaders(extra = {}) {
   const token = getToken();
