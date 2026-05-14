@@ -1,23 +1,45 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
 import {
+  FiAlertTriangle,
   FiCalendar,
   FiChevronDown,
   FiChevronLeft,
   FiChevronRight,
   FiClipboard,
   FiEye,
+  FiPackage,
   FiPlusCircle,
+  FiRefreshCw,
   FiSearch,
   FiSend,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiMinus,
   FiX,
-  FiAlertTriangle,
 } from "react-icons/fi";
-import { LuPawPrint } from "react-icons/lu";
+import { LuPawPrint, LuSparkles } from "react-icons/lu";
+import {
+  ComposedChart,
+  BarChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  Legend,
+} from "recharts";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
 import api from "../../api";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -33,12 +55,426 @@ const formatDate = (dateStr) => {
   }
 };
 
+const CHART_COLORS = ["#10b981", "#6366f1", "#f59e0b", "#3b82f6", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316"];
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-xl dark:border-dark-border dark:bg-dark-card text-xs">
+      <p className="mb-1 font-black uppercase tracking-widest text-zinc-400">{label}</p>
+      {payload.map((p, i) => (
+        p.value !== null && p.value !== undefined && (
+          <p key={i} className="font-bold" style={{ color: p.color ?? p.fill }}>
+            {p.name}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
+          </p>
+        )
+      ))}
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub, color = "zinc" }) {
+  const bg = { emerald: "bg-emerald-50 dark:bg-emerald-900/20", amber: "bg-amber-50 dark:bg-amber-900/20", rose: "bg-rose-50 dark:bg-rose-900/20", indigo: "bg-indigo-50 dark:bg-indigo-900/20", zinc: "bg-zinc-50 dark:bg-dark-surface" };
+  const txt = { emerald: "text-emerald-700 dark:text-emerald-400", amber: "text-amber-700 dark:text-amber-400", rose: "text-rose-700 dark:text-rose-400", indigo: "text-indigo-700 dark:text-indigo-400", zinc: "text-zinc-700 dark:text-zinc-300" };
+  return (
+    <div className={clsx("rounded-2xl p-5 border border-zinc-100 dark:border-dark-border", bg[color] ?? bg.zinc)}>
+      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{label}</p>
+      <p className={clsx("text-3xl font-black", txt[color] ?? txt.zinc)}>{value}</p>
+      {sub && <p className="mt-1 text-xs text-zinc-500">{sub}</p>}
+    </div>
+  );
+}
+
+function ModelBadge({ r2, slope }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 dark:bg-dark-surface border border-zinc-200 dark:border-dark-border px-3 py-1 text-[10px] font-black uppercase tracking-wider text-zinc-500">
+      <LuSparkles className="h-3 w-3 text-emerald-500" />
+      LR · R²={r2} · slope={slope &gt; 0 ? "+" : ""}{slope}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transaction Report Tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TransactionReportTab({ user }) {
+  const [months, setMonths] = useState(12);
+  const [trends, setTrends] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async (m) => {
+    if (!user?.token) return;
+    setLoading(true);
+    try {
+      const [t, s] = await Promise.all([
+        api.get(`/api/reports/analytics/transaction-trends?months=${m}`),
+        api.get(`/api/reports/analytics/transaction-stats?days=${m === 12 ? 365 : m === 6 ? 180 : 90}`),
+      ]);
+      setTrends(t);
+      setStats(s);
+    } catch {
+      // silent — charts just won't render
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.token]);
+
+  useEffect(() => { load(months); }, [months, load]);
+
+  const periodOptions = [
+    { label: "3 Months", value: 3 },
+    { label: "6 Months", value: 6 },
+    { label: "1 Year", value: 12 },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-24 text-zinc-400">
+        <FiRefreshCw className="h-5 w-5 animate-spin" />
+        <span className="text-sm font-semibold">Loading analytics…</span>
+      </div>
+    );
+  }
+
+  const summary = trends?.summary ?? {};
+  const model   = trends?.model?.count ?? {};
+  const series  = trends?.series ?? [];
+  const byStatus = stats?.by_status ?? [];
+  const topItems = stats?.top_items ?? [];
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Period selector */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Transaction Report</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Invoice volume &amp; trends · Linear Regression forecast</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-xl bg-zinc-100 dark:bg-dark-surface p-1">
+          {periodOptions.map((o) => (
+            <button key={o.value} onClick={() => setMonths(o.value)}
+              className={clsx("rounded-lg px-4 py-1.5 text-xs font-bold transition-colors",
+                months === o.value ? "bg-white dark:bg-dark-card text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300")}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <StatCard label="Total Reports" value={summary.total_invoices?.toLocaleString() ?? "—"} sub={`Last ${months} months`} color="indigo" />
+        <StatCard label="Total Revenue" value={summary.total_revenue > 0 ? `₱${Number(summary.total_revenue).toLocaleString()}` : "—"} color="emerald" />
+        <StatCard label="Avg Per Report" value={summary.avg_per_invoice > 0 ? `₱${Number(summary.avg_per_invoice).toLocaleString()}` : "—"} color="zinc" />
+      </div>
+
+      {/* Monthly volume chart with LR trend */}
+      <div className="card-shell p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Monthly Report Volume</h3>
+            <p className="text-xs text-zinc-400 mt-0.5">Bars = actual · Line = LR trend · Dotted = forecast</p>
+          </div>
+          {model.r2 !== undefined && <ModelBadge r2={model.r2} slope={model.slope} />}
+        </div>
+        {series.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">No invoice data for this period</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={series} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="actual_count" name="Reports" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={36} />
+              <Line dataKey="trend_count" name="LR Trend" stroke="#10b981" strokeWidth={2}
+                dot={false} strokeDasharray={(d) => d?.actual_count === null ? "5 4" : "0"}
+                connectNulls={true} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Status breakdown + top items */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+        {/* Invoice status breakdown */}
+        <div className="card-shell p-5">
+          <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Status Breakdown</h3>
+          {byStatus.length === 0 ? (
+            <p className="text-sm text-zinc-400 text-center py-8">No data</p>
+          ) : (
+            <div className="space-y-3">
+              {byStatus.map((s, i) => {
+                const total = byStatus.reduce((sum, r) => sum + Number(r.count), 0);
+                const pct   = total > 0 ? Math.round((Number(s.count) / total) * 100) : 0;
+                const color = s.status === "Finalized" || s.status === "Paid" ? "bg-emerald-500" : s.status === "Draft" ? "bg-amber-400" : s.status === "Cancelled" ? "bg-rose-400" : "bg-zinc-400";
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-zinc-700 dark:text-zinc-300">{s.status}</span>
+                      <span className="text-zinc-400">{Number(s.count).toLocaleString()} ({pct}%)</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-dark-surface overflow-hidden">
+                      <div className={clsx("h-2 rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Top items */}
+        <div className="card-shell p-5">
+          <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Top Items Used</h3>
+          {topItems.length === 0 ? (
+            <p className="text-sm text-zinc-400 text-center py-8">No finalized reports yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={topItems.slice(0, 8)} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                <XAxis type="number" tick={{ fontSize: 9, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => v.length > 14 ? v.substring(0, 14) + "…" : v} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="times_used" name="Used" radius={[0, 4, 4, 0]} maxBarSize={16}>
+                  {topItems.slice(0, 8).map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inventory Report Tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InventoryReportTab({ user }) {
+  const [months, setMonths] = useState(12);
+  const [consumption, setConsumption] = useState([]);
+  const [stockData, setStockData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState(null);
+
+  const load = useCallback(async (m) => {
+    if (!user?.token) return;
+    setLoading(true);
+    try {
+      const [c, s] = await Promise.all([
+        api.get(`/api/reports/analytics/inventory-consumption?months=${m}`),
+        api.get(`/api/reports/analytics/inventory-stock`),
+      ]);
+      setConsumption(Array.isArray(c) ? c : []);
+      setStockData(s);
+      setActiveCategory(Array.isArray(c) && c.length > 0 ? c[0].category : null);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.token]);
+
+  useEffect(() => { load(months); }, [months, load]);
+
+  const periodOptions = [
+    { label: "3 Months", value: 3 },
+    { label: "6 Months", value: 6 },
+    { label: "1 Year", value: 12 },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-24 text-zinc-400">
+        <FiRefreshCw className="h-5 w-5 animate-spin" />
+        <span className="text-sm font-semibold">Loading analytics…</span>
+      </div>
+    );
+  }
+
+  const summary  = stockData?.summary ?? {};
+  const alerts   = stockData?.alert_items ?? [];
+  const activeCat = consumption.find((c) => c.category === activeCategory) ?? consumption[0];
+
+  const trendIcon = (dir) =>
+    dir === "up"   ? <FiTrendingUp className="h-3.5 w-3.5 text-emerald-500" /> :
+    dir === "down" ? <FiTrendingDown className="h-3.5 w-3.5 text-rose-500" /> :
+                    <FiMinus className="h-3.5 w-3.5 text-zinc-400" />;
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header + period */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Inventory Report</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Consumption trends · LR forecast · Stock status</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-xl bg-zinc-100 dark:bg-dark-surface p-1">
+          {periodOptions.map((o) => (
+            <button key={o.value} onClick={() => setMonths(o.value)}
+              className={clsx("rounded-lg px-4 py-1.5 text-xs font-bold transition-colors",
+                months === o.value ? "bg-white dark:bg-dark-card text-zinc-900 dark:text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300")}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stock summary */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard label="Total Items"   value={summary.total?.toLocaleString()       ?? "—"} color="zinc" />
+        <StatCard label="In Stock"      value={summary.in_stock?.toLocaleString()    ?? "—"} color="emerald" />
+        <StatCard label="Low Stock"     value={summary.low_stock?.toLocaleString()   ?? "—"} color="amber" />
+        <StatCard label="Out of Stock"  value={summary.out_of_stock?.toLocaleString() ?? "—"} color="rose" />
+      </div>
+
+      {/* Consumption chart with LR */}
+      <div className="card-shell p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Consumption by Category</h3>
+            <p className="text-xs text-zinc-400 mt-0.5">Bars = actual qty · Line = LR trend · Dotted = forecast</p>
+          </div>
+          {consumption.length > 0 && activeCat?.model && (
+            <ModelBadge r2={activeCat.model.r2} slope={activeCat.model.slope} />
+          )}
+        </div>
+
+        {/* Category tabs */}
+        {consumption.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {consumption.map((cat) => (
+              <button key={cat.category}
+                onClick={() => setActiveCategory(cat.category)}
+                className={clsx("flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all",
+                  activeCategory === cat.category
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "bg-zinc-100 dark:bg-dark-surface text-zinc-500 hover:text-zinc-700")}>
+                {trendIcon(cat.trend_direction)}
+                {cat.category}
+                <span className="opacity-60">({cat.total.toLocaleString()})</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!activeCat ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
+            No consumption data for this period
+          </div>
+        ) : (
+          <>
+            <ResponsiveContainer width="100%" height={220}>
+              <ComposedChart data={activeCat.series} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="actual" name="Qty Used" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                <Line dataKey="trend" name="LR Trend" stroke="#6366f1" strokeWidth={2} dot={false} connectNulls={true}
+                  strokeDasharray="0" />
+              </ComposedChart>
+            </ResponsiveContainer>
+
+            {/* Category meta */}
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-zinc-500 border-t border-zinc-100 dark:border-dark-border pt-3">
+              <span>Total: <b className="text-zinc-700 dark:text-zinc-300">{activeCat.total.toLocaleString()} units</b></span>
+              <span>Avg/Month: <b className="text-zinc-700 dark:text-zinc-300">{activeCat.avg_monthly}</b></span>
+              <span className="flex items-center gap-1">Trend: {trendIcon(activeCat.trend_direction)} <b className="text-zinc-700 dark:text-zinc-300">{activeCat.trend_direction}</b></span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Category summary grid */}
+      {consumption.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {consumption.map((cat, i) => (
+            <div key={cat.category}
+              onClick={() => setActiveCategory(cat.category)}
+              className={clsx("rounded-2xl border p-4 cursor-pointer transition-all",
+                activeCategory === cat.category
+                  ? "border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20"
+                  : "border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:border-zinc-200")}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${CHART_COLORS[i % CHART_COLORS.length]}20` }}>
+                  <FiPackage className="h-4 w-4" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }} />
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-zinc-400">
+                  {trendIcon(cat.trend_direction)} {cat.trend_direction}
+                </div>
+              </div>
+              <p className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 truncate">{cat.category}</p>
+              <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{cat.total.toLocaleString()}</p>
+              <p className="text-[10px] text-zinc-400">Avg {cat.avg_monthly}/month · R²={cat.model.r2}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Low / out-of-stock alert table */}
+      {alerts.length > 0 && (
+        <div className="card-shell overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-dark-border px-5 py-4 bg-amber-50/50 dark:bg-amber-900/10">
+            <FiAlertTriangle className="h-4 w-4 text-amber-500" />
+            <h3 className="text-sm font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Stock Alerts</h3>
+            <span className="ml-auto rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-black text-amber-700 dark:text-amber-400">
+              {alerts.length} items
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-zinc-50/50 dark:bg-dark-surface/30">
+                  {["Item", "Category", "Current", "Min", "Deficit", "Supplier"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
+                {alerts.map((item) => (
+                  <tr key={item.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
+                    <td className="px-5 py-3 font-bold text-zinc-900 dark:text-zinc-100">{item.name}</td>
+                    <td className="px-5 py-3 text-zinc-500">{item.category}</td>
+                    <td className="px-5 py-3">
+                      <span className={clsx("font-black", item.stock <= 0 ? "text-rose-600" : "text-amber-600")}>
+                        {item.stock}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-zinc-500">{item.min_stock}</td>
+                    <td className="px-5 py-3">
+                      <span className={clsx("rounded-full px-2 py-0.5 font-black text-[10px]",
+                        item.status === "out_of_stock" ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400")}>
+                        {item.status === "out_of_stock" ? "OUT" : `+${item.deficit} needed`}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-zinc-500">{item.supplier ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────────────────────
+
 function ReportsModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
 
-  const [activeTab, setActiveTab] = useState("new");
+  const [activeTab, setActiveTab] = useState("transactions");
   const [reports, setReports] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -371,18 +807,43 @@ function ReportsModuleView() {
     );
   };
 
+  const TABS = [
+    { id: "transactions", label: "Transaction Report" },
+    { id: "inventory",    label: "Inventory Report" },
+    { id: "new",          label: "New Report" },
+    { id: "history",      label: "Report History" },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-dark-border">
       {/* Tab Switcher */}
-      <div className="flex items-center gap-4 border-b border-zinc-200 dark:border-dark-border px-6 py-4 bg-zinc-50/50 dark:bg-dark-surface/30">
-        {["new", "history"].map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={clsx("px-4 py-2 rounded-xl text-sm font-bold transition-all", activeTab === tab ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")}>
-            {tab === "new" ? "New Report" : "Report History"}
+      <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-dark-border px-6 py-4 bg-zinc-50/50 dark:bg-dark-surface/30 overflow-x-auto">
+        {TABS.map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={clsx("shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all",
+              activeTab === tab.id
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg"
+                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100")}>
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {activeTab === "new" ? (
+      {/* Analytics tabs */}
+      {activeTab === "transactions" && (
+        <div className="flex-1 overflow-y-auto">
+          <TransactionReportTab user={user} />
+        </div>
+      )}
+
+      {activeTab === "inventory" && (
+        <div className="flex-1 overflow-y-auto">
+          <InventoryReportTab user={user} />
+        </div>
+      )}
+
+      {/* Existing: New Report */}
+      {activeTab === "new" && (
         <div className={clsx("grid grid-cols-1 lg:h-[calc(100vh-16rem)]", isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]")}>
           {!isPreviewMode && (
             <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r">
@@ -397,7 +858,6 @@ function ReportsModuleView() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
-                {/* Patient Section */}
                 <section>
                   <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Patient Details</h3>
                   <div className="space-y-3">
@@ -419,7 +879,6 @@ function ReportsModuleView() {
                       {getError("pet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("pet_id")}</p>}
                     </div>
 
-                    {/* Appointment Selector */}
                     <div className="space-y-2">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Select Appointment</label>
                       <div className="relative">
@@ -463,7 +922,6 @@ function ReportsModuleView() {
                   </div>
                 </section>
 
-                {/* Services Section */}
                 <section>
                   <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Services &amp; Items</h3>
                   <div className="grid grid-cols-[1fr_54px_auto] gap-2 items-center">
@@ -565,7 +1023,6 @@ function ReportsModuleView() {
             </aside>
           )}
 
-          {/* Preview Panel */}
           <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-3 text-sm text-zinc-500">
@@ -656,8 +1113,10 @@ function ReportsModuleView() {
             </div>
           </section>
         </div>
-      ) : (
-        /* History Tab */
+      )}
+
+      {/* Existing: Report History */}
+      {activeTab === "history" && (
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-6 flex items-center gap-3">
             <div className="relative flex-1 max-w-md">

@@ -508,5 +508,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
         // Inventory Reports
         Route::get('/reports/inventory/low-stock', [LowStockReportController::class, 'generate']);
+
+        // Analytics (feeds linear regression from real invoice + usage data)
+        Route::get('/reports/analytics/transaction-trends', [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionTrends']);
+        Route::get('/reports/analytics/transaction-stats',  [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionStats']);
+        Route::get('/reports/analytics/inventory-consumption', [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryConsumption']);
+        Route::get('/reports/analytics/inventory-stock',    [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryStockSummary']);
     });
 });
