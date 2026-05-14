@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import MetricCard from "../components/dashboard/MetricCard";
-import AnalyticsChartsCard from "../components/dashboard/AnalyticsChartsCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { LuSparkles } from "react-icons/lu";
@@ -160,12 +159,6 @@ function DashboardPage() {
           <MetricCard key={card.id || card.title} card={card} />
         ))}
       </section>
-
-      <section className="grid grid-cols-1 gap-6">
-        <AnalyticsChartsCard />
-      </section>
-
-
 
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" onClick={closeModal}>
