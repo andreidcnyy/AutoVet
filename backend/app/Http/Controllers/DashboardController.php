@@ -1107,6 +1107,7 @@ class DashboardController extends Controller
 
     /**
      * Monthly new client (owner) registrations — last 12 months.
+     * Falls back to the 12 months around the oldest registration if none are recent.
      */
     public function getMonthlyClients(): JsonResponse
     {
@@ -1122,6 +1123,29 @@ class DashboardController extends Controller
             ->orderBy('month')
             ->pluck('total', 'month');
 
+        $hasData = $rows->sum() > 0;
+
+        if (!$hasData) {
+            // Fallback: use the actual date range of owner registrations
+            $oldest = Owner::min('created_at');
+            if ($oldest) {
+                $start = Carbon::parse($oldest)->startOfMonth();
+                $rows = Owner::where('created_at', '>=', $start)
+                    ->select(
+                        DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
+                        DB::raw('COUNT(*) as total')
+                    )
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->pluck('total', 'month');
+                $months = $rows->count() > 0 ? min($rows->count(), 12) : 12;
+                $keys = $rows->keys()->toArray();
+                if (count($keys) >= 1) {
+                    $start = Carbon::createFromFormat('Y-m', $keys[0]);
+                }
+            }
+        }
+
         $series = [];
         for ($i = 0; $i < $months; $i++) {
             $key = $start->copy()->addMonths($i)->format('Y-m');
@@ -1135,7 +1159,8 @@ class DashboardController extends Controller
     }
 
     /**
-     * Total items sold per inventory category from finalized/paid invoices.
+     * Total items used per inventory category.
+     * Primary: inventory_usage_history. Fallback: invoice_items from finalized invoices.
      */
     public function getItemsByCategory(): JsonResponse
     {
@@ -1150,6 +1175,25 @@ class DashboardController extends Controller
             ->orderByDesc('total_qty')
             ->get();
 
-        return response()->json($data);
+        if ($data->isNotEmpty()) {
+            return response()->json($data);
+        }
+
+        // Fallback: derive from invoice_items when usage history is not yet populated
+        $fallback = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
+            ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
+            ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
+            ->whereNotNull('invoice_items.inventory_id')
+            ->select(
+                DB::raw("COALESCE(mdm_inventory_categories.name, 'Uncategorized') as category"),
+                DB::raw('SUM(invoice_items.qty) as total_qty')
+            )
+            ->groupBy('category')
+            ->orderByDesc('total_qty')
+            ->get();
+
+        return response()->json($fallback);
     }
 }
