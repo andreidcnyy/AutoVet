@@ -374,7 +374,7 @@ function ReportsModuleView() {
     }
     try {
       const params = new URLSearchParams({ per_page: "10", page: page.toString(), search });
-      const res = await fetch(`/api/invoices?${params}`, {
+      const res = await fetch(`/api/reports?${params}`, {
         signal, headers: { Accept: "application/json", Authorization: `Bearer ${user.token}` },
       });
       if (!res.ok) throw new Error("Failed");
@@ -504,7 +504,7 @@ function ReportsModuleView() {
 
     // If updating an existing draft, use PUT; otherwise create with POST
     const isUpdate = !!reportId;
-    const url    = isUpdate ? `/api/invoices/${reportId}` : "/api/invoices";
+    const url    = isUpdate ? `/api/reports/${reportId}` : "/api/reports";
     const method = isUpdate ? "PUT" : "POST";
 
     const payload = {
@@ -540,7 +540,7 @@ function ReportsModuleView() {
           const firstMsg = err.errors ? Object.values(err.errors)[0]?.[0] : (err.message || "Validation error.");
           toast.error(firstMsg);
         } else {
-          toast.error(err.message || "Failed to save report");
+          toast.error(err.error || err.message || "Failed to save report");
         }
         return;
       }
@@ -568,7 +568,7 @@ function ReportsModuleView() {
     if (!rep?.id) return;
     try {
       setHistoryLoading(true);
-      const full = await api.get(`/api/invoices/${rep.id}`);
+      const full = await api.get(`/api/reports/${rep.id}`);
       setItems((full.items || []).map((i) => ({ ...i, unit_price: i.unit_price || 0 })));
       setSelectedPatientId(full.pet_id?.toString());
       setSelectedOwnerId(full.pet?.owner_id?.toString() || "");

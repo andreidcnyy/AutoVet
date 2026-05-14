@@ -371,6 +371,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::apiResource('inventory',       InventoryController::class);
 
     Route::apiResource('invoices',        InvoiceController::class);
+    Route::apiResource('reports',         InvoiceController::class)->parameters(['reports' => 'invoice']);
     Route::apiResource('services',        ServiceController::class);
     Route::apiResource('medical-records', MedicalRecordController::class);
 

@@ -222,7 +222,11 @@ class InvoiceController extends Controller
             }
 
             $invoice->load('items');
-            $this->finalizationService->finalizeInvoice($invoice);
+            try {
+                $this->finalizationService->finalizeInvoice($invoice);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
+            }
 
             if (in_array($invoice->status, ['Finalized', 'Paid'])) {
                 try {
@@ -244,7 +248,7 @@ class InvoiceController extends Controller
                 'payload' => $request->all()
             ]);
             return response()->json([
-                'message' => 'Failed to create invoice.', 
+                'message' => 'Failed to create invoice.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -408,7 +412,11 @@ class InvoiceController extends Controller
             }
 
             $invoice->load('items');
-            $this->finalizationService->finalizeInvoice($invoice);
+            try {
+                $this->finalizationService->finalizeInvoice($invoice);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
+            }
 
             if ($invoice->wasChanged('status') && $invoice->status === 'Finalized') {
                 try {
