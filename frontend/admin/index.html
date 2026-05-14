@@ -48,33 +48,16 @@
 
         function refresh() {
           if (!navigator.onLine) {
-            show('Offline — changes will sync', '#ef4444');
-            return;
-          }
-          // Ask SW for queue size
-          if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage('queue-count');
-            navigator.serviceWorker.controller.postMessage('replay-queue');
+            show('Offline — changes will sync when reconnected', '#ef4444');
           } else {
             hide();
+            if (navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage('replay-queue');
+            }
           }
         }
 
-        navigator.serviceWorker.addEventListener('message', function (e) {
-          var d = e.data || {};
-          if (d.type === 'queue-count') {
-            if (d.count > 0) show('Syncing ' + d.count + ' pending…', '#f59e0b');
-            else hide();
-          } else if (d.type === 'queued') {
-            show((d.count || 1) + ' pending — will sync', '#f59e0b');
-          } else if (d.type === 'syncing') {
-            show('Syncing ' + d.count + '…', '#f59e0b');
-          } else if (d.type === 'synced') {
-            show('Synced', '#10b981');
-            setTimeout(hide, 1600);
-          }
-        });
-
+        // Only respond to offline/online changes — ignore all sync queue messages.
         window.addEventListener('online', refresh);
         window.addEventListener('offline', refresh);
         document.addEventListener('DOMContentLoaded', refresh);
