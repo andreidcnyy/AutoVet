@@ -240,7 +240,7 @@ function TopHeader({ title, user, onMenuToggle }) {
       {showDevicesModal && (
         <ManageDevicesModal
           onClose={() => setShowDevicesModal(false)}
-          apiBase=""
+          apiBase={import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '').replace(/\/$/, '') || ''}
           token={user?.token || ''}
         />
       )}
