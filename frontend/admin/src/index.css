@@ -17,30 +17,31 @@
 }
 
 @layer base {
-  *, *::before, *::after {
-    cursor: inherit;
-  }
-
   body {
     @apply bg-zinc-50 text-zinc-800 antialiased font-sans transition-colors duration-300;
     @apply dark:bg-dark-bg dark:text-zinc-100;
     user-select: text;
     cursor: default;
   }
+}
 
-  input,
-  textarea,
-  [contenteditable="true"] {
-    user-select: text;
-    cursor: text;
-  }
+/* Outside @layer so it outranks Tailwind utilities */
+*, *::before, *::after {
+  cursor: default !important;
+}
 
-  button,
-  a,
-  [role="button"],
-  select {
-    cursor: pointer;
-  }
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text !important;
+}
+
+button,
+a,
+[role="button"],
+select,
+label[for] {
+  cursor: pointer !important;
 }
 
 @layer components {
