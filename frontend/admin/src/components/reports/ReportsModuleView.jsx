@@ -89,7 +89,7 @@ function ModelBadge({ r2, slope }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 dark:bg-dark-surface border border-zinc-200 dark:border-dark-border px-3 py-1 text-[10px] font-black uppercase tracking-wider text-zinc-500">
       <LuSparkles className="h-3 w-3 text-emerald-500" />
-      LR · R²={r2} · slope={slope &gt; 0 ? "+" : ""}{slope}
+      LR · R²={r2} · slope={slope > 0 ? "+" : ""}{slope}
     </span>
   );
 }
