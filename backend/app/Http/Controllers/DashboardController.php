@@ -1139,15 +1139,12 @@ class DashboardController extends Controller
      */
     public function getItemsByCategory(): JsonResponse
     {
-        $data = DB::table('invoice_items')
-            ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
+        $data = DB::table('inventory_usage_history')
+            ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
             ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
-            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-            ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
-            ->whereNotNull('invoice_items.inventory_id')
             ->select(
                 DB::raw("COALESCE(mdm_inventory_categories.name, 'Uncategorized') as category"),
-                DB::raw('SUM(invoice_items.qty) as total_qty')
+                DB::raw('SUM(inventory_usage_history.quantity_used) as total_qty')
             )
             ->groupBy('category')
             ->orderByDesc('total_qty')
