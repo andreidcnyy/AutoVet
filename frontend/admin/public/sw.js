@@ -101,6 +101,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Fire-and-forget endpoints: try network, silently fail — never queue.
+  const skipQueue = ['/sync/trigger'];
+  if (skipQueue.some((p) => url.pathname.includes(p))) {
+    event.respondWith(
+      fetch(req).catch(() =>
+        new Response(JSON.stringify({ queued: false, skipped: true }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    );
+    return;
+  }
+
   // Mutations: try network; if it fails AND we're offline, queue it.
   event.respondWith(mutationStrategy(req));
 });
