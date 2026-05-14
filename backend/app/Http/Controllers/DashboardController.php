@@ -1113,8 +1113,7 @@ class DashboardController extends Controller
         $months = 12;
         $start = Carbon::now()->startOfMonth()->subMonths($months - 1);
 
-        $rows = Owner::realClients()
-            ->where('created_at', '>=', $start)
+        $rows = Owner::where('created_at', '>=', $start)
             ->select(
                 DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
                 DB::raw('COUNT(*) as total')
@@ -1142,15 +1141,15 @@ class DashboardController extends Controller
     {
         $data = DB::table('invoice_items')
             ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
-            ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
+            ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
             ->whereNotNull('invoice_items.inventory_id')
             ->select(
-                'mdm_inventory_categories.name as category',
+                DB::raw("COALESCE(mdm_inventory_categories.name, 'Uncategorized') as category"),
                 DB::raw('SUM(invoice_items.qty) as total_qty')
             )
-            ->groupBy('mdm_inventory_categories.name')
+            ->groupBy('category')
             ->orderByDesc('total_qty')
             ->get();
 
