@@ -184,7 +184,7 @@ export default function Landing() {
             <span className="text-lg font-black tracking-tighter text-zinc-800 dark:text-zinc-100 uppercase">Pet Wellness Animal Clinic</span>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-            © 2026 AutoVet Management System. All rights reserved.
+            © 2026 Digivet Management System. All rights reserved.
           </p>
           
           <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 text-sm text-zinc-600 dark:text-zinc-400 font-medium">

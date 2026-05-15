@@ -146,7 +146,7 @@ export default function PortalLayout({ children }: LayoutProps) {
           {/* Footer information */}
           <footer className="mt-12 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-4">
-              © 2026 AutoVet Management System. All rights reserved.
+              © 2026 Digivet Management System. All rights reserved.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
               <div className="flex items-center gap-1.5">
