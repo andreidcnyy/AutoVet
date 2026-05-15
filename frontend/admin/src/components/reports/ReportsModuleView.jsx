@@ -9,6 +9,8 @@ import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +133,53 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
     setSelectedOwnerId(""); setOwnerSearch(""); setItemTypeFilter("all");
     setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
+  };
+
+  const exportHistoryPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Report History", 14, 18);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Period: ${formatDate(dateFrom)} to ${formatDate(dateTo)}`, 14, 26);
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, pageWidth - 14, 26, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+
+    const showQty = itemTypeFilter === "inventory";
+    const head = [showQty
+      ? ["Date", "Client", "Item / Service", "Qty", "Selling Price (PHP)", "Gross Sales (PHP)"]
+      : ["Date", "Client", "Item / Service", "Selling Price (PHP)", "Gross Sales (PHP)"]];
+
+    const body = displayRows.map((row) => showQty
+      ? [formatDate(row.date), row.client, row.itemName, row.qty, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]
+      : [formatDate(row.date), row.client, row.itemName, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]);
+
+    const colCount = showQty ? 6 : 5;
+    const foot = [Array(colCount).fill("").map((_, i) => {
+      if (i === colCount - 2) return "Total Gross Sales:";
+      if (i === colCount - 1) return Number(summary.totalGross).toFixed(2);
+      return "";
+    })];
+
+    autoTable(doc, {
+      startY: 32,
+      head,
+      body,
+      foot,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245] },
+      columnStyles: showQty
+        ? { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
+        : { 3: { halign: "right" }, 4: { halign: "right" } },
+    });
+
+    doc.save(`Report_History_${dateFrom}_to_${dateTo}.pdf`);
   };
 
   const summary = useMemo(() => {
@@ -276,7 +325,11 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end">
+            <div className="flex items-end justify-between">
+              <button onClick={exportHistoryPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                <FiDownload className="h-3.5 w-3.5" /> Download PDF
+              </button>
               <div className="w-56 space-y-1">
                 <div className="flex justify-between items-center font-black text-emerald-600 dark:text-emerald-400 border-t border-zinc-200 dark:border-dark-border pt-1">
                   <span className="text-xs text-zinc-500 dark:text-zinc-400">Total Gross Sales</span>
@@ -326,6 +379,67 @@ function ReportsModuleView() {
   const [submitting, setSubmitting]                     = useState(false);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.qty * (i.unit_price || 0), 0), [items]);
+
+  const exportNewTransactionPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Clinical Report", 14, 20);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text("Digivet Systems", 14, 27);
+    doc.text(`Date: ${reportDate}`, pageWidth - 14, 20, { align: "right" });
+    doc.text(`Status: ${status}`, pageWidth - 14, 27, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+
+    // Owner
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("OWNER", 14, 38);
+    doc.setFont("helvetica", "normal");
+    doc.text(patientDetails?.owner?.name || "—", 14, 44);
+    doc.text(patientDetails?.owner?.phone || "—", 14, 49);
+
+    // Patient
+    doc.setFont("helvetica", "bold");
+    doc.text("PATIENT", 14, 59);
+    doc.setFont("helvetica", "normal");
+    doc.text(patientDetails?.name || "—", 14, 65);
+    doc.text(`${patientDetails?.species?.name || "—"} — ${patientDetails?.breed?.name || "—"}`, 14, 70);
+
+    // Items table
+    const visibleItems = items.filter((i) => !i.is_hidden);
+    autoTable(doc, {
+      startY: 78,
+      head: [["Item", "Type", "Qty", "Amount (PHP)"]],
+      body: visibleItems.map((item) => [
+        item.name,
+        item.item_type === "service" ? "Service" : "Inventory",
+        item.qty,
+        item.unit_price > 0 ? (item.qty * item.unit_price).toFixed(2) : "—",
+      ]),
+      foot: [["", "", "Total", subtotal.toFixed(2)]],
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245] },
+      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" } },
+    });
+
+    // Notes
+    if (notes) {
+      const y = doc.lastAutoTable.finalY + 8;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Notes: ${notes}`, 14, y);
+    }
+
+    doc.save(`Clinical_Report_${reportDate}.pdf`);
+  };
 
   // ── Lifted report state (for PDF / header context) ─────────────────────────
   const [txReportRows, setTxReportRows] = useState([]);
@@ -497,9 +611,9 @@ function ReportsModuleView() {
                     status === "Finalized" ? "bg-emerald-950/60 text-emerald-400 border-emerald-800" : "bg-amber-950/60 text-amber-400 border-amber-800")}>
                     {status}
                   </span>
-                  <button onClick={() => submitReport("Draft")} disabled={submitting || status !== "Draft"}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface disabled:opacity-50 transition-colors">
-                    Save draft
+                  <button onClick={exportNewTransactionPDF}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                    <FiDownload className="h-3.5 w-3.5" /> Export PDF
                   </button>
                   <button onClick={() => submitReport("Finalized")} disabled={submitting || status === "Finalized"}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
@@ -507,10 +621,6 @@ function ReportsModuleView() {
                   </button>
                 </>
               )}
-              <button onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
-                <FiDownload className="h-3.5 w-3.5" /> Export PDF
-              </button>
             </div>
           </div>
 
