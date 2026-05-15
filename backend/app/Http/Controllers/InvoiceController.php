@@ -37,7 +37,7 @@ class InvoiceController extends Controller
         $user = auth()->user();
         $query = Invoice::select([
             'id', 'invoice_number', 'pet_id', 'status', 'report_type', 'total',
-            'amount_paid', 'created_at', 'updated_at'
+            'amount_paid', 'discount_value', 'created_at', 'updated_at'
         ])
         ->with([
             'pet' => function($q) {
@@ -48,6 +48,13 @@ class InvoiceController extends Controller
             'pet.owner:id,name'
         ])
         ->withCount('items');
+
+        // Optionally include non-hidden items (for report generation)
+        if ($request->boolean('with_items')) {
+            $query->with(['items' => function ($q) {
+                $q->where('is_hidden', false);
+            }]);
+        }
 
         // Transaction reports must have a real pet/owner; inventory reports have no pet
         $query->where(function ($q) {
@@ -66,6 +73,21 @@ class InvoiceController extends Controller
         if ($ownerId = $this->getPortalOwnerId()) {
             $query->whereHas('pet', function ($q) use ($ownerId) {
                 $q->where('owner_id', $ownerId);
+            });
+        }
+
+        // Date range filter
+        if ($request->has('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Filter to only transaction-type reports (exclude inventory snapshots)
+        if ($request->has('only_transactions')) {
+            $query->where(function ($q) {
+                $q->where('report_type', 'transaction')->orWhereNull('report_type');
             });
         }
 
