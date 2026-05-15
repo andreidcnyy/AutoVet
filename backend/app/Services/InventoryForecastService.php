@@ -29,17 +29,6 @@ class InventoryForecastService
                 return ['error' => 'Inventory item not found.'];
             }
 
-            // Pre-validation: Require item code for dataset mapping
-            if (!$inventory->code) {
-                Log::warning("[AI-VALIDATION] Item '{$inventory->item_name}' (ID: {$inventoryId}) is missing a unique code. Cannot map to AI datasets.");
-                return [
-                    'prediction_status' => 'Monitoring',
-                    'message'           => 'Unique item code missing. Please update the product code to enable AI insights.',
-                    'current_stock'     => $inventory->stock_level,
-                    'item_name'         => $inventory->item_name,
-                ];
-            }
-
             // Require at least 3 verified sale rows (forecasting-safe sources only)
             $usageCount = InventoryUsageHistory::forecastingSafe()
                 ->where('inventory_id', $inventoryId)
@@ -105,12 +94,6 @@ class InventoryForecastService
             $inventory = Inventory::find($inventoryId);
             if (!$inventory) {
                 Log::warning("[AI-ERROR] Inventory ID {$inventoryId} not found in database.");
-                return;
-            }
-
-            // Pre-validation: Require item code for background forecast
-            if (!$inventory->code) {
-                Log::info("[AI-SKIPPED] Item '{$inventory->item_name}' (ID: {$inventoryId}) skipped - needs code mapping.");
                 return;
             }
 
@@ -309,18 +292,11 @@ class InventoryForecastService
             $pythonExecutable = env('PYTHON_BIN_PATH')
                 ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
 
-            $inventoryCode = $inventory->code;
-            if (!$inventoryCode) {
-                Log::warning("InventoryForecastService: Skipping item ID {$inventoryId} because it has no unique code mapping.");
-                return null;
-            }
-
             $minStockLevel = $inventory->min_stock_level ?? 0;
             $command       = $pythonExecutable
                 . ' ' . escapeshellarg($pythonScriptPath)
                 . ' ' . escapeshellarg($csvPath)
                 . ' ' . escapeshellarg($minStockLevel)
-                . ' ' . escapeshellarg("--code={$inventoryCode}")
                 . ' ' . escapeshellarg("--current_stock={$inventory->stock_level}")
                 . ' ' . escapeshellarg("--history_days={$historyDays}");
 
@@ -365,10 +341,10 @@ class InventoryForecastService
             $itemsToProcess = [];
             foreach ($inventoryIds as $id) {
                 $inventory = Inventory::find($id);
-                if ($inventory && $inventory->code) {
+                if ($inventory) {
                     $itemsToProcess[] = [
                         'id' => $inventory->id,
-                        'code' => $inventory->code,
+                        'code' => $inventory->code ?? $inventory->item_name,
                         'min_stock_level' => $inventory->min_stock_level,
                         'current_stock' => $inventory->stock_level,
                         'history_days' => $historyDays
