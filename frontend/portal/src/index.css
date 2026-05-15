@@ -21,7 +21,7 @@
   body {
     @apply bg-light-bg text-zinc-800 antialiased font-sans transition-colors duration-300;
     @apply dark:bg-dark-bg dark:text-zinc-100;
-    user-select: text;
+    user-select: none;
     cursor: default;
   }
 }
@@ -50,6 +50,7 @@ textarea,
 [contenteditable="true"],
 .selectable-text {
   cursor: text !important;
+  user-select: text;
 }
 
 button,

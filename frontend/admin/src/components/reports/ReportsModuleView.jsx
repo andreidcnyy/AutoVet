@@ -730,7 +730,6 @@ function ReportsModuleView() {
   // ── History ────────────────────────────────────────────────────────────────
 
   const fetchReports = useCallback(async (page = 1, search = "", force = false) => {
-    if (!user?.token) return;
     setHistoryLoading(true);
     if (page === 1 && !search && !force) {
       try {
@@ -742,24 +741,26 @@ function ReportsModuleView() {
       } catch (_) { localStorage.removeItem(REPORTS_CACHE_KEY); }
     }
     try {
-      const data = await api.get("/api/reports", { params: { per_page: 10, page, search } });
-      const list = data?.data || data;
-      if (Array.isArray(list)) {
-        setReports(list);
-      } else if (list?.data) {
-        setReports(list.data);
-        const pag = { currentPage: list.current_page, lastPage: list.last_page, total: list.total, perPage: list.per_page };
+      const params = { per_page: 10, page, with_items: 1 };
+      if (search) params.search = search;
+      const data = await api.get("/api/reports", { params });
+      // Laravel paginator: { data: [...], current_page, last_page, total, per_page }
+      if (data?.current_page !== undefined) {
+        const pag = { currentPage: data.current_page, lastPage: data.last_page, total: data.total, perPage: data.per_page };
+        setReports(data.data || []);
         setPagination(pag);
         if (page === 1 && !search) {
-          try { localStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify({ reports: list.data, pagination: pag, ts: Date.now() })); } catch (_) {}
+          try { localStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify({ reports: data.data, pagination: pag, ts: Date.now() })); } catch (_) {}
         }
+      } else {
+        setReports(Array.isArray(data) ? data : (data?.data || []));
       }
     } catch (err) {
       toast.error("Could not load report history.");
     } finally {
       setHistoryLoading(false);
     }
-  }, [user?.token, toast]);
+  }, [toast]);
 
   useEffect(() => {
     if (mainTab === "history") fetchReports(1, searchQuery, true);

@@ -162,7 +162,7 @@ class InvoiceController extends Controller
              throw ValidationException::withMessages(['discount_value' => 'Discount cannot exceed subtotal.']);
         }
         
-        if ($validated['status'] === 'Finalized' && $validated['subtotal'] <= 0) {
+        if ($validated['status'] === 'Finalized' && $validated['subtotal'] <= 0 && ($validated['report_type'] ?? null) !== 'inventory') {
             throw ValidationException::withMessages(['subtotal' => 'Cannot finalize an invoice with 0 subtotal.']);
         }
 
