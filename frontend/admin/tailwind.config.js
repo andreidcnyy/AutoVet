@@ -19,12 +19,19 @@ export default {
           "teal-light": "#e6f6f5",
           "navy-light": "#e6eaef",
         },
+        light: {
+          bg: "#f0f2f5",      // page background — comfortable cool gray (Google/Linear standard)
+          card: "#ffffff",     // card surfaces — white with visible depth against bg
+          surface: "#f7f8fa",  // inner surfaces, inputs, secondary panels
+          border: "#e0e2e7",   // borders — visible but soft
+          muted: "#6b7280",    // secondary text
+        },
         dark: {
-          bg: "#121212", // industry-standard charcoal page background
-          card: "#1c1c1c", // slightly lighter cards & sidebar
-          surface: "#282828", // lighter inputs & inner cards
-          border: "#3f3f3f", // border color
-          hover: "#3f3f3f", // hover states
+          bg: "#121212",
+          card: "#1c1c1c",
+          surface: "#282828",
+          border: "#3f3f3f",
+          hover: "#3f3f3f",
         },
       },
       boxShadow: {
