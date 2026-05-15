@@ -26,6 +26,20 @@
   }
 }
 
+/*
+  Light mode text normalization — outside @layer for higher specificity.
+  Near-invisible zinc shades (designed for dark surfaces) are remapped to
+  readable equivalents so they don't vanish on the #f0f2f5 background.
+  Dark mode counterparts (dark:text-*) are unaffected because
+  html:not(.dark) never matches when .dark is on <html>.
+*/
+html:not(.dark) .text-zinc-50  { color: #52525b; } /* → zinc-600 */
+html:not(.dark) .text-zinc-100 { color: #52525b; } /* → zinc-600 */
+html:not(.dark) .text-zinc-200 { color: #71717a; } /* → zinc-500 */
+html:not(.dark) .text-zinc-300 { color: #a1a1aa; } /* → zinc-400 (still subtle but visible) */
+/* Bump zinc-400 used as secondary/muted text to pass WCAG AA on #f0f2f5 */
+html:not(.dark) .text-zinc-400 { color: #71717a; } /* → zinc-500 (4.7:1 contrast) */
+
 /* Outside @layer so it outranks Tailwind utilities */
 *, *::before, *::after {
   cursor: default !important;
