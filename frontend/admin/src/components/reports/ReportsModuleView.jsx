@@ -173,7 +173,7 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
       foot,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
-      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245] },
+      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245], textColor: 0 },
       columnStyles: showQty
         ? { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
         : { 3: { halign: "right" }, 4: { halign: "right" } },
