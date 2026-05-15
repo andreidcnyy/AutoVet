@@ -17,8 +17,13 @@ class SecurityHeadersMiddleware
     {
         $response = $next($request);
 
-        // More permissive CSP for connect-src to allow Vercel and local dev
-        $csp = "default-src 'self' http: https: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http: https: ws: wss:; img-src 'self' http: https: data:; frame-ancestors 'self';";
+        $csp = "default-src 'self'; "
+            . "script-src 'self' 'unsafe-inline'; "
+            . "style-src 'self' 'unsafe-inline'; "
+            . "connect-src 'self' https://autovet-production.up.railway.app https://autovet-admin.vercel.app https://autovet-portal.vercel.app ws: wss:; "
+            . "img-src 'self' https: data: blob:; "
+            . "font-src 'self' data:; "
+            . "frame-ancestors 'none';";
         
         // Even in production, we should allow Vercel domains to connect
         if (app()->environment('production')) {

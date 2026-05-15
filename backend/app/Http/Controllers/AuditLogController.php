@@ -68,7 +68,7 @@ class AuditLogController extends Controller
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
                 'user' => auth()->id(),
-                'request' => $request->all()
+                'request_keys' => array_keys($request->all())
             ]);
             return response()->json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
         }

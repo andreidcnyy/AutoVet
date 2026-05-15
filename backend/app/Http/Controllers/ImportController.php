@@ -106,7 +106,7 @@ class ImportController extends Controller
     private function processImport(Request $request, $type, $rules, $createCallback)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt',
+            'file' => 'required|file|mimes:csv,txt|max:5120',
         ]);
 
         $file = $request->file('file');

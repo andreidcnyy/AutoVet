@@ -6,17 +6,15 @@ use App\Models\Owner;
 use App\Models\Admin;
 use App\Models\PortalUser;
 use App\Enums\Roles;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class OwnerPolicy
 {
     /**
-     * Perform pre-authorization checks.
+     * Admins and employees bypass all checks.
      */
     public function before(Authenticatable $user, string $ability): bool|null
     {
-        // Support our User proxy model and direct Admin model
         if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
             return true;
         }
@@ -25,58 +23,67 @@ class OwnerPolicy
     }
 
     /**
-     * Determine whether the user can view any models.
+     * Portal users can only list owners linked to their own account.
+     * Admins/employees already bypassed via before().
      */
     public function viewAny(Authenticatable $user): bool
     {
-        return true;
+        return method_exists($user, 'isOwner') && $user->isOwner();
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Portal users can only view their own owner record.
      */
     public function view(Authenticatable $user, Owner $owner): bool
     {
-        return true;
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            return $user->owner?->id === $owner->id;
+        }
+
+        return false;
     }
 
     /**
-     * Determine whether the user can create models.
+     * Only admins/employees can create owners (bypassed via before()).
      */
     public function create(Authenticatable $user): bool
     {
-        return true;
+        return false;
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Portal users can only update their own owner record.
      */
     public function update(Authenticatable $user, Owner $owner): bool
     {
-        return true;
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            return $user->owner?->id === $owner->id;
+        }
+
+        return false;
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Only admins/employees can delete owners (bypassed via before()).
      */
     public function delete(Authenticatable $user, Owner $owner): bool
     {
-        return true;
+        return false;
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Only admins/employees can restore owners (bypassed via before()).
      */
     public function restore(Authenticatable $user, Owner $owner): bool
     {
-        return true;
+        return false;
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Only admins/employees can force-delete owners (bypassed via before()).
      */
     public function forceDelete(Authenticatable $user, Owner $owner): bool
     {
-        return true;
+        return false;
     }
 }

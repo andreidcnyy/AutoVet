@@ -150,7 +150,6 @@ Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
     $report = [
         'mail_mailer_env' => env('MAIL_MAILER'),
         'brevo_key_present' => !empty(env('BREVO_API_KEY')),
-        'brevo_key_tail' => env('BREVO_API_KEY') ? substr(env('BREVO_API_KEY'), -6) : null,
         'mail_from_address' => env('MAIL_FROM_ADDRESS'),
         'mail_from_name' => env('MAIL_FROM_NAME'),
         'frontend_portal_url' => env('FRONTEND_PORTAL_URL'),

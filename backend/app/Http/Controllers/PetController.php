@@ -132,7 +132,7 @@ class PetController extends Controller
             'vet_id' => 'nullable|exists:admins,id',
         ]);
 
-        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,(.+)$/s', $request->photo, $m)) {
+        if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {
             $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
         } elseif ($request->hasFile('photo')) {
             $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));
@@ -205,7 +205,7 @@ class PetController extends Controller
             'vet_id' => 'nullable|exists:admins,id',
         ]);
 
-        if ($request->filled('photo') && preg_match('/^data:image\/(\w+);base64,(.+)$/s', $request->photo, $m)) {
+        if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {
             $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
         } elseif ($request->hasFile('photo')) {
             $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));

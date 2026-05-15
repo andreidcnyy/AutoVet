@@ -68,7 +68,10 @@ class BackupController extends Controller
             'filename' => 'required|string',
         ]);
 
-        $filename = $request->input('filename');
+        $filename = basename($request->input('filename'));
+        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
+            return response()->json(['message' => 'Invalid backup filename.'], 422);
+        }
         $backupPath = storage_path('app/backups/' . $filename);
 
         if (!File::exists($backupPath)) {
@@ -94,6 +97,10 @@ class BackupController extends Controller
      */
     public function destroy($filename)
     {
+        $filename = basename($filename);
+        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
+            return response()->json(['message' => 'Invalid backup filename.'], 422);
+        }
         $backupPath = storage_path('app/backups/' . $filename);
 
         if (File::exists($backupPath)) {
@@ -109,6 +116,10 @@ class BackupController extends Controller
      */
     public function download($filename)
     {
+        $filename = basename($filename);
+        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
+            return response()->json(['message' => 'Invalid backup filename.'], 422);
+        }
         $backupPath = storage_path('app/backups/' . $filename);
 
         if (File::exists($backupPath)) {

@@ -16,14 +16,8 @@ class RestoreDatabaseCommand extends Command
 
     public function handle()
     {
-        $filename = $this->argument('file');
-        
-        // If it's a relative path just in the backups folder, prepend the backups path
-        if (strpos($filename, '\\') === false && strpos($filename, '/') === false) {
-            $fullPath = storage_path('app/backups/' . $filename);
-        } else {
-            $fullPath = $filename;
-        }
+        $filename = basename($this->argument('file'));
+        $fullPath = storage_path('app/backups/' . $filename);
 
         if (!file_exists($fullPath)) {
             $this->error("Backup file not found at: {$fullPath}");

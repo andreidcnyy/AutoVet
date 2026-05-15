@@ -91,8 +91,8 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:' . $table . ',email,' . $user->id,
             'role' => 'nullable|string|max:255',
-            // ~5MB base64 cap so phone photos are accepted
-            'avatar' => 'nullable|string|max:7000000'
+            // ~2MB base64 cap; must be a valid image data URI
+            'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i']
         ]);
 
         $user->update($validated);
