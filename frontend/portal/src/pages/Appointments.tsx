@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getAppointments, cancelAppointment } from '../api';
 import echo from '../utils/echo';
 import { 
@@ -34,6 +34,7 @@ export default function Appointments() {
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const selectedAppointmentRef = useRef<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const CACHE_KEY = 'portal_appointments_cache';
@@ -86,10 +87,11 @@ export default function Appointments() {
       localStorage.removeItem('portal_appointments_cache');
       localStorage.removeItem('portal_book_appointments_cache');
       localStorage.removeItem('portal_overview_cache');
-      
+
       fetchAppointments();
-      
-      if (selectedAppointment?.id === e.appointment.id) {
+
+      // Use ref to get current selectedAppointment (avoids stale closure)
+      if (selectedAppointmentRef.current?.id === e.appointment.id) {
           setSelectedAppointment(e.appointment);
       }
     };
@@ -108,6 +110,10 @@ export default function Appointments() {
         };
     }
   }, []);
+
+  useEffect(() => {
+    selectedAppointmentRef.current = selectedAppointment;
+  }, [selectedAppointment]);
 
   const handleCancel = async (id: number) => {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
@@ -131,6 +137,7 @@ export default function Appointments() {
   };
 
   const handleDetailsClick = (appt: any) => {
+    selectedAppointmentRef.current = appt;
     setSelectedAppointment(appt);
     setIsDetailsOpen(true);
   };
