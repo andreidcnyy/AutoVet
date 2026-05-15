@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/digivet_logo.png";
+import logo from "../assets/autovet-logo.png";
 import DarkModeToggle from "../components/ui/DarkModeToggle";
 
 function LoginPage() {
