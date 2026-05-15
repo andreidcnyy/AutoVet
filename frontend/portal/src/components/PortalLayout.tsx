@@ -138,13 +138,14 @@ export default function PortalLayout({ children }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-8 relative">
-          <div className="max-w-6xl mx-auto">
-            {children}
-          </div>
+        <div className="flex-1 overflow-y-auto relative">
+          <div className="flex flex-col min-h-full p-8">
+            <div className="max-w-6xl mx-auto w-full flex-1">
+              {children}
+            </div>
 
           {/* Footer information */}
-          <footer className="mt-24 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
+          <footer className="max-w-6xl mx-auto w-full mt-16 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-4">
               © 2026 Digivet Management System. All rights reserved.
             </p>
@@ -163,6 +164,7 @@ export default function PortalLayout({ children }: LayoutProps) {
               </div>
             </div>
           </footer>
+          </div>
         </div>
       </main>
 

@@ -162,17 +162,8 @@ export default function Dashboard() {
                 </Link>
               </>
             ) : (
-              <div className="col-span-full card-shell p-12 text-center space-y-4 bg-zinc-50/50 border-dashed">
-                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto text-zinc-400">
-                  <FiHeart className="w-8 h-8" />
-                </div>
-                <div>
-                  <p className="text-zinc-500 font-bold">You haven't added any pets yet.</p>
-                  <p className="text-xs text-zinc-400 mt-1">Register your pets to start booking appointments.</p>
-                </div>
-                <Link to="/add-pet">
-                  <button className="px-8 py-3 rounded-xl bg-brand-500 text-white font-black uppercase tracking-widest text-xs hover:bg-brand-600 shadow-lg shadow-brand-500/20 transition-all">Register your first pet</button>
-                </Link>
+              <div className="col-span-full py-8 text-center">
+                <p className="text-zinc-400 text-sm">No pets registered yet.</p>
               </div>
             )}
           </div>
