@@ -73,7 +73,7 @@ const getCatName = (item) =>
 
 // ─── Inventory Report (right panel + left filters) ────────────────────────────
 
-function InventoryReportPane({ inventory }) {
+function InventoryReportPane({ inventory, onComplete }) {
   const [reportType, setReportType] = useState("stock_level");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateFrom, setDateFrom] = useState(() => {
@@ -106,7 +106,8 @@ function InventoryReportPane({ inventory }) {
       category: getCatName(i),
       shortType: getShortType({ ...i, name: i.item_name }),
       stock: Number(i.stock_level) || 0,
-      unitValue: Number(i.selling_price) || 0,
+      buyingPrice: Number(i.price) || 0,
+      sellingPrice: Number(i.selling_price) || 0,
       totalValue: (Number(i.stock_level) || 0) * (Number(i.selling_price) || 0),
       status: Number(i.stock_level) <= 0 ? "Out"
         : Number(i.stock_level) <= Number(i.min_stock_level || 0) ? "Low" : "OK",
@@ -213,6 +214,12 @@ function InventoryReportPane({ inventory }) {
                 <FiDownload className="h-3.5 w-3.5" /> Export
               </button>
             </div>
+            {onComplete && (
+              <button onClick={onComplete}
+                className="w-full mt-2 h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 flex items-center justify-center gap-2 transition-colors">
+                <FiSend className="h-4 w-4" /> Complete report
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -243,11 +250,12 @@ function InventoryReportPane({ inventory }) {
               <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
                 <thead className="bg-zinc-50 dark:bg-dark-surface border-b border-zinc-200 dark:border-dark-border">
                   <tr>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "35%" }}>Item</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "18%" }}>Category</th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "14%" }}>Stock</th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "18%" }}>Unit value</th>
-                    <th className="px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "15%" }}>Status</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "28%" }}>Item</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "14%" }}>Category</th>
+                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "10%" }}>Stock</th>
+                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Buy Price</th>
+                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Sell Price</th>
+                    <th className="px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
@@ -259,7 +267,14 @@ function InventoryReportPane({ inventory }) {
                         item.status === "Out" ? "text-rose-500" : item.status === "Low" ? "text-amber-500" : "text-emerald-500")}>
                         {item.stock}
                       </td>
-                      <td className="px-3 py-2 text-right text-zinc-500 dark:text-zinc-400">{fmt(item.unitValue)}</td>
+                      <td className="px-3 py-2 text-right text-zinc-500 dark:text-zinc-400">
+                        {item.buyingPrice > 0 ? fmt(item.buyingPrice) : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold">
+                        {item.sellingPrice > 0
+                          ? <span className="text-emerald-600 dark:text-emerald-400">{fmt(item.sellingPrice)}</span>
+                          : <span className="text-rose-400 dark:text-rose-500 text-[10px] font-black">No price</span>}
+                      </td>
                       <td className="px-3 py-2 text-center"><StockPill status={item.status} /></td>
                     </tr>
                   ))}
@@ -435,7 +450,7 @@ function ReportsModuleView() {
 
   const groupedItems = useMemo(() => {
     const term = serviceInput.toLowerCase();
-    const svcs = reportSection === "inventory" ? [] : (Array.isArray(services) ? services : [])
+    const svcs = (Array.isArray(services) ? services : [])
       .filter((s) => s.name.toLowerCase().includes(term) || (s.category || "").toLowerCase().includes(term))
       .map((s) => ({ ...s, type: "service" }));
     const invs = (Array.isArray(inventory) ? inventory : [])
@@ -447,7 +462,7 @@ function ReportsModuleView() {
       acc[cat].push(item);
       return acc;
     }, {});
-  }, [services, inventory, serviceInput, reportSection]);
+  }, [services, inventory, serviceInput]);
 
   const selectItem = (item) => { setServiceInput(item.name); setSelectedService(item); setIsDropdownOpen(false); };
 
@@ -564,6 +579,13 @@ function ReportsModuleView() {
     } catch (err) { toast.error(err.message || "Failed to save report"); }
   };
 
+  const completeInventoryReport = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
+    toast.success("Inventory report completed. AI forecast data updated.");
+    setMainTab("history");
+    fetchReports(1, "", null, true);
+  }, [toast, fetchReports]);
+
   const handleViewReportDetails = useCallback(async (rep) => {
     if (!rep?.id) return;
     try {
@@ -674,7 +696,9 @@ function ReportsModuleView() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
                   <FiDownload className="h-3.5 w-3.5" /> Export PDF
                 </button>
-                <button onClick={() => submitReport("Finalized")} disabled={status === "Finalized"}
+                <button
+                  onClick={() => reportSection === "inventory" ? completeInventoryReport() : submitReport("Finalized")}
+                  disabled={reportSection === "transaction" && status === "Finalized"}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                   <FiSend className="h-3.5 w-3.5" /> Complete report
                 </button>
@@ -704,8 +728,13 @@ function ReportsModuleView() {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto p-5">
 
-            {/* ── Report form (shared by both sections) ── */}
-            {(reportSection === "transaction" || reportSection === "inventory") && (
+            {/* ── Inventory report pane ── */}
+            {reportSection === "inventory" && (
+              <InventoryReportPane inventory={inventory} onComplete={completeInventoryReport} />
+            )}
+
+            {/* ── Transaction report form ── */}
+            {reportSection === "transaction" && (
               <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.3fr)" }}>
 
                 {/* Left: stacked form panels */}
