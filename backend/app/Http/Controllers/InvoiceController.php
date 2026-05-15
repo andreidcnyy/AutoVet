@@ -142,6 +142,7 @@ class InvoiceController extends Controller
 
             $calculatedSubtotal = 0;
             $itemsToCreate = [];
+            $service = null;
 
             foreach ($validated['items'] as $itemData) {
                 if ($itemData['item_type'] === 'service') {
@@ -149,15 +150,17 @@ class InvoiceController extends Controller
                     if ($service && $service->pricing_mode !== 'manual') {
                         try {
                             $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
-                        } catch (\Exception $e) {
-                             throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                        } catch (\Throwable $e) {
+                            throw ValidationException::withMessages(['items' => $e->getMessage()]);
                         }
                     }
-                } else if ($itemData['item_type'] === 'inventory') {
-                    $inventory = \App\Models\Inventory::find($itemData['inventory_id']);
-                    if ($inventory) {
-                        // Use selling price as source of truth
-                        $itemData['unit_price'] = (float) $inventory->selling_price;
+                } else {
+                    $service = null;
+                    if ($itemData['item_type'] === 'inventory') {
+                        $invItem = \App\Models\Inventory::find($itemData['inventory_id']);
+                        if ($invItem && $invItem->selling_price > 0) {
+                            $itemData['unit_price'] = (float) $invItem->selling_price;
+                        }
                     }
                 }
 
@@ -172,7 +175,7 @@ class InvoiceController extends Controller
                         $itemsToCreate[] = [
                             'item_type' => 'inventory',
                             'inventory_id' => $consumable->inventory_id,
-                            'name' => $consumable->inventory->item_name ?? "Consumable",
+                            'name' => $consumable->inventory?->item_name ?? "Consumable",
                             'qty' => $consumable->quantity * $itemData['qty'],
                             'unit_price' => 0,
                             'amount' => 0,
@@ -224,7 +227,7 @@ class InvoiceController extends Controller
             $invoice->load('items');
             try {
                 $this->finalizationService->finalizeInvoice($invoice);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
             }
 
@@ -234,21 +237,24 @@ class InvoiceController extends Controller
                     if ($owner) {
                         $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                     }
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
                 }
             }
 
             DB::commit();
             return response()->json($invoice->load('pet', 'items'), 201);
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error("Invoice creation failed: " . $e->getMessage(), [
                 'stack' => $e->getTraceAsString(),
                 'payload' => $request->all()
             ]);
             return response()->json([
-                'message' => 'Failed to create invoice.',
+                'message' => 'Failed to create report.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -321,20 +327,24 @@ class InvoiceController extends Controller
                 // Delete existing hidden items first to re-add them based on updated services
                 $invoice->items()->where('is_hidden', true)->delete();
 
+                $service = null;
                 foreach ($validated['items'] as $itemData) {
                     if ($itemData['item_type'] === 'service') {
                         $service = \App\Models\Service::find($itemData['service_id']);
                         if ($service && $service->pricing_mode !== 'manual') {
                             try {
                                 $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
-                            } catch (\Exception $e) {
-                                 throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                            } catch (\Throwable $e) {
+                                throw ValidationException::withMessages(['items' => $e->getMessage()]);
                             }
                         }
-                    } else if ($itemData['item_type'] === 'inventory') {
-                        $inventory = \App\Models\Inventory::find($itemData['inventory_id']);
-                        if ($inventory) {
-                            $itemData['unit_price'] = (float) $inventory->selling_price;
+                    } else {
+                        $service = null;
+                        if ($itemData['item_type'] === 'inventory') {
+                            $invItem = \App\Models\Inventory::find($itemData['inventory_id']);
+                            if ($invItem && $invItem->selling_price > 0) {
+                                $itemData['unit_price'] = (float) $invItem->selling_price;
+                            }
                         }
                     }
 
@@ -349,7 +359,7 @@ class InvoiceController extends Controller
                             $itemsToUpdate[] = [
                                 'item_type' => 'inventory',
                                 'inventory_id' => $consumable->inventory_id,
-                                'name' => $consumable->inventory->item_name ?? "Consumable",
+                                'name' => $consumable->inventory?->item_name ?? "Consumable",
                                 'qty' => $consumable->quantity * $itemData['qty'],
                                 'unit_price' => 0,
                                 'amount' => 0,
@@ -414,7 +424,7 @@ class InvoiceController extends Controller
             $invoice->load('items');
             try {
                 $this->finalizationService->finalizeInvoice($invoice);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
             }
 
@@ -424,16 +434,20 @@ class InvoiceController extends Controller
                     if ($owner) {
                         $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                     }
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
                 }
             }
 
             DB::commit();
             return response()->json($invoice->load('pet', 'items'));
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Failed to update invoice.', 'errors' => [$e->getMessage()]], 500);
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error("Invoice update failed: " . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
         }
     }
 
