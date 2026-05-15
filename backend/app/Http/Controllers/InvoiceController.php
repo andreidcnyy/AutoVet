@@ -91,6 +91,12 @@ class InvoiceController extends Controller
             });
         }
 
+        if ($request->has('owner_id')) {
+            $query->whereHas('pet', function ($q) use ($request) {
+                $q->where('owner_id', $request->owner_id);
+            });
+        }
+
         if ($request->has('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }

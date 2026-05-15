@@ -64,17 +64,18 @@ const getCatName = (item) => item.inventory_category?.name || item.category || "
 
 // ─── Sales Income Report (Transaction) ───────────────────────────────────────
 
-function TransactionReportPane({ inventory, reportRows, setReportRows, generated, setGenerated, user }) {
+function TransactionReportPane({ inventory, services, owners, reportRows, setReportRows, generated, setGenerated, user }) {
   const toast = useToast();
   const today      = new Date().toISOString().split("T")[0];
   const monthStart = (() => { const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0]; })();
 
-  const [dateFrom, setDateFrom]           = useState(monthStart);
-  const [dateTo, setDateTo]               = useState(today);
-  const [clientSearch, setClientSearch]   = useState("");
-  const [itemTypeFilter, setItemTypeFilter] = useState("all");
-  const [itemSearch, setItemSearch]       = useState("");
-  const [loading, setLoading]             = useState(false);
+  const [dateFrom, setDateFrom]               = useState(monthStart);
+  const [dateTo, setDateTo]                   = useState(today);
+  const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [itemTypeFilter, setItemTypeFilter]   = useState("all");
+  const [selectedServiceId, setSelectedServiceId]     = useState("");
+  const [selectedInventoryId, setSelectedInventoryId] = useState("");
+  const [loading, setLoading]                 = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -83,7 +84,7 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
         per_page: 500, with_items: 1, only_transactions: 1,
         date_from: dateFrom, date_to: dateTo,
       });
-      if (clientSearch.trim()) params.set("search", clientSearch.trim());
+      if (selectedOwnerId) params.set("owner_id", selectedOwnerId);
 
       const res = await fetch(`/api/reports?${params}`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${user?.token}` },
@@ -96,24 +97,22 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
       invoices.forEach((inv) => {
         (inv.items || []).filter((i) => !i.is_hidden).forEach((item) => {
           if (itemTypeFilter !== "all" && item.item_type !== itemTypeFilter) return;
-          if (itemSearch.trim() && !item.name.toLowerCase().includes(itemSearch.toLowerCase())) return;
-          const invRecord  = inventory.find((i) => i.id === item.inventory_id);
+          if (selectedServiceId && item.service_id?.toString() !== selectedServiceId) return;
+          if (selectedInventoryId && item.inventory_id?.toString() !== selectedInventoryId) return;
+          const invRecord   = inventory.find((i) => i.id === item.inventory_id);
           const buyingPrice = Number(invRecord?.price) || 0;
           const sellingPrice = Number(item.unit_price) || 0;
-          const qty         = Number(item.qty) || 1;
-          const grossSales  = sellingPrice * qty;
+          const qty          = Number(item.qty) || 1;
+          const grossSales   = sellingPrice * qty;
           rows.push({
-            date:           inv.created_at,
-            client:         inv.pet?.owner?.name || "—",
-            itemName:       item.name,
-            itemType:       item.item_type,
-            qty,
-            buyingPrice,
-            sellingPrice,
-            grossSales,
-            netSales:       grossSales,
+            date:            inv.created_at,
+            client:          inv.pet?.owner?.name || "—",
+            itemName:        item.name,
+            itemType:        item.item_type,
+            qty, buyingPrice, sellingPrice, grossSales,
+            netSales:        grossSales,
             invoiceDiscount: Number(inv.discount_value) || 0,
-            invoiceId:      inv.id,
+            invoiceId:       inv.id,
           });
         });
       });
@@ -130,7 +129,8 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
 
   const handleReset = () => {
     setGenerated(false); setReportRows([]);
-    setClientSearch(""); setItemTypeFilter("all"); setItemSearch("");
+    setSelectedOwnerId(""); setItemTypeFilter("all");
+    setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
   };
 
@@ -164,14 +164,19 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
         </div>
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Client</label>
-          <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)}
-            placeholder="Search client..."
-            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
+          <div className="relative">
+            <select value={selectedOwnerId} onChange={(e) => setSelectedOwnerId(e.target.value)}
+              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              <option value="">All clients</option>
+              {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+          </div>
         </div>
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Item Type</label>
           <div className="relative">
-            <select value={itemTypeFilter} onChange={(e) => setItemTypeFilter(e.target.value)}
+            <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedServiceId(""); setSelectedInventoryId(""); }}
               className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
               <option value="all">All</option>
               <option value="service">Services</option>
@@ -180,12 +185,32 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
             <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Item / Services</label>
-          <input type="text" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)}
-            placeholder="Search item..."
-            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
-        </div>
+        {(itemTypeFilter === "all" || itemTypeFilter === "service") && (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Service</label>
+            <div className="relative">
+              <select value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)}
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="">All services</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            </div>
+          </div>
+        )}
+        {(itemTypeFilter === "all" || itemTypeFilter === "inventory") && (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Inventory Item</label>
+            <div className="relative">
+              <select value={selectedInventoryId} onChange={(e) => setSelectedInventoryId(e.target.value)}
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="">All items</option>
+                {inventory.map((i) => <option key={i.id} value={i.id}>{i.item_name}</option>)}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-1.5 pt-1">
           <button onClick={handleReset}
@@ -686,6 +711,7 @@ function ReportsModuleView() {
   const [reportSection, setReportSection] = useState("transaction");
   const [inventory, setInventory]         = useState([]);
   const [services, setServices]           = useState([]);
+  const [owners, setOwners]               = useState([]);
   const [clinic, setClinic]               = useState(null);
 
   // Lifted state — transaction report
@@ -712,11 +738,13 @@ function ReportsModuleView() {
     Promise.all([
       api.get("/api/inventory").catch(() => []),
       api.get("/api/services").catch(() => []),
+      api.get("/api/owners", { params: { minimal: 1, per_page: 1000 } }).catch(() => []),
       fetch("/api/settings", { headers: { Accept: "application/json", Authorization: `Bearer ${user.token}` } })
         .then((r) => r.json()).catch(() => null),
-    ]).then(([inv, svc, settings]) => {
+    ]).then(([inv, svc, ownrs, settings]) => {
       setInventory(Array.isArray(inv) ? inv : (inv?.data || []));
       setServices(Array.isArray(svc) ? svc : (svc?.data || svc || []));
+      setOwners(Array.isArray(ownrs) ? ownrs : (ownrs?.data || []));
       if (settings) setClinic(settings);
     });
   }, [user?.token]);
@@ -899,6 +927,8 @@ function ReportsModuleView() {
             {reportSection === "transaction" && (
               <TransactionReportPane
                 inventory={inventory}
+                services={services}
+                owners={owners}
                 reportRows={txReportRows}
                 setReportRows={setTxReportRows}
                 generated={txGenerated}
