@@ -17,7 +17,8 @@ import {
 } from 'react-icons/fi';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
-import { getPets, getServices, getVets, createAppointment, getAppointments, getAvailability } from '../api';
+import { getPets, getServices, getVets, createAppointment } from '../api';
+import api from '../api';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -106,11 +107,13 @@ export default function BookAppointment() {
 
   useEffect(() => {
     if (selectedDate && !isViewMode) {
+      const controller = new AbortController();
       setIsCheckingAvailability(true);
-      getAvailability(selectedDate, selectedVetId)
+      api.get('/appointments/availability', { params: { date: selectedDate, vet_id: selectedVetId }, signal: controller.signal, timeout: 30000 })
         .then(res => setAvailability(res.data))
-        .catch(console.error)
+        .catch(err => { if (err.name !== 'CanceledError') console.error(err); })
         .finally(() => setIsCheckingAvailability(false));
+      return () => controller.abort();
     }
   }, [selectedDate, selectedVetId, isViewMode]);
 
@@ -120,6 +123,7 @@ export default function BookAppointment() {
 
   // Load calendar appointments for the visible month range
   useEffect(() => {
+    const controller = new AbortController();
     const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
     const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
     const cacheKey = `${CACHE_KEY}_${dateFrom}_${dateTo}`;
@@ -133,17 +137,18 @@ export default function BookAppointment() {
     } catch (_) {}
 
     setLoading(true);
-    getAppointments({ date_from: dateFrom, date_to: dateTo, per_page: 100 })
+    api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, signal: controller.signal, timeout: 30000 })
       .then(res => {
-        // Correctly extract the data array from the paginated backend response
         const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
         setAppointments(appointmentsArray);
-        try { 
-          localStorage.setItem(cacheKey, JSON.stringify({ data: appointmentsArray, ts: Date.now() })); 
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({ data: appointmentsArray, ts: Date.now() }));
         } catch (_) {}
       })
-      .catch(console.error)
+      .catch(err => { if (!api.isCancel?.(err) && err.name !== 'CanceledError') console.error(err); })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [currentDate]);
 
   // Lazy-load form data only when booking drawer first opens
@@ -232,11 +237,14 @@ export default function BookAppointment() {
       localStorage.removeItem('portal_book_appointments_cache');
       localStorage.removeItem('portal_overview_cache');
 
-      // Refresh local appointments to show on calendar - handle paginated response
-      getAppointments().then(res => {
+      // Refresh calendar for current month only (scoped re-fetch, not all)
+      const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+      const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+      api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, timeout: 30000 })
+        .then(res => {
           const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
           setAppointments(appointmentsArray);
-      });
+        }).catch(console.error);
       setIsSuccess(true);
       reset();
     } catch (err: any) {
