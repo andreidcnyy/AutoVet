@@ -285,7 +285,7 @@ function AppointmentsView() {
                     {summary && summary.count > 0 && (
                       <div className={clsx(
                         "mt-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black border",
-                        isSelected ? "bg-white text-emerald-600 border-white" : "bg-zinc-800 text-white border-zinc-800 shadow-sm"
+                        isSelected ? "bg-white text-emerald-600 border-white" : "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20"
                       )}>
                         {summary.count}
                       </div>
