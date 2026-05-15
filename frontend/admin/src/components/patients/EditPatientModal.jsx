@@ -432,14 +432,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Age Group</label>
-                                    <div className="flex h-11 w-full items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[13px] font-bold text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200">
-                                        <span>{watch("age_group") || "Not yet determined"}</span>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Auto</span>
-                                    </div>
-                                    <input type="hidden" {...register("age_group")} />
-                                </div>
+                                <input type="hidden" {...register("age_group")} />
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Color</label>
                                     <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />

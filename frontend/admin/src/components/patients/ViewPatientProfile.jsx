@@ -150,7 +150,6 @@ async function generatePatientPDF(patient) {
     body: [
       ["Breed", patient.breed?.name || "—"],
       ["Sex", patient.sex || "—"],
-      ["Age Group", formatAgeGroup(patient.age_group)],
       ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
       ["Color", patient.color || "—"],
       ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit}` : "—"],
@@ -622,7 +621,6 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
           {[
             { label: "Breed", value: patient.breed?.name || "N/A" },
             { label: "Sex", value: patient.sex || "N/A" },
-            { label: "Age Group", value: formatAgeGroup(patient.age_group) },
             { label: "Age", value: calculateAge(patient.date_of_birth) || "N/A" },
             { label: "Color", value: patient.color || "N/A" },
             { label: "Weight", value: patient.weight ? `${Number(patient.weight).toLocaleString('en-US', { maximumFractionDigits: 0 })} ${patient.weight_unit}` : "N/A" },

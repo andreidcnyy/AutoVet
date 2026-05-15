@@ -268,17 +268,6 @@ export default function AddPet() {
               <input type="number" step="1" {...register("weight")} className="input-field font-bold" placeholder="0" />
             </div>
 
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Age Classification</label>
-              <div className="input-field font-bold bg-zinc-50 dark:bg-dark-surface/50 flex flex-col justify-center text-zinc-500 px-4 min-h-[2.75rem]">
-                {watch("age_group") ? (
-                  <>
-                    <span>{watch("age_group")}</span>
-                    <span className="text-[10px] text-zinc-400 font-medium">{dobValue && calculateAgeDisplay(dobValue)}</span>
-                  </>
-                ) : "Enter birth date to calculate"}
-              </div>
-            </div>
           </div>
 
           <div>
