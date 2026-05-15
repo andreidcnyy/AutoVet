@@ -160,25 +160,20 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
             onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); }}
             className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none"
           />
-          {ownerSearch && (
-            <div className="rounded border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card max-h-36 overflow-y-auto shadow-lg">
-              <button
-                onClick={() => { setSelectedOwnerId(""); setOwnerSearch(""); }}
-                className="w-full px-2 py-1.5 text-left text-xs text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface">
-                All clients
-              </button>
+          <div className="relative">
+            <select value={selectedOwnerId} onChange={(e) => {
+              const o = owners.find((o) => o.id.toString() === e.target.value);
+              setSelectedOwnerId(e.target.value);
+              setOwnerSearch(o?.name || "");
+            }}
+              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              <option value="">All clients</option>
               {owners
-                .filter((o) => o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
-                .map((o) => (
-                  <button key={o.id}
-                    onClick={() => { setSelectedOwnerId(o.id.toString()); setOwnerSearch(o.name); }}
-                    className={clsx("w-full px-2 py-1.5 text-left text-xs hover:bg-zinc-50 dark:hover:bg-dark-surface",
-                      selectedOwnerId === o.id.toString() ? "text-emerald-600 font-bold" : "text-zinc-700 dark:text-zinc-300")}>
-                    {o.name}
-                  </button>
-                ))}
-            </div>
-          )}
+                .filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
+                .map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+          </div>
         </div>
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Product Type</label>
@@ -250,15 +245,20 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
               <table className="w-full text-xs" style={{ minWidth: 480 }}>
                 <thead>
                   <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
-                    {["Date","Client","Item / Service","Quantity","Selling Price","Gross Sales"].map((h, i) => (
+                    {(itemTypeFilter === "inventory"
+                      ? ["Date","Client","Item / Service","Quantity","Selling Price","Gross Sales"]
+                      : ["Date","Client","Item / Service","Selling Price","Gross Sales"]
+                    ).map((h, i) => (
                       <th key={h} className={clsx("px-3 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border last:border-r-0", i < 3 ? "text-left" : "text-right")}
-                        style={{ width: ["12%","16%","34%","10%","14%","14%"][i] }}>{h}</th>
+                        style={{ width: (itemTypeFilter === "inventory"
+                          ? ["12%","16%","34%","10%","14%","14%"]
+                          : ["14%","18%","38%","15%","15%"])[i] }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {displayRows.length === 0 ? (
-                    <tr><td colSpan={6} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
+                    <tr><td colSpan={itemTypeFilter === "inventory" ? 6 : 5} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
                   ) : displayRows.map((row, idx) => (
                     <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
                       <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{formatDate(row.date)}</td>
@@ -266,9 +266,9 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
                       <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border">
                         <div className="flex items-center gap-1.5"><CatBadge type={getShortType({ name: row.itemName })} size="xs" /><span className="text-zinc-700 dark:text-zinc-300 truncate">{row.itemName}</span></div>
                       </td>
-                      <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">
-                        {row.itemType === "inventory" ? row.qty : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
-                      </td>
+                      {itemTypeFilter === "inventory" && (
+                        <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{row.qty}</td>
+                      )}
                       <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border tabular-nums">{fmt(row.sellingPrice)}</td>
                       <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{fmt(row.grossSales)}</td>
                     </tr>
@@ -308,6 +308,7 @@ function ReportsModuleView() {
   // ── Transaction CREATE form ────────────────────────────────────────────────
   const [items, setItems]                               = useState([]);
   const [selectedOwnerId, setSelectedOwnerId]           = useState("");
+  const [ownerSearchMain, setOwnerSearchMain]           = useState("");
   const [selectedPatientId, setSelectedPatientId]       = useState("");
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [patientDetails, setPatientDetails]             = useState(null);
@@ -424,7 +425,7 @@ function ReportsModuleView() {
   const removeItem = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
 
   const resetForm = () => {
-    setItems([]); setNotes(""); setSelectedOwnerId(""); setSelectedPatientId("");
+    setItems([]); setNotes(""); setSelectedOwnerId(""); setOwnerSearchMain(""); setSelectedPatientId("");
     setSelectedAppointmentId(""); setPatientDetails(null); setStatus("Draft");
     setReportId(null); setReportDate(new Date().toISOString().split("T")[0]);
   };
@@ -539,10 +540,21 @@ function ReportsModuleView() {
                   <div className="space-y-2.5">
                     <div className="space-y-1">
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Owner</p>
+                      <input
+                        type="text"
+                        placeholder="Search owner..."
+                        value={ownerSearchMain}
+                        onChange={(e) => { setOwnerSearchMain(e.target.value); setSelectedOwnerId(""); setSelectedPatientId(""); setPatientDetails(null); setAppointments([]); }}
+                        disabled={status === "Finalized"}
+                        className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none disabled:opacity-50"
+                      />
                       <div className="relative">
                         <select value={selectedOwnerId} onChange={(e) => {
                           const oId = e.target.value;
-                          setSelectedOwnerId(oId); setSelectedPatientId(""); setPatientDetails(null); setAppointments([]);
+                          const o = owners.find((o) => o.id.toString() === oId);
+                          setSelectedOwnerId(oId);
+                          setOwnerSearchMain(o?.name || "");
+                          setSelectedPatientId(""); setPatientDetails(null); setAppointments([]);
                           if (oId) {
                             const op = pets.filter((p) => p.owner_id?.toString() === oId);
                             if (op.length === 1) handlePatientSelect({ target: { value: op[0].id.toString() } });
@@ -550,7 +562,9 @@ function ReportsModuleView() {
                         }} disabled={status === "Finalized"}
                           className="h-9 w-full appearance-none rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-8 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none disabled:opacity-50">
                           <option value="">Select an owner...</option>
-                          {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                          {owners
+                            .filter((o) => !ownerSearchMain || o.name.toLowerCase().includes(ownerSearchMain.toLowerCase()))
+                            .map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                         </select>
                         <FiChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
                       </div>
