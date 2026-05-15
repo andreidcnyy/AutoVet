@@ -55,9 +55,14 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (phone.length < 10) {
-      setError("Please enter a valid contact number.");
+
+    // Normalize +63XXXXXXXXX → 09XXXXXXXXX for backend (size:11)
+    const normalizedPhone = phone.startsWith('+63')
+      ? '0' + phone.slice(3).replace(/\D/g, '')
+      : phone.replace(/\D/g, '');
+
+    if (normalizedPhone.length !== 11) {
+      setError("Please enter a valid 11-digit contact number.");
       return;
     }
 
@@ -68,18 +73,18 @@ export default function Register() {
 
     setLoading(true);
     setError("");
-    
+
     try {
       const res = await fetch("/api/register", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
-        body: JSON.stringify({ 
-          name, 
-          email, 
-          phone,
+        body: JSON.stringify({
+          name,
+          email,
+          phone: normalizedPhone,
           address,
           city,
           province,
