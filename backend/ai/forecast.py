@@ -23,6 +23,14 @@ class NumpyEncoder(json.JSONEncoder):
         return super(NumpyEncoder, self).default(obj)
 
 
+def _confidence_level(r2):
+    if r2 >= 0.7:
+        return "High"
+    elif r2 >= 0.4:
+        return "Medium"
+    return "Low"
+
+
 def _model_meta(slope, intercept, r2, test_r2=None):
     return {
         "ml_algorithm": "scikit-learn LinearRegression",
@@ -31,6 +39,7 @@ def _model_meta(slope, intercept, r2, test_r2=None):
         "regression_intercept": round(float(intercept), 4),
         "trend_fit_score": round(float(r2), 4),
         "confidence_score": round(float(r2), 4),
+        "confidence_level": _confidence_level(r2),
         "test_r2": round(float(test_r2), 4) if test_r2 is not None else None,
         "validation_method": "80/20 holdout" if test_r2 is not None else "in-sample (insufficient data for split)",
     }
@@ -224,6 +233,12 @@ def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=No
     else:
         forecast_status = "Safe"
 
+    low_confidence = meta.get("confidence_level") == "Low"
+    message = (
+        "Low confidence prediction (R²={:.2f}). Trend is noisy — collect more usage data for reliable forecasting.".format(meta["trend_fit_score"])
+        if low_confidence else None
+    )
+
     return {
         "prediction_status": "Success",
         "forecast_status": forecast_status,
@@ -235,6 +250,7 @@ def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=No
         "predicted_monthly_sales": round(average_daily_consumption * 30, 2),
         "historical_period_end": last_date.strftime('%Y-%m-%d'),
         "last_recorded_date": last_date.strftime('%Y-%m-%d'),
+        **({"message": message} if message else {}),
         **meta,
     }
 

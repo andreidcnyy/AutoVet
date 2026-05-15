@@ -11,7 +11,7 @@ nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "python3", "python3Pa
 cmds = [
   "composer install --no-dev --optimize-autoloader --no-interaction",
   "npm ci || npm install",
-  "pip3 install --no-cache-dir -r ai/requirements.txt || true"
+  "pip3 install --no-cache-dir -r ai/requirements.txt"
 ]
 
 [phases.build]
