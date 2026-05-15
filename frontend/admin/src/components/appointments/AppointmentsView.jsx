@@ -88,6 +88,7 @@ function AppointmentsView() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [declineModal, setDeclineModal] = useState({ open: false, reason: "", error: "", submitting: false });
+  const [actionSubmitting, setActionSubmitting] = useState(false);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
@@ -223,16 +224,16 @@ function AppointmentsView() {
   
   const handleStatusAction = async (action) => {
     if (action === 'decline') { setDeclineModal({ open: true, reason: "", error: "", submitting: false }); return; }
+    if (actionSubmitting) return;
+    setActionSubmitting(true);
     try {
       await api.post(`/api/appointments/${selectedAppointment.id}/${action}`);
-      
-      // Invalidate dashboard caches to ensure real-time accuracy across tabs
       localStorage.removeItem('dashboard_stats_cache');
       localStorage.removeItem('dashboard_notifications_cache');
       api.invalidateCache?.();
-
-      toast.success(`Success: ${action}`);
+      toast.success(`Appointment ${action}d.`);
     } catch (err) { toast.error("Action failed."); }
+    finally { setActionSubmitting(false); }
   };
 
   const submitDecline = async () => {
@@ -401,20 +402,29 @@ function AppointmentsView() {
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{selectedAppointment?.time?.substring(0, 5)}</p></div></div>
                   <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name} | Guardian ID #{selectedAppointment?.pet?.owner_id}</p></div></div>
                 </div>
-                {selectedAppointment?.notes && <div><label className="mb-4 block text-[10px] font-black text-zinc-400">NOTES</label><div className="rounded-3xl bg-zinc-50 p-6 italic border-l-8 border-emerald-500/20">"{selectedAppointment.notes}"</div></div>}
+                {selectedAppointment?.notes && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap bg-zinc-50 dark:bg-dark-surface rounded-xl px-4 py-3 border border-zinc-100 dark:border-dark-border">
+                      {selectedAppointment.notes}
+                    </p>
+                  </div>
+                )}
                 <div className="pt-6 space-y-4">
                   {selectedAppointment?.status === 'pending' && (
                     <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => handleStatusAction('approve')} className="h-16 rounded-2xl bg-emerald-600 text-white font-black uppercase">Approve</button>
-                      <button onClick={() => handleStatusAction('decline')} className="h-16 rounded-2xl bg-rose-600 text-white font-black uppercase">Decline</button>
+                      <button onClick={() => handleStatusAction('approve')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-emerald-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
+                        {actionSubmitting ? "..." : "Approve"}
+                      </button>
+                      <button onClick={() => handleStatusAction('decline')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-rose-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
+                        Decline
+                      </button>
                     </div>
                   )}
                   {selectedAppointment?.status === 'approved' && (
-                    <button onClick={() => handleStatusAction('completed')} className="h-16 w-full rounded-2xl bg-emerald-600 text-white font-black uppercase">Complete</button>
-                  )}
-                  {/* Archive button is only shown for pending appointments */}
-                  {selectedAppointment?.status === 'pending' && (
-                    <button onClick={() => { if(window.confirm("Archive this appointment?")) api.delete(`/api/appointments/${selectedAppointment.id}`).then(() => { toast.success("Archived"); setIsDrawerOpen(false); fetchAppointments(); }); }} className="h-16 w-full rounded-2xl border-2 border-rose-100 text-rose-600 font-black uppercase">Archive</button>
+                    <button onClick={() => handleStatusAction('completed')} disabled={actionSubmitting} className="h-16 w-full rounded-2xl bg-emerald-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
+                      {actionSubmitting ? "..." : "Complete"}
+                    </button>
                   )}
                 </div>
               </div>
