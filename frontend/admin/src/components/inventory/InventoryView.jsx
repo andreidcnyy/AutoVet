@@ -263,15 +263,17 @@ function InventoryView() {
                 <th className="px-6 py-4">Item Details</th>
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4 text-center">Stock</th>
+                <th className="px-6 py-4 text-right">Buy Price</th>
+                <th className="px-6 py-4 text-right">Sell Price</th>
                 <th className="px-6 py-4">AI Forecast Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {isLoading ? (
-                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
+                <tr><td colSpan="7" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
               ) : currentItems.length === 0 ? (
-                <tr><td colSpan="5" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
+                <tr><td colSpan="7" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
                 currentItems.map((row) => {
                   const isExpired = row.expiration_date && new Date(row.expiration_date) < new Date();
@@ -305,6 +307,16 @@ function InventoryView() {
                                 {row.stock_level <= 0 ? "OF STOCK" : (row.unit || "pcs")}
                             </span>
                          </div>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                          {row.price > 0 ? `₱${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <span className={clsx("text-sm font-black", row.selling_price > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-400 dark:text-rose-500")}>
+                          {row.selling_price > 0 ? `₱${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
+                        </span>
                       </td>
                       <td className="px-6 py-5">
                          {row.latest_forecast ? (

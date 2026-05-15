@@ -216,8 +216,8 @@ class InvoiceController extends Controller
                 'tax_rate' => $validated['tax_rate'],
                 'total' => $calculatedTotal,
                 'amount_paid' => $validated['amount_paid'],
-                'payment_method' => $validated['payment_method'],
-                'notes_to_client' => $validated['notes_to_client'],
+                'payment_method' => $validated['payment_method'] ?? null,
+                'notes_to_client' => $validated['notes_to_client'] ?? null,
             ]);
 
             foreach ($itemsToCreate as $item) {
@@ -403,8 +403,8 @@ class InvoiceController extends Controller
                 'tax_rate' => $validated['tax_rate'],
                 'total' => $calculatedTotal,
                 'amount_paid' => $validated['amount_paid'],
-                'payment_method' => $validated['payment_method'],
-                'notes_to_client' => $validated['notes_to_client'],
+                'payment_method' => $validated['payment_method'] ?? null,
+                'notes_to_client' => $validated['notes_to_client'] ?? null,
             ]);
 
             if (isset($validated['items'])) {

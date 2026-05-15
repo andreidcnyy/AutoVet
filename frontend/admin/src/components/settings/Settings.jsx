@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useState, useMemo } from "react";
-import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase } from "react-icons/fi";
+import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, ADMIN_ONLY, VET_AND_ADMIN, ALL_ROLES } from "../../constants/roles";
 
@@ -11,6 +11,7 @@ import SystemPreferencesTab from "./SystemPreferencesTab";
 import ArchiveRecoveryTab from "./ArchiveRecoveryTab";
 import AuditLogTab from "./AuditLogTab";
 import BackupRestoreTab from "./BackupRestoreTab";
+import ServiceManagementTab from "./ServiceManagementTab";
 // import DataImportTab from "./DataImportTab";
 
 import SpeciesBreedsTab from "./SpeciesBreedsTab";
@@ -20,6 +21,7 @@ import NotificationTemplatesManager from "../notifications/NotificationTemplates
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome, allowedRoles: VET_AND_ADMIN },
   { id: "data", label: "Master Data", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
+  { id: "services", label: "Service Management", icon: FiTag, allowedRoles: VET_AND_ADMIN },
   { id: "species", label: "Species & Breeds", icon: FiHome, allowedRoles: VET_AND_ADMIN },
   { id: "users", label: "Users / Roles", icon: FiUsers, allowedRoles: VET_AND_ADMIN },
   { id: "schedule", label: "Vet Schedule", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
@@ -73,6 +75,7 @@ function Settings() {
       <main className="min-w-0">
         {activeTab === "clinic" && <ClinicProfileTab />}
         {activeTab === "data" && <MasterDataManagementTab />}
+        {activeTab === "services" && <ServiceManagementTab />}
         {activeTab === "species" && <SpeciesBreedsTab />}
         {activeTab === "users" && <UserManagementTab />}
         { activeTab === "schedule" && <VetScheduleTab /> }
