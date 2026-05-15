@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getAppointments, cancelAppointment } from '../api';
+import { getAppointments, getAppointment, cancelAppointment } from '../api';
 import echo from '../utils/echo';
 import { 
   FiCalendar, 
@@ -140,6 +140,14 @@ export default function Appointments() {
     selectedAppointmentRef.current = appt;
     setSelectedAppointment(appt);
     setIsDetailsOpen(true);
+    // Fetch full detail to ensure decline_reason and all fields are present
+    getAppointment(appt.id)
+      .then(res => {
+        const full = res.data;
+        selectedAppointmentRef.current = full;
+        setSelectedAppointment(full);
+      })
+      .catch(() => {});
   };
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading appointments...</div>;
