@@ -193,8 +193,12 @@ export default function Landing() {
               <span>badetvelasquez@gmail.com</span>
             </div>
             <div className="flex items-center gap-2">
-              <FiPhone className="text-brand-500" />
-              <span>+63 933 461 7957</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm">
+                <span className="text-xs">🇵🇭</span>
+                <span className="text-[10px] font-bold opacity-50">+63</span>
+                <span className="w-px h-3 bg-zinc-200 dark:bg-dark-border mx-0.5" />
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">933 461 7957</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <FiMapPin className="text-brand-500" />
