@@ -67,6 +67,7 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
   const [selectedOwnerId, setSelectedOwnerId]         = useState("");
   const [ownerSearch, setOwnerSearch]                 = useState("");
   const [itemTypeFilter, setItemTypeFilter]           = useState("all");
+  const [selectedServiceId, setSelectedServiceId]     = useState("");
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
   const [loading, setLoading]                         = useState(false);
   const [allRows, setAllRows]                         = useState([]);
@@ -117,17 +118,18 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
     if (!localGenerated) return [];
     return allRows.filter((row) => {
       if (itemTypeFilter !== "all" && row.itemType !== itemTypeFilter) return false;
+      if (selectedServiceId && row.service_id?.toString() !== selectedServiceId) return false;
       if (selectedInventoryId && row.inventory_id?.toString() !== selectedInventoryId) return false;
       return true;
     });
-  }, [allRows, localGenerated, itemTypeFilter, selectedInventoryId]);
+  }, [allRows, localGenerated, itemTypeFilter, selectedServiceId, selectedInventoryId]);
 
   useEffect(() => { setReportRows(displayRows); }, [displayRows]);
 
   const handleReset = () => {
     setLocalGenerated(false); setGenerated(false); setAllRows([]); setReportRows([]);
     setSelectedOwnerId(""); setOwnerSearch(""); setItemTypeFilter("all");
-    setSelectedInventoryId("");
+    setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
   };
 
@@ -181,14 +183,28 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Product Type</label>
           <div className="relative">
-            <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedInventoryId(""); }}
+            <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedServiceId(""); setSelectedInventoryId(""); }}
               className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
               <option value="all">All</option>
+              <option value="service">Services only</option>
               <option value="inventory">Inventory only</option>
             </select>
             <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
           </div>
         </div>
+        {(itemTypeFilter === "all" || itemTypeFilter === "service") && (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Service</label>
+            <div className="relative">
+              <select value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)}
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="">All services</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            </div>
+          </div>
+        )}
         {(itemTypeFilter === "all" || itemTypeFilter === "inventory") && (
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Inventory Item</label>
@@ -234,21 +250,24 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
               <table className="w-full text-xs" style={{ minWidth: 480 }}>
                 <thead>
                   <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
-                    {["Date","Client","Item / Service","Selling Price","Gross Sales"].map((h, i) => (
+                    {["Date","Client","Item / Service","Quantity","Selling Price","Gross Sales"].map((h, i) => (
                       <th key={h} className={clsx("px-3 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border last:border-r-0", i < 3 ? "text-left" : "text-right")}
-                        style={{ width: ["14%","18%","38%","15%","15%"][i] }}>{h}</th>
+                        style={{ width: ["12%","16%","34%","10%","14%","14%"][i] }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {displayRows.length === 0 ? (
-                    <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
+                    <tr><td colSpan={6} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
                   ) : displayRows.map((row, idx) => (
                     <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
                       <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{formatDate(row.date)}</td>
                       <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300 truncate border-r border-zinc-100 dark:border-dark-border">{row.client}</td>
                       <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border">
                         <div className="flex items-center gap-1.5"><CatBadge type={getShortType({ name: row.itemName })} size="xs" /><span className="text-zinc-700 dark:text-zinc-300 truncate">{row.itemName}</span></div>
+                      </td>
+                      <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">
+                        {row.itemType === "inventory" ? row.qty : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                       </td>
                       <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border tabular-nums">{fmt(row.sellingPrice)}</td>
                       <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{fmt(row.grossSales)}</td>
