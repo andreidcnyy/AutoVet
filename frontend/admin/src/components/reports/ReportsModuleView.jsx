@@ -215,7 +215,7 @@ function InventoryReportPane({ inventory, onComplete }) {
               </button>
             </div>
             {onComplete && (
-              <button onClick={onComplete}
+              <button onClick={() => onComplete(reportData)}
                 className="w-full mt-2 h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 flex items-center justify-center gap-2 transition-colors">
                 <FiSend className="h-4 w-4" /> Complete report
               </button>
@@ -579,12 +579,45 @@ function ReportsModuleView() {
     } catch (err) { toast.error(err.message || "Failed to save report"); }
   };
 
-  const completeInventoryReport = useCallback(() => {
-    window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
-    toast.success("Inventory report completed. AI forecast data updated.");
-    setMainTab("history");
-    fetchReports(1, "", null, true);
-  }, [toast, fetchReports]);
+  const completeInventoryReport = useCallback(async (reportData = []) => {
+    if (!reportData || reportData.length === 0) {
+      toast.error("Generate the report first before completing it.");
+      return;
+    }
+    const payload = {
+      report_type: "inventory",
+      status: "Finalized",
+      subtotal: 0, discount_type: "fixed", discount_value: 0, tax_rate: 0, total: 0, amount_paid: 0,
+      items: reportData.map((item) => ({
+        item_type: "inventory",
+        inventory_id: item.id,
+        name: item.name,
+        notes: `${item.category} | Stock: ${item.stock} | Buy: ${item.buyingPrice} | Sell: ${item.sellingPrice}`,
+        qty: item.stock || 1,
+        unit_price: item.sellingPrice || 0,
+        amount: (item.stock || 1) * (item.sellingPrice || 0),
+      })),
+    };
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${user?.token}` },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Failed to save inventory report.");
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
+      localStorage.removeItem(REPORTS_CACHE_KEY);
+      toast.success("Inventory report completed. Stock snapshot saved.");
+      setMainTab("history");
+      fetchReports(1, "", null, true);
+    } catch (err) {
+      toast.error(err.message || "Failed to save inventory report.");
+    }
+  }, [user?.token, toast, fetchReports]);
 
   const handleViewReportDetails = useCallback(async (rep) => {
     if (!rep?.id) return;
@@ -1075,12 +1108,24 @@ function ReportsModuleView() {
                   <div className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-dark-surface/40 transition-colors"
                     onClick={() => setExpandedReportId(expandedReportId === rep.id ? null : rep.id)}>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 shrink-0">
-                        <FiClipboard className="h-4 w-4" />
+                      <div className={clsx("flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
+                        rep.report_type === "inventory"
+                          ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600"
+                          : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600")}>
+                        {rep.report_type === "inventory" ? <FiPackage className="h-4 w-4" /> : <FiClipboard className="h-4 w-4" />}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{rep.pet?.name || "—"}</p>
-                        <p className="text-xs text-zinc-400">{formatDate(rep.created_at)} · {rep.appointment ? (rep.appointment.title || rep.appointment.service?.name || "Appointment") : "No appointment"}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            {rep.report_type === "inventory" ? "Inventory Report" : (rep.pet?.name || "—")}
+                          </p>
+                          {rep.report_type === "inventory" && (
+                            <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Stock snapshot</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-400">
+                          {formatDate(rep.created_at)} · {rep.report_type === "inventory" ? `${rep.items_count ?? 0} items tracked` : (rep.appointment ? (rep.appointment.title || rep.appointment.service?.name || "Appointment") : "No appointment")}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

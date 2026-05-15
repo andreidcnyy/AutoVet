@@ -36,7 +36,7 @@ class InvoiceController extends Controller
     {
         $user = auth()->user();
         $query = Invoice::select([
-            'id', 'invoice_number', 'pet_id', 'status', 'total', 
+            'id', 'invoice_number', 'pet_id', 'status', 'report_type', 'total',
             'amount_paid', 'created_at', 'updated_at'
         ])
         ->with([
@@ -49,8 +49,18 @@ class InvoiceController extends Controller
         ])
         ->withCount('items');
 
-        $query->whereHas('pet.owner', function ($q) {
-            $q->realClients();
+        // Transaction reports must have a real pet/owner; inventory reports have no pet
+        $query->where(function ($q) {
+            $q->where('report_type', 'inventory')
+              ->orWhereNull('report_type')
+              ->orWhere(function ($q2) {
+                  $q2->where(function ($q3) {
+                      $q3->where('report_type', 'transaction')
+                         ->orWhereNull('report_type');
+                  })->whereHas('pet.owner', function ($oq) {
+                      $oq->realClients();
+                  });
+              });
         });
 
         if ($ownerId = $this->getPortalOwnerId()) {
@@ -92,11 +102,14 @@ class InvoiceController extends Controller
     {
         $this->authorize('create', Invoice::class);
 
+        $isInventoryReport = $request->input('report_type') === 'inventory';
+
         $validated = $request->validate([
-            'pet_id' => 'required|exists:pets,id',
-            'appointment_id' => 'required|exists:appointments,id',
+            'report_type' => 'nullable|in:transaction,inventory',
+            'pet_id' => $isInventoryReport ? 'nullable|exists:pets,id' : 'required|exists:pets,id',
+            'appointment_id' => $isInventoryReport ? 'nullable|exists:appointments,id' : 'required|exists:appointments,id',
             'pet_weight' => 'nullable|numeric|min:0.01',
-            'date' => 'nullable|date', // Support custom date from frontend
+            'date' => 'nullable|date',
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
@@ -133,10 +146,10 @@ class InvoiceController extends Controller
             $nextNumber = $latestInvoice ? intval(substr($latestInvoice->invoice_number, -4)) + 1 : 1;
             $invoiceNumber = "VB-{$monthYear}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
-            $pet = \App\Models\Pet::findOrFail($validated['pet_id']);
-            
+            $pet = isset($validated['pet_id']) ? \App\Models\Pet::findOrFail($validated['pet_id']) : null;
+
             // Update pet weight if provided
-            if (isset($validated['pet_weight'])) {
+            if ($pet && isset($validated['pet_weight'])) {
                 $pet->update(['weight' => $validated['pet_weight']]);
             }
 
@@ -207,8 +220,9 @@ class InvoiceController extends Controller
 
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
-                'pet_id' => $validated['pet_id'],
-                'appointment_id' => $validated['appointment_id'],
+                'pet_id' => $validated['pet_id'] ?? null,
+                'appointment_id' => $validated['appointment_id'] ?? null,
+                'report_type' => $validated['report_type'] ?? 'transaction',
                 'status' => $finalStatus,
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
@@ -222,6 +236,12 @@ class InvoiceController extends Controller
 
             foreach ($itemsToCreate as $item) {
                 $invoice->items()->create($item);
+            }
+
+            // Inventory reports are stock snapshots — skip finalization (no stock deduction) and email
+            if ($isInventoryReport) {
+                DB::commit();
+                return response()->json($invoice->load('items'), 201);
             }
 
             $invoice->load('items');
