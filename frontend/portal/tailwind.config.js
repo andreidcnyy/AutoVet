@@ -13,6 +13,13 @@ export default {
           500: "#059669",
           600: "#047857",
         },
+        light: {
+          bg: "#f0f2f5",
+          card: "#ffffff",
+          surface: "#f7f8fa",
+          border: "#e0e2e7",
+          muted: "#6b7280",
+        },
         dark: {
           bg: "#121212",
           card: "#1c1c1c",
