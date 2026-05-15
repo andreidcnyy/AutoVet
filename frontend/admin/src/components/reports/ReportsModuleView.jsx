@@ -74,6 +74,8 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
   const [selectedServiceId, setSelectedServiceId]     = useState("");
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
   const [loading, setLoading]                         = useState(false);
+  // allRows holds the raw fetched data; displayRows is derived reactively from filters
+  const [allRows, setAllRows]                         = useState([]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -91,30 +93,47 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
       const rows = [];
       invoices.forEach((inv) => {
         (inv.items || []).filter((i) => !i.is_hidden).forEach((item) => {
-          if (itemTypeFilter !== "all" && item.item_type !== itemTypeFilter) return;
-          if (selectedServiceId && item.service_id?.toString() !== selectedServiceId) return;
-          if (selectedInventoryId && item.inventory_id?.toString() !== selectedInventoryId) return;
           const invRecord    = inventory.find((i) => i.id === item.inventory_id);
           const buyingPrice  = Number(invRecord?.price) || 0;
           const sellingPrice = Number(item.unit_price) || 0;
           const qty          = Number(item.qty) || 1;
           const grossSales   = sellingPrice * qty;
           rows.push({
-            date: inv.created_at, client: inv.pet?.owner?.name || "—",
-            itemName: item.name, itemType: item.item_type,
+            date: inv.created_at,
+            client: inv.pet?.owner?.name || "—",
+            itemName: item.name,
+            itemType: item.item_type,
+            service_id: item.service_id,
+            inventory_id: item.inventory_id,
             qty, buyingPrice, sellingPrice, grossSales, netSales: grossSales,
-            invoiceDiscount: Number(inv.discount_value) || 0, invoiceId: inv.id,
+            invoiceDiscount: Number(inv.discount_value) || 0,
+            invoiceId: inv.id,
           });
         });
       });
-      setReportRows(rows); setGenerated(true);
+      setAllRows(rows);
+      setGenerated(true);
       if (rows.length === 0) toast.warning("No transactions found for the selected filters.");
     } catch { toast.error("Failed to generate report."); }
     finally { setLoading(false); }
   };
 
+  // Reactive filter — no re-fetch needed when filter dropdowns change
+  const displayRows = useMemo(() => {
+    if (!generated) return [];
+    return allRows.filter((row) => {
+      if (itemTypeFilter !== "all" && row.itemType !== itemTypeFilter) return false;
+      if (selectedServiceId && row.service_id?.toString() !== selectedServiceId) return false;
+      if (selectedInventoryId && row.inventory_id?.toString() !== selectedInventoryId) return false;
+      return true;
+    });
+  }, [allRows, generated, itemTypeFilter, selectedServiceId, selectedInventoryId]);
+
+  // Keep parent in sync for PDF export
+  useEffect(() => { setReportRows(displayRows); }, [displayRows]);
+
   const handleReset = () => {
-    setGenerated(false); setReportRows([]);
+    setGenerated(false); setAllRows([]); setReportRows([]);
     setSelectedOwnerId(""); setItemTypeFilter("all");
     setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
@@ -122,10 +141,10 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
 
   const summary = useMemo(() => {
     const seen = new Set(); let totalDiscount = 0;
-    reportRows.forEach((r) => { if (!seen.has(r.invoiceId)) { seen.add(r.invoiceId); totalDiscount += r.invoiceDiscount; } });
-    const totalGross = reportRows.reduce((s, r) => s + r.grossSales, 0);
+    displayRows.forEach((r) => { if (!seen.has(r.invoiceId)) { seen.add(r.invoiceId); totalDiscount += r.invoiceDiscount; } });
+    const totalGross = displayRows.reduce((s, r) => s + r.grossSales, 0);
     return { totalGross, totalDiscount, totalNet: totalGross - totalDiscount };
-  }, [reportRows]);
+  }, [displayRows]);
 
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: "200px minmax(0,1fr)" }}>
@@ -155,8 +174,8 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
             <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedServiceId(""); setSelectedInventoryId(""); }}
               className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
               <option value="all">All</option>
-              <option value="service">Services</option>
-              <option value="inventory">Inventory</option>
+              <option value="service">Services only</option>
+              <option value="inventory">Inventory only</option>
             </select>
             <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
           </div>
@@ -194,6 +213,11 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
             {loading ? <FiRefreshCw className="h-3 w-3 animate-spin" /> : null} Search
           </button>
         </div>
+        {generated && (
+          <p className="text-[9px] text-zinc-400 italic text-center pt-1">
+            Filters apply instantly — no need to re-search.
+          </p>
+        )}
       </div>
 
       {/* Report document */}
@@ -223,9 +247,9 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
                   </tr>
                 </thead>
                 <tbody>
-                  {reportRows.length === 0 ? (
-                    <tr><td colSpan={8} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions found.</td></tr>
-                  ) : reportRows.map((row, idx) => (
+                  {displayRows.length === 0 ? (
+                    <tr><td colSpan={8} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
+                  ) : displayRows.map((row, idx) => (
                     <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
                       <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{formatDate(row.date)}</td>
                       <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300 truncate border-r border-zinc-100 dark:border-dark-border">{row.client}</td>
@@ -269,7 +293,7 @@ function TransactionViewPane({ inventory, services, owners, reportRows, setRepor
   );
 }
 
-// ─── Inventory Report Pane ────────────────────────────────────────────────────
+// ─── Inventory Report Pane (read-only snapshot view) ─────────────────────────
 
 function InventoryReportPane({ inventory, reportData, setReportData, generated, setGenerated }) {
   const [reportType, setReportType]             = useState("stock_level");
@@ -425,6 +449,7 @@ function ReportsModuleView() {
   const [mainTab, setMainTab]             = useState("new");
   const [reportSection, setReportSection] = useState("transaction");
   const [txSubTab, setTxSubTab]           = useState("create"); // "create" | "view"
+  const [invSubTab, setInvSubTab]         = useState("create"); // "create" | "view"
 
   // Shared data
   const [inventory, setInventory] = useState([]);
@@ -451,6 +476,14 @@ function ReportsModuleView() {
   const [selectedService, setSelectedService]           = useState(null);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.qty * (i.unit_price || 0), 0), [items]);
+
+  // ── Inventory CREATE form state ────────────────────────────────────────────
+  const [invItems, setInvItems]                   = useState([]);
+  const [invNotes, setInvNotes]                   = useState("");
+  const [invItemInput, setInvItemInput]           = useState("");
+  const [invQtyInput, setInvQtyInput]             = useState(1);
+  const [invIsDropdownOpen, setInvIsDropdownOpen] = useState(false);
+  const [invSelectedItem, setInvSelectedItem]     = useState(null);
 
   // ── Lifted report state ────────────────────────────────────────────────────
   const [txReportRows, setTxReportRows] = useState([]);
@@ -619,6 +652,71 @@ function ReportsModuleView() {
     } catch (err) { toast.error(err.message || "Failed to save report"); }
   };
 
+  // ── Inventory CREATE form handlers ─────────────────────────────────────────
+
+  const invGroupedItems = useMemo(() => {
+    const term = invItemInput.toLowerCase();
+    return inventory
+      .filter((i) => (i.item_name || "").toLowerCase().includes(term) || (i.sku || "").toLowerCase().includes(term))
+      .reduce((acc, i) => {
+        const cat = getCatName(i) || "Inventory";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push({ ...i, name: i.item_name, stock: i.stock_level || 0 });
+        return acc;
+      }, {});
+  }, [inventory, invItemInput]);
+
+  const addInvItem = () => {
+    if (!invSelectedItem) return;
+    const qty = Number(invQtyInput) || 1;
+    setInvItems((prev) => [...prev, {
+      id: `inv-${Date.now()}`,
+      inventory_id: invSelectedItem.id,
+      name: invSelectedItem.name || invSelectedItem.item_name,
+      category: getCatName(invSelectedItem),
+      shortType: getShortType({ ...invSelectedItem, name: invSelectedItem.item_name }),
+      stock: invSelectedItem.stock_level || 0,
+      sellingPrice: Number(invSelectedItem.selling_price) || 0,
+      qty,
+    }]);
+    setInvItemInput(""); setInvQtyInput(1); setInvSelectedItem(null); setInvIsDropdownOpen(false);
+  };
+
+  const removeInvItem = (id) => setInvItems((prev) => prev.filter((i) => i.id !== id));
+
+  const resetInvForm = () => { setInvItems([]); setInvNotes(""); setInvItemInput(""); setInvQtyInput(1); setInvSelectedItem(null); };
+
+  const submitInventoryEntry = async () => {
+    if (invItems.length === 0) { toast.error("Add at least one inventory item."); return; }
+    const payload = {
+      report_type: "inventory", status: "Finalized",
+      subtotal: 0, discount_type: "fixed", discount_value: 0, tax_rate: 0, total: 0, amount_paid: 0,
+      notes_to_client: invNotes,
+      items: invItems.map((item) => ({
+        item_type: "inventory",
+        inventory_id: item.inventory_id,
+        name: item.name,
+        notes: `${item.category} | Recorded stock: ${item.qty}`,
+        qty: item.qty,
+        unit_price: item.sellingPrice || 0,
+        amount: item.qty * (item.sellingPrice || 0),
+        is_hidden: false,
+      })),
+    };
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${user?.token}` },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.message || "Failed to save."); return; }
+      window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
+      localStorage.removeItem(REPORTS_CACHE_KEY);
+      toast.success("Inventory entry recorded and saved.");
+      resetInvForm(); setMainTab("history"); fetchReports(1, "", null, true);
+    } catch (err) { toast.error(err.message || "Failed to save."); }
+  };
+
   // ── History fetch ──────────────────────────────────────────────────────────
 
   const fetchReports = useCallback(async (page = 1, search = searchQuery, signal = null, force = false) => {
@@ -658,7 +756,7 @@ function ReportsModuleView() {
     return () => { clearTimeout(t); ctrl.abort(); };
   }, [searchQuery]);
 
-  // ── Complete inventory report ──────────────────────────────────────────────
+  // ── Complete inventory snapshot report (view sub-tab) ─────────────────────
 
   const completeInventoryReport = useCallback(async () => {
     if (!invGenerated || invReportData.length === 0) { toast.error("Generate the report first."); return; }
@@ -764,8 +862,15 @@ function ReportsModuleView() {
                     </button>
                   </>
                 )}
-                {/* Inventory complete button */}
-                {reportSection === "inventory" && (
+                {/* Inventory create sub-tab button */}
+                {reportSection === "inventory" && invSubTab === "create" && (
+                  <button onClick={submitInventoryEntry}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors">
+                    <FiSend className="h-3.5 w-3.5" /> Complete entry
+                  </button>
+                )}
+                {/* Inventory view sub-tab button */}
+                {reportSection === "inventory" && invSubTab === "view" && (
                   <button onClick={completeInventoryReport} disabled={!invGenerated}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                     <FiSend className="h-3.5 w-3.5" /> Complete report
@@ -796,6 +901,19 @@ function ReportsModuleView() {
                   <button key={id} onClick={() => setTxSubTab(id)}
                     className={clsx("px-4 py-2 text-xs font-semibold border-b-2 transition-colors",
                       txSubTab === id ? "border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Inventory sub-tabs */}
+            {reportSection === "inventory" && (
+              <div className="flex items-center gap-1 mt-2 border-b border-zinc-100 dark:border-dark-border -mb-3 pb-0">
+                {[{ id: "create", label: "New inventory entry" }, { id: "view", label: "Inventory Stock Report" }].map(({ id, label }) => (
+                  <button key={id} onClick={() => setInvSubTab(id)}
+                    className={clsx("px-4 py-2 text-xs font-semibold border-b-2 transition-colors",
+                      invSubTab === id ? "border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300")}>
                     {label}
                   </button>
                 ))}
@@ -1061,8 +1179,155 @@ function ReportsModuleView() {
               />
             )}
 
-            {/* Inventory report */}
-            {reportSection === "inventory" && (
+            {/* Inventory — New inventory entry (create form) */}
+            {reportSection === "inventory" && invSubTab === "create" && (
+              <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.3fr)" }}>
+                <div className="flex flex-col gap-4">
+
+                  {/* Item search */}
+                  <div className="card-shell p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">Record inventory items</p>
+                    <p className="text-[11px] text-zinc-400 mb-3">Search and add inventory items to record a stock count or adjustment entry.</p>
+                    <div className="flex gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <input type="text" placeholder="Search inventory items..." value={invItemInput}
+                          onChange={(e) => { setInvItemInput(e.target.value); setInvIsDropdownOpen(true); setInvSelectedItem(null); }}
+                          onFocus={() => setInvIsDropdownOpen(true)}
+                          onBlur={() => setTimeout(() => setInvIsDropdownOpen(false), 200)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInvItem(); } }}
+                          className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-7 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
+                        {invItemInput && (
+                          <button onClick={() => { setInvItemInput(""); setInvSelectedItem(null); }} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"><FiX className="h-3.5 w-3.5" /></button>
+                        )}
+                        {invIsDropdownOpen && (
+                          <div className="absolute left-0 top-full mt-1 max-h-72 w-[420px] overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-2.5 shadow-2xl z-[100]">
+                            {Object.keys(invGroupedItems).length > 0 ? Object.entries(invGroupedItems).map(([cat, items_]) => (
+                              <div key={cat} className="mb-3 last:mb-0">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 px-2 mb-1.5">{cat}</p>
+                                {items_.map((item) => (
+                                  <button key={item.id} type="button" onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => { setInvItemInput(item.name); setInvSelectedItem(item); setInvIsDropdownOpen(false); }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 text-[9px] font-black uppercase">ITEM</div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200">{item.name}</p>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className={clsx("text-[9px] font-bold", item.stock > 5 ? "text-emerald-500" : "text-rose-500")}>Stock: {item.stock}</span>
+                                        {item.selling_price > 0 && <span className="text-[9px] text-zinc-400">{fmtPeso(item.selling_price)}</span>}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )) : <div className="py-8 text-center text-xs text-zinc-400">No matching inventory items</div>}
+                          </div>
+                        )}
+                      </div>
+                      <input type="number" min="1" value={invQtyInput} onChange={(e) => setInvQtyInput(e.target.value)}
+                        className="h-9 w-11 rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface text-center text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
+                      <button type="button" onClick={addInvItem} disabled={!invSelectedItem}
+                        className="h-9 px-4 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                        Add
+                      </button>
+                    </div>
+
+                    {invItems.length === 0 ? (
+                      <div className="py-8 flex flex-col items-center justify-center opacity-40">
+                        <FiPackage className="h-7 w-7 text-zinc-300 mb-1.5" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">No items added yet</p>
+                      </div>
+                    ) : (
+                      <>
+                        {invItems.map((item) => (
+                          <div key={item.id} className="group flex items-center gap-2 py-2 border-b border-zinc-100 dark:border-dark-border last:border-0">
+                            <CatBadge type={item.shortType} size="xs" />
+                            <span className="flex-1 text-xs text-zinc-700 dark:text-zinc-300 truncate">{item.name}</span>
+                            <span className="text-[11px] text-zinc-400 shrink-0">x{item.qty}</span>
+                            {item.sellingPrice > 0 && <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 w-16 text-right shrink-0">{fmtPeso(item.qty * item.sellingPrice)}</span>}
+                            <button onClick={() => removeInvItem(item.id)} className="p-0.5 text-zinc-300 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"><FiX className="h-3.5 w-3.5" /></button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  <div className="card-shell p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Notes</p>
+                    <textarea rows={3} value={invNotes} onChange={(e) => setInvNotes(e.target.value)}
+                      placeholder="Reason for entry, supplier name, batch number..."
+                      className="w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none resize-none" />
+                    <button onClick={resetInvForm} className="mt-2 w-full h-9 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                      Reset form
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right: preview */}
+                <div className="card-shell p-5 h-fit sticky top-0">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shrink-0"><FiPackage className="h-4 w-4" /></div>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Inventory entry</p>
+                        <p className="text-[10px] text-zinc-400">AutoVet Systems</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-light text-zinc-300 dark:text-zinc-600">INVENTORY</p>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">Date: {new Date().toISOString().split("T")[0]}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-2">Items recorded</p>
+                    {invItems.length > 0 ? (
+                      <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
+                        <thead>
+                          <tr className="border-b border-zinc-200 dark:border-dark-border">
+                            {[["Item","42%"],["Cat","20%"],["Qty","13%"],["Value","25%"]].map(([h, w]) => (
+                              <th key={h} className="pb-1.5 text-left text-[9px] font-semibold text-zinc-400" style={{ width: w }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invItems.map((item, idx) => (
+                            <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border/50">
+                              <td className="py-1.5 text-zinc-700 dark:text-zinc-300 truncate pr-2">{item.name}</td>
+                              <td className="py-1.5"><CatBadge type={item.shortType} size="xs" /></td>
+                              <td className="py-1.5 text-right text-zinc-600 dark:text-zinc-400">{item.qty}</td>
+                              <td className="py-1.5 text-right font-semibold text-zinc-800 dark:text-zinc-200">{item.sellingPrice > 0 ? fmtPeso(item.qty * item.sellingPrice) : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : <p className="text-xs text-zinc-400 italic">No items added.</p>}
+                  </div>
+
+                  {invItems.length > 0 && (
+                    <div className="flex justify-end gap-6 pt-2 border-t border-zinc-200 dark:border-dark-border text-xs">
+                      <span className="text-zinc-400">Total value</span>
+                      <span className="font-black text-amber-500 tabular-nums">
+                        {fmtPeso(invItems.reduce((s, i) => s + i.qty * i.sellingPrice, 0))}
+                      </span>
+                    </div>
+                  )}
+
+                  {invNotes && (
+                    <><div className="border-t border-zinc-100 dark:border-dark-border my-3" /><p className="text-[10px] text-zinc-400">Notes: {invNotes}</p></>
+                  )}
+
+                  <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 p-3">
+                    <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                      This entry records inventory items for reporting and AI forecasting. Click "Complete entry" to save.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Inventory — Stock Report (view) */}
+            {reportSection === "inventory" && invSubTab === "view" && (
               <InventoryReportPane
                 inventory={inventory}
                 reportData={invReportData} setReportData={setInvReportData}
