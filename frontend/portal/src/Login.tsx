@@ -77,7 +77,7 @@ function LoginPage() {
       >
         <div className="text-center space-y-2">
           <img src={logo} alt="Pet Wellness Animal Clinic Logo" className="mx-auto w-16 h-16 object-contain" />
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Pet Wellness Animal Clinic</h1>
+          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100">Petwellness Animal Clinic</h1>
           <p className="text-zinc-500 dark:text-zinc-400">Welcome back, Pet Owner!</p>
         </div>
 
