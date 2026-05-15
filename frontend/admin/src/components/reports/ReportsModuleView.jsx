@@ -435,7 +435,7 @@ function ReportsModuleView() {
 
   const groupedItems = useMemo(() => {
     const term = serviceInput.toLowerCase();
-    const svcs = (Array.isArray(services) ? services : [])
+    const svcs = reportSection === "inventory" ? [] : (Array.isArray(services) ? services : [])
       .filter((s) => s.name.toLowerCase().includes(term) || (s.category || "").toLowerCase().includes(term))
       .map((s) => ({ ...s, type: "service" }));
     const invs = (Array.isArray(inventory) ? inventory : [])
@@ -447,7 +447,7 @@ function ReportsModuleView() {
       acc[cat].push(item);
       return acc;
     }, {});
-  }, [services, inventory, serviceInput]);
+  }, [services, inventory, serviceInput, reportSection]);
 
   const selectItem = (item) => { setServiceInput(item.name); setSelectedService(item); setIsDropdownOpen(false); };
 
@@ -674,12 +674,10 @@ function ReportsModuleView() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
                   <FiDownload className="h-3.5 w-3.5" /> Export PDF
                 </button>
-                {reportSection === "transaction" && (
-                  <button onClick={() => submitReport("Finalized")} disabled={status === "Finalized"}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                    <FiSend className="h-3.5 w-3.5" /> Complete report
-                  </button>
-                )}
+                <button onClick={() => submitReport("Finalized")} disabled={status === "Finalized"}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                  <FiSend className="h-3.5 w-3.5" /> Complete report
+                </button>
               </div>
             </div>
 
@@ -706,8 +704,8 @@ function ReportsModuleView() {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto p-5">
 
-            {/* ── Transaction report ── */}
-            {reportSection === "transaction" && (
+            {/* ── Report form (shared by both sections) ── */}
+            {(reportSection === "transaction" || reportSection === "inventory") && (
               <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.3fr)" }}>
 
                 {/* Left: stacked form panels */}
@@ -800,12 +798,14 @@ function ReportsModuleView() {
 
                   {/* Services & items */}
                   <div className="card-shell p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">Services &amp; items rendered</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">
+                      {reportSection === "inventory" ? "Inventory items used" : "Services & items rendered"}
+                    </p>
 
                     {/* Add row */}
                     <div className="flex gap-2 mb-3">
                       <div className="relative flex-1">
-                        <input type="text" placeholder="Search or type service..." value={serviceInput}
+                        <input type="text" placeholder={reportSection === "inventory" ? "Search inventory items..." : "Search or type service..."} value={serviceInput}
                           onChange={handleServiceChange} onFocus={() => setIsDropdownOpen(true)}
                           onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); setIsDropdownOpen(false); } }}
@@ -931,7 +931,7 @@ function ReportsModuleView() {
                         <LuPawPrint className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Clinical report</p>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{reportSection === "inventory" ? "Inventory report" : "Clinical report"}</p>
                         <p className="text-[10px] text-zinc-400">AutoVet Systems</p>
                       </div>
                     </div>
@@ -975,7 +975,7 @@ function ReportsModuleView() {
 
                   {/* Items table */}
                   <div className="mb-3">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-2">Services &amp; items rendered</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-2">{reportSection === "inventory" ? "Inventory items used" : "Services & items rendered"}</p>
                     {items.filter((i) => !i.is_hidden).length > 0 ? (
                       <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
                         <thead>
@@ -1021,10 +1021,6 @@ function ReportsModuleView() {
               </div>
             )}
 
-            {/* ── Inventory report ── */}
-            {reportSection === "inventory" && (
-              <InventoryReportPane inventory={inventory} />
-            )}
           </div>
         </div>
       )}
