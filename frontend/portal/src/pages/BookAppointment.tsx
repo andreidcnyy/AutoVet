@@ -145,7 +145,7 @@ export default function BookAppointment() {
           localStorage.setItem(cacheKey, JSON.stringify({ data: appointmentsArray, ts: Date.now() }));
         } catch (_) {}
       })
-      .catch(err => { if (!api.isCancel?.(err) && err.name !== 'CanceledError') console.error(err); })
+      .catch(err => { if (err.name !== 'CanceledError') console.error(err); })
       .finally(() => setLoading(false));
 
     return () => controller.abort();
