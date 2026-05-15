@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
 import {
   FiChevronDown, FiChevronLeft, FiChevronRight, FiClipboard,
-  FiFileText, FiPackage, FiSearch, FiSend, FiDownload, FiRefreshCw,
+  FiFileText, FiPackage, FiSearch, FiSend, FiDownload, FiRefreshCw, FiTag,
 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -22,8 +22,14 @@ const formatDate = (dateStr) => {
   } catch { return "N/A"; }
 };
 
+const formatDateTime = (d = new Date()) =>
+  d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) +
+  " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+
 const fmt = (n) =>
-  `₱${Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtPeso = (n) => `₱${fmt(n)}`;
 
 const getShortType = (item) => {
   const cat = (item.category || item.inventory_category?.name || "").toLowerCase();
@@ -56,17 +62,19 @@ function StockPill({ status }) {
 
 const getCatName = (item) => item.inventory_category?.name || item.category || "Uncategorized";
 
-// ─── Transaction Report Pane ──────────────────────────────────────────────────
+// ─── Sales Income Report (Transaction) ───────────────────────────────────────
 
 function TransactionReportPane({ inventory, reportRows, setReportRows, generated, setGenerated, user }) {
   const toast = useToast();
-  const [dateFrom, setDateFrom] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split("T")[0];
-  });
-  const [dateTo, setDateTo]         = useState(() => new Date().toISOString().split("T")[0]);
-  const [clientSearch, setClientSearch] = useState("");
+  const today      = new Date().toISOString().split("T")[0];
+  const monthStart = (() => { const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0]; })();
+
+  const [dateFrom, setDateFrom]           = useState(monthStart);
+  const [dateTo, setDateTo]               = useState(today);
+  const [clientSearch, setClientSearch]   = useState("");
   const [itemTypeFilter, setItemTypeFilter] = useState("all");
-  const [loading, setLoading]       = useState(false);
+  const [itemSearch, setItemSearch]       = useState("");
+  const [loading, setLoading]             = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -75,7 +83,7 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
         per_page: 500, with_items: 1, only_transactions: 1,
         date_from: dateFrom, date_to: dateTo,
       });
-      if (clientSearch) params.set("search", clientSearch);
+      if (clientSearch.trim()) params.set("search", clientSearch.trim());
 
       const res = await fetch(`/api/reports?${params}`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${user?.token}` },
@@ -86,24 +94,26 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
 
       const rows = [];
       invoices.forEach((inv) => {
-        const items = (inv.items || []).filter((i) => !i.is_hidden);
-        items.forEach((item) => {
+        (inv.items || []).filter((i) => !i.is_hidden).forEach((item) => {
           if (itemTypeFilter !== "all" && item.item_type !== itemTypeFilter) return;
-          const invRecord = inventory.find((i) => i.id === item.inventory_id);
+          if (itemSearch.trim() && !item.name.toLowerCase().includes(itemSearch.toLowerCase())) return;
+          const invRecord  = inventory.find((i) => i.id === item.inventory_id);
           const buyingPrice = Number(invRecord?.price) || 0;
-          const grossSales  = (Number(item.unit_price) || 0) * (Number(item.qty) || 1);
+          const sellingPrice = Number(item.unit_price) || 0;
+          const qty         = Number(item.qty) || 1;
+          const grossSales  = sellingPrice * qty;
           rows.push({
-            date:          inv.created_at,
-            client:        inv.pet?.owner?.name || "—",
-            itemName:      item.name,
-            itemType:      item.item_type,
-            qty:           Number(item.qty) || 1,
+            date:           inv.created_at,
+            client:         inv.pet?.owner?.name || "—",
+            itemName:       item.name,
+            itemType:       item.item_type,
+            qty,
             buyingPrice,
-            sellingPrice:  Number(item.unit_price) || 0,
+            sellingPrice,
             grossSales,
-            netSales:      grossSales,
+            netSales:       grossSales,
             invoiceDiscount: Number(inv.discount_value) || 0,
-            invoiceId:     inv.id,
+            invoiceId:      inv.id,
           });
         });
       });
@@ -118,7 +128,11 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
     }
   };
 
-  const handleReset = () => { setGenerated(false); setReportRows([]); setClientSearch(""); setItemTypeFilter("all"); };
+  const handleReset = () => {
+    setGenerated(false); setReportRows([]);
+    setClientSearch(""); setItemTypeFilter("all"); setItemSearch("");
+    setDateFrom(monthStart); setDateTo(today);
+  };
 
   const summary = useMemo(() => {
     const seen = new Set();
@@ -132,153 +146,322 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
   }, [reportRows]);
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.6fr)" }}>
+    <div className="grid gap-4" style={{ gridTemplateColumns: "200px minmax(0,1fr)" }}>
 
-      {/* Left: filters + summary */}
-      <div className="flex flex-col gap-4">
-        <div className="card-shell p-4 space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Report filters</p>
+      {/* Left: filter panel */}
+      <div className="card-shell p-4 space-y-3 h-fit sticky top-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Filter</p>
 
-          <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Date range</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
-              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
-            </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Date Start</label>
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Date End</label>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Client</label>
+          <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)}
+            placeholder="Search client..."
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Item Type</label>
+          <div className="relative">
+            <select value={itemTypeFilter} onChange={(e) => setItemTypeFilter(e.target.value)}
+              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              <option value="all">All</option>
+              <option value="service">Services</option>
+              <option value="inventory">Inventory</option>
+            </select>
+            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
           </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Client</label>
-            <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)}
-              placeholder="Search by client or pet..."
-              className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Item type</label>
-            <div className="relative">
-              <select value={itemTypeFilter} onChange={(e) => setItemTypeFilter(e.target.value)}
-                className="h-9 w-full appearance-none rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-8 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
-                <option value="all">All</option>
-                <option value="service">Services</option>
-                <option value="inventory">Inventory items</option>
-              </select>
-              <FiChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-            </div>
-          </div>
-
-          <button onClick={handleGenerate} disabled={loading}
-            className="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors mt-1 flex items-center justify-center gap-2">
-            {loading ? <><FiRefreshCw className="h-4 w-4 animate-spin" /> Generating...</> : "Generate report"}
-          </button>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Item / Services</label>
+          <input type="text" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)}
+            placeholder="Search item..."
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
         </div>
 
-        {generated && (
-          <div className="card-shell p-4 space-y-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Totals</p>
-            {[
-              { label: "Total Gross Sales",   val: summary.totalGross,    cls: "text-zinc-800 dark:text-zinc-200" },
-              { label: "Total Net Sales",     val: summary.totalNet,      cls: "text-emerald-600 dark:text-emerald-400" },
-              { label: "Total Discount Amount", val: summary.totalDiscount, cls: "text-rose-500", prefix: "(" },
-              { label: "Total Sales Income",  val: summary.totalNet,      cls: "text-emerald-600 dark:text-emerald-400 font-black text-sm" },
-            ].map(({ label, val, cls, prefix }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-                <span className={clsx("text-xs font-bold", cls)}>
-                  {prefix ? `(${fmt(val)})` : fmt(val)}
-                </span>
-              </div>
-            ))}
-            <button onClick={handleReset}
-              className="w-full h-9 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors mt-1">
-              Reset
-            </button>
-          </div>
-        )}
+        <div className="flex gap-1.5 pt-1">
+          <button onClick={handleReset}
+            className="flex-1 h-8 rounded border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+            Clear
+          </button>
+          <button onClick={handleGenerate} disabled={loading}
+            className="flex-1 h-8 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1">
+            {loading ? <FiRefreshCw className="h-3 w-3 animate-spin" /> : null}
+            Search
+          </button>
+        </div>
       </div>
 
-      {/* Right: report table */}
-      <div className="card-shell p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Sales Income Report</p>
-            {generated && <p className="text-[10px] text-zinc-400 mt-0.5">Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}</p>}
+      {/* Right: report document */}
+      <div className="card-shell p-5">
+
+        {/* Report header */}
+        <div className="mb-4">
+          <div className="flex items-start justify-between">
+            <div />
+            <div className="text-right">
+              <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Sales Income Report</h2>
+              {generated && (
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}
+                </p>
+              )}
+            </div>
           </div>
-          {generated && (
-            <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
-              Generated
-            </span>
-          )}
         </div>
 
         {!generated ? (
-          <div className="flex h-48 items-center justify-center text-center">
+          <div className="flex h-48 items-center justify-center text-center border border-dashed border-zinc-200 dark:border-dark-border rounded-lg">
             <div>
               <FiFileText className="mx-auto h-10 w-10 text-zinc-200 dark:text-zinc-700 mb-2" />
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Generate report</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Search</p>
             </div>
-          </div>
-        ) : reportRows.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-center">
-            <p className="text-xs text-zinc-400 italic">No transactions found for the selected period.</p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-zinc-100 dark:border-dark-border">
-              <table className="w-full text-xs" style={{ tableLayout: "fixed", minWidth: 680 }}>
-                <thead className="bg-zinc-50 dark:bg-dark-surface border-b border-zinc-200 dark:border-dark-border">
-                  <tr>
+            {/* Table */}
+            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+              <table className="w-full text-xs" style={{ minWidth: 680 }}>
+                <thead>
+                  <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
                     {["Date","Client","Item / Service","Quantity","Buying Price","Selling Price","Gross Sales","Net Sales"].map((h, i) => (
-                      <th key={h} className={clsx("px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-zinc-400",
-                        i < 3 ? "text-left" : "text-right")}
-                        style={{ width: ["12%","14%","22%","8%","11%","11%","11%","11%"][i] }}>
+                      <th key={h}
+                        className={clsx("px-3 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border last:border-r-0",
+                          i < 3 ? "text-left" : "text-right")}
+                        style={{ width: ["11%","13%","20%","8%","11%","11%","13%","13%"][i] }}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
-                  {reportRows.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30">
-                      <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{formatDate(row.date)}</td>
-                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300 truncate">{row.client}</td>
-                      <td className="px-3 py-2 truncate">
+                <tbody>
+                  {reportRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-3 py-8 text-center text-xs text-zinc-400 italic">
+                        No transactions found for the selected period.
+                      </td>
+                    </tr>
+                  ) : reportRows.map((row, idx) => (
+                    <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
+                      <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{formatDate(row.date)}</td>
+                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300 truncate border-r border-zinc-100 dark:border-dark-border">{row.client}</td>
+                      <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border">
                         <div className="flex items-center gap-1.5">
                           <CatBadge type={getShortType({ name: row.itemName })} size="xs" />
                           <span className="text-zinc-700 dark:text-zinc-300 truncate">{row.itemName}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400">{row.qty}</td>
-                      <td className="px-3 py-2 text-right text-zinc-500 dark:text-zinc-400">
-                        {row.buyingPrice > 0 ? fmt(row.buyingPrice) : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                      <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{row.qty}</td>
+                      <td className="px-3 py-2 text-right border-r border-zinc-100 dark:border-dark-border">
+                        {row.buyingPrice > 0
+                          ? <span className="text-zinc-600 dark:text-zinc-400">{fmt(row.buyingPrice)}</span>
+                          : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                       </td>
-                      <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300">{fmt(row.sellingPrice)}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200">{fmt(row.grossSales)}</td>
+                      <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border">{fmt(row.sellingPrice)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 border-r border-zinc-100 dark:border-dark-border">{fmt(row.grossSales)}</td>
                       <td className="px-3 py-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">{fmt(row.netSales)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-dark-border space-y-1">
-              {[
-                { label: "Total Gross Sales",    val: summary.totalGross,    cls: "" },
-                { label: "Total Net Sales",      val: summary.totalNet,      cls: "" },
-                { label: "Total Discount Amount",val: summary.totalDiscount, cls: "text-rose-500", wrap: true },
-                { label: "Total Sales Income",   val: summary.totalNet,      cls: "font-black text-emerald-600 dark:text-emerald-400" },
-              ].map(({ label, val, cls, wrap }) => (
-                <div key={label} className="flex justify-end gap-8">
-                  <span className="text-xs text-zinc-500">{label}</span>
-                  <span className={clsx("text-xs font-bold w-24 text-right", cls)}>
-                    {wrap ? `(${fmt(val)})` : fmt(val)}
-                  </span>
-                </div>
-              ))}
+
+            {/* Totals block — right-aligned, matching reference */}
+            <div className="flex justify-end mb-4">
+              <div className="w-72 space-y-1">
+                {[
+                  { label: "Total Gross Sales",    val: summary.totalGross,    cls: "text-zinc-700 dark:text-zinc-300" },
+                  { label: "Total Net Sales",      val: summary.totalNet,      cls: "text-zinc-700 dark:text-zinc-300" },
+                  { label: "Total Discount Amount",val: summary.totalDiscount, cls: "text-rose-500", wrap: true },
+                  { label: "Total Sales Income",   val: summary.totalNet,      cls: "font-black text-emerald-600 dark:text-emerald-400 border-t border-zinc-200 dark:border-dark-border pt-1 mt-1" },
+                ].map(({ label, val, cls, wrap }) => (
+                  <div key={label} className={clsx("flex justify-between items-center", cls)}>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+                    <span className={clsx("text-xs font-bold tabular-nums")}>
+                      {wrap ? `(${fmt(val)})` : fmt(val)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="mt-4 text-[10px] text-zinc-400 italic text-center">
-              These results are based on Finalized and Paid invoice records.
+
+            {/* Footer note */}
+            <p className="text-[10px] text-zinc-400 italic text-center border-t border-zinc-100 dark:border-dark-border pt-3">
+              These results are based from bill date of Billing Invoice records. (Pending, Partially and Fully Paid).
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Service Summary List Report ──────────────────────────────────────────────
+
+function ServiceReportPane({ services, clinic }) {
+  const [itemSearch, setItemSearch]     = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [generated, setGenerated]       = useState(false);
+  const [reportData, setReportData]     = useState([]);
+  const generatedAt                     = useState(() => new Date())[0];
+
+  const handleSearch = () => {
+    let src = services;
+    if (itemSearch.trim()) {
+      src = src.filter((s) => s.name.toLowerCase().includes(itemSearch.toLowerCase()));
+    }
+    if (categorySearch.trim()) {
+      src = src.filter((s) => (s.category || "").toLowerCase().includes(categorySearch.toLowerCase()));
+    }
+    setReportData(src);
+    setGenerated(true);
+  };
+
+  const handleClear = () => {
+    setItemSearch(""); setCategorySearch("");
+    setGenerated(false); setReportData([]);
+  };
+
+  // Group by category
+  const grouped = useMemo(() => {
+    const map = new Map();
+    reportData.forEach((s) => {
+      const cat = s.category || "Uncategorized";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat).push(s);
+    });
+    return [...map.entries()];
+  }, [reportData]);
+
+  const now = new Date();
+  const asOf = formatDateTime(now);
+
+  return (
+    <div className="grid gap-4" style={{ gridTemplateColumns: "200px minmax(0,1fr)" }}>
+
+      {/* Left: filter panel */}
+      <div className="card-shell p-4 space-y-3 h-fit sticky top-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Filter</p>
+
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Item</label>
+          <input type="text" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+            placeholder="Search service..."
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Category</label>
+          <input type="text" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+            placeholder="Search category..."
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none" />
+        </div>
+
+        <div className="flex gap-1.5 pt-1">
+          <button onClick={handleClear}
+            className="flex-1 h-8 rounded border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+            Clear
+          </button>
+          <button onClick={handleSearch}
+            className="flex-1 h-8 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1">
+            <FiSearch className="h-3 w-3" /> Search
+          </button>
+        </div>
+      </div>
+
+      {/* Right: report document */}
+      <div className="card-shell p-5">
+
+        {!generated ? (
+          <div className="flex h-48 items-center justify-center text-center border border-dashed border-zinc-200 dark:border-dark-border rounded-lg">
+            <div>
+              <FiTag className="mx-auto h-10 w-10 text-zinc-200 dark:text-zinc-700 mb-2" />
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Enter filters and click Search</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Clinic header — matches reference */}
+            <div className="flex items-start justify-between mb-4 pb-4 border-b border-zinc-200 dark:border-dark-border">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-600 text-white shrink-0 text-[10px] font-black text-center leading-tight px-1">
+                  AUTO<br/>VET
+                </div>
+                <div>
+                  <p className="text-sm font-black text-zinc-900 dark:text-zinc-50 uppercase">
+                    {clinic?.clinic_name || "AutoVet Clinic"}
+                  </p>
+                  {clinic?.address && <p className="text-[10px] text-zinc-500">{clinic.address}</p>}
+                  {(clinic?.phone || clinic?.email) && (
+                    <p className="text-[10px] text-zinc-400">
+                      {[clinic?.phone, clinic?.email].filter(Boolean).join(" / ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <h2 className="text-base font-black text-zinc-900 dark:text-zinc-50 tracking-tight">SERVICE SUMMARY LIST REPORT</h2>
+                <p className="text-[10px] text-zinc-400 mt-1">as of {asOf}</p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
+                    <th className="px-4 py-2.5 text-left font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border">Service</th>
+                    <th className="px-4 py-2.5 text-right font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border w-28">Buying</th>
+                    <th className="px-4 py-2.5 text-right font-bold text-zinc-700 dark:text-zinc-300 w-28">Service Fee</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouped.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-xs text-zinc-400 italic">No services found.</td>
+                    </tr>
+                  ) : grouped.map(([category, svcs]) => (
+                    <>
+                      {/* Category header row */}
+                      <tr key={`cat-${category}`} className="bg-zinc-100 dark:bg-dark-surface/60 border-b border-zinc-200 dark:border-dark-border">
+                        <td colSpan={3} className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 italic">
+                          {category}
+                        </td>
+                      </tr>
+                      {/* Service rows */}
+                      {svcs.map((svc) => (
+                        <tr key={svc.id} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
+                          <td className="px-4 py-2 text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border pl-8">
+                            {svc.name}
+                          </td>
+                          <td className="px-4 py-2 text-right text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border tabular-nums">
+                            {fmt(svc.buying_price || svc.cost || 0)}
+                          </td>
+                          <td className="px-4 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
+                            {svc.pricing_mode !== "manual"
+                              ? <span className="text-[10px] text-zinc-400 italic">Dynamic</span>
+                              : fmt(svc.price || 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer note */}
+            <p className="text-[10px] text-zinc-400 italic text-center border-t border-zinc-100 dark:border-dark-border pt-3">
+              Buying and Selling Price comes from update item information as of {asOf}
             </p>
           </>
         )}
@@ -290,12 +473,12 @@ function TransactionReportPane({ inventory, reportRows, setReportRows, generated
 // ─── Inventory Report Pane ────────────────────────────────────────────────────
 
 function InventoryReportPane({ inventory, reportData, setReportData, generated, setGenerated }) {
-  const [reportType, setReportType]         = useState("stock_level");
+  const [reportType, setReportType]             = useState("stock_level");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [dateFrom, setDateFrom]             = useState(() => {
+  const [dateFrom, setDateFrom]                 = useState(() => {
     const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0];
   });
-  const [dateTo, setDateTo]                 = useState(() => new Date().toISOString().split("T")[0]);
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
 
   const categories = useMemo(() => {
     const map = new Map();
@@ -349,53 +532,59 @@ function InventoryReportPane({ inventory, reportData, setReportData, generated, 
   [dateFrom]);
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1.6fr)" }}>
+    <div className="grid gap-4" style={{ gridTemplateColumns: "200px minmax(0,1fr)" }}>
 
-      {/* Left: filters + summary */}
+      {/* Left: filter panel */}
       <div className="flex flex-col gap-4">
         <div className="card-shell p-4 space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Report filters</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Filter</p>
 
           <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Report type</label>
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Report type</label>
             <div className="relative">
               <select value={reportType} onChange={(e) => setReportType(e.target.value)}
-                className="h-9 w-full appearance-none rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-8 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
-                <option value="stock_level">Stock level summary</option>
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="stock_level">Stock level</option>
                 <option value="low_stock">Low stock alerts</option>
                 <option value="valuation">Stock valuation</option>
                 <option value="category">Category breakdown</option>
               </select>
-              <FiChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Category</label>
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Category</label>
             <div className="relative">
               <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-9 w-full appearance-none rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-8 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
                 <option value="all">All categories</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <FiChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400">Date range</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Date range</label>
+            <div className="grid grid-cols-2 gap-1.5">
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
+                className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
+                className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" />
             </div>
           </div>
 
-          <button onClick={handleGenerate}
-            className="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors mt-1">
-            Generate report
-          </button>
+          <div className="flex gap-1.5 pt-1">
+            <button onClick={handleReset}
+              className="flex-1 h-8 rounded border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+              Clear
+            </button>
+            <button onClick={handleGenerate}
+              className="flex-1 h-8 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors">
+              Search
+            </button>
+          </div>
         </div>
 
         {generated && (
@@ -403,37 +592,27 @@ function InventoryReportPane({ inventory, reportData, setReportData, generated, 
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">Summary</p>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {[
-                { val: summary.total, label: "Total items", cls: "text-emerald-500" },
-                { val: summary.low,   label: "Low stock",   cls: "text-amber-500"  },
-                { val: summary.out,   label: "Out of stock", cls: "text-rose-500"  },
-                { val: summary.value >= 1000 ? `₱${Math.round(summary.value / 1000)}k` : fmt(summary.value),
+                { val: summary.total, label: "Total items",  cls: "text-emerald-500" },
+                { val: summary.low,   label: "Low stock",    cls: "text-amber-500"  },
+                { val: summary.out,   label: "Out of stock", cls: "text-rose-500"   },
+                { val: summary.value >= 1000 ? `₱${Math.round(summary.value / 1000)}k` : fmtPeso(summary.value),
                   label: "Total value", cls: "text-blue-400" },
               ].map(({ val, label, cls }) => (
-                <div key={label} className="rounded-lg border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3">
-                  <p className={clsx("text-lg font-black", cls)}>{val}</p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">{label}</p>
+                <div key={label} className="rounded border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-2.5">
+                  <p className={clsx("text-base font-black", cls)}>{val}</p>
+                  <p className="text-[9px] text-zinc-400 mt-0.5">{label}</p>
                 </div>
               ))}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleReset}
-                className="flex-1 h-9 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
-                Reset
-              </button>
-              <button onClick={() => window.print()}
-                className="flex-1 h-9 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-dark-surface flex items-center justify-center gap-1.5 transition-colors">
-                <FiDownload className="h-3.5 w-3.5" /> Export
-              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Right: table */}
-      <div className="card-shell p-4">
+      {/* Right: report document */}
+      <div className="card-shell p-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-            Inventory stock report — {reportMonthLabel}
+            Inventory Stock Report — {reportMonthLabel}
           </p>
           {generated && (
             <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
@@ -443,39 +622,39 @@ function InventoryReportPane({ inventory, reportData, setReportData, generated, 
         </div>
 
         {!generated ? (
-          <div className="flex h-48 items-center justify-center text-center">
+          <div className="flex h-48 items-center justify-center text-center border border-dashed border-zinc-200 dark:border-dark-border rounded-lg">
             <div>
               <FiPackage className="mx-auto h-10 w-10 text-zinc-200 dark:text-zinc-700 mb-2" />
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Generate report</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Search</p>
             </div>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-zinc-100 dark:border-dark-border">
+            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border">
               <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
                 <thead className="bg-zinc-50 dark:bg-dark-surface border-b border-zinc-200 dark:border-dark-border">
                   <tr>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "28%" }}>Item</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "14%" }}>Category</th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "10%" }}>Stock</th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Buy Price</th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Sell Price</th>
-                    <th className="px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wider text-zinc-400" style={{ width: "16%" }}>Status</th>
+                    <th className="px-3 py-2.5 text-left font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border" style={{ width: "28%" }}>Item</th>
+                    <th className="px-3 py-2.5 text-left font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border" style={{ width: "14%" }}>Category</th>
+                    <th className="px-3 py-2.5 text-right font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border" style={{ width: "10%" }}>Stock</th>
+                    <th className="px-3 py-2.5 text-right font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border" style={{ width: "16%" }}>Buy Price</th>
+                    <th className="px-3 py-2.5 text-right font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border" style={{ width: "16%" }}>Sell Price</th>
+                    <th className="px-3 py-2.5 text-center font-bold text-zinc-700 dark:text-zinc-300" style={{ width: "16%" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
                   {reportData.map((item) => (
                     <tr key={item.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30">
-                      <td className="px-3 py-2 font-medium text-zinc-800 dark:text-zinc-200 truncate">{item.name}</td>
-                      <td className="px-3 py-2"><CatBadge type={item.shortType} size="xs" /></td>
-                      <td className={clsx("px-3 py-2 text-right font-bold",
+                      <td className="px-3 py-2 font-medium text-zinc-800 dark:text-zinc-200 truncate border-r border-zinc-100 dark:border-dark-border">{item.name}</td>
+                      <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border"><CatBadge type={item.shortType} size="xs" /></td>
+                      <td className={clsx("px-3 py-2 text-right font-bold border-r border-zinc-100 dark:border-dark-border",
                         item.status === "Out" ? "text-rose-500" : item.status === "Low" ? "text-amber-500" : "text-emerald-500")}>
                         {item.stock}
                       </td>
-                      <td className="px-3 py-2 text-right text-zinc-500 dark:text-zinc-400">
+                      <td className="px-3 py-2 text-right text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border tabular-nums">
                         {item.buyingPrice > 0 ? fmt(item.buyingPrice) : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                       </td>
-                      <td className="px-3 py-2 text-right font-semibold">
+                      <td className="px-3 py-2 text-right font-semibold border-r border-zinc-100 dark:border-dark-border tabular-nums">
                         {item.sellingPrice > 0
                           ? <span className="text-emerald-600 dark:text-emerald-400">{fmt(item.sellingPrice)}</span>
                           : <span className="text-rose-400 text-[10px] font-black">No price</span>}
@@ -488,7 +667,7 @@ function InventoryReportPane({ inventory, reportData, setReportData, generated, 
             </div>
             <div className="flex justify-end gap-6 mt-3 pt-3 border-t border-zinc-100 dark:border-dark-border text-xs">
               <span className="text-zinc-400">Total stock value</span>
-              <span className="font-black text-emerald-600 dark:text-emerald-400">{fmt(summary.value)}</span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtPeso(summary.value)}</span>
             </div>
           </>
         )}
@@ -500,38 +679,46 @@ function InventoryReportPane({ inventory, reportData, setReportData, generated, 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 function ReportsModuleView() {
-  const toast  = useToast();
+  const toast    = useToast();
   const { user } = useAuth();
 
-  const [mainTab, setMainTab]           = useState("new");
+  const [mainTab, setMainTab]             = useState("new");
   const [reportSection, setReportSection] = useState("transaction");
-  const [inventory, setInventory]       = useState([]);
+  const [inventory, setInventory]         = useState([]);
+  const [services, setServices]           = useState([]);
+  const [clinic, setClinic]               = useState(null);
 
-  // Lifted state for transaction report pane
-  const [txReportRows, setTxReportRows] = useState([]);
-  const [txGenerated, setTxGenerated]   = useState(false);
+  // Lifted state — transaction report
+  const [txReportRows, setTxReportRows]   = useState([]);
+  const [txGenerated, setTxGenerated]     = useState(false);
 
-  // Lifted state for inventory report pane
+  // Lifted state — inventory report
   const [invReportData, setInvReportData] = useState([]);
   const [invGenerated, setInvGenerated]   = useState(false);
 
-  // History state
+  // History
   const [reports, setReports]             = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [searchQuery, setSearchQuery]     = useState("");
   const [pagination, setPagination]       = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 });
   const [expandedReportId, setExpandedReportId] = useState(null);
 
-  const REPORTS_CACHE_KEY   = "reports_history_cache";
-  const CACHE_TTL = 5 * 60 * 1000;
+  const REPORTS_CACHE_KEY = "reports_history_cache";
+  const CACHE_TTL         = 5 * 60 * 1000;
 
-  // Load inventory for cross-referencing buying prices
+  // Load data
   useEffect(() => {
     if (!user?.token) return;
-    api.get("/api/inventory").then((res) => {
-      const arr = Array.isArray(res) ? res : (res?.data || res || []);
-      setInventory(arr);
-    }).catch(() => {});
+    Promise.all([
+      api.get("/api/inventory").catch(() => []),
+      api.get("/api/services").catch(() => []),
+      fetch("/api/settings", { headers: { Accept: "application/json", Authorization: `Bearer ${user.token}` } })
+        .then((r) => r.json()).catch(() => null),
+    ]).then(([inv, svc, settings]) => {
+      setInventory(Array.isArray(inv) ? inv : (inv?.data || []));
+      setServices(Array.isArray(svc) ? svc : (svc?.data || svc || []));
+      if (settings) setClinic(settings);
+    });
   }, [user?.token]);
 
   // History fetch
@@ -580,16 +767,12 @@ function ReportsModuleView() {
       return;
     }
     const payload = {
-      report_type: "inventory",
-      status: "Finalized",
+      report_type: "inventory", status: "Finalized",
       subtotal: 0, discount_type: "fixed", discount_value: 0, tax_rate: 0, total: 0, amount_paid: 0,
       items: invReportData.map((item) => ({
-        item_type: "inventory",
-        inventory_id: item.id,
-        name: item.name,
+        item_type: "inventory", inventory_id: item.id, name: item.name,
         notes: `${item.category} | Stock: ${item.stock} | Buy: ${item.buyingPrice} | Sell: ${item.sellingPrice}`,
-        qty: item.stock || 1,
-        unit_price: item.sellingPrice || 0,
+        qty: item.stock || 1, unit_price: item.sellingPrice || 0,
         amount: (item.stock || 1) * (item.sellingPrice || 0),
       })),
     };
@@ -599,19 +782,13 @@ function ReportsModuleView() {
         headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${user?.token}` },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toast.error(err.message || "Failed to save inventory report.");
-        return;
-      }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.message || "Failed."); return; }
       window.dispatchEvent(new CustomEvent("inventory-forecast-refresh"));
       localStorage.removeItem(REPORTS_CACHE_KEY);
       toast.success("Inventory report completed. Stock snapshot saved.");
       setMainTab("history");
       fetchReports(1, "", null, true);
-    } catch (err) {
-      toast.error(err.message || "Failed to save inventory report.");
-    }
+    } catch (err) { toast.error(err.message || "Failed to save."); }
   }, [invGenerated, invReportData, user?.token, toast, fetchReports]);
 
   const Pagination = () => {
@@ -649,10 +826,16 @@ function ReportsModuleView() {
     );
   };
 
+  const SECTIONS = [
+    { id: "transaction", label: "Transaction report", Icon: FiFileText },
+    { id: "inventory",   label: "Inventory report",   Icon: FiPackage  },
+    { id: "service",     label: "Service report",      Icon: FiTag      },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-dark-border">
 
-      {/* Tab bar */}
+      {/* Main tabs */}
       <div className="shrink-0 flex items-center gap-0 border-b border-zinc-200 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
         {[
           { id: "new",     label: "New report",     Icon: FiFileText  },
@@ -675,7 +858,7 @@ function ReportsModuleView() {
       {mainTab === "new" && (
         <div className="flex flex-col flex-1 overflow-hidden">
 
-          {/* Report header */}
+          {/* Section header */}
           <div className="shrink-0 px-5 pt-4 pb-3 border-b border-zinc-100 dark:border-dark-border">
             <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5">Reports › New report</p>
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -686,30 +869,17 @@ function ReportsModuleView() {
                   <FiDownload className="h-3.5 w-3.5" /> Export PDF
                 </button>
                 {reportSection === "inventory" && (
-                  <button
-                    onClick={completeInventoryReport}
-                    disabled={!invGenerated}
+                  <button onClick={completeInventoryReport} disabled={!invGenerated}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                     <FiSend className="h-3.5 w-3.5" /> Complete report
-                  </button>
-                )}
-                {reportSection === "transaction" && (
-                  <button
-                    onClick={() => { if (!txGenerated) { toast.error("Generate the report first."); return; } window.print(); }}
-                    disabled={!txGenerated}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                    <FiDownload className="h-3.5 w-3.5" /> Export report
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Section toggle */}
+            {/* Section toggles */}
             <div className="flex items-center gap-2 mt-3">
-              {[
-                { id: "transaction", label: "Transaction report", Icon: FiFileText },
-                { id: "inventory",   label: "Inventory report",   Icon: FiPackage  },
-              ].map(({ id, label, Icon }) => (
+              {SECTIONS.map(({ id, label, Icon }) => (
                 <button key={id} onClick={() => setReportSection(id)}
                   className={clsx(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all",
@@ -724,7 +894,7 @@ function ReportsModuleView() {
             </div>
           </div>
 
-          {/* Scrollable content */}
+          {/* Scrollable pane */}
           <div className="flex-1 overflow-y-auto p-5">
             {reportSection === "transaction" && (
               <TransactionReportPane
@@ -744,6 +914,9 @@ function ReportsModuleView() {
                 generated={invGenerated}
                 setGenerated={setInvGenerated}
               />
+            )}
+            {reportSection === "service" && (
+              <ServiceReportPane services={services} clinic={clinic} />
             )}
           </div>
         </div>
@@ -792,14 +965,12 @@ function ReportsModuleView() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={clsx("text-[10px] font-black uppercase px-2 py-0.5 rounded",
-                        rep.status === "Finalized" || rep.status === "Paid"
-                          ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                          : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400")}>
-                        {rep.status}
-                      </span>
-                    </div>
+                    <span className={clsx("text-[10px] font-black uppercase px-2 py-0.5 rounded",
+                      rep.status === "Finalized" || rep.status === "Paid"
+                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                        : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400")}>
+                      {rep.status}
+                    </span>
                   </div>
                   {expandedReportId === rep.id && (
                     <div className="border-t border-zinc-100 dark:border-dark-border px-5 py-3.5 bg-zinc-50/50 dark:bg-dark-surface/20">
