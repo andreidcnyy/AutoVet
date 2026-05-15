@@ -231,7 +231,11 @@ function AppointmentsView() {
       localStorage.removeItem('dashboard_stats_cache');
       localStorage.removeItem('dashboard_notifications_cache');
       api.invalidateCache?.();
-      toast.success(`Appointment ${action}d.`);
+      const newStatus = action === 'approve' ? 'approved' : action === 'completed' ? 'completed' : action;
+      const updated = { ...selectedAppointment, status: newStatus };
+      setSelectedAppointment(updated);
+      setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+      toast.success(`Appointment ${newStatus}.`);
     } catch (err) { toast.error("Action failed."); }
     finally { setActionSubmitting(false); }
   };
@@ -247,6 +251,9 @@ function AppointmentsView() {
       localStorage.removeItem('dashboard_notifications_cache');
       api.invalidateCache?.();
 
+      const updated = { ...selectedAppointment, status: 'declined' };
+      setSelectedAppointment(updated);
+      setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
       toast.success("Declined.");
       setDeclineModal({ open: false, reason: "", error: "", submitting: false });
     } catch (err) { setDeclineModal(prev => ({ ...prev, submitting: false, error: "Failed to decline." })); }
@@ -420,11 +427,6 @@ function AppointmentsView() {
                         Decline
                       </button>
                     </div>
-                  )}
-                  {selectedAppointment?.status === 'approved' && (
-                    <button onClick={() => handleStatusAction('completed')} disabled={actionSubmitting} className="h-16 w-full rounded-2xl bg-emerald-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
-                      {actionSubmitting ? "..." : "Complete"}
-                    </button>
                   )}
                 </div>
               </div>
