@@ -42,10 +42,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, error, classNa
           dropdownStyleProps: {
             className: "!bg-white dark:!bg-dark-card !border-zinc-200 dark:!border-dark-border !rounded-xl !shadow-xl !mt-2 !max-h-64 !overflow-y-auto slim-scroll",
             listItemClassName: "!text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-100 dark:hover:!bg-dark-surface",
-          },
-          searchStyleProps: {
-            className: "dark:!bg-dark-surface dark:!border-dark-border dark:!text-zinc-200",
-            placeholderClassName: "dark:!text-zinc-500"
           }
         }}
       />
