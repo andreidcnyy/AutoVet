@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 import api, { triggerSync } from "../api";
-import autovetLogo from "../assets/autovet-logo.png";
+import digivetLogo from "../assets/digivet_logo.png";
 import clsx from "clsx";
 import { FiX } from "react-icons/fi";
 
@@ -25,7 +25,7 @@ function AppLayout() {
       return {
         name: "DIGIVET",
         subtitle: "Platform Management",
-        logo: autovetLogo
+        logo: digivetLogo
       };
     }
     return clinicInfo;
@@ -82,7 +82,7 @@ function AppLayout() {
     if (isSuperAdmin) {
       document.title = "DIGIVET | System Owner";
       if (faviconElement) {
-        faviconElement.href = autovetLogo;
+        faviconElement.href = digivetLogo;
       }
     } else {
       document.title = originalTitle;
@@ -126,7 +126,7 @@ function AppLayout() {
       setClinic({
         name: "DIGIVET",
         subtitle: "Platform Management",
-        logo: autovetLogo
+        logo: digivetLogo
       });
     }
   }, [user, isSuperAdmin]);
