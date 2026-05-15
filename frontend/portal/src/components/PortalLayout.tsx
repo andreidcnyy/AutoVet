@@ -2,10 +2,9 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications } from '../api';
-import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
-import Chatbot from './Chatbot';
 import logo from '../assets/logo.png';
 
 interface LayoutProps {
@@ -144,8 +143,26 @@ export default function PortalLayout({ children }: LayoutProps) {
             {children}
           </div>
 
-          {/* Chatbot integrated globally within the portal */}
-          <Chatbot />
+          {/* Footer information */}
+          <footer className="mt-12 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-4">
+              © 2026 AutoVet Management System. All rights reserved.
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5">
+                <FiMail className="text-brand-500/50" />
+                <span>badetvelasquez@gmail.com</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <FiPhone className="text-brand-500/50" />
+                <span>+63 933 461 7957</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <FiMapPin className="text-brand-500/50" />
+                <span>Blk 10 lot2D Dahlia Ave, West Fairview, Q.C. Philippines</span>
+              </div>
+            </div>
+          </footer>
         </div>
       </main>
 

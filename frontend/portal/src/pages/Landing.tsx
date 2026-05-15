@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowRight, FiActivity, FiX, FiHeart, FiShield, FiScissors, FiSearch, FiLayers } from 'react-icons/fi';
+import { FiArrowRight, FiActivity, FiX, FiHeart, FiShield, FiScissors, FiSearch, FiLayers, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import clsx from 'clsx';
 import DarkModeToggle from '../components/DarkModeToggle';
-import Chatbot from '../components/Chatbot';
 
 import logo from "../assets/logo.png";
 
@@ -184,12 +183,26 @@ export default function Landing() {
             <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
             <span className="text-lg font-black tracking-tighter text-zinc-800 dark:text-zinc-100 uppercase">Pet Wellness Animal Clinic</span>
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
             © 2026 AutoVet Management System. All rights reserved.
           </p>
+          
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+            <div className="flex items-center gap-2">
+              <FiMail className="text-brand-500" />
+              <span>badetvelasquez@gmail.com</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiPhone className="text-brand-500" />
+              <span>+63 933 461 7957</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiMapPin className="text-brand-500" />
+              <span>Blk 10 lot2D Dahlia Ave, West Fairview, Q.C. Philippines</span>
+            </div>
+          </div>
         </div>
       </footer>
-      <Chatbot />
     </div>
   );
 }
