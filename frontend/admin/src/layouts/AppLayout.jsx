@@ -23,7 +23,7 @@ function AppLayout() {
   const [clinic, setClinic] = useState(() => {
     if (user?.role === ROLES.SUPER_ADMIN) {
       return {
-        name: "AUTOVET",
+        name: "DIGIVET",
         subtitle: "Platform Management",
         logo: autovetLogo
       };
@@ -75,12 +75,12 @@ function AppLayout() {
 
   // Dynamically change browser tab branding for Super Admin ONLY
   React.useEffect(() => {
-    const originalTitle = "Pet Wellness Animal Clinic | AutoVet";
+    const originalTitle = "Pet Wellness Animal Clinic | Digivet";
     const originalFavicon = "/favicon.png";
     const faviconElement = document.getElementById("favicon");
 
     if (isSuperAdmin) {
-      document.title = "AUTOVET | System Owner";
+      document.title = "DIGIVET | System Owner";
       if (faviconElement) {
         faviconElement.href = autovetLogo;
       }
@@ -124,7 +124,7 @@ function AppLayout() {
         .catch(console.error);
     } else if (isSuperAdmin) {
       setClinic({
-        name: "AUTOVET",
+        name: "DIGIVET",
         subtitle: "Platform Management",
         logo: autovetLogo
       });

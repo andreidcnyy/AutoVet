@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/autovet-logo.png";
+import logo from "../assets/digivet_logo.png";
 import DarkModeToggle from "../components/ui/DarkModeToggle";
 
 function LoginPage() {
@@ -21,10 +21,10 @@ function LoginPage() {
     const originalTitle = document.title;
     const originalFavicon = document.querySelector("link[rel='icon']")?.href;
     
-    document.title = "AUTOVET";
+    document.title = "DIGIVET";
     const favicon = document.querySelector("link[rel='icon']");
     if (favicon) {
-      favicon.href = logo; // Use the AutoVet logo imported above
+      favicon.href = logo; // Use the Digivet logo imported above
     }
 
     return () => {
