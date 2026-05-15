@@ -48,6 +48,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
     handleSubmit,
     reset,
     watch,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema)
