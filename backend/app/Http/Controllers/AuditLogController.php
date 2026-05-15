@@ -39,7 +39,7 @@ class AuditLogController extends Controller
             }
 
             if ($request->filled('model_type')) {
-                $query->where('model_type', 'like', '%' . $request->input('model_type') . '%');
+                $query->where('model_type', $request->input('model_type'));
             }
 
             if ($request->filled('date_from')) {

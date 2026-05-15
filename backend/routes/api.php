@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
 
-// Chunked Setup Wizard Endpoint
+// Chunked Setup Wizard Endpoint — blocked on production
 Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
+    if (app()->environment('production')) {
+        return response()->json(['error' => 'Not available in production.'], 404);
+    }
     set_time_limit(600); // 10 minutes total
     $step = $request->query('step');
     
@@ -131,10 +134,10 @@ use App\Models\Owner;
 // Public-facing routes (Login, Registration, etc.)
 // ---------------------------------------------------------------------------
 
-Route::post('/login',           [AuthController::class, 'login'])->name('login');
-Route::post('/register',        [AuthController::class, 'register']);
-Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
-Route::post('/password/reset',  [AuthController::class, 'resetPassword']);
+Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
+Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/password/reset',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
 // Diagnostic endpoint — gated to prevent unauthenticated data exposure.

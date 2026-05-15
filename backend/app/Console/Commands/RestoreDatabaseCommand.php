@@ -42,8 +42,14 @@ class RestoreDatabaseCommand extends Command
             $mysqlPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
         }
 
-        $passwordArg = $dbPass ? "--password={$dbPass}" : "";
-        $command = "{$mysqlPath} --host={$dbHost} --port={$dbPort} --user={$dbUser} {$passwordArg} {$dbName} < \"{$fullPath}\"";
+        $passwordArg = $dbPass ? '--password=' . escapeshellarg($dbPass) : '';
+        $command = escapeshellarg($mysqlPath)
+            . ' --host=' . escapeshellarg($dbHost)
+            . ' --port=' . escapeshellarg($dbPort)
+            . ' --user=' . escapeshellarg($dbUser)
+            . ' ' . $passwordArg
+            . ' ' . escapeshellarg($dbName)
+            . ' < ' . escapeshellarg($fullPath);
 
         $this->info("Restoring backup from {$fullPath}...");
         

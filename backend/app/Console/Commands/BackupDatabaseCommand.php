@@ -36,8 +36,14 @@ class BackupDatabaseCommand extends Command
             $mysqldumpPath = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
         }
 
-        $passwordArg = $dbPass ? "--password={$dbPass}" : "";
-        $command = "{$mysqldumpPath} --host={$dbHost} --port={$dbPort} --user={$dbUser} {$passwordArg} {$dbName} > \"{$fullPath}\"";
+        $passwordArg = $dbPass ? '--password=' . escapeshellarg($dbPass) : '';
+        $command = escapeshellarg($mysqldumpPath)
+            . ' --host=' . escapeshellarg($dbHost)
+            . ' --port=' . escapeshellarg($dbPort)
+            . ' --user=' . escapeshellarg($dbUser)
+            . ' ' . $passwordArg
+            . ' ' . escapeshellarg($dbName)
+            . ' > ' . escapeshellarg($fullPath);
 
         $this->info("Creating backup...");
         
