@@ -674,10 +674,12 @@ function ReportsModuleView() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
                   <FiDownload className="h-3.5 w-3.5" /> Export PDF
                 </button>
-                <button onClick={() => submitReport("Finalized")} disabled={status === "Finalized"}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                  <FiSend className="h-3.5 w-3.5" /> Complete report
-                </button>
+                {reportSection === "transaction" && (
+                  <button onClick={() => submitReport("Finalized")} disabled={status === "Finalized"}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                    <FiSend className="h-3.5 w-3.5" /> Complete report
+                  </button>
+                )}
               </div>
             </div>
 
