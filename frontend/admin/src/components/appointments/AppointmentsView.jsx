@@ -282,7 +282,14 @@ function AppointmentsView() {
                 return (
                   <button key={entry.dateString} onClick={() => handleParamChange({ date: entry.dateString })} className={clsx("group aspect-square flex flex-col items-center justify-center transition-all", isSelected ? "bg-emerald-600 text-white rounded-2xl" : "hover:bg-emerald-50 dark:hover:bg-emerald-500/5")}>
                     <span className="text-xs font-black">{entry.day}</span>
-                    {summary && summary.count > 0 && <div className="mt-1 flex gap-0.5">{Array.from({ length: Math.min(summary.count, 3) }).map((_, j) => <div key={j} className={clsx("w-1 h-1 rounded-full", isSelected ? "bg-white" : "bg-emerald-500")} />)}</div>}
+                    {summary && summary.count > 0 && (
+                      <div className={clsx(
+                        "mt-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black border",
+                        isSelected ? "bg-white text-emerald-600 border-white" : "bg-zinc-800 text-white border-zinc-800 shadow-sm"
+                      )}>
+                        {summary.count}
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -316,7 +323,6 @@ function AppointmentsView() {
                   <button onClick={() => { setSearchTerm(""); handleParamChange({ date: "", status: "all" }); }} className="h-10 px-4 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all flex items-center justify-center" title="Clear Filters"><FiRefreshCcw className={clsx(isLoading && "animate-spin")} /></button>
                 </div>
               </div>
-              <button onClick={() => { reset(); setSelectedAppointment(null); setSelectedOwnerId(""); setActivePanel("booking"); setIsDrawerOpen(true); }} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3.5 text-sm font-black uppercase text-white shadow-xl hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 transition-all"><FiPlusCircle /> Book Now</button>
             </div>
 
             <div className="overflow-x-auto">
