@@ -172,14 +172,14 @@ export default function Dashboard() {
         {/* Appointments Section */}
         <div className="space-y-6">
           {/* Notifications Highlight */}
-          {notifications.length > 0 && (
+          {notifications.filter(n => !n.id?.startsWith?.('invoice') && n.iconName !== 'FiFileText').length > 0 && (
             <div className="space-y-3">
               <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
                 <FiBell className="text-brand-500" />
                 Recent Alerts
               </h2>
               <div className="space-y-2">
-                {notifications.map(n => {
+                {notifications.filter(n => !n.id?.startsWith?.('invoice') && n.iconName !== 'FiFileText').map(n => {
                   const Icon = n.iconName === 'FiCheckCircle' ? FiCheckCircle : 
                                n.iconName === 'FiAlertCircle' ? FiAlertCircle :
                                n.iconName === 'FiFileText' ? FiCreditCard :
