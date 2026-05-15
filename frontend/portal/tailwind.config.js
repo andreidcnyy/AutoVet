@@ -14,11 +14,11 @@ export default {
           600: "#047857",
         },
         dark: {
-          bg: "#323232",
-          card: "#3d3d3d",
-          surface: "#4a4a4a",
-          border: "#525252",
-          hover: "#525252",
+          bg: "#121212",
+          card: "#1c1c1c",
+          surface: "#282828",
+          border: "#3f3f3f",
+          hover: "#3f3f3f",
         },
       },
       boxShadow: {

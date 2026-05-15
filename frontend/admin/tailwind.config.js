@@ -20,11 +20,11 @@ export default {
           "navy-light": "#e6eaef",
         },
         dark: {
-          bg: "#323232", // lighter than zinc-950 — page background
-          card: "#3d3d3d", // slightly lighter — cards, panels, sidebar
-          surface: "#4a4a4a", // slightly lighter — inputs, inner cards
-          border: "#525252", // lighter border
-          hover: "#525252", // lighter hover
+          bg: "#121212", // industry-standard charcoal page background
+          card: "#1c1c1c", // slightly lighter cards & sidebar
+          surface: "#282828", // lighter inputs & inner cards
+          border: "#3f3f3f", // border color
+          hover: "#3f3f3f", // hover states
         },
       },
       boxShadow: {
