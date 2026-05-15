@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getProfile, updateProfile, forgotPassword } from '../api';
+import PhoneInput from './PhoneInput';
 import { 
   FiUser, 
   FiMail, 
@@ -21,7 +22,7 @@ import { readCache, writeCache } from '../utils/swrCache';
 const profileSchema = z.object({
   name: z.string().min(1, "Full name is required").max(255),
   email: z.string().email("Invalid email address").max(255),
-  phone: z.string().min(1, "Phone number is required").length(11, "Must be 11 digits"),
+  phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Street address is required").max(255),
   city: z.string().min(1, "City is required"),
   province: z.string().min(1, "Province is required"),
@@ -205,16 +206,18 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
 
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">Contact Number</label>
-                  <div className="relative">
-                    <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input 
-                      {...register("phone")}
-                      className={clsx("input-field pl-12 font-bold", errors.phone && "border-rose-500")}
-                      placeholder="09123456789"
-                      maxLength={11}
-                    />
-                  </div>
-                  {errors.phone && <p className="text-[10px] text-rose-500 font-bold uppercase ml-1">{errors.phone.message}</p>}
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        error={errors.phone}
+                        placeholder="09123456789"
+                      />
+                    )}
+                  />
                 </div>
               </div>
 

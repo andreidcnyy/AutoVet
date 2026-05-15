@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
-import { FiArrowLeft, FiEye, FiEyeOff, FiPhone, FiMail, FiUser, FiLock, FiMapPin, FiChevronDown, FiMap } from "react-icons/fi";
+import { FiArrowLeft, FiEye, FiEyeOff, FiMail, FiUser, FiLock, FiMapPin, FiChevronDown, FiMap } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import DarkModeToggle from "../components/DarkModeToggle";
+import PhoneInput from "../components/PhoneInput";
 import { PH_LOCATION_DATA, Province, City } from "../utils/phLocationData";
 import logo from "../assets/logo.png";
 
@@ -52,23 +53,13 @@ export default function Register() {
 
   const [success, setSuccess] = useState(false);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 11) {
-      setPhone(value);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const cleanedPhone = phone.replace(/\D/g, "");
-    if (cleanedPhone.length !== 11 && cleanedPhone.length !== 10) {
-      setError("Contact number must be 10 or 11 digits (PH-based).");
+    if (phone.length < 10) {
+      setError("Please enter a valid contact number.");
       return;
     }
-
-    const finalPhone = cleanedPhone.length === 10 ? "0" + cleanedPhone : cleanedPhone;
 
     if (password !== passwordConfirmation) {
       setError("Passwords do not match.");
@@ -88,7 +79,7 @@ export default function Register() {
         body: JSON.stringify({ 
           name, 
           email, 
-          phone: finalPhone,
+          phone,
           address,
           city,
           province,
@@ -208,24 +199,11 @@ export default function Register() {
           {/* Contact Number */}
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Contact Number</label>
-            <div className="flex gap-2">
-              <div className="relative shrink-0">
-                <div className="flex h-12 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300">
-                  <span className="text-lg">🇵🇭</span>
-                  <span className="opacity-50">+63</span>
-                </div>
-              </div>
-              <div className="relative flex-1">
-                <input
-                  type="tel"
-                  required
-                  className="input-field"
-                  placeholder="09123456789"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                />
-              </div>
-            </div>
+            <PhoneInput 
+              value={phone}
+              onChange={setPhone}
+              placeholder="09123456789"
+            />
           </div>
 
           {/* Address */}
