@@ -19,13 +19,12 @@ export default {
           "teal-light": "#e6f6f5",
           "navy-light": "#e6eaef",
         },
-        // Dark palette — zinc is crisper/cleaner than gray
         dark: {
-          bg: "#09090b", // zinc-950  — page background
-          card: "#18181b", // zinc-900  — cards, panels, sidebar
-          surface: "#27272a", // zinc-800  — inputs, inner cards
-          border: "#3f3f46", // zinc-700  — borders
-          hover: "#3f3f46", // zinc-700  — hover states
+          bg: "#323232", // lighter than zinc-950 — page background
+          card: "#3d3d3d", // slightly lighter — cards, panels, sidebar
+          surface: "#4a4a4a", // slightly lighter — inputs, inner cards
+          border: "#525252", // lighter border
+          hover: "#525252", // lighter hover
         },
       },
       boxShadow: {
