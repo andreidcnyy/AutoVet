@@ -88,8 +88,8 @@ function LoginPage() {
         className="card-shell w-full max-w-md p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500"
       >
         <div className="text-center space-y-2">
-          <img src={logo} alt="AutoVet Logo" className="mx-auto w-32 h-32 object-contain" />
-          <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100 font-sans tracking-tight">AutoVet</h1>
+          <img src={logo} alt="Digivet Logo" className="mx-auto w-32 h-32 object-contain" />
+          <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100 font-sans tracking-tight">Digivet</h1>
           <p className="text-zinc-500 dark:text-zinc-400">Multi-Clinic Management Platform</p>
         </div>
 
@@ -101,7 +101,7 @@ function LoginPage() {
             autoComplete="email"
             required
             className="input-field"
-            placeholder="admin@autovet.com"
+            placeholder="admin@digivet.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
           />

@@ -348,7 +348,7 @@ export default function SuperAdminDashboard() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-autovet-navy dark:text-zinc-50 uppercase">AutoVet Platform</h1>
+          <h1 className="text-4xl font-black tracking-tight text-autovet-navy dark:text-zinc-50 uppercase">Digivet Platform</h1>
           <p className="mt-1 text-base font-bold text-autovet-teal dark:text-autovet-teal uppercase tracking-tight">Global SaaS Management and Clinic Monitoring.</p>
         </div>
         <button onClick={openRegisterModal} className="inline-flex items-center gap-2 rounded-xl bg-autovet-teal px-5 py-3 font-bold text-white hover:opacity-90 shadow-lg shadow-autovet-teal/20 transition-all uppercase tracking-widest">

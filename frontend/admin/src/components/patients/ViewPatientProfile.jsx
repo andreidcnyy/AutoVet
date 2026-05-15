@@ -117,7 +117,7 @@ async function generatePatientPDF(patient) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("AutoVet Clinic", 14, 16);
+  doc.text("Digivet Clinic", 14, 16);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text("Patient Medical Summary", 14, 24);
@@ -236,7 +236,7 @@ async function generateMedicalRecordPDF(record, patient) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("AutoVet: Medical Record", 14, 16);
+  doc.text("Digivet: Medical Record", 14, 16);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`Record ID: #${record.id}`, 14, 24);
