@@ -168,7 +168,8 @@ export default function BookAppointment() {
       .then(([petsRes, servRes, vetsRes]) => {
         // Correctly handle paginated or array responses
         const petsArray = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
-        const servicesArray = Array.isArray(servRes.data) ? servRes.data : (servRes.data?.data || []);
+        const servicesArray = (Array.isArray(servRes.data) ? servRes.data : (servRes.data?.data || []))
+          .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
         const vetsArray = Array.isArray(vetsRes.data) ? vetsRes.data : (vetsRes.data?.data || []);
 
         setPets(petsArray);
