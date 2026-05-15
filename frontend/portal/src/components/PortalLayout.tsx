@@ -144,7 +144,7 @@ export default function PortalLayout({ children }: LayoutProps) {
           </div>
 
           {/* Footer information */}
-          <footer className="mt-12 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
+          <footer className="mt-24 pt-8 pb-4 text-center border-t border-zinc-100 dark:border-dark-border/50">
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-4">
               © 2026 Digivet Management System. All rights reserved.
             </p>
@@ -154,12 +154,8 @@ export default function PortalLayout({ children }: LayoutProps) {
                 <span>badetvelasquez@gmail.com</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg border border-zinc-100 dark:border-dark-border/50 bg-zinc-50/50 dark:bg-dark-surface/30">
-                  <span className="text-[10px]">🇵🇭</span>
-                  <span className="text-[8px] font-bold opacity-40">+63</span>
-                  <span className="w-px h-2.5 bg-zinc-200 dark:bg-dark-border/50 mx-0.5" />
-                  <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500">933 461 7957</span>
-                </div>
+                <FiPhone className="text-brand-500/50" />
+                <span>+63 933 461 7957</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <FiMapPin className="text-brand-500/50" />
