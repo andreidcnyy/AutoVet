@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use App\Models\PortalUser;
 use App\Models\Clinic;
-use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
 {
@@ -13,16 +13,24 @@ class GoogleAuthController extends Controller
     {
         $request->validate(['access_token' => 'required|string']);
 
-        try {
-            $googleUser = Socialite::driver('google')->stateless()->userFromToken($request->access_token);
-        } catch (\Exception $e) {
+        $response = Http::get('https://www.googleapis.com/oauth2/v3/userinfo', [
+            'access_token' => $request->access_token,
+        ]);
+
+        if (!$response->ok()) {
+            return response()->json(['error' => 'Invalid Google token.'], 401);
+        }
+
+        $googleUser = $response->json();
+
+        if (empty($googleUser['sub']) || empty($googleUser['email'])) {
             return response()->json(['error' => 'Invalid Google token.'], 401);
         }
 
         $user = PortalUser::withoutGlobalScopes()
             ->where(function ($q) use ($googleUser) {
-                $q->where('google_id', $googleUser->getId())
-                  ->orWhere('email', $googleUser->getEmail());
+                $q->where('google_id', $googleUser['sub'])
+                  ->orWhere('email', $googleUser['email']);
             })
             ->first();
 
@@ -34,15 +42,15 @@ class GoogleAuthController extends Controller
 
             $user = PortalUser::create([
                 'clinic_id'         => $clinic->id,
-                'name'              => $googleUser->getName(),
-                'email'             => $googleUser->getEmail(),
-                'google_id'         => $googleUser->getId(),
-                'avatar'            => $googleUser->getAvatar(),
+                'name'              => $googleUser['name'] ?? $googleUser['email'],
+                'email'             => $googleUser['email'],
+                'google_id'         => $googleUser['sub'],
+                'avatar'            => $googleUser['picture'] ?? null,
                 'email_verified_at' => now(),
                 'status'            => 'active',
             ]);
         } elseif (!$user->google_id) {
-            $user->update(['google_id' => $googleUser->getId()]);
+            $user->update(['google_id' => $googleUser['sub']]);
         }
 
         $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
