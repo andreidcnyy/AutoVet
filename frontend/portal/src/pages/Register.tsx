@@ -67,7 +67,7 @@ export default function Register() {
   };
 
   const googleSignup = useGoogleLogin({
-    onSuccess: (tokenResponse) => handleGoogleSuccess(tokenResponse.access_token),
+    onSuccess: (tokenResponse: { access_token: string }) => handleGoogleSuccess(tokenResponse.access_token),
     onError:   () => setError("Google sign-in was cancelled or failed."),
   });
 
