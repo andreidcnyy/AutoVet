@@ -2,8 +2,8 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, getSystemAnnouncements } from '../api';
-import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard, FiVolume2, FiX } from 'react-icons/fi';
-import clsx from 'clsx';
+import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard } from 'react-icons/fi';
+import BroadcastBanner from './BroadcastBanner';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
 import logo from '../assets/logo.png';
@@ -20,7 +20,6 @@ export default function PortalLayout({ children }: LayoutProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<number[]>([]);
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
@@ -53,17 +52,6 @@ export default function PortalLayout({ children }: LayoutProps) {
         .catch(() => {});
     }
   }, [user]);
-
-  const dismissBanner = (id: number) => setDismissedIds(prev => [...prev, id]);
-
-  const visibleBanners = banners.filter(b => !dismissedIds.includes(b.id));
-
-  const bannerStyles: Record<string, string> = {
-    warning: 'bg-amber-50 border-amber-400 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300',
-    error:   'bg-rose-50 border-rose-400 text-rose-800 dark:bg-rose-900/20 dark:text-rose-300',
-    success: 'bg-emerald-50 border-emerald-400 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300',
-    info:    'bg-blue-50 border-blue-400 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-  };
 
   const handleLogout = () => {
     logout();
@@ -166,18 +154,7 @@ export default function PortalLayout({ children }: LayoutProps) {
         </header>
 
         {/* System Broadcast Banners */}
-        {visibleBanners.map(b => (
-          <div key={b.id} className={clsx('border-l-4 px-5 py-3 flex items-start gap-3', bannerStyles[b.type] ?? bannerStyles.info)}>
-            <FiVolume2 className="w-4 h-4 mt-0.5 shrink-0 opacity-70" />
-            <div className="flex-1 min-w-0">
-              <span className="font-semibold text-sm">{b.title}</span>
-              {b.message && <span className="text-sm opacity-75 ml-1.5">{b.message}</span>}
-            </div>
-            <button onClick={() => dismissBanner(b.id)} className="shrink-0 p-1 rounded-lg hover:opacity-60 transition-opacity">
-              <FiX className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+        <BroadcastBanner announcements={banners} />
 
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto relative">

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   FiArrowRight, FiActivity, FiHeart, FiShield,
   FiMail, FiPhone, FiMapPin, FiCalendar, FiBell, FiFileText,
-  FiUsers, FiLock, FiChevronRight, FiMenu, FiX, FiVolume2
+  FiUsers, FiLock, FiChevronRight, FiMenu, FiX
 } from 'react-icons/fi';
 import { getPublicSystemAnnouncements } from '../api';
+import BroadcastBanner from '../components/BroadcastBanner';
 import clsx from 'clsx';
 import DarkModeToggle from '../components/DarkModeToggle';
 import logo from "../assets/logo.png";
@@ -153,8 +154,7 @@ export default function Landing() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen]       = useState(false);
   const [scrolled, setScrolled]                   = useState(false);
-  const [landingBanners, setLandingBanners]       = useState<any[]>([]);
-  const [dismissedIds, setDismissedIds]           = useState<number[]>([]);
+  const [landingBanners, setLandingBanners] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -175,17 +175,6 @@ export default function Landing() {
       .catch(() => {});
   }, []);
 
-  const dismissLandingBanner = (id: number) => setDismissedIds(prev => [...prev, id]);
-
-  const visibleLandingBanners = landingBanners.filter(b => !dismissedIds.includes(b.id));
-
-  const landingBannerStyles: Record<string, string> = {
-    warning: 'bg-amber-500',
-    error:   'bg-rose-600',
-    success: 'bg-emerald-600',
-    info:    'bg-blue-600',
-  };
-
   const scrollTo = (id: string) => {
     const el = document.querySelector(id);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -196,20 +185,9 @@ export default function Landing() {
     <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 overflow-x-hidden">
 
       {/* ══ Landing Page Broadcast Banners ══ */}
-      {visibleLandingBanners.length > 0 && (
-        <div className="fixed top-20 left-0 right-0 z-40 flex flex-col">
-          {visibleLandingBanners.map(b => (
-            <div key={b.id} className={clsx('px-5 py-2.5 flex items-center gap-3 text-white', landingBannerStyles[b.type] ?? landingBannerStyles.info)}>
-              <FiVolume2 className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-sm min-w-0">
-                <span className="font-semibold mr-1.5">{b.title}</span>
-                {b.message && <span className="opacity-85">{b.message}</span>}
-              </span>
-              <button onClick={() => dismissLandingBanner(b.id)} className="shrink-0 p-1 rounded hover:opacity-70 transition-opacity">
-                <FiX className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+      {landingBanners.length > 0 && (
+        <div className="fixed top-20 left-0 right-0 z-40">
+          <BroadcastBanner announcements={landingBanners} />
         </div>
       )}
 
