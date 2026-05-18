@@ -329,7 +329,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((feature) => (
               <div key={feature.title}
-                className="group relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                className="group relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <PawPrint className="absolute bottom-2 right-3 w-12 h-12 text-brand-500 opacity-[0.14] dark:opacity-[0.08] rotate-12 pointer-events-none" />
                 <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
                   {feature.icon}
@@ -365,7 +365,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {CLINIC_SERVICES.map((service) => (
               <Link key={service.name} to="/register"
-                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                 {/* Photo */}
                 <div className="relative h-48 overflow-hidden">
                   <img
@@ -418,7 +418,7 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:shadow-lg transition-all duration-300 overflow-hidden">
+              <div key={t.name} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                 <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 opacity-[0.15] dark:opacity-[0.07] rotate-12 pointer-events-none" />
                 <div className="flex gap-1 mb-4">
                   {Array.from({ length: t.rating }).map((_, i) => (
