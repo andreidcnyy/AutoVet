@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Outlet, useMatches, useNavigate } from "react-router-dom";
 import Sidebar from "../components/layout/Sidebar";
 import TopHeader from "../components/layout/TopHeader";
+import BroadcastBanner from "../components/ui/BroadcastBanner";
 import {
   bottomNavigation,
   clinicInfo,
@@ -11,8 +12,6 @@ import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 import api, { triggerSync } from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
-import clsx from "clsx";
-import { FiX } from "react-icons/fi";
 
 function AppLayout() {
   const { user, loading, login: setUser } = useAuth();
@@ -58,7 +57,7 @@ function AppLayout() {
     }
 
     const fetchAnnouncements = () => {
-        api.get('/api/system-announcements')
+        api.get('/api/system-announcements?target=admin')
             .then(res => {
                 if (Array.isArray(res)) setAnnouncements(res);
             })
@@ -187,33 +186,9 @@ function AppLayout() {
           onMenuToggle={() => setIsSidebarOpen((prev) => !prev)}
         />
 
-        <main className="p-4 sm:p-6 lg:p-8">
-          {/* System Announcements */}
-          {announcements.map(ann => (
-            <div key={ann.id} className={clsx(
-              "mb-6 rounded-2xl p-4 shadow-sm border-l-4 animate-in slide-in-from-top duration-300 relative group",
-              ann.type === 'warning' ? "bg-amber-50 border-amber-500 text-amber-800" :
-              ann.type === 'error' ? "bg-rose-50 border-rose-500 text-rose-800" :
-              ann.type === 'success' ? "bg-emerald-50 border-emerald-500 text-emerald-800" :
-              "bg-blue-50 border-blue-500 text-blue-800"
-            )}>
-              <button 
-                onClick={() => setAnnouncements(prev => prev.filter(a => a.id !== ann.id))}
-                className="absolute top-4 right-4 p-1 rounded-lg hover:bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Dismiss"
-              >
-                <FiX className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-3">
-                 <span className="text-lg">📢</span>
-                 <div className="pr-8">
-                    <p className="font-black uppercase text-[10px] tracking-widest opacity-60">{ann.title}</p>
-                    <p className="font-bold text-sm">{ann.message}</p>
-                 </div>
-              </div>
-            </div>
-          ))}
+        <BroadcastBanner announcements={announcements} />
 
+        <main className="p-4 sm:p-6 lg:p-8">
           <Outlet context={{ user, setUser }} />
         </main>
       </div>
