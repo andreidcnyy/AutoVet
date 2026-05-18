@@ -17,13 +17,6 @@ const formatDate = (dateStr) => {
   } catch { return "—"; }
 };
 
-const STATUS_LABEL = {
-  Paid: { label: "Paid", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  Finalized: { label: "Unpaid", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-  "Partially Paid": { label: "Partial", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-  Draft: { label: "Draft", cls: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" },
-  Cancelled: { label: "Cancelled", cls: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" },
-};
 
 export default function SalesSummaryCard() {
   const [revenue, setRevenue]     = useState([]);
@@ -203,7 +196,6 @@ export default function SalesSummaryCard() {
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
                 {recent.map((inv) => {
-                  const s = STATUS_LABEL[inv.status] ?? { label: inv.status, cls: "bg-zinc-100 text-zinc-500" };
                   return (
                     <tr key={inv.id} className="hover:bg-zinc-50/60 dark:hover:bg-dark-surface/30 transition-colors">
                       <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
@@ -219,8 +211,8 @@ export default function SalesSummaryCard() {
                         {peso(inv.total)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={clsx("text-[10px] font-black uppercase px-2 py-0.5 rounded-full", s.cls)}>
-                          {s.label}
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          Paid
                         </span>
                       </td>
                     </tr>
