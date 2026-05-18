@@ -6,10 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
 
-// Chunked Setup Wizard Endpoint — blocked on production
+// Chunked Setup Wizard Endpoint — blocked on production and requires SETUP_SECRET token
 Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
     if (app()->environment('production')) {
         return response()->json(['error' => 'Not available in production.'], 404);
+    }
+    $secret = env('SETUP_SECRET');
+    if (empty($secret) || $request->query('secret') !== $secret) {
+        return response()->json(['error' => 'Forbidden.'], 403);
     }
     set_time_limit(600); // 10 minutes total
     $step = $request->query('step');
@@ -252,40 +256,6 @@ Route::get('/debug/mail', function (\Illuminate\Http\Request $request) {
         }
     }
 
-    if ($apptId = $request->query('appt')) {
-        try {
-            $appt = \App\Models\Appointment::withoutGlobalScopes()->find($apptId);
-            $pet = $appt ? \App\Models\Pet::withoutGlobalScopes()->find($appt->pet_id) : null;
-            $owner = $pet ? \App\Models\Owner::withoutGlobalScopes()->find($pet->owner_id) : null;
-            $report['inspect_appt'] = [
-                'appt_id' => $apptId,
-                'appointment' => $appt ? $appt->toArray() : null,
-                'pet' => $pet ? $pet->toArray() : null,
-                'pet_owner_id' => $pet?->owner_id,
-                'owner' => $owner ? $owner->toArray() : null,
-                'owner_email' => $owner?->email,
-            ];
-        } catch (\Throwable $e) {
-            $report['inspect_appt'] = ['error' => $e->getMessage()];
-        }
-    }
-
-    if ($to = $request->query('to')) {
-        try {
-            \Illuminate\Support\Facades\Mail::mailer('appointment')
-                ->to($to)
-                ->send(new \App\Mail\ClientNotificationMail('Debug send', 'If you can read this, Brevo + the appointment mailer work end-to-end.'));
-            $report['send_attempt'] = ['ok' => true, 'to' => $to];
-        } catch (\Throwable $e) {
-            $report['send_attempt'] = [
-                'ok' => false,
-                'to' => $to,
-                'error' => $e->getMessage(),
-                'class' => get_class($e),
-            ];
-        }
-    }
-
     return response()->json($report, 200, [], JSON_PRETTY_PRINT);
 });
 
@@ -305,8 +275,6 @@ Route::get('/status', function () {
         'status'    => 'success',
         'message'   => 'AutoVet Laravel API is up and running!',
         'database'  => $dbStatus,
-        'user_count' => $userCount,
-        'environment' => app()->environment(),
         'timestamp' => now()->toIso8601String(),
     ]);
 });
@@ -405,8 +373,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('vet-schedules/bulk',    [VetScheduleController::class, 'bulkStore']);
     Route::apiResource('vet-schedules',   VetScheduleController::class);
     
-    // Data Import Routes
-    Route::prefix('import')->group(function () {
+    // Data Import Routes — admin/staff only
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->prefix('import')->group(function () {
         Route::post('/owners', [ImportController::class, 'importOwners']);
         Route::post('/appointments', [ImportController::class, 'importAppointments']);
         Route::post('/invoices', [ImportController::class, 'importInvoices']);

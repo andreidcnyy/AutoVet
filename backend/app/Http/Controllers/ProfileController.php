@@ -145,7 +145,6 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:' . $table . ',email,' . $user->id,
-            'role' => 'nullable|string|max:255',
             // ~2MB base64 cap; must be a valid image data URI
             'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i']
         ]);

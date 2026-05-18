@@ -107,6 +107,13 @@ class PatientOwnerController extends Controller
 
     public function show(Owner $owner)
     {
+        // Portal users can only view their own owner record
+        if (auth()->user() instanceof \App\Models\PortalUser) {
+            if ($owner->id !== $this->getPortalOwnerId()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        }
+
         $owner->load(['pets.species', 'pets.breed', 'pets.sizeCategory', 'pets.invoices', 'pets.appointments']);
         $owner->pets->each->append(['total_paid', 'total_due', 'last_visit', 'next_due']);
         return response()->json($owner);
@@ -114,9 +121,16 @@ class PatientOwnerController extends Controller
 
     public function update(Request $request, Owner $owner)
     {
+        // Portal users can only update their own owner record
+        if (auth()->user() instanceof \App\Models\PortalUser) {
+            if ($owner->id !== $this->getPortalOwnerId()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|size:11', 
+            'phone' => 'required|string|size:11',
             'email' => 'nullable|string|email:rfc,dns|max:255',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
@@ -149,6 +163,11 @@ class PatientOwnerController extends Controller
 
     public function destroy(Owner $owner)
     {
+        // Portal users cannot delete owner records
+        if (auth()->user() instanceof \App\Models\PortalUser) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
         $owner->delete();
         return response()->json(null, 204);
     }
