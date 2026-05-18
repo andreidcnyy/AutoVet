@@ -154,9 +154,7 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen]       = useState(false);
   const [scrolled, setScrolled]                   = useState(false);
   const [landingBanners, setLandingBanners]       = useState<any[]>([]);
-  const [dismissedIds, setDismissedIds]           = useState<number[]>(() => {
-    try { return JSON.parse(sessionStorage.getItem('dismissed_landing_banners') || '[]'); } catch { return []; }
-  });
+  const [dismissedIds, setDismissedIds]           = useState<number[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -177,11 +175,7 @@ export default function Landing() {
       .catch(() => {});
   }, []);
 
-  const dismissLandingBanner = (id: number) => {
-    const updated = [...dismissedIds, id];
-    setDismissedIds(updated);
-    sessionStorage.setItem('dismissed_landing_banners', JSON.stringify(updated));
-  };
+  const dismissLandingBanner = (id: number) => setDismissedIds(prev => [...prev, id]);
 
   const visibleLandingBanners = landingBanners.filter(b => !dismissedIds.includes(b.id));
 
@@ -207,9 +201,9 @@ export default function Landing() {
           {visibleLandingBanners.map(b => (
             <div key={b.id} className={clsx('px-5 py-2.5 flex items-center gap-3 text-white', landingBannerStyles[b.type] ?? landingBannerStyles.info)}>
               <FiVolume2 className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-sm font-bold min-w-0">
-                <span className="font-black uppercase tracking-tight mr-2">{b.title}</span>
-                {b.message && <span className="opacity-90">{b.message}</span>}
+              <span className="flex-1 text-sm min-w-0">
+                <span className="font-semibold mr-1.5">{b.title}</span>
+                {b.message && <span className="opacity-85">{b.message}</span>}
               </span>
               <button onClick={() => dismissLandingBanner(b.id)} className="shrink-0 p-1 rounded hover:opacity-70 transition-opacity">
                 <FiX className="w-4 h-4" />

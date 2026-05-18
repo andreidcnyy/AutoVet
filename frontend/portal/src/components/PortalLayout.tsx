@@ -20,9 +20,7 @@ export default function PortalLayout({ children }: LayoutProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<number[]>(() => {
-    try { return JSON.parse(sessionStorage.getItem('dismissed_banners') || '[]'); } catch { return []; }
-  });
+  const [dismissedIds, setDismissedIds] = useState<number[]>([]);
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
@@ -56,11 +54,7 @@ export default function PortalLayout({ children }: LayoutProps) {
     }
   }, [user]);
 
-  const dismissBanner = (id: number) => {
-    const updated = [...dismissedIds, id];
-    setDismissedIds(updated);
-    sessionStorage.setItem('dismissed_banners', JSON.stringify(updated));
-  };
+  const dismissBanner = (id: number) => setDismissedIds(prev => [...prev, id]);
 
   const visibleBanners = banners.filter(b => !dismissedIds.includes(b.id));
 
@@ -174,10 +168,10 @@ export default function PortalLayout({ children }: LayoutProps) {
         {/* System Broadcast Banners */}
         {visibleBanners.map(b => (
           <div key={b.id} className={clsx('border-l-4 px-5 py-3 flex items-start gap-3', bannerStyles[b.type] ?? bannerStyles.info)}>
-            <FiVolume2 className="w-4 h-4 mt-0.5 shrink-0" />
+            <FiVolume2 className="w-4 h-4 mt-0.5 shrink-0 opacity-70" />
             <div className="flex-1 min-w-0">
-              <span className="font-black text-sm uppercase tracking-tight">{b.title}</span>
-              {b.message && <p className="text-xs font-medium mt-0.5 opacity-80">{b.message}</p>}
+              <span className="font-semibold text-sm">{b.title}</span>
+              {b.message && <span className="text-sm opacity-75 ml-1.5">{b.message}</span>}
             </div>
             <button onClick={() => dismissBanner(b.id)} className="shrink-0 p-1 rounded-lg hover:opacity-60 transition-opacity">
               <FiX className="w-4 h-4" />
