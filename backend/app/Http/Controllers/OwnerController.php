@@ -18,14 +18,32 @@ class OwnerController extends Controller
             return response()->json(Owner::select('id', 'name', 'phone', 'email')->orderBy('name')->get());
         }
 
-        $owners = Owner::with(['pets', 'user'])->orderBy('created_at', 'desc')->get();
+        $query = Owner::with(['pets', 'user'])->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('city', 'like', "%{$search}%")
+                  ->orWhereHas('pets', fn ($p) => $p->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->input('filter') === 'With Pets') {
+            $query->has('pets');
+        }
+
+        $owners = $query->paginate(15);
 
         // Fallback: if user_id was never set but the owner's email matches a PortalUser,
         // treat the portal account as linked (covers owners seeded/created before user_id wiring).
-        $missingEmails = $owners->filter(fn ($o) => !$o->user && !empty($o->email))->pluck('email')->unique();
+        $missingEmails = $owners->getCollection()->filter(fn ($o) => !$o->user && !empty($o->email))->pluck('email')->unique();
         if ($missingEmails->isNotEmpty()) {
             $portalUsers = PortalUser::whereIn('email', $missingEmails)->get()->keyBy('email');
-            $owners->each(function ($o) use ($portalUsers) {
+            $owners->getCollection()->each(function ($o) use ($portalUsers) {
                 if (!$o->user && $o->email && isset($portalUsers[$o->email])) {
                     $o->setRelation('user', $portalUsers[$o->email]);
                 }

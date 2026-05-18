@@ -32,8 +32,9 @@ function PatientsPage() {
   const [availableCities, setAvailableCities] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterValue, setFilterValue] = useState("All");
 
-  const fetchOwners = useCallback((page = 1, search = searchQuery) => {
+  const fetchOwners = useCallback((page = 1, search = searchQuery, filter = filterValue) => {
     if (!user?.token) {
       setIsLoading(false);
       return; // Don't fetch if no user token
@@ -41,6 +42,7 @@ function PatientsPage() {
     setIsLoading(true);
     const params = new URLSearchParams({ page });
     if (search) params.set("search", search);
+    if (filter && filter !== "All") params.set("filter", filter);
     fetch(`/api/owners?${params}`, {
       headers: {
         "Accept": "application/json",
@@ -78,7 +80,7 @@ function PatientsPage() {
         setIsLoading(false);
         setPagination({ current_page: 1, last_page: 1, total: 0 });
       });
-  }, [user?.token, toast, searchQuery]);
+  }, [user?.token, toast, searchQuery, filterValue]);
 
   useEffect(() => {
     if (user?.token && activeTab === 'owners') {
@@ -347,40 +349,34 @@ function PatientsPage() {
       </div>
 
       {activeTab === "owners" ? (
-        <>
-          {isLoading ? (
-            <div className="flex h-64 items-center justify-center text-zinc-500">
-              Loading owner records...
-            </div>
-          ) : (
-            <PatientRecordsView
-              owners={owners}
-              pagination={pagination}
-              onPageChange={(page) => fetchOwners(page, searchQuery)}
-              onSearch={(q) => { setSearchQuery(q); fetchOwners(1, q); }}
-              selectedOwnerId={selectedOwnerId}
-              onSelectOwner={setSelectedOwnerId}
-              onOpenAddPatient={() => {
-                setPhoneValue("");
-                setProvince("");
-                setCity("");
-                setZip("");
-                setView("add");
-              }}
-              onDeleteOwner={handleDeleteOwner}
-              onEditOwner={handleEditOwner}
-              onOwnerEdited={(updatedOwner) => {
-                setOwners((prev) =>
-                  prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
-                );
-                if (selectedOwnerId === updatedOwner.id) {
-                   setOwnerToEdit(updatedOwner); 
-                }
-              }}
-              onAddPet={handleAddPetToOwner}
-            />
-          )}
-        </>
+        <PatientRecordsView
+          owners={owners}
+          pagination={pagination}
+          isLoading={isLoading}
+          onPageChange={(page) => fetchOwners(page, searchQuery)}
+          onSearch={(q) => { setSearchQuery(q); fetchOwners(1, q, filterValue); }}
+          onFilter={(f) => { setFilterValue(f); fetchOwners(1, searchQuery, f); }}
+          selectedOwnerId={selectedOwnerId}
+          onSelectOwner={setSelectedOwnerId}
+          onOpenAddPatient={() => {
+            setPhoneValue("");
+            setProvince("");
+            setCity("");
+            setZip("");
+            setView("add");
+          }}
+          onDeleteOwner={handleDeleteOwner}
+          onEditOwner={handleEditOwner}
+          onOwnerEdited={(updatedOwner) => {
+            setOwners((prev) =>
+              prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
+            );
+            if (selectedOwnerId === updatedOwner.id) {
+               setOwnerToEdit(updatedOwner);
+            }
+          }}
+          onAddPet={handleAddPetToOwner}
+        />
       ) : (
         <PetsListView />
       )}

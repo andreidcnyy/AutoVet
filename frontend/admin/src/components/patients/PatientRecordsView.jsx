@@ -125,7 +125,16 @@ function PatientRecordsView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-                {owners.length > 0 ? owners.map((owner) => (
+                {isLoading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i}>
+                      <td className="px-6 py-5"><div className="h-12 rounded-xl bg-zinc-100 animate-pulse dark:bg-dark-surface" /></td>
+                      <td className="px-6 py-5"><div className="h-8 rounded-xl bg-zinc-100 animate-pulse dark:bg-dark-surface" /></td>
+                      <td className="px-6 py-5"><div className="h-7 w-7 mx-auto rounded-lg bg-zinc-100 animate-pulse dark:bg-dark-surface" /></td>
+                      <td className="px-6 py-5"><div className="h-8 w-16 ml-auto rounded-lg bg-zinc-100 animate-pulse dark:bg-dark-surface" /></td>
+                    </tr>
+                  ))
+                ) : owners.length > 0 ? owners.map((owner) => (
                   <tr
                     key={owner.id}
                     onClick={() => onSelectOwner(owner.id)}
