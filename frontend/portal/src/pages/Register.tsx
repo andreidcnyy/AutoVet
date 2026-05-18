@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
 import { FiArrowLeft, FiEye, FiEyeOff, FiMail, FiUser, FiLock, FiMapPin, FiChevronDown, FiMap, FiHeart, FiBell, FiUsers } from "react-icons/fi";
-import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 import DarkModeToggle from "../components/DarkModeToggle";
 import CompleteProfileModal from "../components/CompleteProfileModal";
@@ -66,10 +65,24 @@ export default function Register() {
     }
   };
 
-  const googleSignup = useGoogleLogin({
-    onSuccess: (tokenResponse: import("@react-oauth/google").TokenResponse) => handleGoogleSuccess(tokenResponse.access_token),
-    onError:   () => setError("Google sign-in was cancelled or failed."),
-  });
+  const googleSignup = () => {
+    if (!window.google) {
+      setError("Google sign-in is loading, please try again in a moment.");
+      return;
+    }
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      scope: "email profile openid",
+      callback: (response) => {
+        if (response.error || !response.access_token) {
+          setError("Google sign-in was cancelled or failed.");
+          return;
+        }
+        handleGoogleSuccess(response.access_token);
+      },
+    });
+    client.requestAccessToken();
+  };
 
   useEffect(() => {
     const sel = PH_LOCATION_DATA.find(p => p.name === province);

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
 import { FiEye, FiEyeOff, FiArrowLeft, FiCalendar, FiFileText, FiShield } from "react-icons/fi";
-import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "./context/AuthContext";
 import DarkModeToggle from "./components/DarkModeToggle";
 import CompleteProfileModal from "./components/CompleteProfileModal";
@@ -54,10 +53,24 @@ function LoginPage() {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse: import("@react-oauth/google").TokenResponse) => handleGoogleSuccess(tokenResponse.access_token),
-    onError:   () => setError("Google sign-in was cancelled or failed."),
-  });
+  const googleLogin = () => {
+    if (!window.google) {
+      setError("Google sign-in is loading, please try again in a moment.");
+      return;
+    }
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      scope: "email profile openid",
+      callback: (response) => {
+        if (response.error || !response.access_token) {
+          setError("Google sign-in was cancelled or failed.");
+          return;
+        }
+        handleGoogleSuccess(response.access_token);
+      },
+    });
+    client.requestAccessToken();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
