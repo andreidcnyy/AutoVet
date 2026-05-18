@@ -55,7 +55,7 @@ function LoginPage() {
   };
 
   const googleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse: { access_token: string }) => handleGoogleSuccess(tokenResponse.access_token),
+    onSuccess: (tokenResponse: import("@react-oauth/google").TokenResponse) => handleGoogleSuccess(tokenResponse.access_token),
     onError:   () => setError("Google sign-in was cancelled or failed."),
   });
 
