@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FiArrowRight, FiActivity, FiHeart, FiShield, FiScissors,
+  FiArrowRight, FiActivity, FiHeart, FiShield,
   FiMail, FiPhone, FiMapPin, FiCalendar, FiBell, FiFileText,
   FiUsers, FiLock, FiChevronRight, FiMenu, FiX
 } from 'react-icons/fi';
@@ -100,10 +100,30 @@ const FEATURES = [
 ];
 
 const CLINIC_SERVICES = [
-  { name: 'Consultations', icon: <FiHeart />,    description: 'Expert medical advice and thorough check-ups for your pets.',                gradient: 'from-rose-500 to-pink-600'    },
-  { name: 'Grooming',      icon: <FiScissors />, description: 'Professional styling and hygiene services to keep pets looking their best.', gradient: 'from-purple-500 to-violet-600' },
-  { name: 'Vaccination',   icon: <FiShield />,   description: 'Essential preventative care and immunization schedules for lifelong health.', gradient: 'from-brand-500 to-emerald-600' },
-  { name: 'Deworming',     icon: <FiActivity />, description: 'Safe and effective treatments to protect your pets from internal parasites.', gradient: 'from-amber-500 to-orange-600'  },
+  {
+    name: 'Consultations',
+    image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?q=80&w=800&auto=format&fit=crop',
+    description: 'Expert medical advice and thorough check-ups for your pets.',
+    badge: 'from-rose-500 to-pink-600',
+  },
+  {
+    name: 'Grooming',
+    image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=800&auto=format&fit=crop',
+    description: 'Professional styling and hygiene services to keep pets looking their best.',
+    badge: 'from-purple-500 to-violet-600',
+  },
+  {
+    name: 'Vaccination',
+    image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=800&auto=format&fit=crop',
+    description: 'Essential preventative care and immunization schedules for lifelong health.',
+    badge: 'from-brand-500 to-emerald-600',
+  },
+  {
+    name: 'Deworming',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=800&auto=format&fit=crop',
+    description: 'Safe and effective treatments to protect your pets from internal parasites.',
+    badge: 'from-amber-500 to-orange-600',
+  },
 ];
 
 const STATS = [
@@ -345,15 +365,29 @@ export default function Landing() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {CLINIC_SERVICES.map((service) => (
               <Link key={service.name} to="/register"
-                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-6 text-center">
-                <PawPrint className="absolute top-2 right-2 w-10 h-10 text-zinc-500 opacity-[0.15] dark:opacity-[0.08] rotate-12 pointer-events-none" />
-                <div className={clsx("w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300", service.gradient)}>
-                  {service.icon}
+                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                {/* Photo */}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={service.image}
+                    alt={service.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <span className={clsx(
+                    "absolute bottom-3 left-3 px-3 py-1 rounded-full text-white text-xs font-black bg-gradient-to-r",
+                    service.badge
+                  )}>
+                    {service.name}
+                  </span>
                 </div>
-                <h3 className="font-black text-zinc-800 dark:text-zinc-100 mb-2">{service.name}</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{service.description}</p>
-                <div className="mt-4 flex items-center justify-center gap-1 text-brand-500 text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                  Book Now <FiChevronRight />
+                {/* Content */}
+                <div className="p-5 text-center">
+                  <h3 className="font-black text-zinc-800 dark:text-zinc-100 mb-2">{service.name}</h3>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{service.description}</p>
+                  <div className="mt-4 flex items-center justify-center gap-1 text-brand-500 text-sm font-bold opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    Book Now <FiChevronRight />
+                  </div>
                 </div>
               </Link>
             ))}
