@@ -8,8 +8,10 @@ import {
   FiCreditCard,
   FiDownload,
   FiEye,
+  FiFileText,
   FiPlusCircle,
   FiPrinter,
+  FiRefreshCw,
   FiSearch,
   FiSend,
   FiBell,
@@ -264,12 +266,332 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.save(`${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
 
+// ─── Invoice Reports helpers ──────────────────────────────────────────────────
+
+const fmt = (n) =>
+  Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtPeso = (n) => `₱${fmt(n)}`;
+
+const getShortType = (item) => {
+  const cat = (item.category || item.inventory_category?.name || "").toLowerCase();
+  const nm  = (item.name || item.item_name || "").toLowerCase();
+  if (/vac/i.test(cat) || /vaccine/i.test(nm)) return "Vac";
+  if (/med|drug|pharma|antibiotic/i.test(cat))  return "Med";
+  if (/food|feed/i.test(cat))                    return "Food";
+  return "Sup";
+};
+
+function CatBadge({ type, size = "sm" }) {
+  const base = size === "xs" ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5";
+  const map = {
+    Med:  "bg-blue-950/80 text-blue-400",
+    Vac:  "bg-purple-950/80 text-purple-400",
+    Sup:  "bg-emerald-950/80 text-emerald-400",
+    Food: "bg-amber-950/80 text-amber-400",
+  };
+  return (
+    <span className={clsx("rounded font-bold uppercase tracking-wide shrink-0", base, map[type] ?? map.Sup)}>
+      {type}
+    </span>
+  );
+}
+
+const getCatName = (item) => item.inventory_category?.name || item.category || "Uncategorized";
+
+function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGenerated }) {
+  const toast = useToast();
+  const today      = new Date().toISOString().split("T")[0];
+  const monthStart = (() => { const d = new Date(); d.setDate(1); return d.toISOString().split("T")[0]; })();
+
+  const [dateFrom, setDateFrom]                       = useState(monthStart);
+  const [dateTo, setDateTo]                           = useState(today);
+  const [selectedOwnerId, setSelectedOwnerId]         = useState("");
+  const [ownerSearch, setOwnerSearch]                 = useState("");
+  const [itemTypeFilter, setItemTypeFilter]           = useState("all");
+  const [selectedServiceId, setSelectedServiceId]     = useState("");
+  const [selectedInventoryId, setSelectedInventoryId] = useState("");
+  const [loading, setLoading]                         = useState(false);
+  const [allRows, setAllRows]                         = useState([]);
+  const [localGenerated, setLocalGenerated]           = useState(false);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    try {
+      const params = { per_page: 500, with_items: 1, only_transactions: 1, date_from: dateFrom, date_to: dateTo };
+      if (selectedOwnerId) params.owner_id = selectedOwnerId;
+
+      const data = await api.get("/api/reports", { params });
+      const invoices = Array.isArray(data) ? data : (data?.data || []);
+
+      const rows = [];
+      invoices.forEach((inv) => {
+        (inv.items || []).filter((i) => !i.is_hidden).forEach((item) => {
+          const invRecord    = inventory.find((i) => i.id === item.inventory_id);
+          const buyingPrice  = Number(invRecord?.price) || 0;
+          const sellingPrice = Number(item.unit_price) || 0;
+          const qty          = Number(item.qty) || 1;
+          const grossSales   = sellingPrice * qty;
+          rows.push({
+            date: inv.created_at,
+            client: inv.pet?.owner?.name || "—",
+            itemName: item.name,
+            itemType: item.item_type,
+            service_id: item.service_id,
+            inventory_id: item.inventory_id,
+            qty, buyingPrice, sellingPrice, grossSales, netSales: grossSales,
+            invoiceDiscount: Number(inv.discount_value) || 0,
+            invoiceId: inv.id,
+          });
+        });
+      });
+      setAllRows(rows);
+      setLocalGenerated(true);
+      setGenerated(true);
+      if (rows.length === 0) toast.warning("No transactions found for the selected filters.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to generate report.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayRows = useMemo(() => {
+    if (!localGenerated) return [];
+    return allRows.filter((row) => {
+      if (itemTypeFilter !== "all" && row.itemType !== itemTypeFilter) return false;
+      if (selectedServiceId && row.service_id?.toString() !== selectedServiceId) return false;
+      if (selectedInventoryId && row.inventory_id?.toString() !== selectedInventoryId) return false;
+      return true;
+    });
+  }, [allRows, localGenerated, itemTypeFilter, selectedServiceId, selectedInventoryId]);
+
+  useEffect(() => { setReportRows(displayRows); }, [displayRows]);
+
+  const handleReset = () => {
+    setLocalGenerated(false); setGenerated(false); setAllRows([]); setReportRows([]);
+    setSelectedOwnerId(""); setOwnerSearch(""); setItemTypeFilter("all");
+    setSelectedServiceId(""); setSelectedInventoryId("");
+    setDateFrom(monthStart); setDateTo(today);
+  };
+
+  const summary = useMemo(() => {
+    const seen = new Set(); let totalDiscount = 0;
+    displayRows.forEach((r) => { if (!seen.has(r.invoiceId)) { seen.add(r.invoiceId); totalDiscount += r.invoiceDiscount; } });
+    const totalGross = displayRows.reduce((s, r) => s + r.grossSales, 0);
+    return { totalGross, totalDiscount, totalNet: totalGross - totalDiscount };
+  }, [displayRows]);
+
+  const exportReportsPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Invoice Reports", 14, 18);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Period: ${formatDate(dateFrom)} to ${formatDate(dateTo)}`, 14, 26);
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, pageWidth - 14, 26, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+
+    const showQty = itemTypeFilter === "inventory";
+    const head = [showQty
+      ? ["Date", "Client", "Item / Service", "Qty", "Selling Price (PHP)", "Gross Sales (PHP)"]
+      : ["Date", "Client", "Item / Service", "Selling Price (PHP)", "Gross Sales (PHP)"]];
+
+    const body = displayRows.map((row) => showQty
+      ? [formatDate(row.date), row.client, row.itemName, row.qty, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]
+      : [formatDate(row.date), row.client, row.itemName, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]);
+
+    const colCount = showQty ? 6 : 5;
+    const foot = [Array(colCount).fill("").map((_, i) => {
+      if (i === colCount - 2) return "Total Gross Sales:";
+      if (i === colCount - 1) return Number(summary.totalGross).toFixed(2);
+      return "";
+    })];
+
+    autoTable(doc, {
+      startY: 32,
+      head,
+      body,
+      foot,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245], textColor: 0 },
+      columnStyles: showQty
+        ? { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
+        : { 3: { halign: "right" }, 4: { halign: "right" } },
+    });
+
+    doc.save(`Invoice_Reports_${dateFrom}_to_${dateTo}.pdf`);
+  };
+
+  return (
+    <div className="grid gap-4" style={{ gridTemplateColumns: "200px minmax(0,1fr)" }}>
+      {/* Filter panel */}
+      <div className="card-shell p-4 space-y-3 h-fit sticky top-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Filter</p>
+        {[
+          { label: "Date Start", el: <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" /> },
+          { label: "Date End",   el: <input type="date" value={dateTo}   onChange={(e) => setDateTo(e.target.value)}   className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" /> },
+        ].map(({ label, el }) => (
+          <div key={label} className="space-y-1"><label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{label}</label>{el}</div>
+        ))}
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Client</label>
+          <input
+            type="text"
+            placeholder="Search client..."
+            value={ownerSearch}
+            onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); }}
+            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none"
+          />
+          <div className="relative">
+            <select value={selectedOwnerId} onChange={(e) => {
+              const o = owners.find((o) => o.id.toString() === e.target.value);
+              setSelectedOwnerId(e.target.value);
+              setOwnerSearch(o?.name || "");
+            }}
+              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              <option value="">All clients</option>
+              {owners
+                .filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
+                .map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Product Type</label>
+          <div className="relative">
+            <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedServiceId(""); setSelectedInventoryId(""); }}
+              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              <option value="all">All</option>
+              <option value="service">Services only</option>
+              <option value="inventory">Inventory only</option>
+            </select>
+            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+          </div>
+        </div>
+        {(itemTypeFilter === "all" || itemTypeFilter === "service") && (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Service</label>
+            <div className="relative">
+              <select value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)}
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="">All services</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            </div>
+          </div>
+        )}
+        {(itemTypeFilter === "all" || itemTypeFilter === "inventory") && (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Inventory Item</label>
+            <div className="relative">
+              <select value={selectedInventoryId} onChange={(e) => setSelectedInventoryId(e.target.value)}
+                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                <option value="">All items</option>
+                {inventory.map((i) => <option key={i.id} value={i.id}>{i.item_name}</option>)}
+              </select>
+              <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            </div>
+          </div>
+        )}
+        <div className="flex gap-1.5 pt-1">
+          <button onClick={handleReset} className="flex-1 h-8 rounded border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">Clear</button>
+          <button onClick={handleGenerate} disabled={loading}
+            className="flex-1 h-8 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1">
+            {loading ? <FiRefreshCw className="h-3 w-3 animate-spin" /> : null} Search
+          </button>
+        </div>
+        {localGenerated && (
+          <p className="text-[9px] text-zinc-400 italic text-center pt-1">Filters apply instantly.</p>
+        )}
+      </div>
+
+      {/* Report document */}
+      <div className="card-shell p-5">
+        <div className="mb-4 text-right">
+          <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">Invoice Reports</h2>
+          {localGenerated && <p className="text-xs text-zinc-500 mt-0.5">Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}</p>}
+        </div>
+
+        {!localGenerated ? (
+          <div className="flex h-48 items-center justify-center border border-dashed border-zinc-200 dark:border-dark-border rounded-lg">
+            <div className="text-center">
+              <FiFileText className="mx-auto h-10 w-10 text-zinc-200 dark:text-zinc-700 mb-2" />
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Search</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+              <table className="w-full text-xs" style={{ minWidth: 480 }}>
+                <thead>
+                  <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
+                    {(itemTypeFilter === "inventory"
+                      ? ["Date","Client","Item / Service","Quantity","Selling Price","Gross Sales"]
+                      : ["Date","Client","Item / Service","Selling Price","Gross Sales"]
+                    ).map((h, i) => (
+                      <th key={h} className={clsx("px-3 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border last:border-r-0", i < 3 ? "text-left" : "text-right")}
+                        style={{ width: (itemTypeFilter === "inventory"
+                          ? ["12%","16%","34%","10%","14%","14%"]
+                          : ["14%","18%","38%","15%","15%"])[i] }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.length === 0 ? (
+                    <tr><td colSpan={itemTypeFilter === "inventory" ? 6 : 5} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
+                  ) : displayRows.map((row, idx) => (
+                    <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
+                      <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{formatDate(row.date)}</td>
+                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300 truncate border-r border-zinc-100 dark:border-dark-border">{row.client}</td>
+                      <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border">
+                        <div className="flex items-center gap-1.5"><CatBadge type={getShortType({ name: row.itemName })} size="xs" /><span className="text-zinc-700 dark:text-zinc-300 truncate">{row.itemName}</span></div>
+                      </td>
+                      {itemTypeFilter === "inventory" && (
+                        <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border">{row.qty}</td>
+                      )}
+                      <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border tabular-nums">{fmt(row.sellingPrice)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{fmt(row.grossSales)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-end justify-between">
+              <button onClick={exportReportsPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                <FiDownload className="h-3.5 w-3.5" /> Download PDF
+              </button>
+              <div className="w-56 space-y-1">
+                <div className="flex justify-between items-center font-black text-emerald-600 dark:text-emerald-400 border-t border-zinc-200 dark:border-dark-border pt-1">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Total Gross Sales</span>
+                  <span className="text-xs font-black tabular-nums">{fmt(summary.totalGross)}</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
 
-  const [activeTab, setActiveTab] = useState("new"); // "new" or "history"
+  const [activeTab, setActiveTab] = useState("new"); // "new", "history", or "reports"
+  const [txReportRows, setTxReportRows] = useState([]);
+  const [txGenerated, setTxGenerated]   = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1099,6 +1421,17 @@ function InvoiceModuleView() {
         >
           Invoice History
         </button>
+        <button
+          onClick={() => setActiveTab("reports")}
+          className={clsx(
+            "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+            activeTab === "reports"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          Invoice Reports
+        </button>
       </div>
 
       {activeTab === "new" ? (
@@ -1850,7 +2183,7 @@ function InvoiceModuleView() {
             </div>
           </section>
         </div>
-      ) : (
+      ) : activeTab === "history" ? (
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8">
@@ -1988,6 +2321,18 @@ function InvoiceModuleView() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+          <div className="max-w-7xl mx-auto pt-2">
+            <InvoiceReportsPane
+              inventory={inventory}
+              services={services}
+              owners={owners}
+              setReportRows={setTxReportRows}
+              setGenerated={setTxGenerated}
+            />
           </div>
         </div>
       )}

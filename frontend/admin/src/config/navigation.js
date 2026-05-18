@@ -7,7 +7,6 @@ import {
   FiActivity,
   FiHome,
   FiVolume2,
-  FiFileText,
   FiCreditCard,
 } from "react-icons/fi";
 import { LuPawPrint, LuSparkles } from "react-icons/lu";
@@ -26,7 +25,6 @@ export const primaryNavigation = [
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: CLINIC_ADMIN_GROUP },
   { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: CLINIC_ADMIN_GROUP },
-  { id: "reports", label: "Reports", path: "/reports", icon: FiFileText, allowedRoles: CLINIC_ADMIN_GROUP },
 { id: "ai-clinical", label: "AI Clinical Support", path: "/ai-clinical", icon: LuSparkles, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES, aiOnly: true },
 ];
 

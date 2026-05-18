@@ -17,7 +17,6 @@ import ChangePasswordPage from "../pages/ChangePasswordPage";
 import NotificationHistoryPage from "../pages/NotificationHistoryPage";
 import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
 import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
-import ReportPage from "../pages/ReportPage";
 import InvoicePage from "../pages/InvoicePage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
@@ -187,15 +186,6 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "AI Clinical Support" },
-      },
-      {
-        path: "reports",
-        element: (
-          <ProtectedRoute allowedRoles={CLINIC_ADMIN_GROUP}>
-            <ReportPage />
-          </ProtectedRoute>
-        ),
-        handle: { title: "Reports" },
       },
       {
         path: "invoices",
