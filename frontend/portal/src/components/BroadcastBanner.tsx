@@ -3,10 +3,10 @@ import { FiX } from 'react-icons/fi';
 import clsx from 'clsx';
 
 const TYPE_CLASSES: Record<string, string> = {
-  warning: 'bg-amber-50 border-amber-500 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200',
-  error:   'bg-rose-50 border-rose-500 text-rose-800 dark:bg-rose-900/20 dark:text-rose-200',
-  success: 'bg-emerald-50 border-emerald-500 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200',
-  info:    'bg-blue-50 border-blue-500 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200',
+  warning: 'bg-amber-50 border-amber-500 text-amber-800',
+  error:   'bg-rose-50 border-rose-500 text-rose-800',
+  success: 'bg-emerald-50 border-emerald-500 text-emerald-800',
+  info:    'bg-blue-50 border-blue-500 text-blue-800',
 };
 
 interface Announcement {
