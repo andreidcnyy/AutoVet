@@ -36,7 +36,7 @@ const CLINIC_SERVICES = [
 const STATS = [
   { value: '500+', label: 'Happy Pet Owners' },
   { value: '1,200+', label: 'Appointments Served' },
-  { value: '4', label: 'Expert Veterinarians' },
+  { value: '2', label: 'Expert Veterinarians' },
   { value: '5★', label: 'Average Rating' },
 ];
 
