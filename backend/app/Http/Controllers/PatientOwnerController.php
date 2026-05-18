@@ -89,6 +89,13 @@ class PatientOwnerController extends Controller
             ], 422);
         }
 
+        if (!empty($validated['email']) && Owner::where('email', $validated['email'])->exists()) {
+            return response()->json([
+                'message' => 'An owner with this email already exists.',
+                'errors' => ['email' => ['This email is already registered to another owner.']]
+            ], 422);
+        }
+
         $owner = Owner::create($validated);
 
         // Broadcast for real-time dashboard stats

@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Owner;
+use Illuminate\Support\Facades\DB;
 
 trait IdentifiesPortalOwner
 {
@@ -18,24 +19,29 @@ trait IdentifiesPortalOwner
         }
 
         if (!$user->owner) {
-            // Defensive: ensure owner record exists for the portal user
-            $owner = Owner::where('email', $user->email)->first();
-            if ($owner) {
-                if (!$owner->user_id) {
+            // Use a transaction + lock to prevent race conditions creating duplicate owners
+            $owner = DB::transaction(function () use ($user) {
+                $owner = Owner::lockForUpdate()->where('user_id', $user->id)->first();
+                if ($owner) return $owner;
+
+                $owner = Owner::lockForUpdate()->where('email', $user->email)->first();
+                if ($owner) {
+                    // Always re-link — handles stale user_id pointing to deleted portal users
                     $owner->update(['user_id' => $user->id]);
+                    return $owner;
                 }
-            } else {
-                $owner = Owner::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone ?? '00000000000',
-                    'address' => $user->address ?? 'N/A',
-                    'city' => $user->city ?? 'N/A',
+
+                return Owner::create([
+                    'name'     => $user->name,
+                    'email'    => $user->email,
+                    'phone'    => $user->phone ?? '00000000000',
+                    'address'  => $user->address ?? 'N/A',
+                    'city'     => $user->city ?? 'N/A',
                     'province' => $user->province ?? 'N/A',
-                    'zip' => $user->zip ?? '0000',
-                    'user_id' => $user->id,
+                    'zip'      => $user->zip ?? '0000',
+                    'user_id'  => $user->id,
                 ]);
-            }
+            });
             $user->setRelation('owner', $owner);
         }
 

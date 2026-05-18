@@ -129,13 +129,13 @@ class AuthController extends Controller
                     ]);
                 }
 
-                $ownerExists = Owner::where('user_id', $user->id)
-                    ->orWhere('email', $email)
-                    ->exists();
+                // Find the canonical owner for this user: first by user_id, then by email.
+                $owner = Owner::where('user_id', $user->id)->first()
+                    ?? Owner::where('email', $email)->first();
 
-                if (!$ownerExists) {
+                if (!$owner) {
                     Owner::create([
-                        'clinic_id' => 1, // Default clinic
+                        'clinic_id' => 1,
                         'name' => $request->name,
                         'email' => $email,
                         'phone' => $request->phone,
@@ -146,10 +146,10 @@ class AuthController extends Controller
                         'user_id' => $user->id,
                     ]);
                 } else {
-                    // If an Owner row exists but isn't linked to this PortalUser, link it.
-                    Owner::where('email', $email)
-                        ->whereNull('user_id')
-                        ->update(['user_id' => $user->id]);
+                    // Always ensure the owner is linked to the current portal user.
+                    if ($owner->user_id !== $user->id) {
+                        $owner->update(['user_id' => $user->id]);
+                    }
                 }
 
                 \Log::info('User verified (idempotent)', ['user_id' => $user->id, 'email' => $email]);

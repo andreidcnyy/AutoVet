@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
+use App\Models\Owner;
 use App\Models\PortalUser;
 use App\Models\Clinic;
 
@@ -102,20 +104,44 @@ class GoogleAuthController extends Controller
             return response()->json(['error' => 'No clinic configured.'], 500);
         }
 
-        $user = PortalUser::create([
-            'clinic_id'         => $clinic->id,
-            'name'              => $googleUser['name'] ?? $googleUser['email'],
-            'email'             => $googleUser['email'],
-            'google_id'         => $googleUser['sub'],
-            'avatar'            => $googleUser['picture'] ?? null,
-            'phone'             => $request->phone,
-            'address'           => $request->address,
-            'province'          => $request->province,
-            'city'              => $request->city,
-            'zip'               => $request->zip ?? null,
-            'email_verified_at' => now(),
-            'status'            => 'active',
-        ]);
+        $user = DB::transaction(function () use ($request, $googleUser, $clinic) {
+            $user = PortalUser::create([
+                'clinic_id'         => $clinic->id,
+                'name'              => $googleUser['name'] ?? $googleUser['email'],
+                'email'             => $googleUser['email'],
+                'google_id'         => $googleUser['sub'],
+                'avatar'            => $googleUser['picture'] ?? null,
+                'phone'             => $request->phone,
+                'address'           => $request->address,
+                'province'          => $request->province,
+                'city'              => $request->city,
+                'zip'               => $request->zip ?? null,
+                'email_verified_at' => now(),
+                'status'            => 'active',
+            ]);
+
+            // Link or create the Owner companion record (same as manual registration).
+            $owner = Owner::where('email', $googleUser['email'])->first();
+            if ($owner) {
+                if ($owner->user_id !== $user->id) {
+                    $owner->update(['user_id' => $user->id]);
+                }
+            } else {
+                Owner::create([
+                    'clinic_id' => $clinic->id,
+                    'name'      => $googleUser['name'] ?? $googleUser['email'],
+                    'email'     => $googleUser['email'],
+                    'phone'     => $request->phone,
+                    'address'   => $request->address,
+                    'province'  => $request->province,
+                    'city'      => $request->city,
+                    'zip'       => $request->zip ?? null,
+                    'user_id'   => $user->id,
+                ]);
+            }
+
+            return $user;
+        });
 
         $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
 

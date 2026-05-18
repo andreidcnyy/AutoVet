@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
@@ -89,6 +89,26 @@ function PatientsPage() {
       setIsLoading(false);
     }
   }, [user?.token, activeTab, fetchOwners]);
+
+  // Auto-refresh when portal users create pets or owners
+  const paginationRef = useRef(pagination);
+  useEffect(() => { paginationRef.current = pagination; }, [pagination]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    let channel;
+    import("../utils/echo").then(({ default: echo }) => {
+      channel = echo.private("admin.notifications");
+      channel.listen(".entity.created", (e) => {
+        if (["pet", "owner"].includes(e.entityType)) {
+          fetchOwners(paginationRef.current.current_page || 1);
+        }
+      });
+    });
+    return () => {
+      if (channel) channel.stopListening(".entity.created");
+    };
+  }, [user?.token, fetchOwners]);
 
   useEffect(() => {
     const provinceData = PH_LOCATION_DATA.find(p => p.name === province);
