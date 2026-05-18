@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +15,7 @@ import {
   FiEdit2,
   FiChevronRight,
   FiPhoneCall,
+  FiX,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 
@@ -38,17 +39,23 @@ function PatientRecordsView({
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchValue, setSearchValue] = useState("");
+  const debounceRef = useRef(null);
 
   const selectedOwner = owners.find((owner) => owner.id === selectedOwnerId) || owners[0] || null;
 
   const handleSearchChange = (e) => {
-    setSearchValue(e.target.value);
+    const val = e.target.value;
+    setSearchValue(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onSearch(val);
+    }, 350);
   };
 
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter') {
-      onSearch(searchValue);
-    }
+  const handleClearSearch = () => {
+    setSearchValue("");
+    clearTimeout(debounceRef.current);
+    onSearch("");
   };
 
   const handleFilterClick = (f) => {
@@ -83,12 +90,19 @@ function PatientRecordsView({
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search and press Enter..."
+            placeholder="Search by name, phone, email, address, city, pet..."
             value={searchValue}
             onChange={handleSearchChange}
-            onKeyDown={handleSearchSubmit}
-            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
+          {searchValue && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+            >
+              <FiX className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="flex rounded-xl border border-zinc-200 bg-white p-1 dark:border-dark-border dark:bg-dark-card shadow-sm">
           {["All", "With Pets"].map((f) => (
