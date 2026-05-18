@@ -186,7 +186,7 @@ export default function Landing() {
 
       {/* ══ Landing Page Broadcast Banners ══ */}
       {landingBanners.length > 0 && (
-        <div className="fixed top-20 left-0 right-0 z-40">
+        <div className="fixed top-20 left-0 right-0 z-40 px-6 pt-3">
           <BroadcastBanner announcements={landingBanners} />
         </div>
       )}

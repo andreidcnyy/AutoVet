@@ -154,7 +154,11 @@ export default function PortalLayout({ children }: LayoutProps) {
         </header>
 
         {/* System Broadcast Banners */}
-        <BroadcastBanner announcements={banners} />
+        {banners.length > 0 && (
+          <div className="px-8 pt-6">
+            <BroadcastBanner announcements={banners} />
+          </div>
+        )}
 
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto relative">

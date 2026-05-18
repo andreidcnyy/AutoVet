@@ -186,9 +186,12 @@ function AppLayout() {
           onMenuToggle={() => setIsSidebarOpen((prev) => !prev)}
         />
 
-        <BroadcastBanner announcements={announcements} />
-
         <main className="p-4 sm:p-6 lg:p-8">
+          {announcements.length > 0 && (
+            <div className="mb-6">
+              <BroadcastBanner announcements={announcements} />
+            </div>
+          )}
           <Outlet context={{ user, setUser }} />
         </main>
       </div>
