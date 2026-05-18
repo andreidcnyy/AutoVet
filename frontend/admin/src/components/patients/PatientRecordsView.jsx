@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -38,25 +38,14 @@ function PatientRecordsView({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
-  const [searchValue, setSearchValue] = useState("");
-  const debounceRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const selectedOwner = owners.find((owner) => owner.id === selectedOwnerId) || owners[0] || null;
 
-  const handleSearchChange = (e) => {
-    const val = e.target.value;
-    setSearchValue(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      onSearch(val);
-    }, 350);
-  };
-
-  const handleClearSearch = () => {
-    setSearchValue("");
-    clearTimeout(debounceRef.current);
-    onSearch("");
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => onSearch(searchQuery), 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleFilterClick = (f) => {
     setActiveFilter(f);
@@ -91,14 +80,14 @@ function PatientRecordsView({
           <input
             type="text"
             placeholder="Search by name, phone, email, address, city, pet..."
-            value={searchValue}
-            onChange={handleSearchChange}
-            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
-          {searchValue && (
+          {searchQuery && (
             <button
-              onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <FiX className="h-4 w-4" />
             </button>
