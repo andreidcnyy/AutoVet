@@ -101,7 +101,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-xl shadow-brand-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
         {/* Paw decoratives */}
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-1/4 w-20 h-20 text-white opacity-20 -rotate-20 pointer-events-none" />
@@ -110,11 +110,11 @@ export default function Dashboard() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.2em] mb-1">Pet Wellness Portal</p>
+            <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Pet Wellness Portal</p>
             <h1 className="text-3xl font-black italic uppercase tracking-tight leading-tight">
               Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} 🐾
             </h1>
-            <p className="text-emerald-100 mt-2 text-sm font-medium">
+            <p className="text-white/80 mt-2 text-sm font-medium">
               {pets.length > 0
                 ? `You have ${pets.length} pet${pets.length > 1 ? 's' : ''} registered. Keep their health on track!`
                 : "Register your first pet to get started."}

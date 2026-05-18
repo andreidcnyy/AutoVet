@@ -92,16 +92,16 @@ export default function Notifications() {
       </button>
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-xl shadow-brand-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.2em] mb-1">Inbox</p>
+            <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Inbox</p>
             <h1 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-3">
               <FiBell /> Notifications
             </h1>
-            <p className="text-emerald-100 mt-1 text-sm font-medium">Stay updated on your pet's health and appointments.</p>
+            <p className="text-white/80 mt-1 text-sm font-medium">Stay updated on your pet's health and appointments.</p>
           </div>
           {notifications.some(n => !n.read_at) && (
             <button

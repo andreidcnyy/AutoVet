@@ -93,7 +93,7 @@ function PetProfile() {
       </div>
 
       {/* Hero Section */}
-      <div className="rounded-2xl p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 overflow-hidden relative text-white shadow-xl">
+      <div className="rounded-2xl p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 overflow-hidden relative text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-25 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 left-4 w-16 h-16 text-white opacity-20 -rotate-6 pointer-events-none" />
         
