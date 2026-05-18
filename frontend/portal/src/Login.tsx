@@ -4,7 +4,6 @@ import clsx from "clsx";
 import { FiEye, FiEyeOff, FiArrowLeft, FiCalendar, FiFileText, FiShield } from "react-icons/fi";
 import { useAuth } from "./context/AuthContext";
 import DarkModeToggle from "./components/DarkModeToggle";
-import CompleteProfileModal from "./components/CompleteProfileModal";
 import { PawPrint, PawTrail, DogSilhouette, CatSilhouette } from "./pages/Landing";
 import logo from "./assets/logo.png";
 
@@ -21,7 +20,6 @@ function LoginPage() {
   const [error, setError]               = useState("");
   const [loading, setLoading]           = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [pendingGoogle, setPendingGoogle] = useState<{ token: string } | null>(null);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -36,13 +34,11 @@ function LoginPage() {
       });
       const data = await res.json();
       if (res.ok && data.token) {
-        if (data.profile_complete === false) {
-          setPendingGoogle({ token: data.token });
-          login(data);
-        } else {
-          login(data);
-          navigate("/dashboard");
-        }
+        login(data);
+        navigate("/dashboard");
+      } else if (res.ok && data.needs_profile) {
+        // No account exists — direct them to register
+        setError("No account found for this Google account. Please use Register to create one.");
       } else {
         setError(data.error || data.message || "Google sign-in failed.");
       }
@@ -100,15 +96,6 @@ function LoginPage() {
       setLoading(false);
     }
   };
-
-  if (pendingGoogle) {
-    return (
-      <CompleteProfileModal
-        token={pendingGoogle.token}
-        onComplete={() => navigate("/dashboard")}
-      />
-    );
-  }
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
