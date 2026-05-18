@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getProfile, updateProfile, forgotPassword } from '../api';
+import { getProfile, updateProfile, forgotPassword, deleteAccount } from '../api';
 import PhoneInput from './PhoneInput';
-import { 
-  FiUser, 
-  FiMail, 
-  FiPhone, 
-  FiMapPin, 
-  FiCheckCircle, 
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  FiUser,
+  FiMail,
+  FiMapPin,
+  FiCheckCircle,
   FiAlertCircle,
   FiX,
   FiSave,
-  FiLock
+  FiLock,
+  FiTrash2,
+  FiAlertTriangle
 } from 'react-icons/fi';
 import { PH_LOCATION_DATA } from '../utils/phLocationData';
 import clsx from 'clsx';
@@ -42,6 +45,12 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableCities, setAvailableCities] = useState<any[]>([]);
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -91,6 +100,20 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
       setAvailableCities([]);
     }
   }, [selectedProvince]);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE MY ACCOUNT') return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      logout();
+      navigate('/login');
+    } catch (err: any) {
+      setDeleteError(err.response?.data?.error || 'Failed to delete account. Please try again.');
+      setIsDeleting(false);
+    }
+  };
 
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
@@ -295,7 +318,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
               </div>
 
               <div className="pt-4">
-                <button 
+                <button
                   disabled={isSubmitting}
                   type="submit"
                   className="w-full h-16 rounded-2xl bg-brand-500 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-brand-500/20 hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
@@ -304,6 +327,72 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                   {isSubmitting ? "Updating..." : "Save Changes"}
                 </button>
               </div>
+
+              {/* ── Danger Zone ── */}
+              <div className="mt-2 rounded-2xl border-2 border-rose-200 dark:border-rose-900/50 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteZone(v => !v); setDeleteConfirmText(''); setDeleteError(null); }}
+                  className="w-full flex items-center justify-between px-5 py-4 bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2 font-black uppercase tracking-widest text-xs">
+                    <FiTrash2 className="w-4 h-4" />
+                    Danger Zone — Delete Account
+                  </div>
+                  <span className="text-xs font-bold opacity-60">{showDeleteZone ? '▲ Hide' : '▼ Show'}</span>
+                </button>
+
+                {showDeleteZone && (
+                  <div className="p-5 space-y-4 bg-white dark:bg-dark-card">
+                    {/* What gets deleted */}
+                    <div className="flex gap-3 p-4 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30">
+                      <FiAlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-black text-rose-700 dark:text-rose-400">This action is permanent and cannot be undone.</p>
+                        <p className="text-xs text-rose-600/80 dark:text-rose-400/70 font-medium">Deleting your account will permanently remove:</p>
+                        <ul className="text-xs text-rose-600/80 dark:text-rose-400/70 font-medium space-y-0.5 mt-1 ml-2 list-disc list-inside">
+                          <li>Your profile and personal information</li>
+                          <li>All registered pets and their profiles</li>
+                          <li>Your appointment history and booking records</li>
+                          <li>All notifications and messages</li>
+                          <li>Access to medical records linked to your account</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+                        Type <span className="text-rose-500 font-black">DELETE MY ACCOUNT</span> to confirm
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={e => setDeleteConfirmText(e.target.value)}
+                        placeholder="DELETE MY ACCOUNT"
+                        className="input-field font-bold border-rose-200 dark:border-rose-900/50 focus:border-rose-500 text-rose-700 dark:text-rose-400 placeholder:text-rose-300 dark:placeholder:text-rose-900"
+                      />
+                    </div>
+
+                    {deleteError && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 text-xs text-rose-600 dark:text-rose-400 font-bold">
+                        <FiAlertCircle className="w-4 h-4 shrink-0" />
+                        {deleteError}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirmText !== 'DELETE MY ACCOUNT' || isDeleting}
+                      className="w-full h-12 rounded-xl bg-rose-500 text-white font-black uppercase tracking-widest text-xs hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                      {isDeleting ? "Deleting Account..." : "Permanently Delete My Account"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
             </form>
           )}
         </div>

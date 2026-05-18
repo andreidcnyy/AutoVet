@@ -94,6 +94,23 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof PortalUser)) {
+            return response()->json(['error' => 'Only portal users can delete their account.'], 403);
+        }
+
+        // Revoke all active tokens first
+        $user->tokens()->delete();
+
+        // Soft-delete the account
+        $user->delete();
+
+        return response()->json(['message' => 'Your account has been deleted.']);
+    }
+
     public function update(Request $request)
     {
         $user = auth()->user();

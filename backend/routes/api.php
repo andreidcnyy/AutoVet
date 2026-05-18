@@ -327,6 +327,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::get('/profile',          [ProfileController::class, 'show']);
     Route::put('/profile',          [ProfileController::class, 'update']);
+    Route::delete('/profile',       [ProfileController::class, 'deleteAccount']);
     Route::post('/profile/complete', [ProfileController::class, 'completeProfile']);
     Route::get('/profile/devices',              [ProfileController::class, 'devices']);
     Route::delete('/profile/devices/{id}',      [ProfileController::class, 'revokeDevice']);

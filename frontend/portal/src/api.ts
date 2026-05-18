@@ -71,6 +71,7 @@ export const markNotificationAsRead = (id: number) => api.put(`/notifications/${
 // Profile
 export const getProfile = () => api.get('/profile');
 export const updateProfile = (data: any) => api.put('/profile', data);
+export const deleteAccount = () => api.delete('/profile');
 
 // Invoices
 export const getInvoices = (params?: any) => api.get('/invoices', { params });
