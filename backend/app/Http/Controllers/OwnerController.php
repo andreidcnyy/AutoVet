@@ -18,7 +18,7 @@ class OwnerController extends Controller
             return response()->json(Owner::select('id', 'name', 'phone', 'email')->orderBy('name')->get());
         }
 
-        $query = Owner::with(['pets', 'user'])->orderBy('created_at', 'desc');
+        $query = Owner::with(['pets', 'user'])->orderBy('id', 'desc');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
