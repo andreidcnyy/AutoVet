@@ -100,6 +100,7 @@ Route::get('/run-setup-step', function (\Illuminate\Http\Request $request) {
 });
 
 
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentStatusController;
 use App\Http\Controllers\AuthController;
@@ -134,6 +135,7 @@ use App\Models\Owner;
 // Public-facing routes (Login, Registration, etc.)
 // ---------------------------------------------------------------------------
 
+Route::post('/auth/google',     [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
 Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
 Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
@@ -325,6 +327,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::get('/profile',          [ProfileController::class, 'show']);
     Route::put('/profile',          [ProfileController::class, 'update']);
+    Route::post('/profile/complete', [ProfileController::class, 'completeProfile']);
     Route::get('/profile/devices',              [ProfileController::class, 'devices']);
     Route::delete('/profile/devices/{id}',      [ProfileController::class, 'revokeDevice']);
     Route::delete('/profile/devices',           [ProfileController::class, 'revokeOtherDevices']);

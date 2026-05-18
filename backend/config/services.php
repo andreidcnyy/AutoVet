@@ -45,4 +45,10 @@ return [
         'key' => env('ANTHROPIC_API_KEY', ''),
     ],
 
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => 'https://petwellness-web.vercel.app',
+    ],
+
 ];

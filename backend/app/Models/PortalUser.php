@@ -33,6 +33,7 @@ class PortalUser extends Authenticatable implements MustVerifyEmail
         'status',
         'email_verified_at',
         'avatar',
+        'google_id',
     ];
 
     protected $casts = [

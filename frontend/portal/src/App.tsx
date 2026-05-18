@@ -5,6 +5,8 @@ import Login from './Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Dashboard from './pages/Dashboard';
 import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
@@ -132,6 +134,16 @@ function AppContent() {
           <Notifications />
         </ProtectedRoute>
       ),
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/terms",
+      element: <TermsOfService />,
+      errorElement: <RouterErrorElement />
+    },
+    {
+      path: "/privacy-policy",
+      element: <PrivacyPolicy />,
       errorElement: <RouterErrorElement />
     },
     {

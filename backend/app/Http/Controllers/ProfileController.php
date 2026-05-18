@@ -73,6 +73,27 @@ class ProfileController extends Controller
         return response()->json(['message' => "Revoked {$count} other session(s)."]);
     }
 
+    public function completeProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'phone'    => 'required|string|size:11',
+            'address'  => 'required|string|max:500',
+            'province' => 'required|string|max:255',
+            'city'     => 'required|string|max:255',
+            'zip'      => 'nullable|string|max:10',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Profile completed.',
+            'user'    => $user->fresh(),
+        ]);
+    }
+
     public function update(Request $request)
     {
         $user = auth()->user();

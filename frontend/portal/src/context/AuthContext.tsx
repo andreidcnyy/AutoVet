@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (data: any) => void;
   logout: () => void;
   register: (data: any) => void;
+  updateUser: (data: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(sanitized));
   };
 
+  const updateUser = (data: any) => {
+    const sanitized = sanitizeUser(data);
+    setUser(sanitized);
+    localStorage.setItem("user", JSON.stringify(sanitized));
+  };
+
   const logout = () => {
     destroyEcho();
     setUser(null);
@@ -70,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
