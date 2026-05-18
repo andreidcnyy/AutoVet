@@ -192,6 +192,12 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
+        // Migrate old soft-deleted portal users into the new grace period flow
+        if ($user instanceof PortalUser && $user->deleted_at && !$user->deletion_requested_at) {
+            $user->restore();
+            $user->forceFill(['deletion_requested_at' => $user->deleted_at])->save();
+        }
+
         // Check if user is soft-deleted (admin-deactivated, not self-deletion)
         if ($user->deleted_at && !($user instanceof PortalUser && $user->deletion_requested_at)) {
             \Log::warning('Login failed: User account is deactivated/deleted', ['email' => $request->email]);

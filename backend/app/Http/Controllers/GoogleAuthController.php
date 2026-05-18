@@ -36,8 +36,18 @@ class GoogleAuthController extends Controller
 
         // Existing user — check pending deletion first
         if ($user) {
-            if ($user->deletion_requested_at) {
-                $daysElapsed   = (int) now()->diffInDays($user->deletion_requested_at);
+            // Support both new flow (deletion_requested_at) and old flow (deleted_at only)
+            $deletionDate = $user->deletion_requested_at ?? ($user->deleted_at ?: null);
+
+            if ($deletionDate) {
+                // Migrate old soft-deleted accounts into the new grace period flow
+                if ($user->deleted_at && !$user->deletion_requested_at) {
+                    $user->restore();
+                    $user->forceFill(['deletion_requested_at' => $user->deleted_at])->save();
+                    $deletionDate = $user->deletion_requested_at;
+                }
+
+                $daysElapsed   = (int) now()->diffInDays($deletionDate);
                 $daysRemaining = max(0, 30 - $daysElapsed);
 
                 if ($daysRemaining <= 0) {
@@ -49,7 +59,7 @@ class GoogleAuthController extends Controller
                 return response()->json([
                     'account_pending_deletion' => true,
                     'days_remaining'           => $daysRemaining,
-                    'deletion_requested_at'    => $user->deletion_requested_at,
+                    'deletion_requested_at'    => $deletionDate,
                     'token'                    => $token,
                     'id'                       => $user->id,
                     'name'                     => $user->name,
