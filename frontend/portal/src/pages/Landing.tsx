@@ -244,12 +244,12 @@ export default function Landing() {
         ))}
 
         {/* Paw & pet decoratives — more visible */}
-        <PawPrint  className="absolute top-24 right-8  w-56 h-56 text-brand-500 opacity-20 dark:opacity-[0.08] rotate-12  pointer-events-none animate-blob" />
-        <PawPrint  className="absolute bottom-20 left-6 w-40 h-40 text-emerald-600 opacity-[0.18] dark:opacity-[0.07] -rotate-20 pointer-events-none animate-blob delay-300" />
-        <PawPrint  className="absolute top-1/2 right-20 w-20 h-20 text-brand-500 opacity-[0.15] dark:opacity-[0.07] rotate-45 pointer-events-none" />
-        <PawTrail  className="absolute top-36 left-2   w-52 text-brand-500 opacity-[0.16] dark:opacity-[0.06] -rotate-12 pointer-events-none" />
-        <DogSilhouette className="absolute bottom-10 right-0 w-80 text-brand-500 opacity-[0.12] dark:opacity-[0.05] pointer-events-none" />
-        <CatSilhouette className="absolute top-24 left-0  w-44 text-emerald-600 opacity-[0.10] dark:opacity-[0.04] pointer-events-none -scale-x-100" />
+        <PawPrint  className="absolute top-24 right-8  w-56 h-56 text-brand-500 dark:text-emerald-400 opacity-20 dark:opacity-25 rotate-12  pointer-events-none animate-blob" />
+        <PawPrint  className="absolute bottom-20 left-6 w-40 h-40 text-emerald-600 dark:text-emerald-400 opacity-[0.18] dark:opacity-20 -rotate-20 pointer-events-none animate-blob delay-300" />
+        <PawPrint  className="absolute top-1/2 right-20 w-20 h-20 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-20 rotate-45 pointer-events-none" />
+        <PawTrail  className="absolute top-36 left-2   w-52 text-brand-500 dark:text-emerald-400 opacity-[0.16] dark:opacity-20 -rotate-12 pointer-events-none" />
+        <DogSilhouette className="absolute bottom-10 right-0 w-80 text-brand-500 dark:text-emerald-400 opacity-[0.12] dark:opacity-20 pointer-events-none" />
+        <CatSilhouette className="absolute top-24 left-0  w-44 text-emerald-600 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 pointer-events-none -scale-x-100" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 w-full">
           <div className="max-w-3xl space-y-8">
@@ -309,9 +309,9 @@ export default function Landing() {
           WHY CHOOSE US
       ══════════════════════════════════════ */}
       <section id="about" className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
-        <PawPrint  className="absolute -right-12 top-8    w-72 h-72 text-brand-500  opacity-[0.12] dark:opacity-[0.04] rotate-12  pointer-events-none" />
-        <PawPrint  className="absolute -left-8  bottom-8  w-56 h-56 text-emerald-500 opacity-[0.10] dark:opacity-[0.04] -rotate-20 pointer-events-none" />
-        <PawTrail  className="absolute top-6 left-6 w-40 text-brand-500 opacity-[0.15] dark:opacity-[0.05] pointer-events-none" />
+        <PawPrint  className="absolute -right-12 top-8    w-72 h-72 text-brand-500  dark:text-emerald-400 opacity-[0.12] dark:opacity-20 rotate-12  pointer-events-none" />
+        <PawPrint  className="absolute -left-8  bottom-8  w-56 h-56 text-emerald-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 -rotate-20 pointer-events-none" />
+        <PawTrail  className="absolute top-6 left-6 w-40 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-20 pointer-events-none" />
         <DogSilhouette className="absolute bottom-0 right-8 w-44 text-zinc-300 dark:text-zinc-700 opacity-40 dark:opacity-20 pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto">
@@ -330,7 +330,7 @@ export default function Landing() {
             {FEATURES.map((feature) => (
               <div key={feature.title}
                 className="group relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                <PawPrint className="absolute bottom-2 right-3 w-12 h-12 text-brand-500 opacity-[0.14] dark:opacity-[0.08] rotate-12 pointer-events-none" />
+                <PawPrint className="absolute bottom-2 right-3 w-12 h-12 text-brand-500 dark:text-emerald-400 opacity-[0.14] dark:opacity-25 rotate-12 pointer-events-none" />
                 <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
                   {feature.icon}
                 </div>
@@ -346,9 +346,9 @@ export default function Landing() {
           SERVICES
       ══════════════════════════════════════ */}
       <section id="services" className="relative py-24 px-6 bg-zinc-50 dark:bg-dark-bg overflow-hidden">
-        <CatSilhouette className="absolute left-0 bottom-0 w-56 text-brand-500 opacity-[0.12] dark:opacity-[0.05] pointer-events-none" />
-        <DogSilhouette className="absolute right-0 top-6 w-64 text-emerald-600 opacity-[0.12] dark:opacity-[0.05] -scale-x-100 pointer-events-none" />
-        <PawTrail      className="absolute top-6 left-1/2 -translate-x-1/2 w-56 text-brand-500 opacity-[0.15] dark:opacity-[0.06] pointer-events-none" />
+        <CatSilhouette className="absolute left-0 bottom-0 w-56 text-brand-500 dark:text-emerald-400 opacity-[0.12] dark:opacity-20 pointer-events-none" />
+        <DogSilhouette className="absolute right-0 top-6 w-64 text-emerald-600 dark:text-emerald-400 opacity-[0.12] dark:opacity-20 -scale-x-100 pointer-events-none" />
+        <PawTrail      className="absolute top-6 left-1/2 -translate-x-1/2 w-56 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-20 pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -403,9 +403,9 @@ export default function Landing() {
           TESTIMONIALS
       ══════════════════════════════════════ */}
       <section className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
-        <PawPrint      className="absolute top-6   left-4   w-44 h-44 text-brand-500  opacity-[0.12] dark:opacity-[0.04] -rotate-15 pointer-events-none" />
-        <PawPrint      className="absolute bottom-6 right-4  w-52 h-52 text-emerald-500 opacity-[0.10] dark:opacity-[0.04] rotate-20  pointer-events-none" />
-        <CatSilhouette className="absolute top-0   right-8  w-40 text-brand-500 opacity-[0.10] dark:opacity-[0.04] pointer-events-none" />
+        <PawPrint      className="absolute top-6   left-4   w-44 h-44 text-brand-500  dark:text-emerald-400 opacity-[0.12] dark:opacity-20 -rotate-15 pointer-events-none" />
+        <PawPrint      className="absolute bottom-6 right-4  w-52 h-52 text-emerald-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 rotate-20  pointer-events-none" />
+        <CatSilhouette className="absolute top-0   right-8  w-40 text-brand-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -419,7 +419,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {TESTIMONIALS.map((t) => (
               <div key={t.name} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 opacity-[0.15] dark:opacity-[0.07] rotate-12 pointer-events-none" />
+                <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
                 <div className="flex gap-1 mb-4">
                   {Array.from({ length: t.rating }).map((_, i) => (
                     <span key={i} className="text-amber-400 text-lg">★</span>
