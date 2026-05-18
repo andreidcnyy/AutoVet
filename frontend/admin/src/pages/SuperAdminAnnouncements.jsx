@@ -91,9 +91,10 @@ export default function SuperAdminAnnouncements() {
 
   const getTargetBadge = (target) => {
     switch (target) {
-      case 'portal': return { label: 'Web Portal', icon: <FiGlobe className="h-3 w-3" />, cls: 'bg-violet-100 text-violet-700 border-violet-200' };
-      case 'all':    return { label: 'Admin + Portal', icon: <FiGlobe className="h-3 w-3" />, cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
-      default:       return { label: 'Admin Only', icon: <FiMonitor className="h-3 w-3" />, cls: 'bg-zinc-100 text-zinc-600 border-zinc-200' };
+      case 'portal':  return { label: 'Web Portal',   icon: <FiGlobe className="h-3 w-3" />,   cls: 'bg-violet-100 text-violet-700 border-violet-200' };
+      case 'landing': return { label: 'Landing Page', icon: <FiGlobe className="h-3 w-3" />,   cls: 'bg-cyan-100 text-cyan-700 border-cyan-200' };
+      case 'all':     return { label: 'Everywhere',   icon: <FiGlobe className="h-3 w-3" />,   cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+      default:        return { label: 'Admin Only',   icon: <FiMonitor className="h-3 w-3" />, cls: 'bg-zinc-100 text-zinc-600 border-zinc-200' };
     }
   };
 
@@ -206,9 +207,10 @@ export default function SuperAdminAnnouncements() {
                  <label className="block text-[10px] font-black uppercase text-autovet-navy dark:text-zinc-400 mb-2 tracking-widest">Target Audience *</label>
                  <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: 'admin',  label: 'Admin Panel Only', icon: <FiMonitor className="h-5 w-5" />, desc: 'Visible to clinic staff' },
-                      { value: 'portal', label: 'Web Portal Only',  icon: <FiGlobe className="h-5 w-5" />,   desc: 'Visible to pet owners' },
-                      { value: 'all',    label: 'Both',             icon: <FiGlobe className="h-5 w-5" />,   desc: 'Admin + Portal' },
+                      { value: 'admin',   label: 'Admin Only',    icon: <FiMonitor className="h-5 w-5" />, desc: 'Clinic staff only' },
+                      { value: 'portal',  label: 'Web Portal',    icon: <FiGlobe className="h-5 w-5" />,   desc: 'Logged-in owners' },
+                      { value: 'landing', label: 'Landing Page',  icon: <FiGlobe className="h-5 w-5" />,   desc: 'Public visitors' },
+                      { value: 'all',     label: 'Everywhere',    icon: <FiGlobe className="h-5 w-5" />,   desc: 'All of the above' },
                     ].map(opt => (
                       <button
                         key={opt.value}

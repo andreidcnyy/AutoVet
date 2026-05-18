@@ -334,7 +334,7 @@ class SuperAdminDashboardController extends Controller
             'type' => 'nullable|string|in:info,warning,success,error',
             'active_until' => 'nullable|date',
             'is_active' => 'boolean',
-            'target' => 'nullable|string|in:admin,portal,all',
+            'target' => 'nullable|string|in:admin,portal,landing,all',
         ]);
 
         $announcement = SystemAnnouncement::create([
@@ -359,7 +359,7 @@ class SuperAdminDashboardController extends Controller
             'type' => 'nullable|string|in:info,warning,success,error',
             'active_until' => 'nullable|date',
             'is_active' => 'boolean',
-            'target' => 'nullable|string|in:admin,portal,all',
+            'target' => 'nullable|string|in:admin,portal,landing,all',
         ]);
 
         $announcement->update([

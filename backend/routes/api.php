@@ -311,6 +311,24 @@ Route::get('/status', function () {
     ]);
 });
 
+// Public system announcements (used by landing page — no auth required)
+Route::get('/public/system-announcements', function(\Illuminate\Http\Request $request) {
+    $query = \App\Models\SystemAnnouncement::where('is_active', true)
+        ->where(function($q) {
+            $q->whereNull('active_until')
+              ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
+        });
+
+    if ($request->filled('target')) {
+        $target = $request->input('target');
+        $query->where(function($q) use ($target) {
+            $q->where('target', $target)->orWhere('target', 'all');
+        });
+    }
+
+    return response()->json($query->orderBy('created_at', 'desc')->get());
+});
+
 // ---------------------------------------------------------------------------
 // Authenticated routes — all require a valid Sanctum token
 // ---------------------------------------------------------------------------

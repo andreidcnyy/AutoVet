@@ -68,6 +68,7 @@ export const getMedicalRecord = (id: number) => api.get(`/medical-records/${id}`
 export const getNotifications = (params?: any) => api.get('/notifications', { params });
 export const markNotificationAsRead = (id: number) => api.put(`/notifications/${id}`, { is_read: true });
 export const getSystemAnnouncements = () => api.get('/system-announcements', { params: { target: 'portal' } });
+export const getPublicSystemAnnouncements = (target: string) => api.get('/public/system-announcements', { params: { target } });
 
 // Profile
 export const getProfile = () => api.get('/profile');
