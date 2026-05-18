@@ -9,6 +9,88 @@ import clsx from 'clsx';
 import DarkModeToggle from '../components/DarkModeToggle';
 import logo from "../assets/logo.png";
 
+/* ── Decorative SVG components ── */
+function PawPrint({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" fill="currentColor" className={className}>
+      <ellipse cx="50" cy="68" rx="23" ry="19" />
+      <ellipse cx="24" cy="44" rx="11" ry="13" />
+      <ellipse cx="43" cy="33" rx="10" ry="13" />
+      <ellipse cx="63" cy="33" rx="10" ry="13" />
+      <ellipse cx="79" cy="44" rx="11" ry="13" />
+    </svg>
+  );
+}
+
+function PawTrail({ className = '' }: { className?: string }) {
+  const paws = [
+    { x: 0,  y: 60,  rotate: -20 },
+    { x: 40, y: 20,  rotate: 10  },
+    { x: 80, y: 60,  rotate: -15 },
+    { x: 120,y: 20,  rotate: 12  },
+  ];
+  return (
+    <svg viewBox="0 0 180 90" fill="currentColor" className={className}>
+      {paws.map((p, i) => (
+        <g key={i} transform={`translate(${p.x},${p.y}) rotate(${p.rotate})`}>
+          <ellipse cx="15" cy="19" rx="7"  ry="6"  />
+          <ellipse cx="6"  cy="11" rx="3.5" ry="4"  />
+          <ellipse cx="12" cy="7"  rx="3.5" ry="4"  />
+          <ellipse cx="19" cy="7"  rx="3.5" ry="4"  />
+          <ellipse cx="25" cy="11" rx="3.5" ry="4"  />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function DogSilhouette({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 220 180" fill="currentColor" className={className}>
+      {/* body */}
+      <ellipse cx="105" cy="110" rx="65" ry="42" />
+      {/* head */}
+      <circle cx="168" cy="72" r="32" />
+      {/* snout */}
+      <ellipse cx="192" cy="84" rx="16" ry="11" />
+      {/* ear left */}
+      <ellipse cx="152" cy="46" rx="13" ry="20" transform="rotate(-20 152 46)" />
+      {/* ear right */}
+      <ellipse cx="178" cy="44" rx="11" ry="18" transform="rotate(18 178 44)" />
+      {/* tail */}
+      <path d="M42 95 Q14 65 22 42 Q32 20 48 38 Q36 60 52 85 Z" />
+      {/* legs */}
+      <rect x="58"  y="142" width="16" height="34" rx="8" />
+      <rect x="84"  y="145" width="16" height="34" rx="8" />
+      <rect x="118" y="145" width="16" height="34" rx="8" />
+      <rect x="145" y="142" width="16" height="34" rx="8" />
+    </svg>
+  );
+}
+
+function CatSilhouette({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 200 200" fill="currentColor" className={className}>
+      {/* body */}
+      <ellipse cx="100" cy="130" rx="55" ry="48" />
+      {/* head */}
+      <circle cx="110" cy="72" r="34" />
+      {/* ear left */}
+      <polygon points="82,46 72,18 98,38" />
+      {/* ear right */}
+      <polygon points="128,40 148,14 138,46" />
+      {/* tail */}
+      <path d="M48 148 Q10 130 18 100 Q26 72 42 90 Q30 110 46 132 Z" />
+      {/* legs */}
+      <rect x="64"  y="168" width="14" height="30" rx="7" />
+      <rect x="86"  y="172" width="14" height="30" rx="7" />
+      <rect x="112" y="172" width="14" height="30" rx="7" />
+      <rect x="134" y="168" width="14" height="30" rx="7" />
+    </svg>
+  );
+}
+
+/* ── Data ── */
 const BACKGROUND_IMAGES = [
   "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?q=80&w=2070&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?q=80&w=2070&auto=format&fit=crop",
@@ -18,54 +100,45 @@ const BACKGROUND_IMAGES = [
 ];
 
 const FEATURES = [
-  { icon: <FiCalendar />, title: 'Easy Online Booking', desc: 'Schedule appointments anytime, anywhere with just a few clicks — no phone calls needed.' },
-  { icon: <FiBell />, title: 'Real-Time Updates', desc: 'Get instant notifications about appointment status, reminders, and schedule changes.' },
+  { icon: <FiCalendar />, title: 'Easy Online Booking',   desc: 'Schedule appointments anytime, anywhere with just a few clicks — no phone calls needed.' },
+  { icon: <FiBell />,     title: 'Real-Time Updates',     desc: 'Get instant notifications about appointment status, reminders, and schedule changes.' },
   { icon: <FiFileText />, title: 'Complete Pet Profiles', desc: 'All medical records, vaccinations, and history stored securely in one place.' },
-  { icon: <FiUsers />, title: 'Expert Veterinarians', desc: 'Board-certified vets dedicated to providing the best care for your beloved pets.' },
-  { icon: <FiLock />, title: 'Secure & Private', desc: "Your personal data and your pet's medical history are protected with top-level security." },
-  { icon: <FiShield />, title: '24/7 Portal Access', desc: 'Access your pet\'s health information, records, and appointments around the clock.' },
+  { icon: <FiUsers />,    title: 'Expert Veterinarians',  desc: 'Board-certified vets dedicated to providing the best care for your beloved pets.' },
+  { icon: <FiLock />,     title: 'Secure & Private',      desc: "Your personal data and your pet's medical history are protected with top-level security." },
+  { icon: <FiShield />,   title: '24/7 Portal Access',    desc: "Access your pet's health information, records, and appointments around the clock." },
 ];
 
 const CLINIC_SERVICES = [
-  { name: 'Consultations', icon: <FiHeart />, description: 'Expert medical advice and thorough check-ups for your pets.', gradient: 'from-rose-500 to-pink-600' },
-  { name: 'Grooming', icon: <FiScissors />, description: 'Professional styling and hygiene services to keep pets looking their best.', gradient: 'from-purple-500 to-violet-600' },
-  { name: 'Vaccination', icon: <FiShield />, description: 'Essential preventative care and immunization schedules for lifelong health.', gradient: 'from-brand-500 to-emerald-600' },
-  { name: 'Deworming', icon: <FiActivity />, description: 'Safe and effective treatments to protect your pets from internal parasites.', gradient: 'from-amber-500 to-orange-600' },
+  { name: 'Consultations', icon: <FiHeart />,    description: 'Expert medical advice and thorough check-ups for your pets.',                        gradient: 'from-rose-500 to-pink-600'    },
+  { name: 'Grooming',      icon: <FiScissors />, description: 'Professional styling and hygiene services to keep pets looking their best.',          gradient: 'from-purple-500 to-violet-600' },
+  { name: 'Vaccination',   icon: <FiShield />,   description: 'Essential preventative care and immunization schedules for lifelong health.',         gradient: 'from-brand-500 to-emerald-600' },
+  { name: 'Deworming',     icon: <FiActivity />, description: 'Safe and effective treatments to protect your pets from internal parasites.',         gradient: 'from-amber-500 to-orange-600'  },
 ];
 
 const STATS = [
-  { value: '500+', label: 'Happy Pet Owners' },
-  { value: '1,200+', label: 'Appointments Served' },
-  { value: '2', label: 'Expert Veterinarians' },
-  { value: '5★', label: 'Average Rating' },
+  { value: '500+',   label: 'Happy Pet Owners'       },
+  { value: '1,200+', label: 'Appointments Served'    },
+  { value: '2',      label: 'Expert Veterinarians'   },
+  { value: '5★',     label: 'Average Rating'         },
 ];
 
 const TESTIMONIALS = [
-  {
-    name: 'Maria Santos',
-    pet: 'Owner of Brownie (Shih Tzu)',
-    text: "The portal made everything so easy! I can book appointments and check Brownie's records anytime. The vets here truly care about our pets.",
-    rating: 5,
-  },
-  {
-    name: 'Carlo Reyes',
-    pet: 'Owner of Luna (Persian Cat)',
-    text: "Excellent service! I love getting notifications for Luna's vaccination schedules. The online booking system is smooth and the staff is very professional.",
-    rating: 5,
-  },
+  { name: 'Maria Santos', pet: 'Owner of Brownie (Shih Tzu)',   text: "The portal made everything so easy! I can book appointments and check Brownie's records anytime. The vets here truly care about our pets.", rating: 5 },
+  { name: 'Carlo Reyes',  pet: 'Owner of Luna (Persian Cat)',   text: "Excellent service! I love getting notifications for Luna's vaccination schedules. The online booking is smooth and the staff is very professional.", rating: 5 },
 ];
 
 const NAV_LINKS = [
-  { label: 'Home', href: '#home' },
+  { label: 'Home',     href: '#home'     },
   { label: 'Services', href: '#services' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'About',    href: '#about'    },
+  { label: 'Contact',  href: '#contact'  },
 ];
 
+/* ── Component ── */
 export default function Landing() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen]       = useState(false);
+  const [scrolled, setScrolled]                   = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -87,7 +160,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
+    <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 overflow-x-hidden">
 
       {/* ── Navbar ── */}
       <header className={clsx(
@@ -98,7 +171,6 @@ export default function Landing() {
       )}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3 hover:scale-105 transition-transform duration-300 shrink-0">
             <img src={logo} alt="Logo" className="w-10 h-10 object-contain animate-float" />
             <span className="text-base font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase hidden lg:block">
@@ -106,7 +178,6 @@ export default function Landing() {
             </span>
           </Link>
 
-          {/* Center Nav */}
           <nav className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map(link => (
               <button
@@ -119,20 +190,13 @@ export default function Landing() {
             ))}
           </nav>
 
-          {/* Right: dark mode + auth */}
           <div className="flex items-center gap-2 shrink-0">
             <DarkModeToggle />
             <div className="h-6 w-px bg-zinc-200 dark:bg-dark-border mx-1 hidden sm:block" />
-            <Link
-              to="/login"
-              className="hidden sm:block px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5"
-            >
+            <Link to="/login" className="hidden sm:block px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5">
               Log In
             </Link>
-            <Link
-              to="/register"
-              className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 active:scale-95"
-            >
+            <Link to="/register" className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 active:scale-95">
               Register
             </Link>
             <button
@@ -144,29 +208,24 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white dark:bg-dark-card border-t border-zinc-200 dark:border-dark-border px-6 py-4 space-y-1">
             {NAV_LINKS.map(link => (
-              <button
-                key={link.label}
-                onClick={() => scrollTo(link.href)}
-                className="block w-full text-left px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
-              >
+              <button key={link.label} onClick={() => scrollTo(link.href)}
+                className="block w-full text-left px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">
                 {link.label}
               </button>
             ))}
-            <Link
-              to="/login"
-              className="block px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
-            >
+            <Link to="/login" className="block px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">
               Log In
             </Link>
           </div>
         )}
       </header>
 
-      {/* ── Hero ── */}
+      {/* ════════════════════════════════════════
+          HERO
+      ════════════════════════════════════════ */}
       <section id="home" className="relative min-h-screen flex items-center overflow-hidden pt-20">
 
         {/* Blobs */}
@@ -175,19 +234,25 @@ export default function Landing() {
 
         {/* Background carousel */}
         {BACKGROUND_IMAGES.map((img, index) => (
-          <div
-            key={img}
-            className={clsx(
-              "absolute inset-0 z-0 pointer-events-none transition-all duration-1000",
+          <div key={img}
+            className={clsx("absolute inset-0 z-0 pointer-events-none transition-all duration-1000",
               index === currentImageIndex ? "opacity-20 dark:opacity-10 scale-100" : "opacity-0 scale-105"
             )}
             style={{ backgroundImage: `url("${img}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }}
           />
         ))}
 
-        {/* Paw decoratives */}
-        <span className="absolute top-28 right-20 text-9xl pointer-events-none select-none opacity-5 dark:opacity-[0.03] animate-blob">🐾</span>
-        <span className="absolute bottom-28 left-20 text-7xl pointer-events-none select-none opacity-5 dark:opacity-[0.03] animate-blob delay-300">🐾</span>
+        {/* ── Paw & pet decoratives ── */}
+        {/* Large paw – top right */}
+        <PawPrint className="absolute top-24 right-8 w-48 h-48 text-brand-500 opacity-[0.07] dark:opacity-[0.05] rotate-12 pointer-events-none" />
+        {/* Medium paw – bottom left */}
+        <PawPrint className="absolute bottom-20 left-10 w-32 h-32 text-emerald-500 opacity-[0.08] dark:opacity-[0.05] -rotate-20 pointer-events-none animate-blob" />
+        {/* Small paw – mid right */}
+        <PawPrint className="absolute top-1/2 right-24 w-16 h-16 text-brand-500 opacity-[0.1] dark:opacity-[0.06] rotate-45 pointer-events-none" />
+        {/* Paw trail – upper left area */}
+        <PawTrail className="absolute top-36 left-4 w-44 text-brand-500 opacity-[0.07] dark:opacity-[0.04] -rotate-12 pointer-events-none" />
+        {/* Dog silhouette – far right */}
+        <DogSilhouette className="absolute bottom-16 right-0 w-72 text-brand-500 opacity-[0.06] dark:opacity-[0.04] pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 w-full">
           <div className="max-w-3xl space-y-8">
@@ -208,16 +273,12 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-wrap gap-4 opacity-0 animate-fade-in-scale delay-300">
-              <Link
-                to="/register"
-                className="group px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl flex items-center gap-3 hover:scale-105 transition-all duration-300 shadow-2xl shadow-brand-500/30 active:scale-95"
-              >
+              <Link to="/register"
+                className="group px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl flex items-center gap-3 hover:scale-105 transition-all duration-300 shadow-2xl shadow-brand-500/30 active:scale-95">
                 Get Started <FiArrowRight className="group-hover:translate-x-2 transition-transform" />
               </Link>
-              <button
-                onClick={() => scrollTo('#services')}
-                className="group px-8 py-4 bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-700 dark:text-zinc-300 font-black rounded-2xl flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm"
-              >
+              <button onClick={() => scrollTo('#services')}
+                className="group px-8 py-4 bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-700 dark:text-zinc-300 font-black rounded-2xl flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm">
                 <FiActivity className="text-brand-500 group-hover:animate-pulse" /> Our Services
               </button>
             </div>
@@ -225,23 +286,27 @@ export default function Landing() {
             {/* Carousel dots */}
             <div className="flex gap-2 pt-2 opacity-0 animate-fade-in-scale delay-500">
               {BACKGROUND_IMAGES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentImageIndex(i)}
-                  className={clsx(
-                    "h-1.5 rounded-full transition-all duration-300",
+                <button key={i} onClick={() => setCurrentImageIndex(i)}
+                  className={clsx("h-1.5 rounded-full transition-all duration-300",
                     i === currentImageIndex ? "w-8 bg-brand-500" : "w-1.5 bg-zinc-300 dark:bg-dark-border"
-                  )}
-                />
+                  )} />
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
-      <section className="bg-brand-500 py-14">
-        <div className="max-w-7xl mx-auto px-6">
+      {/* ════════════════════════════════════════
+          STATS BAR
+      ════════════════════════════════════════ */}
+      <section className="relative bg-brand-500 py-14 overflow-hidden">
+        {/* Scattered paws inside the bar */}
+        <PawPrint className="absolute left-6 top-2 w-14 h-14 text-white opacity-10 -rotate-12 pointer-events-none" />
+        <PawPrint className="absolute left-1/4 bottom-1 w-10 h-10 text-white opacity-10 rotate-20 pointer-events-none" />
+        <PawPrint className="absolute right-1/4 top-2 w-12 h-12 text-white opacity-10 -rotate-6 pointer-events-none" />
+        <PawPrint className="absolute right-6 bottom-1 w-14 h-14 text-white opacity-10 rotate-15 pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {STATS.map((stat) => (
               <div key={stat.label}>
@@ -253,19 +318,23 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Why Choose Us ── */}
-      <section id="about" className="py-24 px-6 bg-white dark:bg-dark-card">
-        <div className="max-w-7xl mx-auto">
+      {/* ════════════════════════════════════════
+          WHY CHOOSE US
+      ════════════════════════════════════════ */}
+      <section id="about" className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
 
+        {/* Background watermark paw */}
+        <PawPrint className="absolute -right-16 top-10 w-80 h-80 text-brand-500 opacity-[0.04] dark:opacity-[0.03] rotate-12 pointer-events-none" />
+        <PawPrint className="absolute -left-10 bottom-10 w-56 h-56 text-emerald-500 opacity-[0.04] dark:opacity-[0.03] -rotate-20 pointer-events-none" />
+        {/* Paw trail top-left */}
+        <PawTrail className="absolute top-8 left-8 w-36 text-brand-500 opacity-[0.06] dark:opacity-[0.04] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">
-              Why Choose Us
-            </span>
+            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Why Choose Us</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               Everything Your Pet <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
-                Deserves
-              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Deserves</span>
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
               Our portal is designed to make veterinary care simple, transparent, and accessible for every pet owner.
@@ -274,10 +343,10 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((feature) => (
-              <div
-                key={feature.title}
-                className="group p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-              >
+              <div key={feature.title}
+                className="group relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                {/* tiny paw watermark per card */}
+                <PawPrint className="absolute bottom-2 right-3 w-10 h-10 text-brand-500 opacity-[0.07] rotate-12 pointer-events-none" />
                 <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
                   {feature.icon}
                 </div>
@@ -289,19 +358,24 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Services ── */}
-      <section id="services" className="py-24 px-6 bg-zinc-50 dark:bg-dark-bg">
-        <div className="max-w-7xl mx-auto">
+      {/* ════════════════════════════════════════
+          SERVICES
+      ════════════════════════════════════════ */}
+      <section id="services" className="relative py-24 px-6 bg-zinc-50 dark:bg-dark-bg overflow-hidden">
 
+        {/* Cat silhouette – left */}
+        <CatSilhouette className="absolute left-0 bottom-0 w-52 text-brand-500 opacity-[0.05] dark:opacity-[0.04] pointer-events-none" />
+        {/* Dog silhouette – right */}
+        <DogSilhouette className="absolute right-0 top-8 w-60 text-emerald-500 opacity-[0.05] dark:opacity-[0.04] pointer-events-none" />
+        {/* Paw trail across top */}
+        <PawTrail className="absolute top-6 left-1/2 -translate-x-1/2 w-52 text-brand-500 opacity-[0.07] dark:opacity-[0.04] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">
-              Our Services
-            </span>
+            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Our Services</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               Comprehensive{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
-                Veterinary Care
-              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Veterinary Care</span>
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
               Professional veterinary care tailored to every pet's unique needs.
@@ -310,15 +384,11 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {CLINIC_SERVICES.map((service) => (
-              <Link
-                key={service.name}
-                to="/register"
-                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-6 text-center"
-              >
-                <div className={clsx(
-                  "w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300",
-                  service.gradient
-                )}>
+              <Link key={service.name} to="/register"
+                className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-6 text-center">
+                {/* paw in card corner */}
+                <PawPrint className="absolute top-2 right-2 w-8 h-8 text-zinc-400 dark:text-zinc-600 opacity-20 rotate-12 pointer-events-none" />
+                <div className={clsx("w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300", service.gradient)}>
                   {service.icon}
                 </div>
                 <h3 className="font-black text-zinc-800 dark:text-zinc-100 mb-2">{service.name}</h3>
@@ -329,31 +399,40 @@ export default function Landing() {
               </Link>
             ))}
           </div>
+
+          {/* Paw trail below cards */}
+          <div className="flex justify-center mt-10">
+            <PawTrail className="w-48 text-brand-500 opacity-[0.1] dark:opacity-[0.06]" />
+          </div>
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section className="py-24 px-6 bg-white dark:bg-dark-card">
-        <div className="max-w-7xl mx-auto">
+      {/* ════════════════════════════════════════
+          TESTIMONIALS
+      ════════════════════════════════════════ */}
+      <section className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
 
+        {/* Background large paws */}
+        <PawPrint className="absolute top-8 left-4 w-40 h-40 text-brand-500 opacity-[0.04] dark:opacity-[0.03] -rotate-15 pointer-events-none" />
+        <PawPrint className="absolute bottom-8 right-4 w-48 h-48 text-emerald-500 opacity-[0.04] dark:opacity-[0.03] rotate-20 pointer-events-none" />
+        {/* Cat near top-right */}
+        <CatSilhouette className="absolute top-0 right-10 w-36 text-brand-500 opacity-[0.04] dark:opacity-[0.03] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">
-              Testimonials
-            </span>
+            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Testimonials</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               What Pet Owners{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
-                Are Saying
-              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Are Saying</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {TESTIMONIALS.map((t) => (
-              <div
-                key={t.name}
-                className="p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:shadow-lg transition-all duration-300"
-              >
+              <div key={t.name}
+                className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface hover:shadow-lg transition-all duration-300 overflow-hidden">
+                {/* paw watermark in card */}
+                <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 opacity-[0.08] rotate-12 pointer-events-none" />
                 <div className="flex gap-1 mb-4">
                   {Array.from({ length: t.rating }).map((_, i) => (
                     <span key={i} className="text-amber-400 text-lg">★</span>
@@ -370,34 +449,51 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA Banner ── */}
-      <section className="py-24 px-6 bg-gradient-to-br from-brand-500 to-emerald-600">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* ════════════════════════════════════════
+          CTA BANNER
+      ════════════════════════════════════════ */}
+      <section className="relative py-24 px-6 bg-gradient-to-br from-brand-500 to-emerald-600 overflow-hidden">
+
+        {/* Scattered paws on banner */}
+        <PawPrint className="absolute top-4  left-8   w-20 h-20 text-white opacity-10 -rotate-12 pointer-events-none" />
+        <PawPrint className="absolute top-8  right-16 w-16 h-16 text-white opacity-10 rotate-20  pointer-events-none" />
+        <PawPrint className="absolute bottom-4 left-1/4 w-12 h-12 text-white opacity-10 rotate-6  pointer-events-none" />
+        <PawPrint className="absolute bottom-6 right-8 w-24 h-24 text-white opacity-10 -rotate-8 pointer-events-none" />
+        <PawTrail className="absolute bottom-2 left-1/2 -translate-x-1/2 w-52 text-white opacity-10 pointer-events-none" />
+        {/* Dog silhouette */}
+        <DogSilhouette className="absolute left-0 bottom-0 w-48 text-white opacity-[0.07] pointer-events-none" />
+        {/* Cat silhouette */}
+        <CatSilhouette className="absolute right-0 bottom-0 w-40 text-white opacity-[0.07] pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4">Ready to Get Started?</h2>
           <p className="text-emerald-100 text-lg mb-10 max-w-2xl mx-auto">
             Join hundreds of pet owners who trust Pet Wellness Animal Clinic for their beloved companions' health and wellness.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/register"
-              className="group px-10 py-4 bg-white text-brand-500 font-black rounded-2xl hover:scale-105 transition-all duration-300 shadow-2xl active:scale-95 flex items-center gap-2"
-            >
+            <Link to="/register"
+              className="group px-10 py-4 bg-white text-brand-500 font-black rounded-2xl hover:scale-105 transition-all duration-300 shadow-2xl active:scale-95 flex items-center gap-2">
               Create Free Account <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link
-              to="/login"
-              className="px-10 py-4 bg-transparent border-2 border-white/50 text-white font-black rounded-2xl hover:bg-white/10 hover:scale-105 transition-all duration-300 active:scale-95"
-            >
+            <Link to="/login"
+              className="px-10 py-4 bg-transparent border-2 border-white/50 text-white font-black rounded-2xl hover:bg-white/10 hover:scale-105 transition-all duration-300 active:scale-95">
               Log In
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer id="contact" className="py-16 px-6 bg-zinc-900 dark:bg-zinc-950">
-        <div className="max-w-7xl mx-auto">
+      {/* ════════════════════════════════════════
+          FOOTER
+      ════════════════════════════════════════ */}
+      <footer id="contact" className="relative py-16 px-6 bg-zinc-900 dark:bg-zinc-950 overflow-hidden">
 
+        {/* Paw prints in footer */}
+        <PawPrint className="absolute top-6 right-10 w-20 h-20 text-white opacity-[0.04] rotate-12 pointer-events-none" />
+        <PawPrint className="absolute bottom-6 left-10 w-16 h-16 text-brand-500 opacity-[0.06] -rotate-10 pointer-events-none" />
+        <PawTrail className="absolute bottom-2 right-1/4 w-36 text-white opacity-[0.04] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
 
             {/* Brand */}
@@ -409,6 +505,8 @@ export default function Landing() {
               <p className="text-zinc-400 text-sm leading-relaxed">
                 Providing compassionate and professional veterinary care for your beloved pets. Your pet's health is our priority.
               </p>
+              {/* small paw trail under tagline */}
+              <PawTrail className="mt-4 w-28 text-brand-500 opacity-20" />
             </div>
 
             {/* Quick Links */}
@@ -417,24 +515,14 @@ export default function Landing() {
               <ul className="space-y-2">
                 {NAV_LINKS.map(link => (
                   <li key={link.label}>
-                    <button
-                      onClick={() => scrollTo(link.href)}
-                      className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1"
-                    >
+                    <button onClick={() => scrollTo(link.href)}
+                      className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1">
                       <FiChevronRight className="text-xs" /> {link.label}
                     </button>
                   </li>
                 ))}
-                <li>
-                  <Link to="/login" className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1">
-                    <FiChevronRight className="text-xs" /> Log In
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/register" className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1">
-                    <FiChevronRight className="text-xs" /> Register
-                  </Link>
-                </li>
+                <li><Link to="/login"    className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1"><FiChevronRight className="text-xs" /> Log In</Link></li>
+                <li><Link to="/register" className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1"><FiChevronRight className="text-xs" /> Register</Link></li>
               </ul>
             </div>
 
@@ -442,26 +530,21 @@ export default function Landing() {
             <div>
               <h4 className="font-black text-white mb-4 uppercase tracking-wider text-sm">Contact Us</h4>
               <ul className="space-y-3">
-                <li className="flex items-start gap-3 text-zinc-400 text-sm">
-                  <FiMail className="text-brand-500 mt-0.5 shrink-0" />
-                  <span>badetvelasquez@gmail.com</span>
-                </li>
-                <li className="flex items-start gap-3 text-zinc-400 text-sm">
-                  <FiPhone className="text-brand-500 mt-0.5 shrink-0" />
-                  <span>+63 933 461 7957</span>
-                </li>
-                <li className="flex items-start gap-3 text-zinc-400 text-sm">
-                  <FiMapPin className="text-brand-500 mt-0.5 shrink-0" />
-                  <span>Blk 10 lot2D Dahlia Ave, West Fairview, Q.C. Philippines</span>
-                </li>
+                <li className="flex items-start gap-3 text-zinc-400 text-sm"><FiMail  className="text-brand-500 mt-0.5 shrink-0" /><span>badetvelasquez@gmail.com</span></li>
+                <li className="flex items-start gap-3 text-zinc-400 text-sm"><FiPhone className="text-brand-500 mt-0.5 shrink-0" /><span>+63 933 461 7957</span></li>
+                <li className="flex items-start gap-3 text-zinc-400 text-sm"><FiMapPin className="text-brand-500 mt-0.5 shrink-0" /><span>Blk 10 lot2D Dahlia Ave, West Fairview, Q.C. Philippines</span></li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-zinc-800 pt-8 text-center">
-            <p className="text-sm text-zinc-500">
-              © 2026 Digivet Management System. All rights reserved.
-            </p>
+          <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-zinc-500">© 2026 Digivet Management System. All rights reserved.</p>
+            {/* paw row */}
+            <div className="flex items-center gap-2 opacity-30">
+              {[0,1,2,3].map(i => (
+                <PawPrint key={i} className={clsx("w-4 h-4 text-brand-500", i % 2 === 0 ? "rotate-12" : "-rotate-12")} />
+              ))}
+            </div>
           </div>
         </div>
       </footer>
