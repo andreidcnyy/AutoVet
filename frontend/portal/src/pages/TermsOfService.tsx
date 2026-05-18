@@ -30,7 +30,7 @@ export default function TermsOfService() {
 
         <div className="space-y-2">
           <h1 className="text-4xl font-black text-zinc-800 dark:text-zinc-100">Terms of Service</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 18, 2026</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 19, 2026</p>
         </div>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none space-y-6 text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -46,22 +46,32 @@ export default function TermsOfService() {
           <section className="space-y-3">
             <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">2. Description of Service</h2>
             <p>
-              The Pet Wellness Animal Clinic portal is a web-based platform that allows registered pet owners to:
+              The Pet Wellness Animal Clinic portal is a web-based platform exclusively for registered pet owners to:
             </p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Book and manage veterinary appointments online</li>
               <li>View their pets' health records and medical history</li>
+              <li>Register and manage multiple pets under one account</li>
+              <li>View and track invoices for veterinary services</li>
               <li>Receive appointment reminders and health notifications</li>
-              <li>Communicate with their veterinary care team</li>
+              <li>Receive system-wide announcements and clinic updates via broadcast notifications</li>
             </ul>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">3. Account Registration</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">3. Account Registration & Portal Access</h2>
             <p>
-              To use the Service, you must create an account by providing accurate, complete, and current information.
-              You are responsible for maintaining the confidentiality of your account credentials and for all activities
-              that occur under your account. You must notify us immediately of any unauthorized use of your account.
+              To use the Service, you must create a pet owner account by providing accurate, complete, and current
+              information. You are responsible for maintaining the confidentiality of your account credentials and
+              for all activities that occur under your account.
+            </p>
+            <p>
+              This portal is intended exclusively for pet owners. Clinic staff, veterinarians, and administrators
+              must use the designated clinic administration panel and are not permitted to log in through this portal.
+              Attempts to access this portal using a clinic staff or admin account will be rejected.
+            </p>
+            <p>
+              You must notify us immediately of any unauthorized use of your account.
             </p>
           </section>
 
@@ -72,6 +82,7 @@ export default function TermsOfService() {
               <li>Provide false or misleading information about yourself or your pets</li>
               <li>Use the Service for any unlawful purpose</li>
               <li>Attempt to gain unauthorized access to any part of the Service</li>
+              <li>Attempt to log in using credentials belonging to clinic staff or admin accounts</li>
               <li>Interfere with or disrupt the integrity or performance of the Service</li>
               <li>Use the Service to transmit harmful or offensive content</li>
             </ul>
@@ -96,7 +107,26 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Intellectual Property</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Invoices and Billing</h2>
+            <p>
+              Invoice records accessible through the portal are provided for your reference and transparency. All
+              billing inquiries, disputes, or payment arrangements must be directed to the clinic directly. Invoice
+              records are generated and maintained by our clinic staff.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. System Announcements</h2>
+            <p>
+              The clinic may send system-wide broadcast announcements to portal users and visitors of our website.
+              These announcements may include important service updates, clinic closures, health advisories, or
+              other relevant notices. Broadcast announcements are informational and may be dismissed at your
+              discretion; however, we recommend reading all clinic announcements promptly.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Intellectual Property</h2>
             <p>
               All content, trademarks, and data on this Service, including but not limited to text, graphics, logos,
               and software, are the property of Pet Wellness Animal Clinic and are protected by applicable intellectual
@@ -105,7 +135,7 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Limitation of Liability</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Limitation of Liability</h2>
             <p>
               Pet Wellness Animal Clinic shall not be liable for any indirect, incidental, special, or consequential
               damages arising out of or in connection with your use of the Service. Our total liability shall not
@@ -114,16 +144,22 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Termination</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Account Termination & Recovery</h2>
             <p>
               We reserve the right to suspend or terminate your account at any time for violation of these Terms or
-              for any other reason at our sole discretion. You may also delete your account at any time by contacting
-              our support team.
+              for any other reason at our sole discretion. You may also request deletion of your account at any time
+              through the portal or by contacting our support team.
+            </p>
+            <p>
+              Upon account deletion, your account and associated data are scheduled for permanent removal after a
+              <strong> 30-day recovery period</strong>. During this window, you may log in to cancel the deletion
+              and restore full access to your account. After 30 days, all account data will be permanently deleted
+              and cannot be recovered.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Changes to Terms</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">12. Changes to Terms</h2>
             <p>
               We may update these Terms of Service from time to time. We will notify registered users of significant
               changes via email or in-app notification. Continued use of the Service after changes constitutes
@@ -132,14 +168,15 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Contact Us</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">13. Contact Us</h2>
             <p>
               If you have any questions about these Terms of Service, please contact us at:
             </p>
-            <div className="bg-white dark:bg-dark-card rounded-xl p-4 border border-zinc-200 dark:border-dark-border font-medium">
+            <div className="bg-white dark:bg-dark-card rounded-xl p-4 border border-zinc-200 dark:border-dark-border font-medium space-y-1">
               <p className="font-black text-zinc-800 dark:text-zinc-100">Pet Wellness Animal Clinic</p>
-              <p>Email: support@petwellness.com</p>
-              <p>Website: <a href="https://petwellness-web.vercel.app" className="text-brand-600 hover:underline">petwellness-web.vercel.app</a></p>
+              <p>Email: badetvelasquez@gmail.com</p>
+              <p>Phone: +63 933 461 7957</p>
+              <p>Address: Blk 10 Lot 2D Dahlia Ave, West Fairview, Quezon City, Philippines</p>
             </div>
           </section>
         </div>

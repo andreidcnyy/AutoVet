@@ -30,7 +30,7 @@ export default function PrivacyPolicy() {
 
         <div className="space-y-2">
           <h1 className="text-4xl font-black text-zinc-800 dark:text-zinc-100">Privacy Policy</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 18, 2026</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 19, 2026</p>
         </div>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none space-y-6 text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -67,11 +67,19 @@ export default function PrivacyPolicy() {
                 </ul>
               </div>
               <div>
+                <p className="font-bold text-zinc-700 dark:text-zinc-300">Billing Information:</p>
+                <ul className="list-disc pl-6 space-y-1 mt-1">
+                  <li>Invoice records for veterinary services rendered</li>
+                  <li>Payment status and transaction history</li>
+                </ul>
+              </div>
+              <div>
                 <p className="font-bold text-zinc-700 dark:text-zinc-300">Usage Information:</p>
                 <ul className="list-disc pl-6 space-y-1 mt-1">
                   <li>Device information and IP address</li>
                   <li>Browser type and session duration</li>
                   <li>Pages visited and features used</li>
+                  <li>Notification read status and interaction history</li>
                 </ul>
               </div>
             </div>
@@ -85,6 +93,8 @@ export default function PrivacyPolicy() {
               <li>Process and confirm appointment bookings</li>
               <li>Send appointment reminders and health notifications</li>
               <li>Maintain accurate medical records for your pet</li>
+              <li>Generate and display invoices for services rendered</li>
+              <li>Send system-wide announcements and operational updates via broadcast notifications</li>
               <li>Communicate important updates about our services</li>
               <li>Improve and optimize the portal experience</li>
               <li>Comply with legal and regulatory obligations</li>
@@ -92,7 +102,21 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">4. Google Sign-In</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">4. Portal Access & Authentication</h2>
+            <p>
+              This portal is exclusively accessible to registered pet owners. Clinic administrators, veterinarians,
+              and staff use a separate administration system. Our authentication system actively prevents non-owner
+              accounts from accessing the portal, and the credentials you create here are distinct from any clinic
+              staff credentials.
+            </p>
+            <p>
+              Authentication tokens are used to maintain your session securely. We do not store your password in
+              plain text — passwords are hashed using industry-standard encryption before storage.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">5. Google Sign-In</h2>
             <p>
               If you choose to sign in with Google, we receive your Google profile information including your name,
               email address, and profile photo. We use this information solely to create and manage your account.
@@ -103,7 +127,17 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">5. Data Sharing and Disclosure</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">6. System Broadcast Notifications</h2>
+            <p>
+              Authorized clinic administrators may send broadcast announcements to portal users and/or visitors of
+              our public website. These announcements may contain operational notices, clinic updates, or health
+              advisories. We do not use broadcast announcements for commercial marketing. Announcements are
+              delivered in-app and do not require your email address to be shared with third parties.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Data Sharing and Disclosure</h2>
             <p>We do not sell your personal information. We may share your information with:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li><span className="font-bold">Veterinary Staff:</span> Licensed veterinarians and clinic staff involved in your pet's care</li>
@@ -113,7 +147,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">6. Data Security</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Data Security</h2>
             <p>
               We implement industry-standard security measures to protect your personal information, including
               encrypted data transmission (HTTPS), secure token-based authentication, and regular security audits.
@@ -123,21 +157,28 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Data Retention</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Data Retention & Account Deletion</h2>
             <p>
               We retain your personal and pet health information for as long as your account is active or as needed
               to provide services. Medical records may be retained for longer periods as required by veterinary
-              regulations. You may request deletion of your account and associated data by contacting us.
+              regulations.
+            </p>
+            <p>
+              When you request account deletion, your account enters a <strong>30-day recovery period</strong> during
+              which your data is preserved and you may cancel the deletion by logging back in. After 30 days, your
+              account and all associated personal data are permanently and irreversibly deleted. Pet medical records
+              required for regulatory compliance may be retained separately in anonymized form.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Your Rights</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Your Rights</h2>
             <p>You have the right to:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Access the personal information we hold about you</li>
               <li>Request correction of inaccurate information</li>
-              <li>Request deletion of your account and personal data</li>
+              <li>Request deletion of your account and personal data (subject to the 30-day recovery period)</li>
+              <li>Cancel a pending account deletion within the 30-day window by logging back in</li>
               <li>Opt out of non-essential communications</li>
               <li>Request a copy of your data in a portable format</li>
             </ul>
@@ -145,7 +186,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Cookies</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Cookies</h2>
             <p>
               Our portal uses cookies and similar tracking technologies to maintain your session and improve your
               experience. You can control cookie settings through your browser, though disabling certain cookies
@@ -154,7 +195,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Children's Privacy</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">12. Children's Privacy</h2>
             <p>
               Our Service is not intended for use by individuals under the age of 18. We do not knowingly collect
               personal information from minors. If you believe a minor has provided us with personal information,
@@ -163,7 +204,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Changes to This Policy</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">13. Changes to This Policy</h2>
             <p>
               We may update this Privacy Policy periodically. We will notify you of significant changes via email
               or a prominent notice on our portal. Your continued use of the Service after changes become effective
@@ -172,14 +213,15 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">12. Contact Us</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">14. Contact Us</h2>
             <p>
               For questions about this Privacy Policy or to exercise your data rights, contact us at:
             </p>
-            <div className="bg-white dark:bg-dark-card rounded-xl p-4 border border-zinc-200 dark:border-dark-border font-medium">
+            <div className="bg-white dark:bg-dark-card rounded-xl p-4 border border-zinc-200 dark:border-dark-border font-medium space-y-1">
               <p className="font-black text-zinc-800 dark:text-zinc-100">Pet Wellness Animal Clinic</p>
-              <p>Email: privacy@petwellness.com</p>
-              <p>Website: <a href="https://petwellness-web.vercel.app" className="text-brand-600 hover:underline">petwellness-web.vercel.app</a></p>
+              <p>Email: badetvelasquez@gmail.com</p>
+              <p>Phone: +63 933 461 7957</p>
+              <p>Address: Blk 10 Lot 2D Dahlia Ave, West Fairview, Quezon City, Philippines</p>
             </div>
           </section>
         </div>
