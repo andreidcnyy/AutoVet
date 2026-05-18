@@ -34,33 +34,63 @@ class GoogleAuthController extends Controller
             })
             ->first();
 
-        if (!$user) {
-            $clinic = Clinic::first();
-            if (!$clinic) {
-                return response()->json(['error' => 'No clinic configured.'], 500);
+        // Existing user — log in immediately
+        if ($user) {
+            if (!$user->google_id) {
+                $user->update(['google_id' => $googleUser['sub']]);
             }
-
-            $user = PortalUser::create([
-                'clinic_id'         => $clinic->id,
-                'name'              => $googleUser['name'] ?? $googleUser['email'],
-                'email'             => $googleUser['email'],
-                'google_id'         => $googleUser['sub'],
-                'avatar'            => $googleUser['picture'] ?? null,
-                'email_verified_at' => now(),
-                'status'            => 'active',
-            ]);
-        } elseif (!$user->google_id) {
-            $user->update(['google_id' => $googleUser['sub']]);
+            $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
+            $profileComplete = !empty($user->phone) && !empty($user->address)
+                            && !empty($user->province) && !empty($user->city);
+            return response()->json(array_merge($user->makeHidden(['password', 'remember_token'])->toArray(), [
+                'token'            => $token,
+                'profile_complete' => $profileComplete,
+            ]));
         }
+
+        // New user — if no profile data yet, ask frontend to collect it first
+        if (!$request->filled('phone')) {
+            return response()->json([
+                'needs_profile' => true,
+                'name'          => $googleUser['name'] ?? '',
+                'email'         => $googleUser['email'],
+                'avatar'        => $googleUser['picture'] ?? null,
+            ]);
+        }
+
+        // New user with profile data — create account
+        $request->validate([
+            'phone'    => 'required|string',
+            'address'  => 'required|string',
+            'province' => 'required|string',
+            'city'     => 'required|string',
+        ]);
+
+        $clinic = Clinic::first();
+        if (!$clinic) {
+            return response()->json(['error' => 'No clinic configured.'], 500);
+        }
+
+        $user = PortalUser::create([
+            'clinic_id'         => $clinic->id,
+            'name'              => $googleUser['name'] ?? $googleUser['email'],
+            'email'             => $googleUser['email'],
+            'google_id'         => $googleUser['sub'],
+            'avatar'            => $googleUser['picture'] ?? null,
+            'phone'             => $request->phone,
+            'address'           => $request->address,
+            'province'          => $request->province,
+            'city'              => $request->city,
+            'zip'               => $request->zip ?? null,
+            'email_verified_at' => now(),
+            'status'            => 'active',
+        ]);
 
         $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
 
-        $profileComplete = !empty($user->phone) && !empty($user->address)
-                        && !empty($user->province) && !empty($user->city);
-
         return response()->json(array_merge($user->makeHidden(['password', 'remember_token'])->toArray(), [
             'token'            => $token,
-            'profile_complete' => $profileComplete,
+            'profile_complete' => true,
         ]));
     }
 }

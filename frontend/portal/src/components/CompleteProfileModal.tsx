@@ -6,11 +6,15 @@ import PhoneInput from "./PhoneInput";
 import { useAuth } from "../context/AuthContext";
 
 interface Props {
-  token: string;
+  token?: string;
   onComplete: (user: any) => void;
+  // Register mode: no token yet, parent handles account creation
+  onRegister?: (profileData: { phone: string; address: string; province: string; city: string; zip: string }) => Promise<void>;
+  prefillName?: string;
+  prefillEmail?: string;
 }
 
-export default function CompleteProfileModal({ token, onComplete }: Props) {
+export default function CompleteProfileModal({ token, onComplete, onRegister, prefillName, prefillEmail }: Props) {
   const [phone, setPhone]                           = useState("");
   const [address, setAddress]                       = useState("");
   const [province, setProvince]                     = useState("");
@@ -43,6 +47,18 @@ export default function CompleteProfileModal({ token, onComplete }: Props) {
     }
     setLoading(true);
     setError("");
+
+    // Register mode: delegate to parent to create the account
+    if (onRegister) {
+      try {
+        await onRegister({ phone: normalizedPhone, address, province, city, zip });
+      } catch (err: any) {
+        setError(err?.message || "Something went wrong.");
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const res  = await fetch("/api/profile/complete", {
         method: "POST",
@@ -83,8 +99,11 @@ export default function CompleteProfileModal({ token, onComplete }: Props) {
             <div>
               <h2 className="text-xl font-black text-white">Complete Your Profile 🐾</h2>
               <p className="text-emerald-100 text-sm mt-1 font-medium">
-                Just a few more details so we can serve you better.
+                {prefillName ? `Welcome, ${prefillName}! ` : ''}Just a few more details so we can serve you better.
               </p>
+              {prefillEmail && (
+                <p className="text-emerald-200 text-xs mt-1 font-medium">{prefillEmail}</p>
+              )}
             </div>
           </div>
         </div>

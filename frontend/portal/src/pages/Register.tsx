@@ -33,7 +33,7 @@ export default function Register() {
   const [loading, setLoading]                       = useState(false);
   const [success, setSuccess]                       = useState(false);
   const [googleLoading, setGoogleLoading]           = useState(false);
-  const [pendingGoogle, setPendingGoogle]           = useState<{ token: string } | null>(null);
+  const [pendingGoogle, setPendingGoogle]           = useState<{ accessToken: string; name: string; email: string } | null>(null);
   const navigate = useNavigate();
   const { register, login } = useAuth();
 
@@ -47,14 +47,13 @@ export default function Register() {
         body: JSON.stringify({ access_token: accessToken }),
       });
       const data = await res.json();
-      if (res.ok && data.token) {
-        if (data.profile_complete === false) {
-          login(data);
-          setPendingGoogle({ token: data.token });
-        } else {
-          login(data);
-          navigate("/dashboard");
-        }
+      if (res.ok && data.needs_profile) {
+        // New user — collect profile before creating account
+        setPendingGoogle({ accessToken, name: data.name, email: data.email });
+      } else if (res.ok && data.token) {
+        // Existing user — log in directly
+        login(data);
+        navigate("/dashboard");
       } else {
         setError(data.error || data.message || "Google sign-in failed.");
       }
@@ -62,6 +61,22 @@ export default function Register() {
       setError("Network error. Please check your connection.");
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = async (profileData: { phone: string; address: string; province: string; city: string; zip: string }) => {
+    if (!pendingGoogle) return;
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ access_token: pendingGoogle.accessToken, ...profileData }),
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      login(data);
+      navigate("/dashboard");
+    } else {
+      throw new Error(data.error || data.message || "Registration failed.");
     }
   };
 
@@ -131,8 +146,10 @@ export default function Register() {
   if (pendingGoogle) {
     return (
       <CompleteProfileModal
-        token={pendingGoogle.token}
         onComplete={() => navigate("/dashboard")}
+        onRegister={handleGoogleRegister}
+        prefillName={pendingGoogle.name}
+        prefillEmail={pendingGoogle.email}
       />
     );
   }
