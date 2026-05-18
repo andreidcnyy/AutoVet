@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiVolume2, FiPlus, FiTrash2, FiClock, FiCheckCircle } from 'react-icons/fi';
+import { FiVolume2, FiPlus, FiTrash2, FiClock, FiCheckCircle, FiMonitor, FiGlobe } from 'react-icons/fi';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
 import clsx from 'clsx';
@@ -17,7 +17,8 @@ export default function SuperAdminAnnouncements() {
     message: '',
     type: 'info',
     active_until: '',
-    is_active: true
+    is_active: true,
+    target: 'admin'
   });
 
   const fetchAnnouncements = async () => {
@@ -42,7 +43,8 @@ export default function SuperAdminAnnouncements() {
       message: ann.message,
       type: ann.type,
       active_until: ann.active_until ? new Date(ann.active_until).toISOString().slice(0, 16) : '',
-      is_active: !!ann.is_active
+      is_active: !!ann.is_active,
+      target: ann.target || 'admin'
     });
     setIsModalOpen(true);
   };
@@ -66,7 +68,7 @@ export default function SuperAdminAnnouncements() {
 
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ title: '', message: '', type: 'info', active_until: '', is_active: true });
+      setFormData({ title: '', message: '', type: 'info', active_until: '', is_active: true, target: 'admin' });
       fetchAnnouncements();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to process announcement.');
@@ -84,6 +86,14 @@ export default function SuperAdminAnnouncements() {
       fetchAnnouncements();
     } catch (err) {
       toast.error('Failed to remove announcement.');
+    }
+  };
+
+  const getTargetBadge = (target) => {
+    switch (target) {
+      case 'portal': return { label: 'Web Portal', icon: <FiGlobe className="h-3 w-3" />, cls: 'bg-violet-100 text-violet-700 border-violet-200' };
+      case 'all':    return { label: 'Admin + Portal', icon: <FiGlobe className="h-3 w-3" />, cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+      default:       return { label: 'Admin Only', icon: <FiMonitor className="h-3 w-3" />, cls: 'bg-zinc-100 text-zinc-600 border-zinc-200' };
     }
   };
 
@@ -126,9 +136,16 @@ export default function SuperAdminAnnouncements() {
                >
                   <div>
                      <div className="flex items-start justify-between mb-4">
-                        <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border", getToneStyles(announcement.type))}>
-                           {announcement.type}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                           <span className={clsx("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border", getToneStyles(announcement.type))}>
+                              {announcement.type}
+                           </span>
+                           {(() => { const t = getTargetBadge(announcement.target); return (
+                              <span className={clsx("inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border", t.cls)}>
+                                 {t.icon}{t.label}
+                              </span>
+                           ); })()}
+                        </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                            <button 
                               onClick={(e) => handleDelete(e, announcement.id)} 
@@ -185,6 +202,33 @@ export default function SuperAdminAnnouncements() {
                  <label className="block text-[10px] font-black uppercase text-autovet-navy dark:text-zinc-400 mb-1 tracking-widest">Message (Optional)</label>
                  <textarea value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="input-field min-h-[120px] pt-3 border-autovet-navy/10 focus:border-autovet-teal" placeholder="Detail the announcement..." />
               </div>
+              <div>
+                 <label className="block text-[10px] font-black uppercase text-autovet-navy dark:text-zinc-400 mb-2 tracking-widest">Target Audience *</label>
+                 <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: 'admin',  label: 'Admin Panel Only', icon: <FiMonitor className="h-5 w-5" />, desc: 'Visible to clinic staff' },
+                      { value: 'portal', label: 'Web Portal Only',  icon: <FiGlobe className="h-5 w-5" />,   desc: 'Visible to pet owners' },
+                      { value: 'all',    label: 'Both',             icon: <FiGlobe className="h-5 w-5" />,   desc: 'Admin + Portal' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({...formData, target: opt.value})}
+                        className={clsx(
+                          "flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all",
+                          formData.target === opt.value
+                            ? "border-autovet-teal bg-autovet-teal/5 text-autovet-teal"
+                            : "border-zinc-200 dark:border-dark-border text-zinc-400 hover:border-zinc-300"
+                        )}
+                      >
+                        {opt.icon}
+                        <span className="text-[10px] font-black uppercase tracking-widest leading-tight">{opt.label}</span>
+                        <span className="text-[9px] font-bold text-zinc-400 leading-tight">{opt.desc}</span>
+                      </button>
+                    ))}
+                 </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="block text-[10px] font-black uppercase text-autovet-navy dark:text-zinc-400 mb-1 tracking-widest">Message Category (Optional)</label>

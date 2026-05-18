@@ -12,6 +12,7 @@ class SystemAnnouncement extends Model
         'type',
         'active_until',
         'is_active',
+        'target',
         'created_by',
     ];
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getNotifications, markNotificationAsRead } from '../api';
+import { getNotifications, markNotificationAsRead, getSystemAnnouncements } from '../api';
 import echo from '../utils/echo';
 import {
   FiBell,
@@ -8,7 +8,8 @@ import {
   FiAlertCircle,
   FiArrowLeft,
   FiClock,
-  FiX
+  FiX,
+  FiVolume2
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -17,6 +18,7 @@ import { PawPrint } from './Landing';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,6 +36,12 @@ export default function Notifications() {
       .finally(() => setLoading(false));
   };
 
+  const fetchAnnouncements = () => {
+    getSystemAnnouncements()
+      .then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? []))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     const cached = readCache<any[]>(NOTIF_CACHE_KEY);
     if (cached) {
@@ -41,6 +49,7 @@ export default function Notifications() {
       setLoading(false);
     }
     fetchNotifications();
+    fetchAnnouncements();
 
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -113,6 +122,41 @@ export default function Notifications() {
           )}
         </div>
       </div>
+
+      {/* System Announcements from Admin */}
+      {announcements.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <FiVolume2 className="w-3.5 h-3.5" /> System Broadcasts
+          </p>
+          {announcements.map((ann) => {
+            const colors: Record<string, string> = {
+              warning: 'border-amber-400 bg-amber-50 dark:bg-amber-900/10',
+              error:   'border-rose-400 bg-rose-50 dark:bg-rose-900/10',
+              success: 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10',
+              info:    'border-blue-400 bg-blue-50 dark:bg-blue-900/10',
+            };
+            const textColors: Record<string, string> = {
+              warning: 'text-amber-700 dark:text-amber-400',
+              error:   'text-rose-700 dark:text-rose-400',
+              success: 'text-emerald-700 dark:text-emerald-400',
+              info:    'text-blue-700 dark:text-blue-400',
+            };
+            return (
+              <div key={ann.id} className={clsx('rounded-[2rem] border-l-4 p-5 flex items-start gap-4', colors[ann.type] ?? colors.info)}>
+                <FiVolume2 className={clsx('w-5 h-5 mt-0.5 shrink-0', textColors[ann.type] ?? textColors.info)} />
+                <div className="flex-1 min-w-0">
+                  <p className={clsx('text-sm font-black uppercase tracking-tight', textColors[ann.type] ?? textColors.info)}>{ann.title}</p>
+                  {ann.message && <p className="mt-1 text-sm font-medium text-zinc-600 dark:text-zinc-400 leading-relaxed">{ann.message}</p>}
+                  <p className="mt-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                    <FiClock className="w-3 h-3" /> {new Date(ann.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="space-y-3">
         {loading ? (

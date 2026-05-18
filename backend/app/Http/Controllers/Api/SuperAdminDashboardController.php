@@ -333,12 +333,14 @@ class SuperAdminDashboardController extends Controller
             'message' => 'nullable|string',
             'type' => 'nullable|string|in:info,warning,success,error',
             'active_until' => 'nullable|date',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'target' => 'nullable|string|in:admin,portal,all',
         ]);
 
         $announcement = SystemAnnouncement::create([
             ...$validated,
             'type' => $validated['type'] ?? 'info',
+            'target' => $validated['target'] ?? 'admin',
             'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
             'created_by' => auth()->id()
         ]);
@@ -356,12 +358,14 @@ class SuperAdminDashboardController extends Controller
             'message' => 'nullable|string',
             'type' => 'nullable|string|in:info,warning,success,error',
             'active_until' => 'nullable|date',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'target' => 'nullable|string|in:admin,portal,all',
         ]);
 
         $announcement->update([
             ...$validated,
             'type' => $validated['type'] ?? 'info',
+            'target' => $validated['target'] ?? $announcement->target,
             'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
         ]);
 

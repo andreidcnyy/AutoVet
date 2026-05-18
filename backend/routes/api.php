@@ -441,16 +441,21 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // System Administration
     // -----------------------------------------------------------------------
-    Route::get('/system-announcements', function() {
-        return response()->json(
-            \App\Models\SystemAnnouncement::where('is_active', true)
-                ->where(function($q) {
-                    $q->whereNull('active_until')
-                      ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
-                })
-                ->orderBy('created_at', 'desc')
-                ->get()
-        );
+    Route::get('/system-announcements', function(\Illuminate\Http\Request $request) {
+        $query = \App\Models\SystemAnnouncement::where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('active_until')
+                  ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
+            });
+
+        if ($request->filled('target')) {
+            $target = $request->input('target');
+            $query->where(function($q) use ($target) {
+                $q->where('target', $target)->orWhere('target', 'all');
+            });
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     });
 
     Route::group(['middleware' => 'role:super_admin'], function () {
