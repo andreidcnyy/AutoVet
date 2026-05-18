@@ -1,6 +1,7 @@
 // Mock Echo for local development if Reverb is not ready
 const mockChannel = {
     listen: function() { return this; },
+    stopListening: function() { return this; },
     notification: function() { return this; },
     listenForWhisper: function() { return this; },
     whisper: function() { return this; },
