@@ -31,7 +31,7 @@ api.interceptors.request.use((config) => {
 });
 
 // Auth
-export const login = (credentials: any) => api.post('/login', credentials);
+export const login = (credentials: any) => api.post('/login', { ...credentials, source: 'portal' });
 export const register = (data: any) => api.post('/register', data);
 export const logout = () => api.post('/logout');
 export const forgotPassword = (email: string) => api.post('/password/forgot', { email });

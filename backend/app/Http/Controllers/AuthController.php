@@ -192,6 +192,12 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
+        // Block admin/staff/vet accounts from logging into the web portal
+        if ($is_admin && $request->input('source') === 'portal') {
+            \Log::warning('Portal login blocked for admin account', ['email' => $request->email]);
+            return response()->json(['error' => 'This login is for pet owners only. Please use the admin panel.'], 403);
+        }
+
         // Migrate old soft-deleted portal users into the new grace period flow
         if ($user instanceof PortalUser && $user->deleted_at && !$user->deletion_requested_at) {
             $user->restore();
