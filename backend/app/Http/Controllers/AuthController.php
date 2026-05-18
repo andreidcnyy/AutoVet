@@ -192,10 +192,34 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        // Check if user is soft-deleted
-        if ($user->deleted_at) {
+        // Check if user is soft-deleted (admin-deactivated, not self-deletion)
+        if ($user->deleted_at && !($user instanceof PortalUser && $user->deletion_requested_at)) {
             \Log::warning('Login failed: User account is deactivated/deleted', ['email' => $request->email]);
             return response()->json(['error' => 'This account has been deactivated.'], 403);
+        }
+
+        // Portal user self-deletion: 30-day grace period
+        if ($user instanceof PortalUser && $user->deletion_requested_at) {
+            $daysElapsed = (int) now()->diffInDays($user->deletion_requested_at);
+            $daysRemaining = max(0, 30 - $daysElapsed);
+
+            if ($daysRemaining <= 0) {
+                // Grace period expired — fully soft-delete now
+                $user->delete();
+                return response()->json(['error' => 'This account has been permanently deleted.'], 403);
+            }
+
+            // Issue a token so they can recover from the portal
+            $token = $user->createToken('recovery')->plainTextToken;
+            return response()->json([
+                'account_pending_deletion' => true,
+                'days_remaining'           => $daysRemaining,
+                'deletion_requested_at'    => $user->deletion_requested_at,
+                'token'                    => $token,
+                'id'                       => $user->id,
+                'name'                     => $user->name,
+                'email'                    => $user->email,
+            ]);
         }
 
         if (!$is_admin && !$user->hasVerifiedEmail()) {

@@ -328,6 +328,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/profile',          [ProfileController::class, 'show']);
     Route::put('/profile',          [ProfileController::class, 'update']);
     Route::delete('/profile',       [ProfileController::class, 'deleteAccount']);
+    Route::post('/profile/recover', [ProfileController::class, 'recoverAccount']);
     Route::post('/profile/complete', [ProfileController::class, 'completeProfile']);
     Route::get('/profile/devices',              [ProfileController::class, 'devices']);
     Route::delete('/profile/devices/{id}',      [ProfileController::class, 'revokeDevice']);
@@ -486,6 +487,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::delete('/backups/{filename}',       [BackupController::class, 'destroy']);
 
         // Archive & Recovery
+        Route::get('/archives/portal-users/pending',          [ArchiveController::class, 'pendingDeletions']);
+        Route::post('/archives/portal-users/{id}/cancel-deletion', [ArchiveController::class, 'cancelPendingDeletion']);
         Route::get('/archives/{type}',              [ArchiveController::class, 'index']);
         Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore']);
         Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete']);

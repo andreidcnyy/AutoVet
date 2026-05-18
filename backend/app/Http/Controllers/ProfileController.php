@@ -102,13 +102,30 @@ class ProfileController extends Controller
             return response()->json(['error' => 'Only portal users can delete their account.'], 403);
         }
 
-        // Revoke all active tokens first
+        if ($user->deletion_requested_at) {
+            return response()->json(['error' => 'Account deletion is already scheduled.'], 422);
+        }
+
+        // Mark for deletion — actual soft-delete happens after 30 days
+        $user->forceFill(['deletion_requested_at' => now()])->save();
+
+        // Revoke all tokens so they can't use the app anymore
         $user->tokens()->delete();
 
-        // Soft-delete the account
-        $user->delete();
+        return response()->json(['message' => 'Your account is scheduled for deletion in 30 days.']);
+    }
 
-        return response()->json(['message' => 'Your account has been deleted.']);
+    public function recoverAccount(Request $request)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof PortalUser)) {
+            return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        $user->forceFill(['deletion_requested_at' => null])->save();
+
+        return response()->json(['message' => 'Your account has been recovered successfully.']);
     }
 
     public function update(Request $request)

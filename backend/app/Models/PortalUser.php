@@ -37,7 +37,8 @@ class PortalUser extends Authenticatable implements MustVerifyEmail
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'email_verified_at'      => 'datetime',
+        'deletion_requested_at'  => 'datetime',
     ];
 
     protected $hidden = [

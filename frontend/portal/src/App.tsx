@@ -15,6 +15,7 @@ import PetProfile from './pages/PetProfile';
 import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
 import Invoices from './pages/Invoices';
+import AccountPendingDeletion from './pages/AccountPendingDeletion';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
@@ -22,11 +23,13 @@ import { triggerSync } from './api';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50 text-zinc-500 font-bold">Connecting to Pet Wellness Animal Clinic...</div>;
-  
+
   if (!user) return <Navigate to="/login" replace />;
-  
+
+  if (user.account_pending_deletion) return <AccountPendingDeletion />;
+
   return <PortalLayout>{children}</PortalLayout>;
 }
 

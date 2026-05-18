@@ -33,7 +33,10 @@ function LoginPage() {
         body: JSON.stringify({ access_token: accessToken }),
       });
       const data = await res.json();
-      if (res.ok && data.token) {
+      if (res.ok && data.token && data.account_pending_deletion) {
+        login(data);
+        navigate("/dashboard"); // ProtectedRoute intercepts and shows recovery screen
+      } else if (res.ok && data.token) {
         login(data);
         navigate("/dashboard");
       } else if (res.ok && data.needs_profile) {
@@ -80,9 +83,9 @@ function LoginPage() {
       });
       const data = await res.json();
 
-      if (res.ok && !data.error) {
+      if (res.ok && data.token) {
         login(data);
-        navigate("/dashboard");
+        navigate("/dashboard"); // ProtectedRoute intercepts if account_pending_deletion
       } else {
         let errorMsg = "Invalid credentials";
         if (typeof data.error === "string")          errorMsg = data.error;

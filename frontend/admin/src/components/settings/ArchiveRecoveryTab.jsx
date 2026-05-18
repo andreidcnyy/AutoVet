@@ -10,6 +10,7 @@ const ARCHIVE_TYPES = [
   { id: "services", label: "Services" },
   { id: "inventories", label: "Inventory" },
   { id: "admins", label: "Users" },
+  { id: "pending_deletions", label: "Pending Deletions", isPending: true },
 ];
 
 export default function ArchiveRecoveryTab() {
@@ -32,7 +33,10 @@ export default function ArchiveRecoveryTab() {
     controllerRef.current = controller;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/archives/${type}?page=${page}`, {
+      const url = type === "pending_deletions"
+        ? `/api/archives/portal-users/pending?page=${page}`
+        : `/api/archives/${type}?page=${page}`;
+      const response = await fetch(url, {
         signal: controller.signal,
         headers: {
           "Accept": "application/json",
@@ -108,6 +112,25 @@ export default function ArchiveRecoveryTab() {
 
       toast.success(data.message || "Item permanently purged.");
       // Refresh current page
+      fetchArchives(activeType, pagination.current_page);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleCancelDeletion = async (id, name) => {
+    if (!window.confirm(`Recover account for "${name}"? Their deletion request will be cancelled.`)) return;
+    try {
+      const res = await fetch(`/api/archives/portal-users/${id}/cancel-deletion`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${user?.token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to cancel deletion.");
+      toast.success(data.message || "Account recovered successfully.");
       fetchArchives(activeType, pagination.current_page);
     } catch (err) {
       toast.error(err.message);
@@ -194,9 +217,13 @@ export default function ArchiveRecoveryTab() {
             onClick={() => setActiveType(t.id)}
             className={clsx(
               "rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
-              activeType === t.id
-                ? "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
+              t.isPending
+                ? activeType === t.id
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                  : "text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/10"
+                : activeType === t.id
+                  ? "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface"
             )}
           >
             {t.label}
@@ -208,6 +235,58 @@ export default function ArchiveRecoveryTab() {
         <PaginationControls isTop={true} />
         
         <div className="overflow-x-auto">
+          {activeType === "pending_deletions" ? (
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-zinc-200 text-zinc-500 dark:border-dark-border dark:text-zinc-400">
+                <tr>
+                  <th className="py-3 pr-4 font-semibold">Name</th>
+                  <th className="py-3 px-4 font-semibold">Email</th>
+                  <th className="py-3 px-4 font-semibold">Requested On</th>
+                  <th className="py-3 px-4 font-semibold">Days Remaining</th>
+                  <th className="py-3 pl-4 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
+                {isLoading ? (
+                  <tr><td colSpan="5" className="py-8 text-center text-zinc-500">Loading...</td></tr>
+                ) : items.length === 0 ? (
+                  <tr><td colSpan="5" className="py-8 text-center text-zinc-500 dark:text-zinc-400">No accounts pending deletion.</td></tr>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-dark-surface/50">
+                      <td className="py-3 pr-4 font-medium text-zinc-900 dark:text-zinc-100">{item.name}</td>
+                      <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">{item.email}</td>
+                      <td className="py-3 px-4 text-zinc-600 dark:text-zinc-300">
+                        {new Date(item.deletion_requested_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={clsx(
+                          "inline-flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg",
+                          item.days_remaining <= 3
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                            : item.days_remaining <= 10
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                        )}>
+                          {item.days_remaining <= 3 && <FiAlertTriangle className="h-3 w-3" />}
+                          {item.days_remaining}d left
+                        </span>
+                      </td>
+                      <td className="py-3 pl-4 text-right">
+                        <button
+                          onClick={() => handleCancelDeletion(item.id, item.name)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                        >
+                          <FiRefreshCcw className="h-3.5 w-3.5" />
+                          Recover Account
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : (
           <table className="w-full text-left text-sm">
             <thead className="border-b border-zinc-200 text-zinc-500 dark:border-dark-border dark:text-zinc-400">
               <tr>
@@ -235,7 +314,7 @@ export default function ArchiveRecoveryTab() {
                 items.map((item) => {
                   const name = getRecordName(item);
                   const isExpired = item.restore_until && new Date(item.restore_until) < new Date();
-                  
+
                   return (
                     <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-dark-surface/50">
                       <td className="py-3 pr-4 font-medium text-zinc-900 dark:text-zinc-100">
@@ -284,6 +363,7 @@ export default function ArchiveRecoveryTab() {
               )}
             </tbody>
           </table>
+          )}
         </div>
 
         <PaginationControls />

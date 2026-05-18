@@ -34,8 +34,29 @@ class GoogleAuthController extends Controller
             })
             ->first();
 
-        // Existing user — log in immediately
+        // Existing user — check pending deletion first
         if ($user) {
+            if ($user->deletion_requested_at) {
+                $daysElapsed   = (int) now()->diffInDays($user->deletion_requested_at);
+                $daysRemaining = max(0, 30 - $daysElapsed);
+
+                if ($daysRemaining <= 0) {
+                    $user->delete();
+                    return response()->json(['error' => 'This account has been permanently deleted.'], 403);
+                }
+
+                $token = $user->createToken('recovery')->plainTextToken;
+                return response()->json([
+                    'account_pending_deletion' => true,
+                    'days_remaining'           => $daysRemaining,
+                    'deletion_requested_at'    => $user->deletion_requested_at,
+                    'token'                    => $token,
+                    'id'                       => $user->id,
+                    'name'                     => $user->name,
+                    'email'                    => $user->email,
+                ]);
+            }
+
             if (!$user->google_id) {
                 $user->update(['google_id' => $googleUser['sub']]);
             }

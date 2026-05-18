@@ -26,6 +26,41 @@ class ArchiveController extends Controller
     }
 
     /**
+     * List portal users with pending deletion (within 30-day grace period)
+     */
+    public function pendingDeletions(Request $request)
+    {
+        $items = \App\Models\PortalUser::withoutGlobalScopes()
+            ->whereNotNull('deletion_requested_at')
+            ->whereNull('deleted_at')
+            ->orderBy('deletion_requested_at', 'desc')
+            ->paginate(20);
+
+        $items->getCollection()->transform(function ($user) {
+            $daysElapsed   = (int) now()->diffInDays($user->deletion_requested_at);
+            $daysRemaining = max(0, 30 - $daysElapsed);
+            $user->days_remaining = $daysRemaining;
+            return $user;
+        });
+
+        return response()->json($items);
+    }
+
+    /**
+     * Cancel a pending deletion (admin recovery)
+     */
+    public function cancelPendingDeletion(Request $request, $id)
+    {
+        $user = \App\Models\PortalUser::withoutGlobalScopes()
+            ->whereNotNull('deletion_requested_at')
+            ->findOrFail($id);
+
+        $user->forceFill(['deletion_requested_at' => null])->save();
+
+        return response()->json(['message' => 'Account deletion cancelled. Account has been recovered.']);
+    }
+
+    /**
      * List archived items by type
      */
     public function index(Request $request, $type)
