@@ -31,9 +31,17 @@ const importOptions = [
         description: "Helps AI learn stock depletion curves."
     },
     {
+        id: "invoices",
+        label: "Revenue/Invoices",
+        icon: FiBriefcase,
+        endpoint: "/api/import/invoices",
+        fields: "pet_id, total, status, created_at",
+        description: "Essential for financial and demand forecasting."
+    },
+    {
         id: "services",
         label: "Services",
-        icon: FiBriefcase, // We use FiBriefcase or similar if not found
+        icon: FiBriefcase,
         endpoint: "/api/import/services",
         fields: "name, category, price, status",
         description: "Bulk upload your clinic's service catalog."

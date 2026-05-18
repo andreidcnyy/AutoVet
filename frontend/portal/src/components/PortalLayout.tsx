@@ -2,10 +2,11 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications } from '../api';
-import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
 import logo from '../assets/logo.png';
+import { PawPrint } from '../pages/Landing';
 
 interface LayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export default function PortalLayout({ children }: LayoutProps) {
     { name: 'Book Visit', path: '/book', icon: FiCalendar },
     { name: 'Visit History', path: '/appointments', icon: FiClock },
     { name: 'Notifications', path: '/notifications', icon: FiBell, badge: unreadCount },
+    { name: 'Invoices', path: '/invoices', icon: FiCreditCard },
   ];
 
   useEffect(() => {
@@ -49,8 +51,12 @@ export default function PortalLayout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg flex transition-colors duration-300">
       {/* Sidebar - Desktop */}
-      <aside className="w-64 bg-white dark:bg-dark-card border-r border-zinc-200 dark:border-dark-border hidden md:flex flex-col sticky top-0 h-screen transition-colors duration-300">
-        <div className="p-6 text-center border-b border-zinc-100 dark:border-dark-border/50">
+      <aside className="w-64 bg-white dark:bg-dark-card border-r border-zinc-200 dark:border-dark-border hidden md:flex flex-col sticky top-0 h-screen transition-colors duration-300 overflow-hidden">
+        {/* Subtle paw decorative */}
+        <PawPrint className="absolute bottom-32 right-0 w-32 h-32 text-brand-500 opacity-10 dark:opacity-[0.12] rotate-12 pointer-events-none" />
+        <PawPrint className="absolute top-24 left-0 w-20 h-20 text-emerald-500 opacity-10 dark:opacity-[0.12] -rotate-12 pointer-events-none" />
+
+        <div className="relative z-10 p-6 text-center border-b border-zinc-100 dark:border-dark-border/50">
           <div className="flex flex-col items-center justify-center gap-3">
             <img src={logo} alt="Clinic Logo" className="w-12 h-12 object-contain" />
             <span className="text-lg font-black tracking-tight text-zinc-800 dark:text-zinc-100 leading-tight">
@@ -59,7 +65,7 @@ export default function PortalLayout({ children }: LayoutProps) {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="relative z-10 flex-1 px-4 py-6 space-y-1">
           {menuItems.map((item) => (
             <Link
               key={item.path}
@@ -84,7 +90,7 @@ export default function PortalLayout({ children }: LayoutProps) {
         </nav>
 
 
-        <div className="p-4 mt-auto">
+        <div className="relative z-10 p-4 mt-auto">
           <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 space-y-3 text-center transition-colors duration-300">
             <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mx-auto text-lg font-bold dark:bg-brand-900/30 dark:text-brand-400">
               {user?.name?.charAt(0) || 'U'}

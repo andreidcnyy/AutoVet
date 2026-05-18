@@ -33,10 +33,19 @@ import ManualSendModal from "../notifications/ManualSendModal";
 import EditPatientModal from "./EditPatientModal";
 import { FiEdit3, FiTrash2, FiEye } from "react-icons/fi";
 
+const invoiceStatusStyles = {
+  Draft: "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  Finalized: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+  Paid: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+  "Partially Paid": "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  Cancelled: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
+};
+
 const tabs = [
   { key: "overview", label: "Overview", icon: LuPawPrint },
   { key: "medical", label: "Medical Records", icon: LuStethoscope },
   { key: "appointments", label: "Appointments", icon: FiCalendar },
+  { key: "invoices", label: "Invoices", icon: FiFileText },
   { key: "reports", label: "Reports", icon: FiFileText },
 ];
 
@@ -517,6 +526,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
           {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
           {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
+          {activeTab === "invoices" && <InvoiceTab invoices={patient.invoices || []} />}
           {activeTab === "reports" && <ReportsTab patient={patient} />}
         </div>
       </div>
@@ -1388,6 +1398,115 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ──────────────── Invoices Tab ──────────────── */
+
+function InvoiceTab({ invoices }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedInv, setSelectedInv] = useState(null);
+  const invoicesPerPage = 5;
+
+  if (invoices.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <FiFileText className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+        <p className="mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400">No Invoices</p>
+        <p className="text-sm text-zinc-400 dark:text-zinc-500">
+          Invoices linked to this patient will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  const indexOfLastInv = currentPage * invoicesPerPage;
+  const indexOfFirstInv = indexOfLastInv - invoicesPerPage;
+  const currentInvoices = invoices.slice(indexOfFirstInv, indexOfLastInv);
+  const totalPages = Math.ceil(invoices.length / invoicesPerPage);
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-dark-border">
+        <table className="w-full min-w-[600px]">
+          <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface">
+            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <th className="px-4 py-3">Invoice #</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-right">Amount Paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentInvoices.map((inv) => (
+              <tr
+                key={inv.id}
+                onClick={() => setSelectedInv(inv)}
+                className="border-b border-zinc-200/80 transition hover:bg-zinc-50 dark:border-dark-border dark:hover:bg-dark-surface/60 cursor-pointer"
+              >
+                <td className="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {inv.invoice_number || `INV-${inv.id}`}
+                </td>
+                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-300">
+                  {formatDate(inv.created_at)}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={clsx(
+                    "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+                    invoiceStatusStyles[inv.status] ||
+                    invoiceStatusStyles[Object.keys(invoiceStatusStyles).find(k => k.toLowerCase() === inv.status?.toLowerCase())] ||
+                    "border-zinc-200 bg-zinc-50 text-zinc-600"
+                  )}>
+                    {inv.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  ₱{parseFloat(inv.formatted_amount_paid || inv.amount_paid || 0).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-zinc-400"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {selectedInv && (
+        <DetailViewModal
+          title="Invoice Details"
+          onClose={() => setSelectedInv(null)}
+          data={[
+            { label: "Invoice Number", value: selectedInv.invoice_number || `INV-${selectedInv.id}` },
+            { label: "Date", value: formatDate(selectedInv.created_at) },
+            { label: "Status", value: selectedInv.status },
+            { label: "Amount Paid", value: `₱${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
+            { label: "Notes", value: selectedInv.notes || "None" }
+          ]}
+        />
+      )}
     </div>
   );
 }

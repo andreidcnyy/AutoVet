@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { getAppointments, getAppointment, cancelAppointment } from '../api';
 import echo from '../utils/echo';
-import { 
-  FiCalendar, 
-  FiClock, 
-  FiXCircle, 
-  FiCheckCircle, 
+import {
+  FiCalendar,
+  FiClock,
+  FiXCircle,
+  FiCheckCircle,
   FiAlertCircle,
   FiArrowLeft,
   FiHeart,
@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
 import PetProfileModal from '../components/PetProfileModal';
+import { PawPrint } from './Landing';
 import clsx from 'clsx';
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
@@ -154,21 +155,29 @@ export default function Appointments() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
-          <FiArrowLeft /> Dashboard
-        </button>
-        <Link to="/book">
-          <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all">
-            <FiCalendar /> Book New Visit
-          </button>
-        </Link>
+      <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
+        <FiArrowLeft /> Dashboard
+      </button>
+
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-xl shadow-brand-500/20">
+        <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
+        <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.2em] mb-1">Your visits</p>
+            <h1 className="text-2xl font-black italic uppercase tracking-tight">Visit History 🐾</h1>
+            <p className="text-emerald-100 mt-1 text-sm font-medium">Track all your appointments, past and upcoming.</p>
+          </div>
+          <Link to="/book" className="shrink-0">
+            <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-brand-600 font-black text-sm shadow-lg hover:bg-emerald-50 transition-all active:scale-[0.98]">
+              <FiCalendar /> Book New Visit
+            </button>
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 italic uppercase tracking-tight">
-          <span className="text-brand-500 mr-2">/</span> Visit History
-        </h2>
 
         {appointments.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">

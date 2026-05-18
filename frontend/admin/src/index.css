@@ -102,3 +102,28 @@ label[for] {
   }
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .printable-invoice, .printable-invoice * {
+    visibility: visible;
+  }
+
+  .printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+

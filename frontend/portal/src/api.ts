@@ -72,6 +72,10 @@ export const markNotificationAsRead = (id: number) => api.put(`/notifications/${
 export const getProfile = () => api.get('/profile');
 export const updateProfile = (data: any) => api.put('/profile', data);
 
+// Invoices
+export const getInvoices = (params?: any) => api.get('/invoices', { params });
+export const getInvoice = (id: number) => api.get(`/invoice/${id}`);
+
 // Sync
 export const triggerSync = () => api.post('/sync/trigger');
 

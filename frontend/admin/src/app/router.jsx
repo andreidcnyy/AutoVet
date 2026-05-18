@@ -18,6 +18,7 @@ import NotificationHistoryPage from "../pages/NotificationHistoryPage";
 import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
 import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
 import ReportPage from "../pages/ReportPage";
+import InvoicePage from "../pages/InvoicePage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
@@ -195,6 +196,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Reports" },
+      },
+      {
+        path: "invoices",
+        element: (
+          <ProtectedRoute allowedRoles={CLINIC_ADMIN_GROUP}>
+            <InvoicePage />
+          </ProtectedRoute>
+        ),
+        handle: { title: "Invoices" },
       }
     ],
   },

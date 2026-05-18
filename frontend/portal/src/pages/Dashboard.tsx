@@ -7,6 +7,8 @@ import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
+import { useAuth } from '../context/AuthContext';
+import { PawPrint, PawTrail } from './Landing';
 import clsx from 'clsx';
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
@@ -20,6 +22,7 @@ const formatPortalDateLocal = (dateStr: string) => {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [pets, setPets] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -97,18 +100,33 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-800 dark:text-zinc-100 font-sans">Welcome back!</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Here is what's happening with your pets.</p>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-xl shadow-brand-500/20">
+        {/* Paw decoratives */}
+        <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-30 rotate-12 pointer-events-none" />
+        <PawPrint className="absolute bottom-2 right-1/4 w-20 h-20 text-white opacity-20 -rotate-20 pointer-events-none" />
+        <PawTrail className="absolute bottom-0 right-0 w-48 text-white opacity-20 pointer-events-none rotate-6" />
+        <PawPrint className="absolute top-4 left-1/2 w-12 h-12 text-white opacity-20 rotate-45 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.2em] mb-1">Pet Wellness Portal</p>
+            <h1 className="text-3xl font-black italic uppercase tracking-tight leading-tight">
+              Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} 🐾
+            </h1>
+            <p className="text-emerald-100 mt-2 text-sm font-medium">
+              {pets.length > 0
+                ? `You have ${pets.length} pet${pets.length > 1 ? 's' : ''} registered. Keep their health on track!`
+                : "Register your first pet to get started."}
+            </p>
+          </div>
+          <Link to="/book" className="shrink-0">
+            <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-brand-600 font-black text-sm shadow-lg hover:bg-emerald-50 transition-all active:scale-[0.98]">
+              <FiCalendar className="w-5 h-5" />
+              Book Appointment
+            </button>
+          </Link>
         </div>
-        <Link to="/book">
-          <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white font-semibold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all hover:-translate-y-0.5 active:translate-y-0">
-            <FiCalendar className="w-5 h-5" />
-            <span>Book Appointment</span>
-          </button>
-        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

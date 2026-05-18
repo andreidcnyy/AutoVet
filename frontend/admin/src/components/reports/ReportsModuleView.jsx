@@ -277,7 +277,7 @@ function TransactionViewPane({ inventory, services, owners, setReportRows, setGe
       {/* Report document */}
       <div className="card-shell p-5">
         <div className="mb-4 text-right">
-          <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">Report History</h2>
+          <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">History</h2>
           {localGenerated && <p className="text-xs text-zinc-500 mt-0.5">Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}</p>}
         </div>
 
@@ -626,7 +626,7 @@ function ReportsModuleView() {
 
           {/* Sub-tabs */}
           <div className="flex items-center gap-1 mt-3 border-b border-zinc-100 dark:border-dark-border -mb-3 pb-0">
-            {[{ id: "create", label: "New transaction" }, { id: "view", label: "Report History" }].map(({ id, label }) => (
+            {[{ id: "create", label: "New transaction" }, { id: "view", label: "History" }].map(({ id, label }) => (
               <button key={id} onClick={() => setTxSubTab(id)}
                 className={clsx("px-4 py-2 text-xs font-semibold border-b-2 transition-colors",
                   txSubTab === id ? "border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300")}>

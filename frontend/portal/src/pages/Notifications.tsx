@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getNotifications, markNotificationAsRead } from '../api';
 import echo from '../utils/echo';
-import { 
-  FiBell, 
-  FiCheck, 
-  FiInfo, 
-  FiAlertCircle, 
+import {
+  FiBell,
+  FiCheck,
+  FiInfo,
+  FiAlertCircle,
   FiArrowLeft,
   FiClock,
   FiX
@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
+import { PawPrint } from './Landing';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -86,27 +87,31 @@ export default function Notifications() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-500 hover:text-zinc-800 transition-all">
-            <FiArrowLeft className="w-5 h-5" />
-          </button>
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
+        <FiArrowLeft /> Back
+      </button>
+
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-8 text-white shadow-xl shadow-brand-500/20">
+        <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
+        <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black italic uppercase tracking-tight text-zinc-800 dark:text-zinc-100 flex items-center gap-3">
-              <FiBell className="text-brand-500" /> Notifications
+            <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.2em] mb-1">Inbox</p>
+            <h1 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-3">
+              <FiBell /> Notifications
             </h1>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Stay updated with your pet's health</p>
+            <p className="text-emerald-100 mt-1 text-sm font-medium">Stay updated on your pet's health and appointments.</p>
           </div>
+          {notifications.some(n => !n.read_at) && (
+            <button
+              onClick={handleMarkAllRead}
+              className="shrink-0 px-5 py-2.5 rounded-xl bg-white text-brand-600 text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all active:scale-[0.98] shadow-lg"
+            >
+              Mark all as read
+            </button>
+          )}
         </div>
-        
-        {notifications.some(n => !n.read_at) && (
-          <button 
-            onClick={handleMarkAllRead}
-            className="px-4 py-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-black uppercase tracking-widest hover:bg-brand-100 transition-all"
-          >
-            Mark all as read
-          </button>
-        )}
       </div>
 
       <div className="space-y-3">

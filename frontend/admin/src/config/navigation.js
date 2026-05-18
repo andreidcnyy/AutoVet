@@ -8,6 +8,7 @@ import {
   FiHome,
   FiVolume2,
   FiFileText,
+  FiCreditCard,
 } from "react-icons/fi";
 import { LuPawPrint, LuSparkles } from "react-icons/lu";
 import { ROLES, CLINIC_STAFF_ROLES, CLINIC_ADMIN_GROUP, VET_AND_ADMIN, SUPER_ADMIN_ONLY } from "../constants/roles";
@@ -24,6 +25,7 @@ export const primaryNavigation = [
   { id: "patients", label: "Patients", path: "/patients", icon: LuPawPrint, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: CLINIC_ADMIN_GROUP },
+  { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: CLINIC_ADMIN_GROUP },
   { id: "reports", label: "Reports", path: "/reports", icon: FiFileText, allowedRoles: CLINIC_ADMIN_GROUP },
 { id: "ai-clinical", label: "AI Clinical Support", path: "/ai-clinical", icon: LuSparkles, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES, aiOnly: true },
 ];
