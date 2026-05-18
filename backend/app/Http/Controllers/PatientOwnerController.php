@@ -54,7 +54,7 @@ class PatientOwnerController extends Controller
             $query->has('pets');
         }
 
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('id', 'desc');
 
         $perPage = $request->get('per_page', 10);
         $paginated = $query->paginate($perPage);
