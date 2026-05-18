@@ -79,7 +79,7 @@ function LoginPage() {
       const res  = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, source: 'portal' }),
       });
       const data = await res.json();
 
