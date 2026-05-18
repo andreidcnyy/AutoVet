@@ -30,16 +30,21 @@ class ArchiveController extends Controller
      */
     public function pendingDeletions(Request $request)
     {
+        // Include both new flow (deletion_requested_at set) and old flow (soft-deleted only)
         $items = \App\Models\PortalUser::withoutGlobalScopes()
-            ->whereNotNull('deletion_requested_at')
-            ->whereNull('deleted_at')
-            ->orderBy('deletion_requested_at', 'desc')
+            ->where(function ($q) {
+                $q->whereNotNull('deletion_requested_at')
+                  ->orWhereNotNull('deleted_at');
+            })
+            ->orderByRaw('COALESCE(deletion_requested_at, deleted_at) DESC')
             ->paginate(20);
 
         $items->getCollection()->transform(function ($user) {
-            $daysElapsed   = (int) now()->diffInDays($user->deletion_requested_at);
+            $deletionDate  = $user->deletion_requested_at ?? $user->deleted_at;
+            $daysElapsed   = (int) now()->diffInDays($deletionDate);
             $daysRemaining = max(0, 30 - $daysElapsed);
-            $user->days_remaining = $daysRemaining;
+            $user->days_remaining        = $daysRemaining;
+            $user->deletion_requested_at = $deletionDate;
             return $user;
         });
 
@@ -52,8 +57,16 @@ class ArchiveController extends Controller
     public function cancelPendingDeletion(Request $request, $id)
     {
         $user = \App\Models\PortalUser::withoutGlobalScopes()
-            ->whereNotNull('deletion_requested_at')
+            ->where(function ($q) {
+                $q->whereNotNull('deletion_requested_at')
+                  ->orWhereNotNull('deleted_at');
+            })
             ->findOrFail($id);
+
+        // Restore soft-deleted account if needed
+        if ($user->deleted_at) {
+            $user->restore();
+        }
 
         $user->forceFill(['deletion_requested_at' => null])->save();
 

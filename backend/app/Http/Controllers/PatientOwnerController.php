@@ -35,13 +35,17 @@ class PatientOwnerController extends Controller
         }
 
         // Add Search functionality
-        if ($request->has('search') && !empty($request->get('search'))) {
+        if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('city', 'like', "%{$search}%")
+                  ->orWhere('province', 'like', "%{$search}%")
+                  ->orWhere('zip', 'like', "%{$search}%")
+                  ->orWhereHas('pets', fn($p) => $p->where('name', 'like', "%{$search}%"));
             });
         }
 

@@ -31,13 +31,17 @@ function PatientsPage() {
   const [zip, setZip] = useState("");
   const [availableCities, setAvailableCities] = useState([]);
 
-  const fetchOwners = useCallback((page = 1) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fetchOwners = useCallback((page = 1, search = searchQuery) => {
     if (!user?.token) {
       setIsLoading(false);
       return; // Don't fetch if no user token
     }
     setIsLoading(true);
-    fetch(`/api/owners?page=${page}`, {
+    const params = new URLSearchParams({ page });
+    if (search) params.set("search", search);
+    fetch(`/api/owners?${params}`, {
       headers: {
         "Accept": "application/json",
         "Authorization": `Bearer ${user.token}`
@@ -74,7 +78,7 @@ function PatientsPage() {
         setIsLoading(false);
         setPagination({ current_page: 1, last_page: 1, total: 0 });
       });
-  }, [user?.token, toast]);
+  }, [user?.token, toast, searchQuery]);
 
   useEffect(() => {
     if (user?.token && activeTab === 'owners') {
@@ -352,7 +356,8 @@ function PatientsPage() {
             <PatientRecordsView
               owners={owners}
               pagination={pagination}
-              onPageChange={fetchOwners}
+              onPageChange={(page) => fetchOwners(page, searchQuery)}
+              onSearch={(q) => { setSearchQuery(q); fetchOwners(1, q); }}
               selectedOwnerId={selectedOwnerId}
               onSelectOwner={setSelectedOwnerId}
               onOpenAddPatient={() => {
