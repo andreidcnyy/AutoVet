@@ -102,25 +102,25 @@ const FEATURES = [
 const CLINIC_SERVICES = [
   {
     name: 'Consultations',
-    image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?q=80&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-VYJUFNh6Mvk?q=80&w=800&auto=format&fit=crop',
     description: 'Expert medical advice and thorough check-ups for your pets.',
     badge: 'from-rose-500 to-pink-600',
   },
   {
     name: 'Grooming',
-    image: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-Rd2VFDjV9aE?q=80&w=800&auto=format&fit=crop',
     description: 'Professional styling and hygiene services to keep pets looking their best.',
     badge: 'from-purple-500 to-violet-600',
   },
   {
     name: 'Vaccination',
-    image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-zIMUKke759I?q=80&w=800&auto=format&fit=crop',
     description: 'Essential preventative care and immunization schedules for lifelong health.',
     badge: 'from-brand-500 to-emerald-600',
   },
   {
     name: 'Deworming',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=800&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-5Bi6MWlWMbw?q=80&w=800&auto=format&fit=crop',
     description: 'Safe and effective treatments to protect your pets from internal parasites.',
     badge: 'from-amber-500 to-orange-600',
   },
