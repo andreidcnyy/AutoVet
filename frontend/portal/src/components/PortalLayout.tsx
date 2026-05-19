@@ -145,38 +145,45 @@ export default function PortalLayout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center justify-between transition-colors duration-300">
-          <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="Open menu"
-            >
-              <FiMenu className="w-5 h-5" />
-            </button>
-            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-            <span className="text-lg font-black text-zinc-800 dark:text-zinc-100">Pet Wellness</span>
+        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center transition-colors duration-300">
+          {/* Hamburger — mobile only, pinned left */}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="relative z-10 p-2 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors md:hidden"
+            aria-label="Open menu"
+          >
+            <FiMenu className="w-5 h-5" />
+          </button>
+
+          {/* Logo + clinic name — absolutely centered on mobile, hidden on desktop */}
+          <div className="absolute inset-x-0 flex items-center justify-center gap-2 pointer-events-none md:hidden">
+            <img src={logo} alt="Logo" className="w-7 h-7 object-contain" />
+            <span className="text-base font-black text-zinc-800 dark:text-zinc-100">Pet Wellness</span>
           </div>
-          <div className="flex-1"></div>
-          <div className="flex items-center gap-4">
+
+          {/* Desktop spacer */}
+          <div className="hidden md:flex flex-1" />
+
+          {/* Right controls — always visible, pinned right */}
+          <div className="relative z-10 flex items-center gap-2 sm:gap-4 ml-auto md:ml-0">
             <DarkModeToggle />
-            <div className="h-8 w-px bg-zinc-200 dark:bg-dark-border mx-2"></div>
+            <div className="h-8 w-px bg-zinc-200 dark:bg-dark-border hidden sm:block mx-1"></div>
             <Link to="/notifications" className="p-2 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative">
               <FiBell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-dark-card"></span>
               )}
             </Link>
-            <button 
+            <button
               onClick={() => setIsProfileModalOpen(true)}
-              className="flex items-center gap-3 ml-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <div className="text-right hidden sm:block text-left">
                 <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-tight">{user?.name}</p>
                 <p className="text-[10px] font-bold text-brand-600 uppercase tracking-tight text-right">Pet Owner</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-dark-border flex items-center justify-center overflow-hidden transition-colors">
-                <FiUser className="w-6 h-6 text-zinc-400" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-dark-border flex items-center justify-center overflow-hidden transition-colors">
+                <FiUser className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
               </div>
             </button>
           </div>
