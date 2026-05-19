@@ -74,7 +74,7 @@ function PetProfile() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-row items-center justify-between">
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm shrink-0">
           <FiArrowLeft /><span className="hidden sm:inline">Dashboard</span>
         </button>
@@ -97,7 +97,7 @@ function PetProfile() {
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-25 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 left-4 w-16 h-16 text-white opacity-20 -rotate-6 pointer-events-none" />
         
-        <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+        <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-6 md:gap-8 relative z-10">
           <div className="w-32 h-32 rounded-[2.5rem] bg-white/20 backdrop-blur-md border-4 border-white/30 shadow-2xl flex items-center justify-center overflow-hidden shrink-0">
              {pet.photo ? (
                <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
@@ -125,7 +125,7 @@ function PetProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 sm:gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl w-full sm:w-fit overflow-x-auto">
+      <div role="tablist" className="flex gap-1 sm:gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl w-full sm:w-fit overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -199,9 +199,9 @@ function PetProfile() {
                          <div>
                             <div className="text-[10px] font-black text-brand-500 uppercase tracking-widest">{record.type || 'Consultation'}</div>
                             <h4 className="font-bold text-lg text-zinc-800 dark:text-zinc-100">{record.title || 'Medical Visit'}</h4>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
-                               <span className="flex items-center gap-1"><FiCalendar /> {new Date(record.date).toLocaleDateString()}</span>
-                               <span className="flex items-center gap-1"><FiUser /> Dr. {record.vet?.name || 'Unknown'}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 mt-1 text-xs text-zinc-500 gap-0.5">
+                               <span className="flex items-center gap-1"><FiCalendar className="shrink-0" /> {new Date(record.date).toLocaleDateString()}</span>
+                               <span className="flex items-center gap-1"><FiUser className="shrink-0" /> Dr. {record.vet?.name || 'Unknown'}</span>
                             </div>
                          </div>
                       </div>
