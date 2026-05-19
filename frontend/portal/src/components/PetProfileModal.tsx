@@ -104,24 +104,29 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   ];
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center sm:items-center sm:p-6">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
-      
-      {/* Modal Content */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 fade-in duration-300 dark:bg-dark-card border border-zinc-200 dark:border-dark-border flex flex-col">
+
+      {/* Sheet on mobile, modal on desktop */}
+      <div className="relative w-full sm:max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border flex flex-col animate-in slide-in-from-bottom duration-300 sm:zoom-in-95">
+        {/* Drag handle — mobile only */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+        </div>
+
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-6 top-6 z-[10001] flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
+          className="absolute right-4 top-4 sm:right-6 sm:top-6 z-[10001] flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
         >
-          <FiX className="h-5 w-5" />
+          <FiX className="h-4 w-4" />
         </button>
 
-        <div className="overflow-y-auto flex-1 custom-scrollbar">
+        <div className="overflow-y-auto flex-1">
           {loading ? (
             <div className="flex h-96 items-center justify-center">
               <div className="flex flex-col items-center gap-4">
