@@ -15,6 +15,9 @@
     "tailwindcss": "^3.4.17",
     "vite": "^7.3.1"
   },
+  "overrides": {
+    "ws": "^8.20.1"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.99.0",
