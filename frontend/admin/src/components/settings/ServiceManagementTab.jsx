@@ -248,11 +248,14 @@ export default function ServiceManagementTab() {
                 </td>
                 <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">₱{Number(svc.base_price || svc.price).toFixed(2)}</td>
                 <td className="px-4 py-4">
-                  <span className={clsx("inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
-                    svc.requires_doctor
-                      ? "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-400"
-                      : "border-zinc-200 bg-zinc-100 text-zinc-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400"
-                  )}>
+                  <span
+                    className={clsx(
+                      "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
+                      svc.requires_doctor
+                        ? "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:text-sky-400"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-500 dark:border-dark-border dark:text-zinc-400"
+                    )}
+                  >
                     {svc.requires_doctor ? "Yes" : "No"}
                   </span>
                 </td>
