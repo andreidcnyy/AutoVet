@@ -113,12 +113,12 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
         className="relative w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 fade-in duration-300 dark:bg-dark-card border border-zinc-200 dark:border-dark-border flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Close Button */}
+        {/* Close Button — desktop only (mobile close is inline in hero row) */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 sm:right-6 sm:top-6 z-[10001] flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
+          className="hidden sm:flex absolute right-6 top-6 z-[10001] h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
         >
-          <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
+          <FiX className="h-5 w-5" />
         </button>
 
         <div className="overflow-y-auto flex-1 custom-scrollbar">
@@ -136,7 +136,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
           ) : (
             <div className="space-y-4 sm:space-y-6 pb-6 sm:pb-8">
               {/* Hero Section — compact on mobile */}
-              <div className="pt-4 pb-4 pl-4 pr-14 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-[2rem]">
+              <div className="p-4 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-[2rem]">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                   <LuPawPrint className="w-48 h-48" />
                 </div>
@@ -178,6 +178,14 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                       </span>
                     </div>
                   </div>
+
+                  {/* Close button — mobile only, inline in hero row */}
+                  <button
+                    onClick={onClose}
+                    className="sm:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                  >
+                    <FiX className="h-4 w-4" />
+                  </button>
 
                   {/* Book Visit — hide on mobile to save space */}
                   <div className="hidden md:block shrink-0">
