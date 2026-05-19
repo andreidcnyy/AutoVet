@@ -208,9 +208,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::apiResource('service-categories',    \App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
     });
 
-    // Settings
-    Route::get('/settings',  [SettingController::class, 'index']);
-    Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
+    // Settings — read is open to all authenticated users, write is admin only
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
+    });
 
     // Content Management
     Route::apiResource('cms-content', CmsContentController::class);

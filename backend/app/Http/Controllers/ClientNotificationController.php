@@ -87,13 +87,19 @@ class ClientNotificationController extends Controller
 
     public function send(Request $request)
     {
+        $allowedTypes = [
+            'App\\Models\\Appointment',
+            'App\\Models\\Invoice',
+            'App\\Models\\Pet',
+        ];
+
         $validated = $request->validate([
             'owner_id' => 'required|exists:owners,id',
             'channel' => 'required|in:email,sms',
             'template_id' => 'nullable|exists:notification_templates,id',
             'custom_message' => 'nullable|string',
-            'title' => 'nullable|string', // primarily for email
-            'related_type' => 'nullable|string',
+            'title' => 'nullable|string',
+            'related_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in($allowedTypes)],
             'related_id' => 'nullable|integer',
         ]);
 

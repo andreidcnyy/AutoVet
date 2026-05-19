@@ -10,15 +10,9 @@ class ProfileController extends Controller
 {
     public function show()
     {
-        // Use authenticated user if available, otherwise fallback to first admin for early dev
         $user = auth()->user();
-        
         if (!$user) {
-            $user = Admin::first() ?: PortalUser::first();
-        }
-
-        if (!$user) {
-            return response()->json(['error' => 'No user found'], 404);
+            return response()->json(['error' => 'Unauthenticated.'], 401);
         }
         return response()->json($user);
     }
@@ -131,13 +125,8 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = auth()->user();
-        
         if (!$user) {
-            $user = Admin::first() ?: PortalUser::first();
-        }
-
-        if (!$user) {
-            return response()->json(['error' => 'No user found'], 404);
+            return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
         $table = ($user instanceof Admin) ? 'admins' : 'portal_users';
