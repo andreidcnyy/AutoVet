@@ -52,10 +52,19 @@ class SyncController extends Controller
      */
     private function processSync($entityType, $uuid, $action, $data)
     {
-        $modelClass = "App\\Models\\" . $entityType;
-        if (!class_exists($modelClass)) {
-            throw new \Exception("Model class {$modelClass} not found.");
+        $allowed = [
+            'Owner'       => \App\Models\Owner::class,
+            'Pet'         => \App\Models\Pet::class,
+            'Appointment' => \App\Models\Appointment::class,
+            'Invoice'     => \App\Models\Invoice::class,
+            'MedicalRecord' => \App\Models\MedicalRecord::class,
+        ];
+
+        if (!isset($allowed[$entityType])) {
+            throw new \Exception("Unknown entity type: {$entityType}.");
         }
+
+        $modelClass = $allowed[$entityType];
 
         if ($action === 'deleted') {
             $modelClass::where('uuid', $uuid)->delete();

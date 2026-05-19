@@ -44,6 +44,9 @@ class PortalUser extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'google_id',
+        'deletion_requested_at',
+        'deleted_by',
     ];
 
     public function owner()
