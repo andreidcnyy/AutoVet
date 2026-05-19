@@ -145,27 +145,25 @@ export default function PortalLayout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center transition-colors duration-300">
-          {/* Hamburger — mobile only, pinned left */}
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="relative z-10 p-2 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors md:hidden"
-            aria-label="Open menu"
-          >
-            <FiMenu className="w-5 h-5" />
-          </button>
-
-          {/* Logo + clinic name — absolutely centered on mobile, hidden on desktop */}
-          <div className="absolute inset-x-0 flex items-center justify-center gap-2 pointer-events-none md:hidden">
-            <img src={logo} alt="Logo" className="w-7 h-7 object-contain" />
-            <span className="text-base font-black text-zinc-800 dark:text-zinc-100">Pet Wellness</span>
+        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center gap-3 transition-colors duration-300">
+          {/* Left: hamburger + logo + full clinic name — mobile only */}
+          <div className="flex items-center gap-2 flex-1 min-w-0 md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors shrink-0"
+              aria-label="Open menu"
+            >
+              <FiMenu className="w-5 h-5" />
+            </button>
+            <img src={logo} alt="Logo" className="w-7 h-7 object-contain shrink-0" />
+            <span className="text-sm font-black text-zinc-800 dark:text-zinc-100 truncate">Pet Wellness Animal Clinic</span>
           </div>
 
           {/* Desktop spacer */}
           <div className="hidden md:flex flex-1" />
 
-          {/* Right controls — always visible, pinned right */}
-          <div className="relative z-10 flex items-center gap-2 sm:gap-4 ml-auto md:ml-0">
+          {/* Right controls — always visible */}
+          <div className="flex items-center gap-2 sm:gap-4">
             <DarkModeToggle />
             <div className="h-8 w-px bg-zinc-200 dark:bg-dark-border hidden sm:block mx-1"></div>
             <Link to="/notifications" className="p-2 rounded-xl text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors relative">
