@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiActivity, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiActivity, FiSearch } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api";
@@ -22,7 +22,6 @@ function AuditLogTab() {
     date_from: "",
     date_to: "",
   });
-  const [expandedId, setExpandedId] = useState(null);
 
   const AUDIT_CACHE_KEY = 'settings_audit_logs_cache';
   const AUDIT_CACHE_TTL = 5 * 60 * 1000;
@@ -94,10 +93,6 @@ function AuditLogTab() {
   const handlePageChange = (page) => {
     fetchLogs(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
   };
 
   const actionColors = {
@@ -263,34 +258,7 @@ function AuditLogTab() {
                         <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
                           {log.model_type ? log.model_type.split("\\").pop() : "Unknown"} <span className="opacity-50">#{log.model_id}</span>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {(log.old_values || log.new_values) && (
-                            <button
-                              onClick={() => toggleExpand(log.id)}
-                              className="inline-flex items-center justify-end gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
-                            >
-                              {expandedId === log.id ? "Hide Details" : "View Data"}
-                              {expandedId === log.id ? <FiChevronUp /> : <FiChevronDown />}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                      {expandedId === log.id && (
-                        <tr className="bg-zinc-50 dark:bg-dark-surface/30">
-                          <td colSpan={5} className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl bg-zinc-900 p-4 font-mono text-xs text-green-400 overflow-x-auto shadow-inner">
-                              <div>
-                                <p className="mb-2 font-bold text-zinc-400">Old Values:</p>
-                                <pre className="whitespace-pre-wrap">{log.old_values ? JSON.stringify(log.old_values, null, 2) : "{}"}</pre>
-                              </div>
-                              <div>
-                                <p className="mb-2 font-bold text-zinc-400">New Values:</p>
-                                <pre className="whitespace-pre-wrap">{log.new_values ? JSON.stringify(log.new_values, null, 2) : "{}"}</pre>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                        <td className="px-4 py-3 text-right" />
                     </React.Fragment>
                   ))}
                 </tbody>
