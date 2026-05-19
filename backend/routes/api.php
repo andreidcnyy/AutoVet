@@ -163,13 +163,28 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::apiResource('invoices',        InvoiceController::class);
     Route::apiResource('reports',         InvoiceController::class)->parameters(['reports' => 'invoice']);
-    Route::apiResource('services',        ServiceController::class);
+    Route::get('services',           [ServiceController::class, 'index']);
+    Route::get('services/{service}', [ServiceController::class, 'show']);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('services',                [ServiceController::class, 'store']);
+        Route::put('services/{service}',       [ServiceController::class, 'update']);
+        Route::patch('services/{service}',     [ServiceController::class, 'update']);
+        Route::delete('services/{service}',    [ServiceController::class, 'destroy']);
+    });
+
     Route::apiResource('medical-records', MedicalRecordController::class);
 
     Route::apiResource('owners', PatientOwnerController::class);
     Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
-    Route::post('vet-schedules/bulk',    [VetScheduleController::class, 'bulkStore']);
-    Route::apiResource('vet-schedules',   VetScheduleController::class);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('vet-schedules/bulk',       [VetScheduleController::class, 'bulkStore']);
+        Route::post('vet-schedules',            [VetScheduleController::class, 'store']);
+        Route::put('vet-schedules/{vet_schedule}',    [VetScheduleController::class, 'update']);
+        Route::patch('vet-schedules/{vet_schedule}',  [VetScheduleController::class, 'update']);
+        Route::delete('vet-schedules/{vet_schedule}', [VetScheduleController::class, 'destroy']);
+    });
+    Route::get('vet-schedules',                    [VetScheduleController::class, 'index']);
+    Route::get('vet-schedules/{vet_schedule}',     [VetScheduleController::class, 'show']);
     
     // Data Import Routes — admin/staff only
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->prefix('import')->group(function () {

@@ -360,6 +360,11 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid or expired token.'], 422);
         }
 
+        if (\Carbon\Carbon::parse($reset->created_at)->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json(['error' => 'Invalid or expired token.'], 422);
+        }
+
         $user = Admin::where('email', $request->email)->first()
              ?? PortalUser::where('email', $request->email)->first();
 
