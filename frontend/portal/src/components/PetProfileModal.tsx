@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { getPet, getMedicalRecords, getInvoices } from '../api';
 import {
   FiX,
@@ -103,25 +104,20 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
     { id: 'invoices', label: 'Billing', icon: FiCreditCard },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center sm:items-center sm:p-6">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Sheet on mobile, modal on desktop */}
-      <div className="relative w-full sm:max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden rounded-t-3xl sm:rounded-3xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border flex flex-col animate-in slide-in-from-bottom duration-300 sm:zoom-in-95">
-        {/* Drag handle — mobile only */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-        </div>
-
+      {/* Modal — centered on all screen sizes */}
+      <div className="relative w-full sm:max-w-4xl max-h-[88vh] overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 sm:right-6 sm:top-6 z-[10001] flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/30 transition-colors"
         >
           <FiX className="h-4 w-4" />
         </button>
@@ -442,6 +438,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
