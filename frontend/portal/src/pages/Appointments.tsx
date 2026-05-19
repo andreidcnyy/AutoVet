@@ -160,7 +160,7 @@ export default function Appointments() {
       </button>
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -182,7 +182,7 @@ export default function Appointments() {
         {appointments.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
             {appointments.map(appt => (
-              <div key={appt.id} className="card-shell card-shell-hover p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
+              <div key={appt.id} className="card-shell card-shell-hover p-4 sm:p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
                 <div className={clsx(
                   "absolute left-0 top-0 bottom-0 w-1.5",
                   appt.status === 'pending' && 'bg-zinc-400',
@@ -217,7 +217,7 @@ export default function Appointments() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                     <button 
                       onClick={() => handleDetailsClick(appt)}
                       className="px-4 py-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/10 dark:text-brand-400 text-xs font-bold hover:bg-brand-100 transition-all"
@@ -258,12 +258,17 @@ export default function Appointments() {
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
         
         <aside className={clsx(
-          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
-          isDetailsOpen ? "translate-x-0" : "translate-x-full"
+          "absolute bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 overflow-y-auto",
+          "bottom-0 left-0 right-0 rounded-t-3xl max-h-[88vh]",
+          "md:inset-y-0 md:bottom-auto md:left-auto md:right-0 md:w-full md:max-w-md md:rounded-none md:max-h-none",
+          isDetailsOpen ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full"
         )}>
+          <div className="sticky top-0 z-10 flex justify-center pt-3 pb-1 bg-white dark:bg-dark-card md:hidden">
+            <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+          </div>
           {selectedAppointment && (
-            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-              <div className="flex justify-between items-center mb-8">
+            <div className="px-5 sm:px-8 pb-8 pt-2 space-y-6 animate-in slide-in-from-bottom-4 md:slide-in-from-right-4 duration-300">
+              <div className="flex justify-between items-center mb-2">
                 <div>
                   <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
                     <span className="text-brand-500 mr-2">/</span>Visit Details
@@ -284,7 +289,7 @@ export default function Appointments() {
               </div>
 
               <div className="space-y-6">
-                <div className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
+                <div className="p-4 sm:p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-5">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
                       <FiHeart className="w-6 h-6" />

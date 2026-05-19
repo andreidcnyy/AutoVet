@@ -39,7 +39,10 @@
     padding-right: env(safe-area-inset-right);
   }
   *::-webkit-scrollbar { display: none; }
-  * { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  * { scrollbar-width: none; }
+  /* -webkit-overflow-scrolling: touch is intentionally omitted — it causes
+     position:fixed elements to be clipped by the nearest scroll container
+     on iOS Safari instead of being viewport-fixed, which breaks modals. */
 
   /* Inputs: 16px to suppress iOS auto-zoom; comfortable tap height */
   input, select, textarea {
