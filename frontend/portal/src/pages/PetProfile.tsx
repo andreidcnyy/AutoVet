@@ -75,25 +75,25 @@ function PetProfile() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
-          <FiArrowLeft /> Dashboard
+        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm shrink-0">
+          <FiArrowLeft /><span className="hidden sm:inline">Dashboard</span>
         </button>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Link to={`/pets/${pet.id}/edit`}>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-zinc-100 dark:border-dark-border text-zinc-600 dark:text-zinc-400 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all">
-              <FiEdit2 /> Edit Pet
+            <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border-2 border-zinc-100 dark:border-dark-border text-zinc-600 dark:text-zinc-400 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all">
+              <FiEdit2 /><span className="hidden sm:inline">Edit Pet</span>
             </button>
           </Link>
           <Link to="/book">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 text-white text-sm font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all">
-              <FiCalendar /> Book Visit
+            <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-brand-500 text-white text-sm font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all">
+              <FiCalendar /><span className="hidden sm:inline">Book Visit</span>
             </button>
           </Link>
         </div>
       </div>
 
       {/* Hero Section */}
-      <div className="rounded-2xl p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 overflow-hidden relative text-white shadow-xl">
+      <div className="rounded-2xl p-5 sm:p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 overflow-hidden relative text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-25 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 left-4 w-16 h-16 text-white opacity-20 -rotate-6 pointer-events-none" />
         
@@ -125,20 +125,21 @@ function PetProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl w-fit">
+      <div className="flex gap-1 sm:gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl w-full sm:w-fit overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={clsx(
-              "flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none justify-center",
               activeTab === tab.id
               ? "bg-white dark:bg-dark-card text-brand-600 shadow-sm"
               : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300"
             )}
           >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
+            <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.id === 'summary' ? 'Info' : tab.id === 'medical' ? 'Medical' : 'Bills'}</span>
           </button>
         ))}
       </div>
@@ -147,7 +148,7 @@ function PetProfile() {
       <div className="space-y-6">
         {activeTab === 'summary' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card-shell p-6 bg-white dark:bg-dark-card space-y-4">
+            <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                  <FiInfo className="text-brand-500" /> Vitals & Traits
                </h3>
@@ -167,7 +168,7 @@ function PetProfile() {
                </div>
             </div>
 
-            <div className="card-shell p-6 bg-white dark:bg-dark-card space-y-4">
+            <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                  <FiAlertCircle className="text-rose-500" /> Allergies & Notes
                </h3>
@@ -189,7 +190,7 @@ function PetProfile() {
           <div className="space-y-4">
             {medicalRecords.length > 0 ? (
               medicalRecords.map(record => (
-                <div key={record.id} className="card-shell p-6 bg-white dark:bg-dark-card hover:border-brand-500/30 transition-all group">
+                <div key={record.id} className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card hover:border-brand-500/30 transition-all group">
                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-start gap-4">
                          <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/10 flex items-center justify-center text-brand-600 group-hover:scale-110 transition-transform">
@@ -228,7 +229,7 @@ function PetProfile() {
           <div className="space-y-4">
             {invoices.length > 0 ? (
               invoices.map(invoice => (
-                <div key={invoice.id} className="card-shell p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
+                <div key={invoice.id} className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
                    <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
                          <FiDollarSign className="w-6 h-6" />
