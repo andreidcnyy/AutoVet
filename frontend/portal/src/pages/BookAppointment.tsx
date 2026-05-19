@@ -308,7 +308,7 @@ export default function BookAppointment() {
         )}
 
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
+        <div className="grid grid-cols-7 sm:grid-cols-7 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
           {weekDays.map(day => (
             <div key={day} className="py-2 sm:py-4 text-center text-[10px] sm:text-xs font-bold uppercase tracking-widest text-zinc-400">
               <span className="sm:hidden">{day[0]}</span>
@@ -318,7 +318,7 @@ export default function BookAppointment() {
         </div>
 
         {/* Day cells — iOS-compact on mobile, spacious on desktop */}
-        <div className="grid grid-cols-7 md:divide-x md:divide-y md:divide-zinc-100 dark:md:divide-dark-border/50">
+        <div className="grid grid-cols-7 sm:grid-cols-7 md:divide-x md:divide-y md:divide-zinc-100 dark:md:divide-dark-border/50">
           {calendarDays.map((entry, idx) => {
             const todayStr = format(new Date(), "yyyy-MM-dd");
             const isToday = entry.dateString === todayStr;
@@ -566,8 +566,8 @@ export default function BookAppointment() {
                         <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availability…</div>
                       ) : (
                         <>
-                          {/* Horizontal scroll on mobile, grid on desktop */}
-                          <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory md:grid md:grid-cols-4 md:overflow-visible">
+                          {/* 3-col grid on mobile, 4-col on desktop */}
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
                             {standardSlots.filter(slot => {
                               const isBooked = availability.some((a: any) =>
                                 a.time?.substring(0, 5) === slot &&
@@ -584,8 +584,7 @@ export default function BookAppointment() {
                                   type="button"
                                   onClick={() => setValue("time", slot, { shouldValidate: true })}
                                   className={clsx(
-                                    "shrink-0 snap-start px-4 py-2.5 rounded-xl text-xs font-bold border-2 transition-all",
-                                    "md:shrink md:px-2",
+                                    "px-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all text-center w-full",
                                     isSelected
                                       ? "border-emerald-500 bg-emerald-500 text-white shadow-md"
                                       : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-400"

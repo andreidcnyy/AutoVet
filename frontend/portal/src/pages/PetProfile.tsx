@@ -229,7 +229,7 @@ function PetProfile() {
           <div className="space-y-4">
             {invoices.length > 0 ? (
               invoices.map(invoice => (
-                <div key={invoice.id} className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card flex items-center justify-between group">
+                <div key={invoice.id} className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 group">
                    <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
                          <FiDollarSign className="w-6 h-6" />
@@ -240,7 +240,7 @@ function PetProfile() {
                          <div className="text-xs text-zinc-500">{new Date(invoice.created_at).toLocaleDateString()}</div>
                       </div>
                    </div>
-                   <div className="text-right flex flex-col items-end gap-1">
+                   <div className="flex flex-col gap-1 sm:items-end sm:text-right">
                       <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
                         ₱{parseFloat(invoice.total).toLocaleString()}
                       </div>
