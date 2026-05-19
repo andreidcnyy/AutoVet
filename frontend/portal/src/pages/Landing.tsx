@@ -279,9 +279,9 @@ export default function Landing() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 w-full">
           <div className="max-w-3xl space-y-8">
             {/* Mobile-only: logo + clinic name above hero badge */}
-            <div className="flex md:hidden items-center gap-3 -mb-2">
-              <img src={logo} alt="Logo" className="w-10 h-10 object-contain shrink-0" />
-              <span className="text-sm font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase leading-tight">
+            <div className="flex md:hidden items-center gap-4 mb-2">
+              <img src={logo} alt="Logo" className="w-20 h-20 object-contain shrink-0 drop-shadow-lg" />
+              <span className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase leading-tight">
                 Pet Wellness Animal Clinic
               </span>
             </div>
