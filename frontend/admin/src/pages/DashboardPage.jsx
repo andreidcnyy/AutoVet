@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import MetricCard from "../components/dashboard/MetricCard";
 import AnalyticsChartsCard from "../components/dashboard/AnalyticsChartsCard";
 import SalesSummaryCard from "../components/dashboard/SalesSummaryCard";
@@ -172,7 +173,7 @@ function DashboardPage() {
         </section>
       )}
 
-      {modal.open && (
+      {modal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" onClick={closeModal}>
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[32px] shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
@@ -228,7 +229,8 @@ function DashboardPage() {
               <button onClick={closeModal} className="px-6 py-2.5 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-black uppercase hover:scale-105 transition-transform">Close</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

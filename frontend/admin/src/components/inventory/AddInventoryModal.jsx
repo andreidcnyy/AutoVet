@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FiX, FiCheckCircle, FiInfo, FiCheck } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useForm, useWatch } from "react-hook-form";
@@ -176,7 +177,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
     </div>
   );
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
       <div className="my-auto flex w-full max-w-5xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
@@ -313,6 +314,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

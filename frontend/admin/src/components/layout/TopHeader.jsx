@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiBell, FiCalendar, FiChevronDown, FiFileText, FiLogOut, FiMenu, FiUser, FiX,
@@ -76,6 +77,7 @@ function TopHeader({ title, user, onMenuToggle }) {
   }, [openProfileMenu, openNotifMenu]);
 
   return (
+    <>
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur transition-colors duration-300 dark:border-dark-border dark:bg-dark-card/95">
       <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3 shrink-0">
@@ -246,9 +248,10 @@ function TopHeader({ title, user, onMenuToggle }) {
         />
       )}
 
+    </header>
       {selectedNotif && (() => {
         const Icon = iconMap[selectedNotif.iconName] || FiBell;
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedNotif(null)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div
@@ -290,10 +293,11 @@ function TopHeader({ title, user, onMenuToggle }) {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
-    </header>
+    </>
   );
 }
 
