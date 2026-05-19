@@ -127,6 +127,7 @@ const api = {
   get: (url, opts) => request('GET', url, opts),
   post: (url, body, opts) => request('POST', url, { body, ...opts }),
   put: (url, body, opts) => request('PUT', url, { body, ...opts }),
+  patch: (url, body, opts) => request('PATCH', url, { body, ...opts }),
   delete: (url, opts) => request('DELETE', url, opts),
   getHeaders,
   invalidateCache,

@@ -58,7 +58,7 @@ class AppointmentStatusController extends Controller
             Log::error("Failed to send approval notification: " . $e->getMessage());
         }
 
-        return response()->json($appointment->load(['pet', 'service', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
 
     public function decline(Request $request, Appointment $appointment)
@@ -105,7 +105,7 @@ class AppointmentStatusController extends Controller
             Log::error("Failed to send decline notification: " . $e->getMessage());
         }
 
-        return response()->json($appointment->load(['pet', 'service', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
 
     public function remind(Request $request, Appointment $appointment)

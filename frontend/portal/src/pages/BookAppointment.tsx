@@ -98,7 +98,6 @@ export default function BookAppointment() {
   const selectedServiceId = watch("service_id");
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const selectedService = services.find(s => s.id.toString() === selectedServiceId);
   const requiresDoctor = selectedServiceIds.some(id => {
     const svc = services.find(s => s.id.toString() === id);
     return DOCTOR_REQUIRED_CATEGORIES.includes(svc?.category);
@@ -554,13 +553,16 @@ export default function BookAppointment() {
                     {errors.pet_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
                   </div>
 
-                  {/* Services — multi-select */}
+                  {/* Services — multi-select with inline prices */}
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Services <span className="normal-case text-zinc-400">(select one or more)</span></label>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Service</label>
+                      <span className="text-[9px] text-zinc-400 font-semibold">Prices may vary at checkout</span>
+                    </div>
                     <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
                       {services.map(s => {
                         const checked = selectedServiceIds.includes(s.id.toString());
-                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : 'Varies';
+                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : 'Price varies';
                         return (
                           <button
                             key={s.id}
@@ -579,19 +581,11 @@ export default function BookAppointment() {
                             )}
                           >
                             <span>{s.name}</span>
-                            <span className={clsx("text-[10px] font-black", checked ? "text-brand-500" : "text-zinc-400")}>{priceLabel}</span>
+                            <span className={clsx("text-[10px] font-black shrink-0 ml-2", checked ? "text-brand-500" : "text-zinc-400")}>{priceLabel}</span>
                           </button>
                         );
                       })}
                     </div>
-                    {selectedServiceIds.length > 0 && (
-                      <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
-                        <FiInfo className="w-3.5 h-3.5 text-brand-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] font-bold text-brand-700 dark:text-brand-400">
-                          {selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''} selected — prices may vary at checkout.
-                        </p>
-                      </div>
-                    )}
                     <input type="hidden" {...register("service_id")} />
                     {errors.service_id && selectedServiceIds.length === 0 && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">Please select at least one service.</p>}
                   </div>
