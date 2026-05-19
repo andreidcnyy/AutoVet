@@ -28,6 +28,8 @@ class Inventory extends Model
         'selling_price',
         'supplier',
         'expiration_date',
+        'lot_number',
+        'batch_number',
         'min_stock_level',
         'is_sellable',
         'is_service_usable',

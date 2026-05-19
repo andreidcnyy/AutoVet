@@ -27,11 +27,12 @@ class AppointmentController extends Controller
         
         // Use with() for eager loading to prevent N+1 queries.
         // select() only columns needed for the list to reduce memory usage.
-        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id')
+        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'is_walk_in', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id')
             ->with([
                 'pet:id,name,owner_id',
-                'pet.owner:id,name,email', 
+                'pet.owner:id,name,email',
                 'service:id,name',
+                'services:id,name',
                 'vet:id,name',
             ]);
 
@@ -154,19 +155,29 @@ class AppointmentController extends Controller
         $this->authorize('create', Appointment::class);
 
         $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'date' => 'required|date',
-            'time' => 'required|date_format:H:i',
-            'category' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
-            'status' => 'nullable|string|in:pending,completed,cancelled',
-            'pet_id' => 'required|exists:pets,id',
-            'service_id' => 'required|exists:services,id',
-            'vet_id' => 'nullable|exists:admins,id',
+            'title'       => 'nullable|string|max:255',
+            'date'        => 'required|date',
+            'time'        => 'required|date_format:H:i',
+            'category'    => 'nullable|string|max:100',
+            'notes'       => 'nullable|string',
+            'status'      => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
+            'is_walk_in'  => 'nullable|boolean',
+            'pet_id'      => 'required|exists:pets,id',
+            'service_id'  => 'nullable|exists:services,id',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => 'exists:services,id',
+            'vet_id'      => 'nullable|exists:admins,id',
         ], [
-            'service_id.required' => 'Please select a specific service category (Consultation, Grooming, etc.) for forecasting.',
             'pet_id.required' => 'A pet must be selected for the appointment.'
         ]);
+
+        // Resolve primary service_id from service_ids array if not set directly
+        if (empty($validated['service_id']) && !empty($validated['service_ids'])) {
+            $validated['service_id'] = $validated['service_ids'][0];
+        }
+        if (empty($validated['service_id'])) {
+            return response()->json(['message' => 'Please select at least one service.'], 422);
+        }
 
         if ($ownerId = $this->getPortalOwnerId()) {
             $pet = \App\Models\Pet::find($validated['pet_id']);
@@ -253,7 +264,19 @@ class AppointmentController extends Controller
             return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
         }
 
+        $serviceIds = $validated['service_ids'] ?? [$validated['service_id']];
+        unset($validated['service_ids']);
+
+        // Walk-ins skip the pending queue and are immediately approved
+        if (!empty($validated['is_walk_in'])) {
+            $validated['status'] = 'approved';
+        }
+
         $appointment = Appointment::create($validated);
+
+        // Sync additional services to pivot table
+        $appointment->services()->sync($serviceIds);
+
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
         // Broadcast appointment creation
@@ -288,13 +311,13 @@ class AppointmentController extends Controller
             \Illuminate\Support\Facades\Log::warning("Failed to send automated appointment notification: " . $e->getMessage());
         }
 
-        return response()->json($appointment->load(['pet', 'service', 'vet']), 201);
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']), 201);
     }
 
     public function show(Appointment $appointment)
     {
         $this->authorize('view', $appointment);
-        return response()->json($appointment->load(['pet', 'service', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
 
     public function update(Request $request, Appointment $appointment)
@@ -302,17 +325,18 @@ class AppointmentController extends Controller
         $this->authorize('update', $appointment);
 
         $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'date' => 'sometimes|required|date',
-            'time' => 'sometimes|required|date_format:H:i',
-            'category' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
-            'status' => 'nullable|string|in:pending,completed,cancelled',
-            'pet_id' => 'sometimes|required|exists:pets,id',
-            'service_id' => 'sometimes|required|exists:services,id',
-            'vet_id' => 'nullable|exists:admins,id',
-        ], [
-            'service_id.required' => 'A service type is required for accurate demand forecasting.'
+            'title'         => 'nullable|string|max:255',
+            'date'          => 'sometimes|required|date',
+            'time'          => 'sometimes|required|date_format:H:i',
+            'category'      => 'nullable|string|max:100',
+            'notes'         => 'nullable|string',
+            'status'        => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
+            'is_walk_in'    => 'nullable|boolean',
+            'pet_id'        => 'sometimes|required|exists:pets,id',
+            'service_id'    => 'nullable|exists:services,id',
+            'service_ids'   => 'nullable|array',
+            'service_ids.*' => 'exists:services,id',
+            'vet_id'        => 'nullable|exists:admins,id',
         ]);
 
         // Portal owners cannot reassign an appointment to a pet they don't own
@@ -393,10 +417,22 @@ class AppointmentController extends Controller
             $validated['title'] = $service ? $service->name : 'General Consultation';
         }
 
+        $serviceIds = $validated['service_ids'] ?? null;
+        unset($validated['service_ids']);
+
+        if (!empty($validated['service_id']) && $serviceIds === null) {
+            $serviceIds = [$validated['service_id']];
+        }
+
         $appointment->update($validated);
+
+        if ($serviceIds !== null) {
+            $appointment->services()->sync($serviceIds);
+        }
+
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
-        return response()->json($appointment->load(['pet', 'service', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
 
     public function getAvailability(Request $request)

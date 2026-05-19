@@ -206,6 +206,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ["Selling Price", "selling_price"],
               ["Buying Price", "price"],
               ["Expiration Date", "expiration_date"],
+              ["Lot #", "lot_number"],
+              ["Batch #", "batch_number"],
             ].map(([label, field]) => (
               <div key={field}>
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">{label}</p>

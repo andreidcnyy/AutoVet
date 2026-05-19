@@ -22,6 +22,7 @@ class Appointment extends Model
         'notes',
         'decline_reason',
         'status',
+        'is_walk_in',
         'pet_id',
         'service_id',
         'vet_id',
@@ -32,6 +33,7 @@ class Appointment extends Model
     ];
 
     protected $casts = [
+        'is_walk_in'               => 'boolean',
         'synced_at'                => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
@@ -44,6 +46,11 @@ class Appointment extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function services()
+    {
+        return $this->belongsToMany(Service::class, 'appointment_services');
     }
 
     public function vet()

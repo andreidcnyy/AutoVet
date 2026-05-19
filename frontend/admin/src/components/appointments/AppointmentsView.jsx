@@ -89,6 +89,8 @@ function AppointmentsView() {
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [declineModal, setDeclineModal] = useState({ open: false, reason: "", error: "", submitting: false });
   const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [isWalkIn, setIsWalkIn] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
@@ -213,11 +215,16 @@ function AppointmentsView() {
   const handleParamChange = (newParams) => setParams(prev => ({ ...prev, ...newParams, page: newParams.page || 1 }));
 
   const onSubmit = async (data) => {
+    if (selectedServiceIds.length === 0) { toast.error("Please select at least one service."); return; }
     try {
-      await api.post("/api/appointments", data);
-      toast.success("Scheduled!");
-      setIsDrawerOpen(false); fetchAppointments();
-    } catch (err) { toast.error("Failed to schedule."); }
+      const payload = { ...data, service_id: selectedServiceIds[0], service_ids: selectedServiceIds, is_walk_in: isWalkIn };
+      await api.post("/api/appointments", payload);
+      toast.success(isWalkIn ? "Walk-in registered!" : "Scheduled!");
+      setIsDrawerOpen(false);
+      setSelectedServiceIds([]);
+      setIsWalkIn(false);
+      fetchAppointments();
+    } catch (err) { toast.error(err?.response?.data?.message || "Failed to schedule."); }
   };
 
   const handleAppointmentClick = (e, appt) => { e.stopPropagation(); setSelectedAppointment(appt); setActivePanel("details"); setIsDrawerOpen(true); };
@@ -227,15 +234,23 @@ function AppointmentsView() {
     if (actionSubmitting) return;
     setActionSubmitting(true);
     try {
-      await api.post(`/api/appointments/${selectedAppointment.id}/${action}`);
-      localStorage.removeItem('dashboard_stats_cache');
-      localStorage.removeItem('dashboard_notifications_cache');
-      api.invalidateCache?.();
-      const newStatus = action === 'approve' ? 'approved' : action === 'completed' ? 'completed' : action;
-      const updated = { ...selectedAppointment, status: newStatus };
-      setSelectedAppointment(updated);
-      setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
-      toast.success(`Appointment ${newStatus}.`);
+      if (action === 'no_show') {
+        await api.patch(`/api/appointments/${selectedAppointment.id}`, { status: 'no_show' });
+        const updated = { ...selectedAppointment, status: 'no_show' };
+        setSelectedAppointment(updated);
+        setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+        toast.success("Marked as no-show.");
+      } else {
+        await api.post(`/api/appointments/${selectedAppointment.id}/${action}`);
+        localStorage.removeItem('dashboard_stats_cache');
+        localStorage.removeItem('dashboard_notifications_cache');
+        api.invalidateCache?.();
+        const newStatus = action === 'approve' ? 'approved' : action === 'completed' ? 'completed' : action;
+        const updated = { ...selectedAppointment, status: newStatus };
+        setSelectedAppointment(updated);
+        setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+        toast.success(`Appointment ${newStatus}.`);
+      }
     } catch (err) { toast.error("Action failed."); }
     finally { setActionSubmitting(false); }
   };
@@ -346,10 +361,22 @@ function AppointmentsView() {
                     <tr key={appt.id} onClick={(e) => handleAppointmentClick(e, appt)} className="group hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 cursor-pointer transition-all">
 
                       <td className="px-8 py-6">
-                        <span className={clsx("px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border", appt.status === 'approved' || appt.status === 'completed' ? "bg-emerald-100 text-emerald-700 border-emerald-200" : (appt.status === 'declined' || appt.status === 'cancelled') ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-amber-100 text-amber-700 border-amber-200")}>{appt.status}</span>
+                        <span className={clsx("px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border",
+                          appt.status === 'approved' || appt.status === 'completed' ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          appt.status === 'no_show' ? "bg-zinc-100 text-zinc-600 border-zinc-300" :
+                          appt.status === 'declined' || appt.status === 'cancelled' ? "bg-rose-100 text-rose-700 border-rose-200" :
+                          "bg-amber-100 text-amber-700 border-amber-200"
+                        )}>{appt.status === 'no_show' ? 'No Show' : appt.status}</span>
+                        {appt.is_walk_in && <span className="ml-1.5 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-sky-100 text-sky-700 border border-sky-200">Walk-in</span>}
                       </td>
                       <td className="px-8 py-6"><p className="font-black italic">{appt.pet?.name}</p><p className="text-[10px] font-bold text-zinc-400 uppercase">Guardian: {appt.pet?.owner?.name}</p></td>
-                      <td className="px-8 py-6"><p className="font-black uppercase text-xs">{appt.title}</p><p className="text-[10px] font-bold text-emerald-600 uppercase">{appt.service?.name}</p></td>
+                      <td className="px-8 py-6">
+                        <p className="font-black uppercase text-xs">{appt.title}</p>
+                        {appt.services && appt.services.length > 1
+                          ? <p className="text-[10px] font-bold text-emerald-600 uppercase">{appt.services.map(s => s.name).join(' + ')}</p>
+                          : <p className="text-[10px] font-bold text-emerald-600 uppercase">{appt.service?.name}</p>
+                        }
+                      </td>
                       <td className="px-8 py-6"><div className="flex items-center gap-2 font-black italic"><FiClock className="text-emerald-500" />{appt.time?.substring(0, 5)}</div>{!params.date && <p className="text-[10px] font-bold text-zinc-400 uppercase">{formatDateLocal(appt.date, "MMM d, yyyy")}</p>}</td>
                       <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition-all"><button className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"><FiChevronRight /></button></td>
                     </tr>
@@ -367,10 +394,18 @@ function AppointmentsView() {
         <aside className={clsx("absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 overflow-y-auto", isDrawerOpen ? "translate-x-0" : "translate-x-full")}>
           {activePanel === "booking" ? (
             <section className="p-8">
-              <div className="mb-8 flex items-center justify-between">
-                <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> Schedule</h3>
-                <button onClick={() => setIsDrawerOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> {isWalkIn ? 'Walk-in' : 'Schedule'}</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsWalkIn(v => !v)}
+                    className={clsx("px-3 py-1.5 rounded-xl text-xs font-black uppercase border transition-all", isWalkIn ? "bg-sky-600 text-white border-sky-600" : "bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200")}
+                  >Walk-in</button>
+                  <button onClick={() => { setIsDrawerOpen(false); setIsWalkIn(false); setSelectedServiceIds([]); }} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
+                </div>
               </div>
+              {isWalkIn && <p className="mb-4 text-xs font-bold text-sky-600 bg-sky-50 rounded-xl px-4 py-2.5 border border-sky-200">Walk-in visits are immediately approved — no pending queue.</p>}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
                   <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
@@ -379,8 +414,20 @@ function AppointmentsView() {
                   <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
                     <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
                   </div>
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Service</label>
-                    <select {...register("service_id")} className={qInputBase}><option value="">Select Service</option>{Array.isArray(services) && services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                  <div>
+                    <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                      {Array.isArray(services) && services.map(s => {
+                        const checked = selectedServiceIds.includes(String(s.id));
+                        return (
+                          <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
+                            <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
+                            {s.name}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -388,7 +435,7 @@ function AppointmentsView() {
                   <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
                 </div>
                 <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
-                <button type="submit" disabled={isSubmitting} className="h-16 w-full rounded-2xl bg-emerald-600 text-sm font-black uppercase text-white shadow-2xl hover:bg-emerald-700 transition-all">{isSubmitting ? "Syncing..." : "Finalize"}</button>
+                <button type="submit" disabled={isSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", isWalkIn ? "bg-sky-600 hover:bg-sky-700" : "bg-emerald-600 hover:bg-emerald-700")}>{isSubmitting ? "Syncing..." : isWalkIn ? "Register Walk-in" : "Finalize"}</button>
               </form>
             </section>
           ) : (
@@ -401,13 +448,27 @@ function AppointmentsView() {
                 <div className="flex items-start gap-6">
                   <div className="h-20 w-20 flex items-center justify-center rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-xl"><FiInfo className="h-10 w-10" /></div>
                   <div><h4 className="text-3xl font-black italic leading-tight">{selectedAppointment?.title}</h4>
-                    <div className={clsx("mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase shadow-lg", selectedAppointment?.status === "approved" || selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700" : (selectedAppointment?.status === "declined" || selectedAppointment?.status === "cancelled") ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700")}>{selectedAppointment?.status || "pending"}</div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className={clsx("inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase shadow-lg",
+                        selectedAppointment?.status === "approved" || selectedAppointment?.status === "completed" ? "bg-emerald-100 text-emerald-700" :
+                        selectedAppointment?.status === "no_show" ? "bg-zinc-100 text-zinc-600" :
+                        (selectedAppointment?.status === "declined" || selectedAppointment?.status === "cancelled") ? "bg-rose-100 text-rose-700" :
+                        "bg-amber-100 text-amber-700"
+                      )}>{selectedAppointment?.status === 'no_show' ? 'No Show' : (selectedAppointment?.status || "pending")}</span>
+                      {selectedAppointment?.is_walk_in && <span className="inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase bg-sky-100 text-sky-700">Walk-in</span>}
+                    </div>
                   </div>
                 </div>
                 <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8">
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{selectedAppointment?.time?.substring(0, 5)}</p></div></div>
                   <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name} | Guardian ID #{selectedAppointment?.pet?.owner_id}</p></div></div>
+                  <div className="flex items-center gap-5"><FiList className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">SERVICES</p>
+                    {selectedAppointment?.services?.length > 0
+                      ? <div className="flex flex-wrap gap-1.5 mt-1">{selectedAppointment.services.map(s => <span key={s.id} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">{s.name}</span>)}</div>
+                      : <p className="text-lg font-black">{selectedAppointment?.service?.name || '—'}</p>
+                    }
+                  </div></div>
                 </div>
                 {selectedAppointment?.notes && (
                   <div>
@@ -427,6 +488,11 @@ function AppointmentsView() {
                         Decline
                       </button>
                     </div>
+                  )}
+                  {selectedAppointment?.status === 'approved' && (
+                    <button onClick={() => handleStatusAction('no_show')} disabled={actionSubmitting} className="h-12 w-full rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-black uppercase text-sm disabled:opacity-60 transition-all hover:bg-zinc-300">
+                      {actionSubmitting ? "..." : "Mark as No-Show"}
+                    </button>
                   )}
                 </div>
               </div>

@@ -96,9 +96,13 @@ export default function BookAppointment() {
   const selectedVetId = watch("vet_id");
   const selectedTime = watch("time");
   const selectedServiceId = watch("service_id");
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const selectedService = services.find(s => s.id.toString() === selectedServiceId);
-  const requiresDoctor = DOCTOR_REQUIRED_CATEGORIES.includes(selectedService?.category);
+  const requiresDoctor = selectedServiceIds.some(id => {
+    const svc = services.find(s => s.id.toString() === id);
+    return DOCTOR_REQUIRED_CATEGORIES.includes(svc?.category);
+  });
 
   // Generate standard clinic slots: 08:00–17:00 every 30 min
   const generateSlots = (): string[] => {
@@ -222,6 +226,7 @@ export default function BookAppointment() {
     setValue("service_id", "");
     setValue("vet_id", "");
     setValue("notes", "");
+    setSelectedServiceIds([]);
     setIsDrawerOpen(true);
     setIsSuccess(false);
   };
@@ -235,8 +240,10 @@ export default function BookAppointment() {
   };
 
   const onBookingSubmit = async (data: BookingForm) => {
+    if (selectedServiceIds.length === 0) { return; }
     try {
-      await createAppointment(data);
+      const payload = { ...data, service_ids: selectedServiceIds };
+      await createAppointment(payload);
       
       // Invalidate caches
       localStorage.removeItem('portal_appointments_cache');
@@ -547,29 +554,46 @@ export default function BookAppointment() {
                     {errors.pet_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
                   </div>
 
-                  {/* Service */}
+                  {/* Services — multi-select */}
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Service</label>
-                    <select {...register("service_id")} className="input-field bg-white dark:bg-dark-card font-semibold">
-                      <option value="">— Select a Service —</option>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Services <span className="normal-case text-zinc-400">(select one or more)</span></label>
+                    <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
                       {services.map(s => {
-                        const hasFixedPrice = s.price && s.price > 0;
-                        const priceLabel = hasFixedPrice ? ` — ₱${Number(s.price).toLocaleString()}` : ' — Price varies';
-                        return <option key={s.id} value={s.id}>{s.name}{priceLabel}</option>;
+                        const checked = selectedServiceIds.includes(s.id.toString());
+                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : 'Varies';
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              const id = s.id.toString();
+                              const next = checked ? selectedServiceIds.filter(x => x !== id) : [...selectedServiceIds, id];
+                              setSelectedServiceIds(next);
+                              setValue("service_id", next[0] || "", { shouldValidate: true });
+                            }}
+                            className={clsx(
+                              "w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 text-left transition-all text-sm",
+                              checked
+                                ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-bold"
+                                : "border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card text-zinc-700 dark:text-zinc-300 font-semibold"
+                            )}
+                          >
+                            <span>{s.name}</span>
+                            <span className={clsx("text-[10px] font-black", checked ? "text-brand-500" : "text-zinc-400")}>{priceLabel}</span>
+                          </button>
+                        );
                       })}
-                    </select>
-                    {selectedService && (
-                      <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
-                        <FiInfo className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                    </div>
+                    {selectedServiceIds.length > 0 && (
+                      <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
+                        <FiInfo className="w-3.5 h-3.5 text-brand-500 shrink-0 mt-0.5" />
                         <p className="text-[10px] font-bold text-brand-700 dark:text-brand-400">
-                          {selectedService.price > 0
-                            ? <>Estimated cost: <span className="text-brand-600 dark:text-brand-300">₱{Number(selectedService.price).toLocaleString()}</span> — prices may vary.</>
-                            : <>Price varies based on your pet's size/weight — prices may vary.</>
-                          }
+                          {selectedServiceIds.length} service{selectedServiceIds.length > 1 ? 's' : ''} selected — prices may vary at checkout.
                         </p>
                       </div>
                     )}
-                    {errors.service_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.service_id.message}</p>}
+                    <input type="hidden" {...register("service_id")} />
+                    {errors.service_id && selectedServiceIds.length === 0 && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">Please select at least one service.</p>}
                   </div>
 
                   {/* Time slots */}

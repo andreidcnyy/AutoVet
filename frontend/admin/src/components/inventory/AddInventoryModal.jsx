@@ -22,6 +22,8 @@ const inventorySchema = z.object({
   selling_price: z.coerce.number().min(0.01, "Selling price is required"),
   
   expiration_date: z.string().optional().or(z.literal("")),
+  lot_number: z.string().max(100).optional().or(z.literal("")),
+  batch_number: z.string().max(100).optional().or(z.literal("")),
   
   // Defaults set for standard behavior (Hidden from UI)
   is_billable: z.boolean().default(true),
@@ -65,6 +67,8 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
       deduct_on_finalize: true,
       track_expiration: true,
       expiration_date: "",
+      lot_number: "",
+      batch_number: "",
       supplier: "Other",
       sku: "",
       sub_details: "",
@@ -246,6 +250,14 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date</label>
                   <input type="date" {...register("expiration_date")} className={getInputClass(errors.expiration_date)} />
                   {errors.expiration_date && <p className="mt-1 text-xs text-red-500">{errors.expiration_date.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #</label>
+                  <input type="text" {...register("lot_number")} placeholder="e.g. LOT-2025-001" className={getInputClass(errors.lot_number)} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch #</label>
+                  <input type="text" {...register("batch_number")} placeholder="e.g. BATCH-A" className={getInputClass(errors.batch_number)} />
                 </div>
               </div>
             </div>

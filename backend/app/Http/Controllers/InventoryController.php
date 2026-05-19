@@ -74,7 +74,9 @@ $inventory->each(function ($item) use ($daysRemaining) {
             'price' => 'required|numeric|min:0', 
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
-            'expiration_date' => 'nullable|date', // Optional again
+            'expiration_date' => 'nullable|date',
+            'lot_number'      => 'nullable|string|max:100',
+            'batch_number'    => 'nullable|string|max:100',
         ]);
 
         // Automatically generate SKU by resolving the category name
@@ -128,6 +130,8 @@ $inventory->each(function ($item) use ($daysRemaining) {
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
+            'lot_number'      => 'nullable|string|max:100',
+            'batch_number'    => 'nullable|string|max:100',
         ]);
 
         $oldStock = $inventory->stock_level;
