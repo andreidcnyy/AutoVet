@@ -257,25 +257,26 @@ export default function BookAppointment() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition">
-          <FiArrowLeft /> Dashboard
+      <div className="flex items-center justify-between gap-2">
+        <button onClick={() => navigate('/')} className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm shrink-0">
+          <FiArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Dashboard</span>
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => setCurrentDate(subMonths(currentDate, 1))}
             className="p-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
-            <FiChevronLeft className="w-5 h-5" />
+            <FiChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 min-w-[160px] text-center uppercase tracking-tight">
-            {format(currentDate, "MMMM yyyy")}
+          <h2 className="text-sm sm:text-xl font-bold text-zinc-800 dark:text-zinc-100 w-28 sm:w-44 text-center uppercase tracking-tight">
+            {format(currentDate, "MMM yyyy")}
           </h2>
           <button
             onClick={() => setCurrentDate(addMonths(currentDate, 1))}
             className="p-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
-            <FiChevronRight className="w-5 h-5" />
+            <FiChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
@@ -308,8 +309,9 @@ export default function BookAppointment() {
 
         <div className="grid grid-cols-7 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
           {weekDays.map(day => (
-            <div key={day} className="py-4 text-center text-xs font-bold uppercase tracking-widest text-zinc-400">
-              {day}
+            <div key={day} className="py-2 sm:py-4 text-center text-[10px] sm:text-xs font-bold uppercase tracking-widest text-zinc-400">
+              <span className="sm:hidden">{day[0]}</span>
+              <span className="hidden sm:inline">{day}</span>
             </div>
           ))}
         </div>
@@ -326,7 +328,7 @@ export default function BookAppointment() {
                 key={`${entry.dateString}-${idx}`}
                 onClick={() => handleDayClick(entry)}
                 className={clsx(
-                  "group relative min-h-[100px] md:min-h-[120px] p-2 transition-all cursor-pointer",
+                  "group relative min-h-[72px] sm:min-h-[100px] md:min-h-[120px] p-1 sm:p-2 transition-all cursor-pointer",
                   !entry.inMonth && "bg-zinc-50/20 dark:bg-dark-surface/10 opacity-30 pointer-events-none",
                   isToday && "bg-brand-50/50 dark:bg-brand-900/10",
                   isPast && "bg-zinc-100/50 dark:bg-zinc-800/40 grayscale-sm cursor-default",
@@ -335,8 +337,8 @@ export default function BookAppointment() {
               >
                 <div className="flex items-center justify-between">
                   <span className={clsx(
-                    "inline-flex h-8 w-8 items-center justify-center rounded-xl text-sm font-bold transition-all",
-                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" : 
+                    "inline-flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all",
+                    isToday ? "bg-brand-500 text-white shadow-lg shadow-brand-500/30" :
                     (isPast ? "text-zinc-400 dark:text-zinc-600" : "text-zinc-700 dark:text-zinc-300")
                   )}>
                     {entry.day}
@@ -344,7 +346,7 @@ export default function BookAppointment() {
                 </div>
 
                 {/* Simplified Status Dots for Client Portal */}
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="mt-1 sm:mt-3 flex flex-wrap gap-1 sm:gap-1.5">
                   {entry.events.map((event: any) => {
                     const status = (event.status || '').toLowerCase();
                     // Do not show completed visits in the booking calendar grid to reduce noise
@@ -387,7 +389,7 @@ export default function BookAppointment() {
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
         
         <aside className={clsx(
-          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
+          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-4 sm:p-8 overflow-y-auto",
           isDrawerOpen ? "translate-x-0" : "translate-x-full"
         )}>
           {isSuccess ? (
@@ -412,9 +414,9 @@ export default function BookAppointment() {
             </div>
           ) : isViewMode && selectedAppointment ? (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-5 sm:mb-8">
                 <div>
-                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                  <h3 className="text-xl sm:text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
                     <span className="text-brand-500 mr-2">/</span>Visit Details
                   </h3>
                     <div className={clsx(
@@ -432,41 +434,41 @@ export default function BookAppointment() {
               </div>
 
               <div className="space-y-6">
-                <div className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                      <FiHeart className="w-6 h-6" />
+                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-4 sm:space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                      <FiHeart className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Patient</p>
-                      <p className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
+                      <p className="text-base sm:text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiCalendar className="w-6 h-6" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiCalendar className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date, "MMM d, yyyy")}</p>
+                        <p className="text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-100 truncate">{formatPortalDateLocal(selectedAppointment.date, "MMM d, yyyy")}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiClock className="w-6 h-6" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiClock className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
+                        <p className="text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5)}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                      <FiPlusCircle className="w-6 h-6" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                      <FiPlusCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
@@ -475,9 +477,9 @@ export default function BookAppointment() {
                   </div>
 
                   {selectedAppointment.vet && (
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiUser className="w-6 h-6" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiUser className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Doctor</p>
@@ -487,9 +489,9 @@ export default function BookAppointment() {
                   )}
 
                   {selectedAppointment.notes && (
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
-                        <FiInfo className="w-6 h-6" />
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                        <FiInfo className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
@@ -515,9 +517,9 @@ export default function BookAppointment() {
             </div>
           ) : (
             <>
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-4 sm:mb-8">
                 <div>
-                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                  <h3 className="text-xl sm:text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
                     <span className="text-brand-500 mr-2">/</span>Book Visit
                   </h3>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
@@ -529,8 +531,8 @@ export default function BookAppointment() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-6">
-                <div className="space-y-5 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 p-6 border-2 border-zinc-50 dark:border-dark-border">
+              <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-5">
+                <div className="space-y-4 rounded-2xl sm:rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 p-4 sm:p-6 border-2 border-zinc-50 dark:border-dark-border">
                   {/* Pet Selection */}
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 ml-1">Select Pet</label>
@@ -585,7 +587,7 @@ export default function BookAppointment() {
                         {isCheckingAvailability ? (
                           <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availability…</div>
                         ) : (
-                          <div className="grid grid-cols-4 gap-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                             {standardSlots.filter(slot => {
                               const isBooked = availability.some((a: any) =>
                                 a.time?.substring(0, 5) === slot &&
