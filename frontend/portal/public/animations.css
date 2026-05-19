@@ -1,0 +1,544 @@
+/*
+ * AutoVet Portal — Global Micro-Animations
+ * Pure CSS, no JS required. GPU-accelerated (transform + opacity only).
+ * Respects prefers-reduced-motion at the bottom.
+ *
+ * Load order: after Tailwind (via index.css) so selectors win on specificity.
+ */
+
+/* ─── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  --a-ease:   cubic-bezier(0.22, 0.61, 0.36, 1);
+  --a-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --a-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+  --a-t:      160ms;   /* base transition duration */
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
+
+@keyframes a-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes a-fade-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes a-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes a-scale-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes a-slide-right {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes a-slide-left {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes a-bounce-in {
+  0%   { opacity: 0; transform: scale(0.78); }
+  55%  { opacity: 1; transform: scale(1.06); }
+  80%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@keyframes a-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+@keyframes a-pulse-dot {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.4; }
+}
+@keyframes a-badge-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+@keyframes a-ring-ripple {
+  0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.35); }
+  100% { box-shadow: 0 0 0 8px rgba(16,185,129,0);    }
+}
+@keyframes a-icon-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes a-icon-bounce {
+  0%, 100% { transform: translateY(0); }
+  40%       { transform: translateY(-5px); }
+  60%       { transform: translateY(-2px); }
+}
+@keyframes a-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+@keyframes a-number-tick {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@keyframes a-progress-bar {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+@keyframes a-appear-stagger {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Utility classes (add to elements as needed) ───────────────────────────── */
+
+.animate-fade-up    { animation: a-fade-up    var(--a-t) var(--a-snappy) both; }
+.animate-fade-down  { animation: a-fade-down  var(--a-t) var(--a-snappy) both; }
+.animate-fade-in    { animation: a-fade-in    var(--a-t) var(--a-ease)   both; }
+.animate-scale-in   { animation: a-scale-in   200ms var(--a-spring) both; }
+.animate-slide-right{ animation: a-slide-right var(--a-t) var(--a-snappy) both; }
+.animate-slide-left { animation: a-slide-left  var(--a-t) var(--a-snappy) both; }
+.animate-bounce-in  { animation: a-bounce-in  300ms var(--a-spring) both; }
+.animate-shake      { animation: a-shake 380ms var(--a-ease) both; }
+
+.delay-50  { animation-delay:  50ms; }
+.delay-75  { animation-delay:  75ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 600px 100%;
+  animation: a-shimmer 1.4s ease-in-out infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 600px 100%;
+}
+
+/* Status dot pulse */
+.status-dot {
+  animation: a-pulse-dot 1.8s ease-in-out infinite;
+}
+
+/* Notification badge bounce */
+.badge-pop {
+  animation: a-badge-pop 400ms var(--a-spring) both;
+}
+
+/* Spinning icon (e.g. loading) */
+.icon-spin {
+  animation: a-icon-spin 800ms linear infinite;
+}
+
+/* Bouncing icon (e.g. notification bell) */
+.icon-bounce {
+  animation: a-icon-bounce 600ms var(--a-spring) both;
+}
+
+/* ─── Global interactive element transitions ────────────────────────────────── */
+
+/*
+ * Buttons — lift + brightness on hover, press on active.
+ * Excluded: elements with [disabled] and explicit no-anim opt-out.
+ */
+button:not([disabled]):not(.no-anim),
+[role="button"]:not([disabled]):not(.no-anim) {
+  transition:
+    transform    var(--a-t) var(--a-ease),
+    filter       var(--a-t) var(--a-ease),
+    box-shadow   200ms var(--a-ease),
+    background-color 180ms var(--a-ease),
+    border-color     180ms var(--a-ease),
+    color            180ms var(--a-ease),
+    opacity          200ms var(--a-ease);
+  will-change: transform;
+}
+button:not([disabled]):not(.no-anim):hover,
+[role="button"]:not([disabled]):not(.no-anim):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+button:not([disabled]):not(.no-anim):active,
+[role="button"]:not([disabled]):not(.no-anim):active {
+  transform: scale(0.96) translateY(0px);
+  filter: brightness(0.95);
+  transition-duration: 80ms;
+}
+
+/* Links */
+a:not(.no-anim) {
+  transition: color 150ms var(--a-ease), opacity 150ms var(--a-ease);
+}
+
+/* Input / select / textarea focus ring ripple + border transition */
+input:not([disabled]),
+select:not([disabled]),
+textarea:not([disabled]) {
+  transition:
+    border-color 180ms var(--a-ease),
+    box-shadow   180ms var(--a-ease),
+    background-color 180ms var(--a-ease);
+}
+input:not([disabled]):focus,
+select:not([disabled]):focus,
+textarea:not([disabled]):focus {
+  animation: a-ring-ripple 380ms var(--a-ease) both;
+}
+
+/* ─── Card hover lift ───────────────────────────────────────────────────────── */
+
+/*
+ * card-shell gets color transitions (defined in index.css already).
+ * card-shell-hover gets the lift effect.
+ * Anchor-wrapped cards (link cards) also lift.
+ */
+.card-shell {
+  transition:
+    box-shadow      220ms var(--a-ease),
+    border-color    220ms var(--a-ease),
+    background-color 220ms var(--a-ease),
+    transform       220ms var(--a-ease) !important;
+}
+.card-shell-hover:hover,
+a:hover > .card-shell,
+a:hover > * > .card-shell {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 36px -10px rgba(0,0,0,0.14) !important;
+}
+
+/* Generic interactive card divs (tables rows, list items) */
+tr.hoverable,
+[class*="hover:bg"]:not(button):not(a) {
+  transition: background-color 130ms var(--a-ease);
+}
+
+/* ─── Sidebar / nav item transitions ────────────────────────────────────────── */
+
+nav a,
+nav button,
+aside a,
+aside button,
+[role="navigation"] a,
+[role="navigation"] button {
+  transition:
+    background-color 140ms var(--a-ease),
+    color            140ms var(--a-ease),
+    transform        140ms var(--a-ease),
+    opacity          140ms var(--a-ease) !important;
+}
+nav a:hover,
+aside a:hover,
+[role="navigation"] a:hover {
+  transform: translateX(2px);
+}
+
+/* ─── Tab buttons ───────────────────────────────────────────────────────────── */
+
+[role="tablist"] button {
+  transition:
+    background-color 160ms var(--a-ease),
+    color            160ms var(--a-ease),
+    box-shadow       160ms var(--a-ease),
+    transform        160ms var(--a-ease) !important;
+}
+[role="tablist"] button:hover {
+  transform: translateY(-1px) !important;
+  filter: none !important;
+}
+[role="tablist"] button:active {
+  transform: scale(0.97) !important;
+}
+
+/* ─── Icon hover micro-animation (parent triggers child icon) ───────────────── */
+
+.group:hover .group-hover\:scale-110,
+.group:hover .group-hover\:rotate-12 {
+  transition: transform 220ms var(--a-spring);
+}
+
+/* Standalone icon inside a button/link */
+button svg,
+a svg,
+[role="button"] svg {
+  transition: transform 160ms var(--a-spring);
+  flex-shrink: 0;
+}
+button:hover svg,
+a:hover svg,
+[role="button"]:hover svg {
+  transform: scale(1.15);
+}
+button:active svg,
+a:active svg {
+  transform: scale(0.9);
+}
+
+/* ─── Page-level entrance: first child of <main> fades up on mount ──────────── */
+
+main > *:first-child {
+  animation: a-fade-up 280ms var(--a-snappy) both;
+}
+main > *:nth-child(2) {
+  animation: a-fade-up 280ms var(--a-snappy) 60ms both;
+}
+main > *:nth-child(3) {
+  animation: a-fade-up 280ms var(--a-snappy) 120ms both;
+}
+main > *:nth-child(n+4) {
+  animation: a-fade-up 280ms var(--a-snappy) 160ms both;
+}
+
+/* ─── List / grid item stagger (opt-in via .stagger-children parent) ─────────── */
+
+.stagger-children > * {
+  animation: a-appear-stagger 260ms var(--a-snappy) both;
+}
+.stagger-children > *:nth-child(1)  { animation-delay:   0ms; }
+.stagger-children > *:nth-child(2)  { animation-delay:  50ms; }
+.stagger-children > *:nth-child(3)  { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4)  { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5)  { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6)  { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7)  { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8)  { animation-delay: 350ms; }
+.stagger-children > *:nth-child(n+9){ animation-delay: 380ms; }
+
+/* ─── Stat / number tick (add to changing number elements) ──────────────────── */
+
+.number-tick {
+  animation: a-number-tick 220ms var(--a-spring) both;
+}
+
+/* ─── Dropdown / popover scale-in ───────────────────────────────────────────── */
+
+[class*="dropdown"],
+[class*="popover"],
+[class*="tooltip"],
+[data-radix-popper-content-wrapper] {
+  animation: a-scale-in 160ms var(--a-snappy) both;
+  transform-origin: top center;
+}
+
+/* ─── Avatar / image load fade ──────────────────────────────────────────────── */
+
+img {
+  transition: opacity 300ms var(--a-ease), filter 300ms var(--a-ease);
+}
+img:not([src]),
+img[src=""] {
+  opacity: 0;
+}
+
+/* ─── Progress / loading bar ────────────────────────────────────────────────── */
+
+.progress-bar {
+  animation: a-progress-bar 1.2s var(--a-ease) both;
+}
+
+/* ─── Checkbox / radio toggle ───────────────────────────────────────────────── */
+
+input[type="checkbox"],
+input[type="radio"] {
+  transition: transform 140ms var(--a-spring), box-shadow 140ms var(--a-ease) !important;
+  min-height: unset;
+}
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  animation: a-bounce-in 260ms var(--a-spring) both;
+}
+
+/* ─── Switch / toggle transition ────────────────────────────────────────────── */
+
+[role="switch"] {
+  transition: background-color 200ms var(--a-ease) !important;
+}
+[role="switch"] span,
+[role="switch"] div {
+  transition: transform 220ms var(--a-spring) !important;
+}
+
+/* ─── Modal / dialog entrance ───────────────────────────────────────────────── */
+
+[role="dialog"] {
+  animation: a-fade-in 200ms var(--a-ease) both;
+}
+[role="dialog"] > div {
+  animation: a-scale-in 240ms var(--a-spring) both;
+}
+
+/* ─── Toast / notification ──────────────────────────────────────────────────── */
+
+[class*="toast"],
+[class*="Toast"],
+[class*="notification"],
+[class*="Notification"] {
+  animation: a-slide-left 280ms var(--a-spring) both;
+}
+
+/* ─── Accordion / collapsible ───────────────────────────────────────────────── */
+
+[class*="accordion"],
+details {
+  transition: height 280ms var(--a-ease);
+}
+
+/* ─── Table row hover ───────────────────────────────────────────────────────── */
+
+tbody tr {
+  transition: background-color 120ms var(--a-ease);
+}
+
+/* ─── Scroll-driven section animations (CSS only, progressive enhancement) ───── */
+/*
+ * Uses animation-timeline: view() — Chrome 115+, Firefox 128+, Safari 18+.
+ * Falls back gracefully (elements just appear without animation on older browsers).
+ * Scoped to landing page feature/service/testimonial grids and portal cards.
+ */
+@supports (animation-timeline: view()) {
+  /* Landing page: grid children (feature cards, service cards, testimonials) */
+  section > div > .grid > *,
+  section > div > div > .grid > * {
+    animation: a-fade-up 0.55s var(--a-snappy) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 50%;
+  }
+  /* Stagger within grids — delay each child slightly */
+  section > div > .grid > *:nth-child(2),
+  section > div > div > .grid > *:nth-child(2) { animation-delay: 70ms; }
+  section > div > .grid > *:nth-child(3),
+  section > div > div > .grid > *:nth-child(3) { animation-delay: 140ms; }
+  section > div > .grid > *:nth-child(4),
+  section > div > div > .grid > *:nth-child(4) { animation-delay: 210ms; }
+  section > div > .grid > *:nth-child(n+5),
+  section > div > div > .grid > *:nth-child(n+5) { animation-delay: 260ms; }
+
+  /* Landing page section headers fade up */
+  section > div > .text-center,
+  section > div > div > .text-center {
+    animation: a-fade-up 0.5s var(--a-snappy) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+
+  /* Portal/admin: card-shell elements that aren't the very first paint */
+  main .card-shell:not(:first-child) {
+    animation: a-fade-up 0.4s var(--a-snappy) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+  }
+}
+
+/* ─── Hover icon rotation for specific patterns ─────────────────────────────── */
+
+/* Action icons in stat cards / feature cards spin-in on parent hover */
+.group:hover .group-icon-spin {
+  animation: a-icon-spin 600ms var(--a-ease) both;
+}
+
+/* ─── Focus-visible keyboard accessibility ring ─────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 3px;
+  border-radius: 6px;
+  transition: outline-offset 120ms var(--a-ease);
+}
+
+/* ─── Select dropdown arrow pulse on open ───────────────────────────────────── */
+
+select:focus {
+  animation: a-ring-ripple 380ms var(--a-ease) both;
+}
+
+/* ─── Link underline slide animation ────────────────────────────────────────── */
+
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  border-radius: 999px;
+  transition: width 220ms var(--a-ease);
+}
+.link-underline:hover::after { width: 100%; }
+
+/* ─── Hero CTA button shimmer effect ────────────────────────────────────────── */
+
+@keyframes a-btn-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200%  center; }
+}
+.btn-shimmer {
+  background-size: 200% auto;
+  animation: a-btn-shimmer 2s linear infinite;
+}
+
+/* ─── Notification dot pulse ────────────────────────────────────────────────── */
+
+@keyframes a-notify-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(239,68,68,0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0);   }
+  100% { box-shadow: 0 0 0 0   rgba(239,68,68,0);   }
+}
+.notify-pulse {
+  animation: a-notify-pulse 1.6s ease-out infinite;
+}
+
+/* ─── Dashboard stat card number count-up feel ──────────────────────────────── */
+
+@keyframes a-stat-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.stat-pop {
+  animation: a-stat-pop 420ms var(--a-spring) both;
+}
+
+/* ─── Floating label for form fields ────────────────────────────────────────── */
+
+.label-float {
+  transition: transform 160ms var(--a-ease), font-size 160ms var(--a-ease), color 160ms var(--a-ease);
+}
+
+/* ─── Ripple on click (add via JS, animate via CSS) ─────────────────────────── */
+
+@keyframes a-ripple {
+  0%   { transform: scale(0); opacity: 0.4; }
+  100% { transform: scale(4); opacity: 0;   }
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  pointer-events: none;
+  animation: a-ripple 500ms var(--a-ease) both;
+}
+
+/* ─── Reduced motion — disable all animations ────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.001ms !important;
+    animation-iteration-count: 1       !important;
+    transition-duration:       0.001ms !important;
+  }
+}
