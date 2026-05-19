@@ -237,9 +237,21 @@
   }
   /* 2-col grids stay 2 (compact stat cards), unless they have big children */
 
-  /* Long horizontal flex rows wrap on phones */
-  .flex:not([class*="flex-col"]):not(nav):not([role="tablist"]):not(thead):not(tbody):not(tr) {
+  /* Long horizontal flex rows wrap on phones — scoped to content areas, never inside headers or sidebars */
+  main .flex:not([class*="flex-col"]):not(nav):not([role="tablist"]):not(thead):not(tbody):not(tr),
+  [role="dialog"] .flex:not([class*="flex-col"]):not(nav):not([role="tablist"]) {
     flex-wrap: wrap;
+  }
+
+  /* Keep the header toolbar compact and in a single row */
+  header > div {
+    flex-wrap: nowrap !important;
+    overflow: hidden;
+  }
+  header > div > div.flex {
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    min-width: 0;
   }
 
   /* Typography rhythm */

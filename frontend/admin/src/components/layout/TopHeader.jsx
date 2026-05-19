@@ -95,9 +95,10 @@ function TopHeader({ title, user, onMenuToggle }) {
           {localStorage.getItem('super_admin_session') && (
             <button
               onClick={handleStopImpersonating}
-              className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-2 text-xs font-black uppercase tracking-widest text-rose-600 hover:bg-rose-100 transition-all border border-rose-200"
+              className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-rose-600 hover:bg-rose-100 transition-all border border-rose-200"
             >
-              <FiLogOut className="h-3 w-3" /> Stop Impersonating
+              <FiLogOut className="h-3 w-3 shrink-0" />
+              <span className="hidden sm:inline">Stop Impersonating</span>
             </button>
           )}
 
@@ -192,8 +193,8 @@ function TopHeader({ title, user, onMenuToggle }) {
               onClick={() => setOpenProfileMenu((prev) => !prev)}
               className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-dark-surface"
             >
-              <img src={user?.avatar || getUserAvatarUrl(user?.role, user?.name)} alt={user?.name} className="h-11 w-11 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface" />
-              <div className="min-w-0 text-left">
+              <img src={user?.avatar || getUserAvatarUrl(user?.role, user?.name)} alt={user?.name} className="h-9 w-9 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface sm:h-11 sm:w-11" />
+              <div className="hidden min-w-0 text-left sm:block">
                 <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50">{user?.name}</p>
                 <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>
               </div>

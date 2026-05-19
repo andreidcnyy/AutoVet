@@ -49,18 +49,28 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="border-b border-zinc-200 p-8 dark:border-dark-border">
+        {/* Close button — absolute top-right, mobile only */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface md:hidden"
+          aria-label="Close menu"
+        >
+          <FiX className="h-5 w-5" />
+        </button>
+
+        <div className="border-b border-zinc-200 px-6 pb-6 pt-14 dark:border-dark-border md:p-8">
           <div className="flex flex-col items-center text-center">
-            <div className="relative mb-4 h-32 w-32 shrink-0">
+            <div className="relative mb-3 h-24 w-24 shrink-0 md:mb-4 md:h-32 md:w-32">
               {clinic.logo ? (
-                <img 
-                  src={clinic.logo} 
-                  alt="Clinic Logo" 
-                  className="h-full w-full rounded-2xl object-contain shadow-xl shadow-emerald-500/10 transition-all duration-500" 
+                <img
+                  src={clinic.logo}
+                  alt="Clinic Logo"
+                  className="h-full w-full rounded-2xl object-contain shadow-xl shadow-emerald-500/10 transition-all duration-500"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-600/20 dark:text-emerald-400 shadow-inner">
-                  <LuPawPrint className="h-16 w-16" />
+                  <LuPawPrint className="h-12 w-12 md:h-16 md:w-16" />
                 </div>
               )}
             </div>
@@ -71,15 +81,6 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
               )}
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface md:hidden"
-            aria-label="Close menu"
-          >
-            <FiX className="h-5 w-5" />
-          </button>
         </div>
 
         <nav className="space-y-1 p-4">

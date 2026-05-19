@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, getSystemAnnouncements } from '../api';
-import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard, FiMenu, FiX } from 'react-icons/fi';
 import BroadcastBanner from './BroadcastBanner';
 import DarkModeToggle from './DarkModeToggle';
 import EditProfileModal from './EditProfileModal';
@@ -20,6 +20,7 @@ export default function PortalLayout({ children }: LayoutProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
@@ -29,6 +30,10 @@ export default function PortalLayout({ children }: LayoutProps) {
     { name: 'Notifications', path: '/notifications', icon: FiBell, badge: unreadCount },
     { name: 'Invoices', path: '/invoices', icon: FiCreditCard },
   ];
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (user) {
@@ -60,13 +65,30 @@ export default function PortalLayout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg flex transition-colors duration-300">
-      {/* Sidebar - Desktop */}
-      <aside className="w-64 bg-white dark:bg-dark-card border-r border-zinc-200 dark:border-dark-border hidden md:flex flex-col sticky top-0 h-screen transition-colors duration-300 overflow-hidden">
+      {/* Mobile backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-sm md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — fixed drawer on mobile, sticky panel on desktop */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-dark-card border-r border-zinc-200 dark:border-dark-border flex flex-col transition-all duration-300 overflow-hidden md:sticky md:top-0 md:h-screen md:z-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        {/* Close button — mobile only */}
+        <button
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="absolute right-3 top-3 z-10 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden"
+          aria-label="Close menu"
+        >
+          <FiX className="w-5 h-5" />
+        </button>
+
         {/* Subtle paw decorative */}
         <PawPrint className="absolute bottom-32 right-0 w-32 h-32 text-brand-500 opacity-10 dark:opacity-[0.12] rotate-12 pointer-events-none" />
         <PawPrint className="absolute top-24 left-0 w-20 h-20 text-emerald-500 opacity-10 dark:opacity-[0.12] -rotate-12 pointer-events-none" />
 
-        <div className="relative z-10 p-6 text-center border-b border-zinc-100 dark:border-dark-border/50">
+        <div className="relative z-10 px-6 pb-6 pt-12 text-center border-b border-zinc-100 dark:border-dark-border/50 md:p-6">
           <div className="flex flex-col items-center justify-center gap-3">
             <img src={logo} alt="Clinic Logo" className="w-12 h-12 object-contain" />
             <span className="text-lg font-black tracking-tight text-zinc-800 dark:text-zinc-100 leading-tight">
@@ -125,8 +147,15 @@ export default function PortalLayout({ children }: LayoutProps) {
         {/* Top Header */}
         <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-8 flex items-center justify-between transition-colors duration-300">
           <div className="md:hidden flex items-center gap-2">
-             <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-             <span className="text-lg font-black text-zinc-800 dark:text-zinc-100">Pet Wellness</span>
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Open menu"
+            >
+              <FiMenu className="w-5 h-5" />
+            </button>
+            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+            <span className="text-lg font-black text-zinc-800 dark:text-zinc-100">Pet Wellness</span>
           </div>
           <div className="flex-1"></div>
           <div className="flex items-center gap-4">
