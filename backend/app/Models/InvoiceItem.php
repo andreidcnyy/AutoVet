@@ -25,7 +25,23 @@ class InvoiceItem extends Model
         });
     }
 
-    protected $guarded = [];
+    protected $fillable = [
+        'invoice_id',
+        'item_type',
+        'name',
+        'qty',
+        'unit_price',
+        'amount',
+        'notes',
+        'is_hidden',
+        'service_id',
+        'inventory_id',
+        'clinic_id',
+        'uuid',
+        'sync_status',
+        'synced_at',
+        'last_modified_locally_at',
+    ];
 
     protected $casts = [
         'synced_at'                => 'datetime',

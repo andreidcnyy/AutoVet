@@ -133,7 +133,7 @@ class ImportController extends Controller
                     continue;
                 }
 
-                $createCallback($row);
+                $createCallback($validator->validated());
                 $importedCount++;
             }
 
