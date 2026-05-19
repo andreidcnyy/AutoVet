@@ -116,7 +116,7 @@ export default function Invoices() {
       </div>
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
         <div className="relative z-10">
@@ -136,13 +136,13 @@ export default function Invoices() {
             <span className="text-brand-500 mr-2">/</span> History
           </h2>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="input-field pl-10 pr-8 h-10 text-xs font-bold w-48"
+                className="input-field pl-10 pr-8 h-10 text-xs font-bold w-full sm:w-48"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -158,7 +158,7 @@ export default function Invoices() {
             <div className="relative">
               <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <select
-                className="input-field pl-10 h-10 text-xs font-bold appearance-none pr-8 w-40"
+                className="input-field pl-10 h-10 text-xs font-bold appearance-none pr-8 w-full sm:w-40"
                 value={selectedPetId}
                 onChange={(e) => setSelectedPetId(e.target.value)}
               >
@@ -174,7 +174,7 @@ export default function Invoices() {
             {filteredInvoices.map(invoice => (
               <div key={invoice.id} className="card-shell card-shell-hover bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm">
                 <div
-                  className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-pointer"
+                  className="p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 cursor-pointer"
                   onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}
                 >
                   <div className="flex items-start gap-4">
@@ -204,7 +204,7 @@ export default function Invoices() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-8">
+                  <div className="flex items-center justify-between md:justify-end gap-4 md:gap-8">
                     <div className="text-right">
                       <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Paid</div>
                       <div className="text-xl font-black text-emerald-600 italic">₱{parseFloat(invoice.total).toLocaleString()}</div>
@@ -214,8 +214,8 @@ export default function Invoices() {
                 </div>
 
                 {expandedInvoiceId === invoice.id && (
-                  <div className="px-6 pb-6 pt-2 border-t border-zinc-50 dark:border-dark-border animate-in slide-in-from-top-2 duration-200">
-                    <div className="bg-zinc-50 dark:bg-dark-surface/50 rounded-2xl p-6 space-y-4">
+                  <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 border-t border-zinc-50 dark:border-dark-border animate-in slide-in-from-top-2 duration-200">
+                    <div className="bg-zinc-50 dark:bg-dark-surface/50 rounded-2xl p-4 sm:p-6 space-y-4">
                       <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest border-b border-zinc-200 dark:border-dark-border pb-3">Invoice Details</div>
                       {invoice.items && invoice.items.filter((i: any) => !i.is_hidden).map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between items-center text-sm">

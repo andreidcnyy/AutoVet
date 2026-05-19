@@ -101,7 +101,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         {/* Paw decoratives */}
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-1/4 w-20 h-20 text-white opacity-20 -rotate-20 pointer-events-none" />
@@ -301,7 +301,7 @@ export default function Dashboard() {
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
         
         <aside className={clsx(
-          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-8 overflow-y-auto",
+          "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-5 sm:p-8 overflow-y-auto",
           isDetailsOpen ? "translate-x-0" : "translate-x-full"
         )}>
           {selectedAppointment && (

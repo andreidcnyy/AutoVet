@@ -145,7 +145,7 @@ export default function PortalLayout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-8 flex items-center justify-between transition-colors duration-300">
+        <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center justify-between transition-colors duration-300">
           <div className="md:hidden flex items-center gap-2">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -184,14 +184,14 @@ export default function PortalLayout({ children }: LayoutProps) {
 
         {/* System Broadcast Banners */}
         {banners.length > 0 && (
-          <div className="px-8 pt-6">
+          <div className="px-4 sm:px-8 pt-6">
             <BroadcastBanner announcements={banners} />
           </div>
         )}
 
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto relative">
-          <div className="flex flex-col min-h-full p-8">
+          <div className="flex flex-col min-h-full p-4 sm:p-8">
             <div className="max-w-6xl mx-auto w-full flex-1">
               {children}
             </div>
