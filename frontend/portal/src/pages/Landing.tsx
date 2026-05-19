@@ -199,7 +199,17 @@ export default function Landing() {
           : "bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border"
       )}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3 hover:scale-105 transition-transform duration-300 shrink-0">
+          {/* Mobile-only left: burger + dark mode toggle */}
+          <div className="flex md:hidden items-center gap-1 shrink-0">
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-600 dark:text-zinc-400 transition-colors">
+              {mobileMenuOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
+            </button>
+            <DarkModeToggle />
+          </div>
+
+          {/* Desktop logo — hidden on mobile */}
+          <Link to="/" className="hidden md:flex items-center gap-3 hover:scale-105 transition-transform duration-300 shrink-0">
             <img src={logo} alt="Logo" className="w-10 h-10 object-contain animate-float" />
             <span className="text-base font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase hidden lg:block">
               Pet Wellness Animal Clinic
@@ -216,18 +226,17 @@ export default function Landing() {
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
-            <DarkModeToggle />
-            <div className="h-6 w-px bg-zinc-200 dark:bg-dark-border mx-1 hidden sm:block" />
-            <Link to="/login" className="hidden sm:block px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5">
-              Log In
-            </Link>
+            {/* Desktop dark mode + login — hidden on mobile */}
+            <div className="hidden md:flex items-center gap-2">
+              <DarkModeToggle />
+              <div className="h-6 w-px bg-zinc-200 dark:bg-dark-border mx-1" />
+              <Link to="/login" className="px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5">
+                Log In
+              </Link>
+            </div>
             <Link to="/register" className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 active:scale-95">
               Register
             </Link>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-600 dark:text-zinc-400 transition-colors">
-              {mobileMenuOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
-            </button>
           </div>
         </div>
 
@@ -269,6 +278,14 @@ export default function Landing() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 w-full">
           <div className="max-w-3xl space-y-8">
+            {/* Mobile-only: logo + clinic name above hero badge */}
+            <div className="flex md:hidden items-center gap-3 -mb-2">
+              <img src={logo} alt="Logo" className="w-10 h-10 object-contain shrink-0" />
+              <span className="text-sm font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase leading-tight">
+                Pet Wellness Animal Clinic
+              </span>
+            </div>
+
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-500 text-sm font-bold opacity-0 animate-fade-in-scale">
               <FiHeart /> Trusted Veterinary Care Portal
             </div>
