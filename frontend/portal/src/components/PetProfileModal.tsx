@@ -116,9 +116,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="flex absolute right-4 top-4 sm:right-6 sm:top-6 z-[10001] h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors shadow-lg"
+          className="flex absolute right-3 top-3 z-[10001] h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors"
         >
-          <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
+          <FiX className="h-3 w-3" />
         </button>
 
         <div className="overflow-y-auto flex-1 custom-scrollbar">
@@ -152,7 +152,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                   </div>
 
                   {/* Name + badges */}
-                  <div className="flex-1 min-w-0 text-left sm:text-center md:text-left">
+                  <div className="flex-1 min-w-0 pr-8 sm:pr-0 text-left sm:text-center md:text-left">
                     <div className="flex items-center gap-2 sm:justify-center md:justify-start">
                       <h1 className="text-xl sm:text-3xl md:text-4xl font-black italic uppercase tracking-tight truncate">
                         {pet.name}
