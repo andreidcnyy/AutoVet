@@ -12,7 +12,11 @@ class Invoice extends Model
 {
     use HasSyncFields, HasAuditTrail, HasClinic;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'invoice_number', 'pet_id', 'appointment_id', 'report_type', 'status',
+        'subtotal', 'discount_type', 'discount_value', 'tax_rate', 'total',
+        'amount_paid', 'payment_method', 'notes_to_client', 'clinic_id',
+    ];
 
     protected $appends = ['formatted_amount_paid'];
 

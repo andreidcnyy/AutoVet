@@ -315,6 +315,16 @@ class AppointmentController extends Controller
             'service_id.required' => 'A service type is required for accurate demand forecasting.'
         ]);
 
+        // Portal owners cannot reassign an appointment to a pet they don't own
+        if ($ownerId = $this->getPortalOwnerId()) {
+            if (isset($validated['pet_id'])) {
+                $pet = \App\Models\Pet::find($validated['pet_id']);
+                if (!$pet || $pet->owner_id != $ownerId) {
+                    return response()->json(['message' => 'You can only assign appointments to your own pets.'], 403);
+                }
+            }
+        }
+
         if (isset($validated['service_id'])) {
             $service = \App\Models\Service::find($validated['service_id']);
             if ($service && empty($validated['category'])) {

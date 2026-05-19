@@ -55,7 +55,7 @@ class Admin extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->hasRole(Roles::ADMIN->value);
+        return $this->hasRole(Roles::CLINIC_ADMIN->value);
     }
 
     public function isFullAdmin(): bool

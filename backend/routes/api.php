@@ -124,7 +124,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
     Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
     Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecasts']);
-    Route::post('/dashboard/run-forecast',          [DashboardController::class, 'runForecastSync']);
+    Route::post('/dashboard/run-forecast', [DashboardController::class, 'runForecastSync'])->middleware('role:' . implode(',', Roles::adminRoles()));
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
     Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
     Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
@@ -145,14 +145,21 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
-    // Inventory and Specialized Forecast
-    Route::get('inventory/low-stock',     [InventoryController::class, 'lowStock']);
-    Route::get('inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
-    Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
+    // Inventory — read open to all staff, writes restricted to admin roles
+    Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
+    Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
     Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
     Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
     Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
-    Route::apiResource('inventory',       InventoryController::class);
+    Route::get('inventory',                              [InventoryController::class, 'index']);
+    Route::get('inventory/{inventory}',                  [InventoryController::class, 'show']);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
+        Route::post('inventory',                             [InventoryController::class, 'store']);
+        Route::put('inventory/{inventory}',                  [InventoryController::class, 'update']);
+        Route::patch('inventory/{inventory}',                [InventoryController::class, 'update']);
+        Route::delete('inventory/{inventory}',               [InventoryController::class, 'destroy']);
+    });
 
     Route::apiResource('invoices',        InvoiceController::class);
     Route::apiResource('reports',         InvoiceController::class)->parameters(['reports' => 'invoice']);
@@ -176,16 +183,18 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // -----------------------------------------------------------------------
     // Client Notifications
     // -----------------------------------------------------------------------
-    Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
-    Route::get('/client-notifications',           [ClientNotificationController::class, 'index']);
-    Route::post('/client-notifications/send',      [ClientNotificationController::class, 'send']);
-    Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
+        Route::get('/client-notifications',              [ClientNotificationController::class, 'index']);
+        Route::post('/client-notifications/send',        [ClientNotificationController::class, 'send']);
+        Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
+    });
 
     Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
     Route::put('/notifications/{id}',             [ClientNotificationController::class, 'markAsRead']);
 
-    // Synchronization Trigger
-    Route::post('/sync/trigger', function (\App\Services\SyncService $syncService) {
+    // Synchronization Trigger — admin only
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->post('/sync/trigger', function (\App\Services\SyncService $syncService) {
         $syncService->pushToPortal();
         return response()->json(['status' => 'triggered']);
     });
@@ -214,8 +223,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
     });
 
-    // Content Management
-    Route::apiResource('cms-content', CmsContentController::class);
+    // Content Management — read open to all authenticated, writes admin only
+    Route::apiResource('cms-content', CmsContentController::class)->only(['index', 'show']);
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::apiResource('cms-content', CmsContentController::class)->except(['index', 'show']);
+    });
 
     // -----------------------------------------------------------------------
     // System Administration
