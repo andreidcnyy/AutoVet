@@ -136,7 +136,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
           ) : (
             <div className="space-y-4 sm:space-y-6 pb-6 sm:pb-8">
               {/* Hero Section — compact on mobile */}
-              <div className="p-4 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-[2rem]">
+              <div className="pt-4 pb-4 pl-4 pr-14 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-[2rem]">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                   <LuPawPrint className="w-48 h-48" />
                 </div>
