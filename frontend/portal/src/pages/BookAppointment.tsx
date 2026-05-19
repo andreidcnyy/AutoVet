@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const DOCTOR_REQUIRED_CATEGORIES = ['Consultation', 'Laboratory', 'Surgery', 'Imaging'];
+// No longer needed — doctor requirement is now a per-service flag from the DB
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatPortalDateLocal = (dateStr: string, formatStr = "MMMM d, yyyy") => {
@@ -100,7 +100,7 @@ export default function BookAppointment() {
 
   const requiresDoctor = selectedServiceIds.some(id => {
     const svc = services.find(s => s.id.toString() === id);
-    return DOCTOR_REQUIRED_CATEGORIES.includes(svc?.category);
+    return svc?.requires_doctor === true;
   });
 
   // Generate standard clinic slots: 08:00–17:00 every 30 min

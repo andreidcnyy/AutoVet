@@ -92,6 +92,11 @@ function AppointmentsView() {
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
+  const adminBookingRequiresDoctor = selectedServiceIds.some(id => {
+    const svc = services.find(s => String(s.id) === id);
+    return svc?.requires_doctor === true;
+  });
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
     defaultValues: { date: "", time: "", pet_id: preSelectedPetId || "", service_id: "", vet_id: "", notes: "" }
@@ -434,6 +439,11 @@ function AppointmentsView() {
                   <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
                   <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
                 </div>
+                {adminBookingRequiresDoctor && (
+                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
+                    <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
+                  </div>
+                )}
                 <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
                 <button type="submit" disabled={isSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", isWalkIn ? "bg-sky-600 hover:bg-sky-700" : "bg-emerald-600 hover:bg-emerald-700")}>{isSubmitting ? "Syncing..." : isWalkIn ? "Register Walk-in" : "Finalize"}</button>
               </form>

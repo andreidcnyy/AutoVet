@@ -16,10 +16,11 @@ export default function ServiceManagementTab() {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({ 
-    name: "", 
-    description: "", 
-    price: 0, 
-    category: "", 
+    name: "",
+    description: "",
+    price: 0,
+    category: "",
+    requires_doctor: false,
     status: "Active",
     pricing_type: "fixed",
     measurement_basis: "none",
@@ -106,11 +107,12 @@ export default function ServiceManagementTab() {
   const handleOpenModal = (service = null) => {
     if (service) {
       setEditingService(service);
-      setFormData({ 
-        name: service.name, 
-        description: service.description || "", 
-        price: service.price, 
-        category: service.category || "", 
+      setFormData({
+        name: service.name,
+        description: service.description || "",
+        price: service.price,
+        category: service.category || "",
+        requires_doctor: service.requires_doctor || false,
         status: service.status,
         pricing_type: service.pricing_type || "fixed",
         measurement_basis: service.measurement_basis || "none",
@@ -119,11 +121,12 @@ export default function ServiceManagementTab() {
       });
     } else {
       setEditingService(null);
-      setFormData({ 
-        name: "", 
-        description: "", 
-        price: 0, 
-        category: "", 
+      setFormData({
+        name: "",
+        description: "",
+        price: 0,
+        category: "",
+        requires_doctor: false,
         status: "Active",
         pricing_type: "fixed",
         measurement_basis: "none",
@@ -225,6 +228,7 @@ export default function ServiceManagementTab() {
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Pricing Mode</th>
               <th className="px-4 py-3">Base Price</th>
+              <th className="px-4 py-3">Requires Doctor</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -243,6 +247,15 @@ export default function ServiceManagementTab() {
                   </span>
                 </td>
                 <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">₱{Number(svc.base_price || svc.price).toFixed(2)}</td>
+                <td className="px-4 py-4">
+                  <span className={clsx("inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
+                    svc.requires_doctor
+                      ? "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-400"
+                      : "border-zinc-200 bg-zinc-100 text-zinc-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400"
+                  )}>
+                    {svc.requires_doctor ? "Yes" : "No"}
+                  </span>
+                </td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
@@ -399,6 +412,19 @@ export default function ServiceManagementTab() {
                   </select>
                 </div>
               </div>
+              {/* Requires Doctor toggle */}
+              <label className="flex items-center justify-between gap-3 cursor-pointer rounded-xl border border-zinc-200 dark:border-dark-border px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Requires a Doctor</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">When enabled, clients must choose a preferred doctor when booking this service.</p>
+                </div>
+                <div className="relative shrink-0">
+                  <input type="checkbox" className="sr-only" checked={formData.requires_doctor} onChange={e => setFormData({...formData, requires_doctor: e.target.checked})} />
+                  <div className={clsx("w-10 h-6 rounded-full transition-colors", formData.requires_doctor ? "bg-sky-500" : "bg-zinc-300 dark:bg-zinc-600")} />
+                  <div className={clsx("absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform", formData.requires_doctor ? "left-5" : "left-1")} />
+                </div>
+              </label>
+
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
                 <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">

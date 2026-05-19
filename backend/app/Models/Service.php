@@ -24,6 +24,7 @@ class Service extends Model
         'measurement_basis',
         'base_price',
         'category',
+        'requires_doctor',
         'status',
         // Archive tracking
         'deleted_by', 'restore_until',
@@ -32,6 +33,7 @@ class Service extends Model
     ];
 
     protected $casts = [
+        'requires_doctor'          => 'boolean',
         'synced_at'                => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
