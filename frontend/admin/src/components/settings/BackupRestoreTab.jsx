@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiDatabase, FiDownload, FiRefreshCw, FiTrash2, FiAlertTriangle, FiCheckCircle, FiFileText } from "react-icons/fi";
+import { FiDatabase, FiDownload, FiRefreshCw, FiTrash2, FiCheckCircle, FiFileText } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
@@ -10,7 +10,7 @@ function BackupRestoreTab() {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [showConfirmRestore, setShowConfirmRestore] = useState(null);
+  // Restore is not available for CSV backups
 
   const authHeader = {
     "Authorization": `Bearer ${user?.token}`,
@@ -92,26 +92,6 @@ function BackupRestoreTab() {
       .finally(() => setProcessing(false));
   };
 
-  const restoreBackup = (filename) => {
-    setProcessing(true);
-    setShowConfirmRestore(null);
-    fetch("/api/backups/restore", {
-      method: "POST",
-      headers: { ...authHeader, "Content-Type": "application/json" },
-      body: JSON.stringify({ filename }),
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to restore database");
-        return data;
-      })
-      .then((data) => {
-        toast.success(data.message);
-      })
-      .catch((err) => toast.error(err.message))
-      .finally(() => setProcessing(false));
-  };
-
   const downloadBackup = (filename) => {
     setProcessing(true);
     fetch(`/api/backups/download/${filename}`, {
@@ -156,8 +136,8 @@ function BackupRestoreTab() {
               <FiDatabase className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Backup & Restore</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Manage database snapshots and disaster recovery</p>
+              <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Data Backup</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Download clinic data as a ZIP of CSV spreadsheets</p>
             </div>
           </div>
           <button
@@ -171,14 +151,14 @@ function BackupRestoreTab() {
         </div>
       </div>
 
-      {/* Warning Banner */}
-      <div className="mx-6 mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/30 dark:bg-amber-900/10">
+      {/* Info Banner */}
+      <div className="mx-6 mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800/30 dark:bg-sky-900/10">
         <div className="flex gap-3">
-          <FiAlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="text-sm text-amber-800 dark:text-amber-200">
-            <p className="font-bold">Important Notice</p>
+          <FiCheckCircle className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
+          <div className="text-sm text-sky-800 dark:text-sky-200">
+            <p className="font-bold">CSV Format</p>
             <p className="mt-1 leading-relaxed opacity-80">
-              Restoring a backup will overwrite the current database. All data added since the backup was created will be permanently lost. Use with extreme caution.
+              Each backup is a ZIP file containing one CSV spreadsheet per data table — easy to open in Excel or Google Sheets. Download a backup to keep a safe copy of your clinic data.
             </p>
           </div>
         </div>
@@ -220,18 +200,11 @@ function BackupRestoreTab() {
                   <button
                     onClick={() => downloadBackup(backup.filename)}
                     disabled={processing}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
-                    title="Download Backup"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400"
+                    title="Download CSV Backup"
                   >
-                    {processing ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiDownload className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmRestore(backup.filename)}
-                    disabled={processing}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/40 dark:bg-indigo-900/20 dark:text-indigo-400"
-                  >
-                    <FiRefreshCw className="h-3.5 w-3.5" />
-                    Restore
+                    {processing ? <FiRefreshCw className="h-3.5 w-3.5 animate-spin" /> : <FiDownload className="h-3.5 w-3.5" />}
+                    Download CSV
                   </button>
                   <button
                     onClick={() => deleteBackup(backup.filename)}
@@ -241,29 +214,6 @@ function BackupRestoreTab() {
                     <FiTrash2 className="h-4 w-4" />
                   </button>
                 </div>
-
-                {/* Confirm Restore Overlay */}
-                {showConfirmRestore === backup.filename && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-white/95 p-4 text-center backdrop-blur-sm dark:bg-dark-card/95">
-                    <FiAlertTriangle className="mb-2 h-8 w-8 text-rose-500" />
-                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Restore this backup?</p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">This action cannot be undone.</p>
-                    <div className="mt-4 flex gap-2">
-                      <button
-                        onClick={() => setShowConfirmRestore(null)}
-                        className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-400"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => restoreBackup(backup.filename)}
-                        className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
-                      >
-                        Yes, Restore Now
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>

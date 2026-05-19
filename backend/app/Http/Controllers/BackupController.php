@@ -9,13 +9,10 @@ use Illuminate\Support\Facades\Response;
 
 class BackupController extends Controller
 {
-    /**
-     * List all database backup files.
-     */
     public function index()
     {
         $backupPath = storage_path('app/backups');
-        
+
         if (!File::exists($backupPath)) {
             File::makeDirectory($backupPath, 0755, true);
         }
@@ -24,81 +21,39 @@ class BackupController extends Controller
         $backups = [];
 
         foreach ($files as $file) {
-            if ($file->getExtension() === 'sql') {
+            if ($file->getExtension() === 'zip') {
                 $backups[] = [
                     'filename' => $file->getFilename(),
-                    'size' => $file->getSize(),
+                    'size'     => $file->getSize(),
                     'created_at' => date('Y-m-d H:i:s', $file->getMTime()),
                 ];
             }
         }
 
-        // Sort by created_at descending
-        usort($backups, function ($a, $b) {
-            return strcmp($b['created_at'], $a['created_at']);
-        });
+        usort($backups, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
 
         return response()->json(['data' => $backups]);
     }
 
-    /**
-     * Trigger a new database backup.
-     */
     public function create()
     {
         try {
             $exitCode = Artisan::call('db:backup');
-            
+
             if ($exitCode === 0) {
-                return response()->json(['message' => 'Backup created successfully.']);
+                return response()->json(['message' => 'CSV backup created successfully.']);
             }
-            
+
             return response()->json(['message' => 'Failed to create backup.'], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Restore the database from a backup file.
-     */
-    public function restore(Request $request)
-    {
-        $request->validate([
-            'filename' => 'required|string',
-        ]);
-
-        $filename = basename($request->input('filename'));
-        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
-            return response()->json(['message' => 'Invalid backup filename.'], 422);
-        }
-        $backupPath = storage_path('app/backups/' . $filename);
-
-        if (!File::exists($backupPath)) {
-            return response()->json(['message' => 'Backup file not found.'], 404);
-        }
-
-        try {
-            // Restore command needs the filename as a positional argument
-            $exitCode = Artisan::call('db:restore', ['file' => $filename]);
-
-            if ($exitCode === 0) {
-                return response()->json(['message' => 'Database restored successfully!']);
-            }
-
-            return response()->json(['message' => 'Failed to restore database.'], 500);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error restoring database: ' . $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Delete a backup file.
-     */
     public function destroy($filename)
     {
         $filename = basename($filename);
-        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
+        if (!preg_match('/^backup_[\d_]+\.zip$/', $filename)) {
             return response()->json(['message' => 'Invalid backup filename.'], 422);
         }
         $backupPath = storage_path('app/backups/' . $filename);
@@ -111,13 +66,10 @@ class BackupController extends Controller
         return response()->json(['message' => 'Backup file not found.'], 404);
     }
 
-    /**
-     * Download a backup file.
-     */
     public function download($filename)
     {
         $filename = basename($filename);
-        if (!preg_match('/^backup_[\d_]+\.sql$/', $filename)) {
+        if (!preg_match('/^backup_[\d_]+\.zip$/', $filename)) {
             return response()->json(['message' => 'Invalid backup filename.'], 422);
         }
         $backupPath = storage_path('app/backups/' . $filename);

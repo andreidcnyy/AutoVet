@@ -25,6 +25,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const DOCTOR_REQUIRED_CATEGORIES = ['Consultation', 'Laboratory', 'Surgery', 'Imaging'];
+
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatPortalDateLocal = (dateStr: string, formatStr = "MMMM d, yyyy") => {
   if (!dateStr) return "";
@@ -93,6 +95,10 @@ export default function BookAppointment() {
   const selectedDate = watch("date");
   const selectedVetId = watch("vet_id");
   const selectedTime = watch("time");
+  const selectedServiceId = watch("service_id");
+
+  const selectedService = services.find(s => s.id.toString() === selectedServiceId);
+  const requiresDoctor = DOCTOR_REQUIRED_CATEGORIES.includes(selectedService?.category);
 
   // Generate standard clinic slots: 08:00–17:00 every 30 min
   const generateSlots = (): string[] => {
@@ -546,8 +552,23 @@ export default function BookAppointment() {
                     <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Service</label>
                     <select {...register("service_id")} className="input-field bg-white dark:bg-dark-card font-semibold">
                       <option value="">— Select a Service —</option>
-                      {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      {services.map(s => {
+                        const hasFixedPrice = s.price && s.price > 0;
+                        const priceLabel = hasFixedPrice ? ` — ₱${Number(s.price).toLocaleString()}` : ' — Price varies';
+                        return <option key={s.id} value={s.id}>{s.name}{priceLabel}</option>;
+                      })}
                     </select>
+                    {selectedService && (
+                      <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
+                        <FiInfo className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                        <p className="text-[10px] font-bold text-brand-700 dark:text-brand-400">
+                          {selectedService.price > 0
+                            ? <>Estimated cost: <span className="text-brand-600 dark:text-brand-300">₱{Number(selectedService.price).toLocaleString()}</span> — prices may vary.</>
+                            : <>Price varies based on your pet's size/weight — prices may vary.</>
+                          }
+                        </p>
+                      </div>
+                    )}
                     {errors.service_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.service_id.message}</p>}
                   </div>
 
@@ -603,14 +624,16 @@ export default function BookAppointment() {
                     {errors.time && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
                   </div>
 
-                  {/* Doctor */}
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Preferred Doctor</label>
-                    <select {...register("vet_id")} className="input-field font-semibold">
-                      <option value="">Any Available Vet</option>
-                      {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
-                    </select>
-                  </div>
+                  {/* Doctor — only for consultation/lab/surgery/imaging */}
+                  {requiresDoctor && (
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Preferred Doctor</label>
+                      <select {...register("vet_id")} className="input-field font-semibold">
+                        <option value="">Any Available Doctor</option>
+                        {vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Notes */}
                   <div>
