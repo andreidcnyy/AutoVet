@@ -343,6 +343,44 @@ export default function Landing() {
       </section>
 
       {/* ══════════════════════════════════════
+          CLINIC VIDEO SHOWCASE
+      ══════════════════════════════════════ */}
+      <section className="relative py-24 px-6 bg-zinc-50 dark:bg-dark-bg overflow-hidden">
+        <PawPrint className="absolute -left-8 top-8  w-48 h-48 text-brand-500 dark:text-emerald-400 opacity-[0.08] rotate-12 pointer-events-none" />
+        <PawPrint className="absolute -right-8 bottom-8 w-40 h-40 text-emerald-500 dark:text-emerald-400 opacity-[0.08] -rotate-12 pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">See Us in Action</span>
+            <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+              Meet{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Pet Wellness Clinic</span>
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
+              A warm, professional environment where every pet is treated like family.
+            </p>
+          </div>
+
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-zinc-200/60 dark:border-dark-border bg-zinc-900">
+            <video
+              src="/clinic-video.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full aspect-video object-cover"
+            />
+            {/* Subtle gradient overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-zinc-900/60 to-transparent pointer-events-none" />
+            <div className="absolute bottom-5 left-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-white text-xs font-bold drop-shadow">Pet Wellness Animal Clinic</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
           STATS BAR
       ══════════════════════════════════════ */}
       <section className="relative bg-brand-500 py-14 overflow-hidden">
