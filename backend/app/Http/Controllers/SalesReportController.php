@@ -24,8 +24,8 @@ class SalesReportController extends Controller
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('SUM(total) as total')
             )
-            ->groupBy('date')
-            ->orderBy('date')
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy(DB::raw('DATE(created_at)'))
             ->get();
 
         return response()->json($revenue);

@@ -26,10 +26,12 @@ export default function SalesSummaryCard() {
 
   const load = () => {
     setLoading(true);
+    const now = new Date();
+    const todayParam = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     Promise.all([
       api.get("/api/reports/sales/revenue-summary?days=30").catch(() => []),
       api.get("/api/reports/sales/top-services?limit=5").catch(() => []),
-      api.get("/api/invoices?per_page=7&page=1&search=").catch(() => null),
+      api.get(`/api/invoices?per_page=10&page=1&date_from=${todayParam}&date_to=${todayParam}`).catch(() => null),
     ]).then(([rev, top, inv]) => {
       setRevenue(Array.isArray(rev) ? rev : []);
       setTopItems(Array.isArray(top) ? top : []);
@@ -42,8 +44,9 @@ export default function SalesSummaryCard() {
 
   // Today / this week / this month from daily revenue data
   const { today, week, month } = useMemo(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const weekAgo  = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6); weekAgo.setHours(0, 0, 0, 0);
 
     let todayTotal = 0, weekTotal = 0, monthTotal = 0;
     revenue.forEach((row) => {
@@ -51,7 +54,7 @@ export default function SalesSummaryCard() {
       const v = Number(row.total) || 0;
       monthTotal += v;
       if (d >= weekAgo) weekTotal += v;
-      if (row.date === todayStr) todayTotal = v;
+      if (row.date === todayStr) todayTotal += v;
     });
     return { today: todayTotal, week: weekTotal, month: monthTotal };
   }, [revenue]);
@@ -176,12 +179,12 @@ export default function SalesSummaryCard() {
             <FiClock className="h-3.5 w-3.5" />
           </div>
           <p className="text-[11px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-            Recent Transactions
+            Today's Transactions
           </p>
         </div>
 
         {recent.length === 0 ? (
-          <p className="text-sm text-zinc-400 italic py-4 text-center">No transactions yet.</p>
+          <p className="text-sm text-zinc-400 italic py-4 text-center">No transactions today.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-dark-border">
             <table className="w-full text-sm">
