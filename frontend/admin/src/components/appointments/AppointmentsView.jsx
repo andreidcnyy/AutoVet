@@ -396,10 +396,10 @@ function AppointmentsView() {
 
       <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
-        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
+        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
           {activePanel === "booking" ? (
-            <section className="p-8">
-              <div className="mb-6 flex items-center justify-between">
+            <>
+              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6">
                 <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> {isWalkIn ? 'Walk-in' : 'Schedule'}</h3>
                 <div className="flex items-center gap-2">
                   <button
@@ -410,51 +410,53 @@ function AppointmentsView() {
                   <button onClick={() => { setIsDrawerOpen(false); setIsWalkIn(false); setSelectedServiceIds([]); }} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
                 </div>
               </div>
-              {isWalkIn && <p className="mb-4 text-xs font-bold text-sky-600 bg-sky-50 rounded-xl px-4 py-2.5 border border-sky-200">Walk-in visits are immediately approved — no pending queue.</p>}
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
-                    <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={qInputBase}><option value="">Select Owner</option>{Array.isArray(owners) && owners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
-                  </div>
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
-                    <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                  </div>
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
-                    <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
-                      {Array.isArray(services) && services.map(s => {
-                        const checked = selectedServiceIds.includes(String(s.id));
-                        return (
-                          <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
-                            <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
-                            {s.name}
-                          </label>
-                        );
-                      })}
+              <div className="flex-1 overflow-y-auto p-8">
+                {isWalkIn && <p className="mb-4 text-xs font-bold text-sky-600 bg-sky-50 rounded-xl px-4 py-2.5 border border-sky-200">Walk-in visits are immediately approved — no pending queue.</p>}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
+                      <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={qInputBase}><option value="">Select Owner</option>{Array.isArray(owners) && owners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
+                    </div>
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
+                      <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    </div>
+                    <div>
+                      <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
+                      <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        {Array.isArray(services) && services.map(s => {
+                          const checked = selectedServiceIds.includes(String(s.id));
+                          return (
+                            <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
+                              <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
+                              {s.name}
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
-                </div>
-                {adminBookingRequiresDoctor && (
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
-                    <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
                   </div>
-                )}
-                <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
-                <button type="submit" disabled={isSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", isWalkIn ? "bg-sky-600 hover:bg-sky-700" : "bg-emerald-600 hover:bg-emerald-700")}>{isSubmitting ? "Syncing..." : isWalkIn ? "Register Walk-in" : "Finalize"}</button>
-              </form>
-            </section>
+                  {adminBookingRequiresDoctor && (
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
+                      <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
+                    </div>
+                  )}
+                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
+                  <button type="submit" disabled={isSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", isWalkIn ? "bg-sky-600 hover:bg-sky-700" : "bg-emerald-600 hover:bg-emerald-700")}>{isSubmitting ? "Syncing..." : isWalkIn ? "Register Walk-in" : "Finalize"}</button>
+                </form>
+              </div>
+            </>
           ) : (
-            <section className="p-0">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 p-8 bg-white/80 dark:bg-dark-card/80 backdrop-blur-lg">
+            <>
+              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6 bg-white/80 dark:bg-dark-card/80">
                 <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> Details</h3>
                 <button onClick={() => setIsDrawerOpen(false)} className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 transition-all"><FiX /></button>
               </div>
-              <div className="p-8 space-y-10">
+              <div className="flex-1 overflow-y-auto p-8 space-y-10">
                 <div className="flex items-start gap-6">
                   <div className="h-20 w-20 flex items-center justify-center rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-xl"><FiInfo className="h-10 w-10" /></div>
                   <div><h4 className="text-3xl font-black italic leading-tight">{selectedAppointment?.title}</h4>
@@ -506,7 +508,7 @@ function AppointmentsView() {
                   )}
                 </div>
               </div>
-            </section>
+            </>
           )}
         </aside>
       </div>
