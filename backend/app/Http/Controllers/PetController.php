@@ -138,7 +138,8 @@ class PetController extends Controller
             $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));
         }
 
-        $pet = Pet::create($validated);
+        $clinicalFields = ['chief_complaint', 'findings', 'diagnosis', 'treatment_plan', 'vet_id'];
+        $pet = Pet::create(array_diff_key($validated, array_flip($clinicalFields)));
 
         // Check for clinical fields to create an initial medical record
         if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
@@ -217,7 +218,8 @@ class PetController extends Controller
             }
         }
 
-        $pet->update($validated);
+        $clinicalFields = ['chief_complaint', 'findings', 'diagnosis', 'treatment_plan', 'vet_id'];
+        $pet->update(array_diff_key($validated, array_flip($clinicalFields)));
 
         // Check for clinical fields to create a NEW medical record entry
         if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
