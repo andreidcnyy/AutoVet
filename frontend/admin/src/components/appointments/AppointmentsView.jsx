@@ -92,11 +92,6 @@ function AppointmentsView() {
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
-  const adminBookingRequiresDoctor = selectedServiceIds.some(id => {
-    const svc = services.find(s => String(s.id) === id);
-    return svc?.requires_doctor === true;
-  });
-
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
     defaultValues: { date: "", time: "", pet_id: preSelectedPetId || "", service_id: "", vet_id: "", notes: "" }
@@ -106,6 +101,11 @@ function AppointmentsView() {
   const [pets, setPets] = useState([]);
   const [services, setServices] = useState([]);
   const [vets, setVets] = useState([]);
+
+  const adminBookingRequiresDoctor = selectedServiceIds.some(id => {
+    const svc = services.find(s => String(s.id) === id);
+    return svc?.requires_doctor === true;
+  });
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
   const [availability, setAvailability] = useState([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
