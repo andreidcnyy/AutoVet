@@ -339,19 +339,7 @@ export default function Landing() {
           <span>500+ happy pet owners and counting</span>
         </div>
 
-        {/* Services trust row */}
-        <div className="mt-16 w-full max-w-lg opacity-0 animate-fade-in-scale delay-500">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-5">
-            Our Services
-          </p>
-          <div className="flex items-center justify-center gap-6 md:gap-10 flex-wrap">
-            {['Consultations', 'Grooming', 'Vaccination', 'Deworming'].map(s => (
-              <span key={s} className="text-zinc-400 dark:text-zinc-600 font-bold text-sm tracking-tight">
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
+
       </section>
 
       {/* ══════════════════════════════════════
