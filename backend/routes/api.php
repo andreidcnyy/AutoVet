@@ -203,10 +203,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/client-notifications',              [ClientNotificationController::class, 'index']);
         Route::post('/client-notifications/send',        [ClientNotificationController::class, 'send']);
         Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
+        Route::post('/owners/{ownerId}/warn',             [ClientNotificationController::class, 'sendWarning']);
     });
 
     Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
     Route::put('/notifications/{id}',             [ClientNotificationController::class, 'markAsRead']);
+    Route::get('/notifications/warnings/unread',  [ClientNotificationController::class, 'unreadWarnings']);
 
     // Synchronization Trigger — admin only
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->post('/sync/trigger', function (\App\Services\SyncService $syncService) {

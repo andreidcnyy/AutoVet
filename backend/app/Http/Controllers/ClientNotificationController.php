@@ -85,6 +85,48 @@ class ClientNotificationController extends Controller
         }
     }
 
+    public function sendWarning(Request $request, $ownerId)
+    {
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+        ]);
+
+        $owner = Owner::findOrFail($ownerId);
+
+        if (empty($owner->email)) {
+            return response()->json(['message' => 'This owner has no email address.'], 422);
+        }
+
+        try {
+            $notification = $this->service->send(
+                $owner,
+                'email',
+                $validated['message'],
+                $validated['subject'],
+                'warning'
+            );
+            return response()->json($notification);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to send warning: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function unreadWarnings(Request $request)
+    {
+        if ($ownerId = $this->getPortalOwnerId()) {
+            $warnings = ClientNotification::where('owner_id', $ownerId)
+                ->where('type', 'warning')
+                ->whereNull('read_at')
+                ->latest()
+                ->get();
+            return response()->json($warnings);
+        }
+        return response()->json([], 403);
+    }
+
     public function send(Request $request)
     {
         $allowedTypes = [

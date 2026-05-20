@@ -16,8 +16,10 @@ import {
   FiChevronRight,
   FiPhoneCall,
   FiX,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
+import WarnUserModal from "./WarnUserModal";
 
 function PatientRecordsView({ 
   owners, 
@@ -39,6 +41,7 @@ function PatientRecordsView({
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [warnOwner, setWarnOwner] = useState(null);
 
   const selectedOwner = owners.find((owner) => owner.id === selectedOwnerId) || owners[0] || null;
 
@@ -178,15 +181,24 @@ function PatientRecordsView({
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); onEditOwner(owner); }}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white hover:text-emerald-600 hover:shadow-md dark:hover:bg-dark-surface"
+                          title="Edit owner"
                         >
                           <FiEdit2 className="h-4 w-4" />
                         </button>
-                        <button 
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setWarnOwner(owner); }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white hover:text-amber-500 hover:shadow-md dark:hover:bg-dark-surface"
+                          title="Send warning"
+                        >
+                          <FiAlertTriangle className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={(e) => { e.stopPropagation(); onDeleteOwner(owner.id); }}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white hover:text-rose-600 hover:shadow-md dark:hover:bg-dark-surface"
+                          title="Delete owner"
                         >
                           <FiTrash2 className="h-4 w-4" />
                         </button>
@@ -364,6 +376,14 @@ function PatientRecordsView({
         </div>
       </div>
     </div>
+
+    {warnOwner && (
+      <WarnUserModal
+        owner={warnOwner}
+        onClose={() => setWarnOwner(null)}
+        onSent={() => setWarnOwner(null)}
+      />
+    )}
   );
 }
 
