@@ -84,12 +84,11 @@ export function CatSilhouette({ className = '' }: { className?: string }) {
 /* ─────────────────────────────────────────
    Data
 ───────────────────────────────────────── */
-const BACKGROUND_IMAGES = [
-  "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=2070&auto=format&fit=crop", // golden retriever smiling
-  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=2070&auto=format&fit=crop", // labrador retriever
-  "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=2070&auto=format&fit=crop", // two dogs running
-  "https://images.unsplash.com/photo-1561037404-61cd46aa615b?q=80&w=2070&auto=format&fit=crop", // dog portrait
-  "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=2070&auto=format&fit=crop", // puppy
+const AVATAR_PET_IMAGES = [
+  "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=150&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=150&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1561037404-61cd46aa615b?q=80&w=150&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=150&auto=format&fit=crop",
 ];
 
 const FEATURES = [
@@ -151,17 +150,9 @@ const NAV_LINKS = [
    Page
 ───────────────────────────────────────── */
 export default function Landing() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen]       = useState(false);
-  const [scrolled, setScrolled]                   = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled]             = useState(false);
   const [landingBanners, setLandingBanners] = useState<any[]>([]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % BACKGROUND_IMAGES.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -186,69 +177,91 @@ export default function Landing() {
 
       {/* ══ Landing Page Broadcast Banners ══ */}
       {landingBanners.length > 0 && (
-        <div className="fixed top-20 left-0 right-0 z-40 px-6 pt-3">
+        <div className="fixed top-16 left-0 right-0 z-40 px-6 pt-3">
           <BroadcastBanner announcements={landingBanners} />
         </div>
       )}
 
-      {/* ══ Navbar ══ */}
+      {/* ══════════════════════════════════════
+          NAVBAR
+      ══════════════════════════════════════ */}
       <header className={clsx(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled
-          ? "bg-white/95 dark:bg-dark-card/95 backdrop-blur-md shadow-sm border-b border-zinc-200 dark:border-dark-border"
-          : "bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border"
+          ? "bg-white/95 dark:bg-dark-card/95 backdrop-blur-md shadow-sm border-b border-zinc-200/80 dark:border-dark-border"
+          : "bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm border-b border-transparent"
       )}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
-          {/* Mobile-only left: burger + dark mode toggle */}
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+
+          {/* Mobile: burger + dark toggle */}
           <div className="flex md:hidden items-center gap-1 shrink-0">
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-600 dark:text-zinc-400 transition-colors">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-600 dark:text-zinc-400 transition-colors"
+            >
               {mobileMenuOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
             </button>
             <DarkModeToggle />
           </div>
 
-          {/* Desktop logo — hidden on mobile */}
-          <Link to="/" className="hidden md:flex items-center gap-3 hover:scale-105 transition-transform duration-300 shrink-0">
-            <img src={logo} alt="Logo" className="w-10 h-10 object-contain animate-float" />
-            <span className="text-base font-black tracking-tight text-zinc-800 dark:text-zinc-100 uppercase hidden lg:block">
+          {/* Logo */}
+          <Link to="/" className="hidden md:flex items-center gap-2.5 hover:opacity-80 transition-opacity shrink-0">
+            <img src={logo} alt="Logo" className="w-9 h-9 object-contain" />
+            <span className="font-black text-sm text-zinc-900 dark:text-zinc-100 uppercase tracking-tight hidden lg:block">
               Pet Wellness Animal Clinic
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Nav pill — desktop */}
+          <nav className="hidden md:flex items-center gap-0.5 bg-zinc-100 dark:bg-dark-surface rounded-full px-2 py-1.5 border border-zinc-200 dark:border-dark-border">
             {NAV_LINKS.map(link => (
-              <button key={link.label} onClick={() => scrollTo(link.href)}
-                className="px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 dark:hover:text-brand-500 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface">
+              <button
+                key={link.label}
+                onClick={() => scrollTo(link.href)}
+                className="px-4 py-1.5 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full hover:bg-white dark:hover:bg-dark-card transition-all duration-200"
+              >
                 {link.label}
               </button>
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Desktop dark mode + login — hidden on mobile */}
-            <div className="hidden md:flex items-center gap-2">
+          {/* Right actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden md:flex items-center gap-3">
               <DarkModeToggle />
-              <div className="h-6 w-px bg-zinc-200 dark:bg-dark-border mx-1" />
-              <Link to="/login" className="px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 transition-all hover:-translate-y-0.5">
+              <Link
+                to="/login"
+                className="text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+              >
                 Log In
               </Link>
             </div>
-            <Link to="/register" className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 active:scale-95">
+            <Link
+              to="/register"
+              className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-bold px-5 py-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               Register
             </Link>
           </div>
         </div>
 
+        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-dark-card border-t border-zinc-200 dark:border-dark-border px-6 py-4 space-y-1">
+          <div className="md:hidden bg-white dark:bg-dark-card border-t border-zinc-100 dark:border-dark-border px-6 py-4 space-y-1">
             {NAV_LINKS.map(link => (
-              <button key={link.label} onClick={() => scrollTo(link.href)}
-                className="block w-full text-left px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">
+              <button
+                key={link.label}
+                onClick={() => scrollTo(link.href)}
+                className="block w-full text-left px-4 py-2.5 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-xl hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors"
+              >
                 {link.label}
               </button>
             ))}
-            <Link to="/login" className="block px-4 py-2.5 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-lg hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">
+            <Link
+              to="/login"
+              className="block px-4 py-2.5 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-xl hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors"
+            >
               Log In
             </Link>
           </div>
@@ -256,62 +269,85 @@ export default function Landing() {
       </header>
 
       {/* ══════════════════════════════════════
-          HERO
+          HERO — centered, avatar cluster
       ══════════════════════════════════════ */}
-      <section id="home" className="relative min-h-screen flex items-center overflow-hidden pt-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 dark:bg-brand-500/5 rounded-full blur-[120px] animate-blob pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-[120px] animate-blob delay-500 pointer-events-none" />
+      <section id="home" className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-20 overflow-hidden">
 
-        {BACKGROUND_IMAGES.map((img, index) => (
-          <div key={img} className={clsx("absolute inset-0 z-0 pointer-events-none transition-all duration-1000",
-            index === currentImageIndex ? "opacity-20 dark:opacity-10 scale-100" : "opacity-0 scale-105")}
-            style={{ backgroundImage: `url("${img}")`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(2px)' }} />
-        ))}
+        {/* Soft glow background */}
+        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[70%] h-[55%] bg-brand-500/5 dark:bg-brand-500/5 rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Paw & pet decoratives — more visible */}
-        <PawPrint  className="absolute top-24 right-8  w-56 h-56 text-brand-500 dark:text-emerald-400 opacity-20 dark:opacity-25 rotate-12  pointer-events-none animate-blob" />
-        <PawPrint  className="absolute bottom-20 left-6 w-40 h-40 text-emerald-600 dark:text-emerald-400 opacity-[0.18] dark:opacity-20 -rotate-20 pointer-events-none animate-blob delay-300" />
-        <PawPrint  className="absolute top-1/2 right-20 w-20 h-20 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-20 rotate-45 pointer-events-none" />
-        <PawTrail  className="absolute top-36 left-2   w-52 text-brand-500 dark:text-emerald-400 opacity-[0.16] dark:opacity-20 -rotate-12 pointer-events-none" />
-        <DogSilhouette className="absolute bottom-10 right-0 w-80 text-brand-500 dark:text-emerald-400 opacity-[0.12] dark:opacity-20 pointer-events-none" />
-        <CatSilhouette className="absolute top-24 left-0  w-44 text-emerald-600 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 pointer-events-none -scale-x-100" />
+        {/* Paw decoratives */}
+        <PawPrint  className="absolute top-28 right-10  w-48 h-48 text-brand-500 dark:text-emerald-400 opacity-[0.10] rotate-12  pointer-events-none animate-blob" />
+        <PawPrint  className="absolute bottom-24 left-8 w-36 h-36 text-emerald-600 dark:text-emerald-400 opacity-[0.08] -rotate-20 pointer-events-none animate-blob delay-300" />
+        <PawPrint  className="absolute top-1/2 right-24  w-16 h-16 text-brand-500 opacity-[0.08] rotate-45  pointer-events-none" />
+        <PawTrail  className="absolute top-40 left-4    w-44 text-brand-500 dark:text-emerald-400 opacity-[0.08] -rotate-12 pointer-events-none" />
+        <DogSilhouette className="absolute bottom-8 right-0 w-64 text-brand-500 dark:text-emerald-400 opacity-[0.07] pointer-events-none" />
+        <CatSilhouette className="absolute top-28 left-0  w-40 text-emerald-600 dark:text-emerald-400 opacity-[0.06] pointer-events-none -scale-x-100" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 w-full">
-          <div className="max-w-3xl space-y-8">
-            {/* Mobile-only: logo + clinic name above hero badge */}
-            <div className="flex md:hidden items-center gap-4 mb-2">
-              <img src={logo} alt="Logo" className="w-20 h-20 object-contain shrink-0 drop-shadow-lg" />
-              <span className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase leading-tight">
-                Pet Wellness Animal Clinic
+        {/* Avatar cluster */}
+        <div className="flex items-center justify-center mb-8 opacity-0 animate-fade-in-scale">
+          <div className="flex -space-x-3">
+            {AVATAR_PET_IMAGES.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt="pet"
+                className="w-12 h-12 rounded-full object-cover border-[3px] border-white dark:border-dark-card shadow-md"
+              />
+            ))}
+            <div className="w-12 h-12 rounded-full border-[3px] border-white dark:border-dark-card bg-brand-500 flex items-center justify-center shadow-md shrink-0">
+              <span className="text-white text-[10px] font-black leading-tight text-center">500+</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Headline */}
+        <h1 className="text-5xl md:text-7xl font-black text-zinc-900 dark:text-zinc-50 leading-[1.08] tracking-tight max-w-3xl opacity-0 animate-fade-in-scale delay-100">
+          Quality Care for Your<br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
+            Beloved Companions
+          </span>
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-6 text-lg text-zinc-500 dark:text-zinc-400 max-w-xl leading-relaxed opacity-0 animate-fade-in-scale delay-200">
+          Book appointments, track your pet's health records, and stay connected with our expert veterinarians — all in one convenient portal.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-8 opacity-0 animate-fade-in-scale delay-300">
+          <Link
+            to="/register"
+            className="group flex items-center gap-2.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 font-black px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-zinc-900/10"
+          >
+            <FiCalendar className="text-brand-500 shrink-0" />
+            Book Appointment
+          </Link>
+          <button
+            onClick={() => scrollTo('#services')}
+            className="text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 dark:hover:text-brand-400 transition-colors px-2"
+          >
+            Our Services
+          </button>
+        </div>
+
+        {/* Live indicator */}
+        <div className="flex items-center justify-center gap-2 mt-4 text-sm text-zinc-400 dark:text-zinc-500 opacity-0 animate-fade-in-scale delay-[400ms]">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span>500+ happy pet owners and counting</span>
+        </div>
+
+        {/* Services trust row */}
+        <div className="mt-16 w-full max-w-lg opacity-0 animate-fade-in-scale delay-500">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-5">
+            Our Services
+          </p>
+          <div className="flex items-center justify-center gap-6 md:gap-10 flex-wrap">
+            {['Consultations', 'Grooming', 'Vaccination', 'Deworming'].map(s => (
+              <span key={s} className="text-zinc-400 dark:text-zinc-600 font-bold text-sm tracking-tight">
+                {s}
               </span>
-            </div>
-
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/20 rounded-full text-brand-500 text-sm font-bold opacity-0 animate-fade-in-scale">
-              <FiHeart /> Trusted Veterinary Care Portal
-            </div>
-            <h1 className="text-5xl md:text-7xl font-black text-zinc-900 dark:text-zinc-50 leading-[1.1] tracking-tight opacity-0 animate-fade-in-scale delay-100">
-              Quality Care for Your <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600 animate-pulse-subtle">Beloved Companions</span>
-            </h1>
-            <p className="text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl font-medium leading-relaxed opacity-0 animate-fade-in-scale delay-200">
-              Book appointments, track your pet's health records, and stay connected with our expert veterinarians — all in one convenient portal.
-            </p>
-            <div className="flex flex-wrap gap-4 opacity-0 animate-fade-in-scale delay-300">
-              <Link to="/register" className="group px-8 py-4 bg-brand-500 hover:bg-brand-600 text-white font-black rounded-2xl flex items-center gap-3 hover:scale-105 transition-all duration-300 shadow-2xl shadow-brand-500/30 active:scale-95">
-                Get Started <FiArrowRight className="group-hover:translate-x-2 transition-transform" />
-              </Link>
-              <button onClick={() => scrollTo('#services')}
-                className="group px-8 py-4 bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-700 dark:text-zinc-300 font-black rounded-2xl flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm">
-                <FiActivity className="text-brand-500 group-hover:animate-pulse" /> Our Services
-              </button>
-            </div>
-            <div className="flex gap-2 pt-2 opacity-0 animate-fade-in-scale delay-500">
-              {BACKGROUND_IMAGES.map((_, i) => (
-                <button key={i} onClick={() => setCurrentImageIndex(i)}
-                  className={clsx("h-1.5 rounded-full transition-all duration-300",
-                    i === currentImageIndex ? "w-8 bg-brand-500" : "w-1.5 bg-zinc-300 dark:bg-dark-border")} />
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -399,7 +435,6 @@ export default function Landing() {
             {CLINIC_SERVICES.map((service) => (
               <Link key={service.name} to="/register"
                 className="group relative overflow-hidden rounded-2xl border border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-                {/* Photo */}
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={service.image}
@@ -414,7 +449,6 @@ export default function Landing() {
                     {service.name}
                   </span>
                 </div>
-                {/* Content */}
                 <div className="p-5 text-center">
                   <h3 className="font-black text-zinc-800 dark:text-zinc-100 mb-2">{service.name}</h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{service.description}</p>
