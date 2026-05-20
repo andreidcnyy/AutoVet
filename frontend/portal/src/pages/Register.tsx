@@ -173,8 +173,8 @@ export default function Register() {
             Please check your inbox (and spam folder) to complete your registration.
           </p>
           <div className="pt-4">
-            <Link to="/login" className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-black uppercase tracking-widest text-xs hover:scale-105 transition-all">
-              Go to Login 🐾
+            <Link to="/login" className="group inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all">
+              Go to Login <span className="group-hover:rotate-12 inline-block transition-transform duration-300">🐾</span>
             </Link>
           </div>
         </div>
@@ -402,10 +402,10 @@ export default function Register() {
             <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-dark-border">
               <button type="submit" disabled={loading || googleLoading}
                 className={clsx(
-                  "w-full h-14 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-black text-lg transition-all hover:scale-[1.01] shadow-xl shadow-brand-500/20 active:scale-[0.98] flex items-center justify-center gap-2",
+                  "group w-full h-14 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-black text-lg transition-all hover:scale-[1.02] shadow-xl shadow-brand-500/20 active:scale-[0.97] flex items-center justify-center gap-2",
                   (loading || googleLoading) && "opacity-60 cursor-not-allowed"
                 )}>
-                {loading ? "Creating Account…" : <>Create My Account <span className="text-base">🐾</span></>}
+                {loading ? "Creating Account…" : <>Create My Account <span className="text-base group-hover:rotate-12 inline-block transition-transform duration-300">🐾</span></>}
               </button>
               <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
                 By registering, you agree to our{" "}

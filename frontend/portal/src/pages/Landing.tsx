@@ -231,7 +231,7 @@ export default function Landing() {
               <DarkModeToggle />
               <Link
                 to="/login"
-                className="text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+                className="text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 dark:hover:text-brand-400 transition-all duration-200 active:scale-95 inline-block"
               >
                 Log In
               </Link>
@@ -260,7 +260,7 @@ export default function Landing() {
             ))}
             <Link
               to="/login"
-              className="block px-4 py-2.5 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-xl hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors"
+              className="block px-4 py-2.5 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-brand-500 rounded-xl hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all duration-200 active:scale-[0.97]"
             >
               Log In
             </Link>
@@ -328,7 +328,7 @@ export default function Landing() {
             to="/register"
             className="group flex items-center gap-2.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 font-black px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-zinc-900/10"
           >
-            <FiCalendar className="text-brand-500 shrink-0" />
+            <FiCalendar className="text-brand-500 shrink-0 group-hover:rotate-12 transition-transform duration-300" />
             Book Appointment
           </Link>
         </div>

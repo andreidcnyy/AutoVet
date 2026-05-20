@@ -235,10 +235,10 @@ function LoginPage() {
             <div className="space-y-4 pt-2">
               <button type="submit" disabled={loading || googleLoading}
                 className={clsx(
-                  "w-full h-12 rounded-xl bg-brand-500 text-white font-bold text-lg transition-all hover:bg-brand-600 shadow-lg shadow-brand-500/20 active:scale-[0.98] flex items-center justify-center gap-2",
+                  "group w-full h-12 rounded-xl bg-brand-500 text-white font-bold text-lg transition-all hover:bg-brand-600 hover:scale-[1.01] shadow-lg shadow-brand-500/20 active:scale-[0.98] flex items-center justify-center gap-2",
                   (loading || googleLoading) && "opacity-60 cursor-not-allowed"
                 )}>
-                {loading ? "Signing in…" : <>Log In <span className="text-base">🐾</span></>}
+                {loading ? "Signing in…" : <>Log In <span className="text-base group-hover:rotate-12 inline-block transition-transform duration-300">🐾</span></>}
               </button>
 
               {/* Divider */}
