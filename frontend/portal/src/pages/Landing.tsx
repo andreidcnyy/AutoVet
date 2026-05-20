@@ -284,6 +284,14 @@ export default function Landing() {
         <DogSilhouette className="absolute bottom-8 right-0 w-64 text-brand-500 dark:text-emerald-400 opacity-[0.07] pointer-events-none" />
         <CatSilhouette className="absolute top-28 left-0  w-40 text-emerald-600 dark:text-emerald-400 opacity-[0.06] pointer-events-none -scale-x-100" />
 
+        {/* Mobile-only: logo + clinic name */}
+        <div className="flex md:hidden flex-col items-center gap-3 mb-8 opacity-0 animate-fade-in-scale">
+          <img src={logo} alt="Logo" className="w-24 h-24 object-contain drop-shadow-lg" />
+          <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase text-center leading-tight">
+            Pet Wellness Animal Clinic
+          </span>
+        </div>
+
         {/* Avatar cluster */}
         <div className="flex items-center justify-center mb-8 opacity-0 animate-fade-in-scale">
           <div className="flex -space-x-3">
