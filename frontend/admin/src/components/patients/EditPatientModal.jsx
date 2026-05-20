@@ -6,7 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
-import { VET_AND_ADMIN } from "../../constants/roles";
+import { VET_AND_ADMIN, ROLES } from "../../constants/roles";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { getAgeGroup } from "../../utils/petAgeGroups";
 import { PH_LOCATION_DATA } from "../../utils/phLocationData";
@@ -241,15 +241,17 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
     const isMismatch = breedSuggestedSizeId && calculatedSizeId && breedSuggestedSizeId.toString() !== calculatedSizeId.toString();
 
+    const isClinicAdmin = user?.role === ROLES.CLINIC_ADMIN;
+
     const onSubmit = async (data) => {
         setError(null);
         try {
-            // First update owner if owner_id exists
-            if (patient.owner_id) {
+            // Only clinic admins can update owner records
+            if (patient.owner_id && isClinicAdmin) {
                 const ownerRes = await fetch(`/api/owners/${patient.owner_id}`, {
                     method: "PUT",
-                    headers: { 
-                        "Content-Type": "application/json", 
+                    headers: {
+                        "Content-Type": "application/json",
                         "Accept": "application/json",
                         "Authorization": `Bearer ${user?.token}`
                     },
@@ -444,11 +446,16 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                         <div className="h-px bg-zinc-200 dark:bg-dark-border" />
 
                         <section>
-                            <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Owner Details</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">Owner Details</h3>
+                                {!isClinicAdmin && (
+                                    <span className="rounded-lg bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">View only — admin access required</span>
+                                )}
+                            </div>
+                            <div className={clsx("grid grid-cols-1 sm:grid-cols-2 gap-4", !isClinicAdmin && "opacity-60 pointer-events-none")}>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Full Name *</label>
-                                    <input {...register("owner_name")} className={getInputClass(errors.owner_name)} />
+                                    <input {...register("owner_name")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_name)} />
                                     {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                                 </div>
                                 <div>
@@ -457,12 +464,13 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         <div className="flex h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
                                             🇵🇭 +63
                                         </div>
-                                        <input 
-                                            {...register("owner_phone")} 
+                                        <input
+                                            {...register("owner_phone")}
                                             type="text"
-                                            className={getInputClass(errors.owner_phone)} 
-                                            placeholder="09123456789" 
-                                            onChange={(e) => setValue("owner_phone", e.target.value.replace(/\D/g, "").slice(0, 11), { shouldValidate: true })}
+                                            readOnly={!isClinicAdmin}
+                                            className={getInputClass(errors.owner_phone)}
+                                            placeholder="09123456789"
+                                            onChange={(e) => isClinicAdmin && setValue("owner_phone", e.target.value.replace(/\D/g, "").slice(0, 11), { shouldValidate: true })}
                                             maxLength={11}
                                         />
                                     </div>
@@ -470,11 +478,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Email Address</label>
-                                    <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} />
+                                    <input type="email" {...register("owner_email")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_email)} />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address *</label>
-                                    <input {...register("owner_address")} className={getInputClass(errors.owner_address)} />
+                                    <input {...register("owner_address")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_address)} />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Province *</label>
@@ -490,7 +498,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">City *</label>
                                     <div className="relative">
-                                        <select {...register("owner_city")} className={getSelectClass(errors.owner_city)} disabled={!ownerProvince}>
+                                        <select {...register("owner_city")} disabled={!ownerProvince} className={getSelectClass(errors.owner_city)}>
                                             <option value="">Select City...</option>
                                             {availableCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                                         </select>
@@ -502,10 +510,10 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     <label className="mb-1 block text-xs font-semibold text-emerald-600 dark:text-emerald-400">Zip (Auto)</label>
                                     <div className="relative">
                                         <FiMap className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
-                                        <input 
-                                            {...register("owner_zip")} 
-                                            readOnly 
-                                            className="h-11 w-full rounded-xl border border-emerald-100 bg-emerald-50/50 pl-10 pr-3 text-sm font-bold text-emerald-700 cursor-not-allowed dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400" 
+                                        <input
+                                            {...register("owner_zip")}
+                                            readOnly
+                                            className="h-11 w-full rounded-xl border border-emerald-100 bg-emerald-50/50 pl-10 pr-3 text-sm font-bold text-emerald-700 cursor-not-allowed dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400"
                                         />
                                     </div>
                                 </div>
