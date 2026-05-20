@@ -363,7 +363,7 @@ export default function Landing() {
 
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-zinc-200/60 dark:border-dark-border bg-zinc-900">
             <video
-              src="/clinic-video.mp4"
+              src="https://drive.google.com/uc?id=1mg5wVALwfvzPE9yjGZNiRzd219lo5-Xz"
               autoPlay
               muted
               loop
