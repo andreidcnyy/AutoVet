@@ -56,6 +56,7 @@ function PatientRecordsView({
   };
 
   return (
+    <>
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -384,6 +385,7 @@ function PatientRecordsView({
         onSent={() => setWarnOwner(null)}
       />
     )}
+    </>
   );
 }
 
