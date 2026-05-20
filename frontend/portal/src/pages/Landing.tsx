@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FiArrowRight, FiActivity, FiHeart, FiShield,
   FiMail, FiPhone, FiMapPin, FiCalendar, FiBell, FiFileText,
-  FiUsers, FiLock, FiChevronRight, FiMenu, FiX
+  FiUsers, FiLock, FiChevronRight, FiMenu, FiX, FiVolume2, FiVolumeX
 } from 'react-icons/fi';
 import { getPublicSystemAnnouncements } from '../api';
 import BroadcastBanner from '../components/BroadcastBanner';
@@ -153,6 +153,15 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled]             = useState(false);
   const [landingBanners, setLandingBanners] = useState<any[]>([]);
+  const [isMuted, setIsMuted]               = useState(true);
+  const videoRef                            = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -363,6 +372,7 @@ export default function Landing() {
 
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-zinc-200/60 dark:border-dark-border bg-zinc-900">
             <video
+              ref={videoRef}
               src="/petwellness.mp4"
               autoPlay
               muted
@@ -376,6 +386,14 @@ export default function Landing() {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <span className="text-white text-xs font-bold drop-shadow">Pet Wellness Animal Clinic</span>
             </div>
+            {/* Mute / Unmute toggle */}
+            <button
+              onClick={toggleMute}
+              className="absolute bottom-4 right-5 flex items-center gap-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 active:scale-95"
+            >
+              {isMuted ? <FiVolumeX className="h-3.5 w-3.5" /> : <FiVolume2 className="h-3.5 w-3.5" />}
+              {isMuted ? 'Unmute' : 'Mute'}
+            </button>
           </div>
         </div>
       </section>
