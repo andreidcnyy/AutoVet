@@ -259,6 +259,7 @@ function AuditLogTab() {
                           {log.model_type ? log.model_type.split("\\").pop() : "Unknown"} <span className="opacity-50">#{log.model_id}</span>
                         </td>
                         <td className="px-4 py-3 text-right" />
+                      </tr>
                     </React.Fragment>
                   ))}
                 </tbody>
