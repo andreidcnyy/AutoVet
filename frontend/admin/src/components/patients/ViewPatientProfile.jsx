@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
@@ -19,6 +19,8 @@ import {
   FiSearch,
   FiX,
   FiFileText,
+  FiCamera,
+  FiTrash,
 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
@@ -415,6 +417,43 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   const isStaff = user?.role === ROLES.STAFF;
   const isVet = VET_AND_ADMIN.includes(user?.role);
 
+  const photoInputRef = useRef(null);
+  const [photoUpdating, setPhotoUpdating] = useState(false);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      setPhotoUpdating(true);
+      try {
+        await api.patch(`/api/pets/${patient.id}`, { photo: reader.result });
+        toast.success("Pet photo updated.");
+        if (onRefresh) onRefresh();
+      } catch {
+        toast.error("Failed to update photo.");
+      } finally {
+        setPhotoUpdating(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!patient.photo) return;
+    setPhotoUpdating(true);
+    try {
+      await api.patch(`/api/pets/${patient.id}`, { photo: null });
+      toast.success("Pet photo removed.");
+      if (onRefresh) onRefresh();
+    } catch {
+      toast.error("Failed to remove photo.");
+    } finally {
+      setPhotoUpdating(false);
+    }
+  };
+
   const handleArchive = async () => {
     if (!user?.token) return;
     setIsArchiving(true);
@@ -622,11 +661,53 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
 
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
-        <img
-          src={patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name)}
-          alt={patient.name}
-          className="h-40 w-40 rounded-2xl border-2 border-zinc-100 object-cover shadow-sm dark:border-dark-border bg-zinc-100"
-        />
+        {/* Pet photo — click to change, × to remove */}
+        <div className="relative group h-40 w-40 shrink-0">
+          <img
+            src={patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name)}
+            alt={patient.name}
+            className={clsx(
+              "h-40 w-40 rounded-2xl border-2 border-zinc-100 object-cover shadow-sm dark:border-dark-border bg-zinc-100 transition-all duration-200",
+              photoUpdating && "opacity-50"
+            )}
+          />
+
+          {/* Hover overlay */}
+          <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              disabled={photoUpdating}
+              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-zinc-800 text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
+            >
+              <FiCamera className="h-3.5 w-3.5" />
+              Change
+            </button>
+            {patient.photo && (
+              <button
+                onClick={handleRemovePhoto}
+                disabled={photoUpdating}
+                className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
+              >
+                <FiTrash className="h-3.5 w-3.5" />
+                Remove
+              </button>
+            )}
+          </div>
+
+          {photoUpdating && (
+            <div className="absolute inset-0 rounded-2xl flex items-center justify-center">
+              <div className="h-6 w-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+            </div>
+          )}
+
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoChange}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: "Breed", value: patient.breed?.name || "N/A" },

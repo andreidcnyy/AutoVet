@@ -210,6 +210,9 @@ class PetController extends Controller
             $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
         } elseif ($request->hasFile('photo')) {
             $validated['photo'] = $this->uploadPetPhotoFile($request->file('photo'));
+        } elseif ($request->has('photo') && is_null($request->photo)) {
+            // Explicitly removing the photo
+            $validated['photo'] = null;
         } else {
             // Keep existing photo if a URL was sent back unchanged
             if (isset($request->photo) && !preg_match('/^data:image/', $request->photo)) {
