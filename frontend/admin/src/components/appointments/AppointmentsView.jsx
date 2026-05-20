@@ -396,7 +396,7 @@ function AppointmentsView() {
 
       <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
-        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
+        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
           {activePanel === "booking" ? (
             <>
               <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6">
@@ -410,7 +410,7 @@ function AppointmentsView() {
                   <button onClick={() => { setIsDrawerOpen(false); setIsWalkIn(false); setSelectedServiceIds([]); }} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-8">
+              <div className="flex-1 min-h-0 overflow-y-auto p-8">
                 {isWalkIn && <p className="mb-4 text-xs font-bold text-sky-600 bg-sky-50 rounded-xl px-4 py-2.5 border border-sky-200">Walk-in visits are immediately approved — no pending queue.</p>}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
@@ -456,7 +456,7 @@ function AppointmentsView() {
                 <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> Details</h3>
                 <button onClick={() => setIsDrawerOpen(false)} className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 transition-all"><FiX /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-8 space-y-10">
+              <div className="flex-1 min-h-0 overflow-y-auto p-8 space-y-10">
                 <div className="flex items-start gap-6">
                   <div className="h-20 w-20 flex items-center justify-center rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-xl"><FiInfo className="h-10 w-10" /></div>
                   <div><h4 className="text-3xl font-black italic leading-tight">{selectedAppointment?.title}</h4>
