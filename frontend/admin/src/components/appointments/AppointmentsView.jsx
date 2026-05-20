@@ -394,9 +394,9 @@ function AppointmentsView() {
         </section>
       </div>
 
-      <div className={clsx("fixed inset-0 z-[60] transition-opacity duration-500", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
+      <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
-        <aside className={clsx("absolute inset-y-0 right-0 w-full max-w-lg bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 overflow-y-auto", isDrawerOpen ? "translate-x-0" : "translate-x-full")}>
+        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
           {activePanel === "booking" ? (
             <section className="p-8">
               <div className="mb-6 flex items-center justify-between">
