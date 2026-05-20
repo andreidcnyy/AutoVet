@@ -323,12 +323,6 @@ export default function Landing() {
             <FiCalendar className="text-brand-500 shrink-0" />
             Book Appointment
           </Link>
-          <button
-            onClick={() => scrollTo('#services')}
-            className="text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 dark:hover:text-brand-400 transition-colors px-2"
-          >
-            Our Services
-          </button>
         </div>
 
         {/* Live indicator */}
