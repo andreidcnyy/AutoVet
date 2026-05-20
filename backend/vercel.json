@@ -12,5 +12,11 @@
       "dest": "/api/index.php"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/check-expiry",
+      "schedule": "0 23 * * *"
+    }
+  ],
   "comment": "Force redeploy with stable runtime"
 }

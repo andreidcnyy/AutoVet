@@ -339,3 +339,23 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/reports/analytics/inventory-stock',    [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryStockSummary']);
     });
 });
+
+// -----------------------------------------------------------------------
+// Vercel Cron Jobs (no auth middleware — protected by CRON_SECRET header)
+// -----------------------------------------------------------------------
+Route::get('/cron/check-expiry', function (Illuminate\Http\Request $request) {
+    $secret = env('CRON_SECRET');
+    $bearer = $request->bearerToken();
+
+    if (!$secret || $bearer !== $secret) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('inventory:check-expiry');
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json(['message' => 'Expiry check completed.', 'output' => trim($output)]);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Failed: ' . $e->getMessage()], 500);
+    }
+});
