@@ -263,7 +263,7 @@ class InventoryForecastService
             if ($apiUrl) {
                 try {
                     $csvData = file_get_contents($csvPath);
-                    $response = \Illuminate\Support\Facades\Http::post("{$apiUrl}/forecast/inventory", [
+                    $response = \Illuminate\Support\Facades\Http::timeout(90)->post("{$apiUrl}/forecast/inventory", [
                         'min_stock_level' => $inventory->min_stock_level ?? 0,
                         'csv_data' => $csvData,
                         'code' => $inventory->code,
