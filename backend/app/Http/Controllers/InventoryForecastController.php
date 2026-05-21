@@ -171,6 +171,7 @@ class InventoryForecastController extends Controller
             'min_stock_level'            => $minStock,
             'confidence_score'           => $forecast->confidence_score !== null ? (float) $forecast->confidence_score : null,
             'trend_fit_score'            => $forecast->trend_fit_score !== null ? (float) $forecast->trend_fit_score : null,
+            'estimated_monthly_revenue'  => $forecast->estimated_monthly_revenue !== null ? (float) $forecast->estimated_monthly_revenue : null,
         ]);
     }
 }
