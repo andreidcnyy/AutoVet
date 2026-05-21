@@ -5,75 +5,160 @@ import { useToast } from "../../context/ToastContext";
 import api from "../../api";
 import clsx from "clsx";
 
-// Extract the short model name from a fully-qualified class string
-const modelName = (type) => {
-  if (!type) return "Unknown";
-  return type.split("\\").pop();
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+
+// Fields that are internal/technical — never show to users
+const isHidden = (key) =>
+  key.endsWith("_id") ||
+  key.endsWith("_token") ||
+  [
+    "id", "uuid", "created_at", "updated_at", "deleted_at",
+    "email_verified_at", "password", "two_factor_secret",
+    "two_factor_recovery_codes", "remember_token",
+  ].includes(key);
+
+// Human-readable labels for common field names
+const FIELD_LABELS = {
+  name: "Name", first_name: "First Name", last_name: "Last Name",
+  email: "Email Address", phone: "Phone", phone_number: "Phone",
+  status: "Status", role: "Role", price: "Price", amount: "Amount",
+  total: "Total", description: "Description", notes: "Notes",
+  address: "Address", date_of_birth: "Date of Birth", birth_date: "Date of Birth",
+  gender: "Gender", weight: "Weight", color: "Color / Markings",
+  is_active: "Active", is_neutered: "Neutered / Spayed",
+  title: "Title", subject: "Subject", message: "Message",
+  body: "Content", category: "Category", type: "Type",
+  quantity: "Quantity", unit: "Unit", invoice_number: "Invoice Number",
+  due_date: "Due Date", appointment_date: "Appointment Date",
+  appointment_time: "Appointment Time", reason: "Reason",
+  diagnosis: "Diagnosis", treatment: "Treatment",
+  prescription: "Prescription", lot_number: "Lot / Batch Number",
+  expiry_date: "Expiry Date", reorder_point: "Reorder Point",
+  requires_doctor: "Requires Doctor", pricing_mode: "Pricing Mode",
+  item_name: "Item Name", start_time: "Start Time", end_time: "End Time",
+  date: "Date", content: "Content", target: "Target Audience",
+  is_published: "Published", is_read: "Read",
+  shelf_life_days: "Shelf Life (Days)", manufacturer: "Manufacturer",
+  supplier: "Supplier", service_name: "Service",
 };
 
-// Pull a human-readable label from new_values / old_values
+// Human-readable record type names
+const MODEL_LABELS = {
+  Appointment: "Appointment", Invoice: "Invoice", Pet: "Pet Profile",
+  User: "Staff Account", PortalUser: "Client Account", Service: "Service",
+  Inventory: "Inventory Item", InventoryItem: "Inventory Item",
+  MedicalRecord: "Medical Record", Notification: "Notification",
+  SystemAnnouncement: "Announcement", Setting: "System Setting",
+  Breed: "Breed", Species: "Species",
+};
+
+const friendlyModel = (type) => {
+  if (!type) return "Record";
+  const raw = type.split("\\").pop();
+  return MODEL_LABELS[raw] || raw;
+};
+
+const friendlyField = (key) =>
+  FIELD_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Format a raw value into something readable
+const formatValue = (val) => {
+  if (val === null || val === undefined || val === "") return null;
+  if (val === true  || val === 1  || val === "1"  || val === "true")  return "Yes";
+  if (val === false || val === 0  || val === "0"  || val === "false") return "No";
+  if (typeof val === "object") return null; // hide complex objects
+  const str = String(val);
+  if (/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/.test(str)) {
+    try {
+      return new Date(str).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+    } catch (_) {}
+  }
+  return str;
+};
+
 const extractLabel = (values) => {
   if (!values) return null;
-  return (
-    values.name ||
-    values.title ||
-    values.invoice_number ||
-    values.item_name ||
-    values.subject ||
-    values.email ||
-    null
-  );
+  return values.name || values.title || values.invoice_number || values.item_name || values.subject || values.email || null;
 };
 
-// Build a one-line summary of what actually happened
+// Plain-English one-line summary for the table row
 const buildSummary = (log) => {
-  const model = modelName(log.model_type);
+  const model = friendlyModel(log.model_type);
   const vals = log.action === "deleted" ? log.old_values : log.new_values;
   const label = extractLabel(vals);
 
-  if (log.action === "updated" && log.old_values && log.new_values) {
-    const SKIP = new Set(["updated_at", "created_at", "uuid"]);
-    const changed = Object.keys(log.new_values).filter(
-      (k) => !SKIP.has(k) && JSON.stringify(log.old_values[k]) !== JSON.stringify(log.new_values[k])
-    );
-    if (changed.length > 0) {
-      const fieldList = changed.slice(0, 3).join(", ");
-      return label
-        ? `Updated "${label}" — changed: ${fieldList}`
-        : `Updated ${model} #${log.model_id} — changed: ${fieldList}`;
-    }
+  if (log.action === "created") {
+    return label ? `Added a new ${model}: "${label}"` : `Added a new ${model}`;
   }
-
-  if (label) return `${capitalize(log.action)} "${label}"`;
-  return `${capitalize(log.action)} ${model} #${log.model_id}`;
+  if (log.action === "deleted") {
+    return label ? `Removed ${model}: "${label}"` : `Removed a ${model}`;
+  }
+  if (log.action === "updated" && log.old_values && log.new_values) {
+    const changed = Object.keys(log.new_values).filter(
+      (k) => !isHidden(k) && JSON.stringify(log.old_values[k]) !== JSON.stringify(log.new_values[k])
+    );
+    if (changed.includes("status")) {
+      const from = formatValue(log.old_values.status) ?? log.old_values.status;
+      const to   = formatValue(log.new_values.status) ?? log.new_values.status;
+      return label
+        ? `"${label}" status changed from ${from} to ${to}`
+        : `${model} status changed from ${from} to ${to}`;
+    }
+    const count = changed.length;
+    return label
+      ? `Updated "${label}" — ${count} detail${count !== 1 ? "s" : ""} changed`
+      : `Updated ${model} — ${count} detail${count !== 1 ? "s" : ""} changed`;
+  }
+  return label ? `${capitalize(log.action)} "${label}"` : `${capitalize(log.action)} a ${model}`;
 };
 
-const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-
-// Detail modal showing full old → new diff
+// User-friendly detail modal — no raw field names or JSON shown
 function DetailModal({ log, onClose }) {
-  const model = modelName(log.model_type);
-  const allKeys = Array.from(
-    new Set([
-      ...Object.keys(log.old_values || {}),
-      ...Object.keys(log.new_values || {}),
-    ])
-  ).filter((k) => k !== "uuid");
+  const model = friendlyModel(log.model_type);
+  const label = extractLabel(log.action === "deleted" ? log.old_values : log.new_values);
+  const title = label ? `"${label}"` : `${model}`;
+
+  // For updated: only show fields that actually changed
+  const changedFields = log.action === "updated" && log.old_values && log.new_values
+    ? Object.keys(log.new_values).filter(
+        (k) => !isHidden(k) && JSON.stringify(log.old_values[k]) !== JSON.stringify(log.new_values[k])
+      )
+    : [];
+
+  // For created / deleted: show visible fields from the snapshot
+  const snapshotValues = log.action === "deleted" ? log.old_values : log.new_values;
+  const snapshotFields = snapshotValues
+    ? Object.keys(snapshotValues).filter((k) => !isHidden(k) && formatValue(snapshotValues[k]) !== null)
+    : [];
+
+  const actionMeta = {
+    created: { label: "New Record Added",  color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800" },
+    updated: { label: "Record Updated",    color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" },
+    deleted: { label: "Record Removed",    color: "text-rose-600 dark:text-rose-400",     bg: "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800" },
+  }[log.action] ?? { label: capitalize(log.action), color: "text-zinc-500", bg: "bg-zinc-50 border-zinc-100" };
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg max-h-[85vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Audit Detail</p>
+          <div className="space-y-0.5">
+            <p className={clsx("text-[10px] font-black uppercase tracking-widest", actionMeta.color)}>
+              {actionMeta.label}
+            </p>
             <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100 leading-tight">
-              {capitalize(log.action)} · {model} #{log.model_id}
+              {model} · {title}
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              {new Date(log.created_at).toLocaleString()} &nbsp;·&nbsp;{" "}
-              <span className="font-semibold text-zinc-600 dark:text-zinc-300">{log.user?.name ?? "System"}</span>
+            <p className="text-xs text-zinc-400">
+              {new Date(log.created_at).toLocaleString("en-PH", {
+                month: "long", day: "numeric", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
+              })}
+              {log.user?.name && (
+                <> &nbsp;·&nbsp; <span className="font-semibold text-zinc-600 dark:text-zinc-300">by {log.user.name}</span></>
+              )}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-200 dark:hover:bg-dark-border transition-colors text-zinc-400">
@@ -82,53 +167,62 @@ function DetailModal({ log, onClose }) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
-          {allKeys.length === 0 ? (
-            <p className="text-sm text-zinc-400 text-center py-8">No field data recorded.</p>
-          ) : (
-            <div className="rounded-xl border border-zinc-200 dark:border-dark-border overflow-hidden text-sm">
-              <table className="w-full">
-                <thead className="bg-zinc-50 dark:bg-dark-surface text-zinc-500 text-[10px] uppercase tracking-widest">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-bold w-1/4">Field</th>
-                    {log.old_values && <th className="px-4 py-2 text-left font-bold text-rose-500">Before</th>}
-                    {log.new_values && <th className="px-4 py-2 text-left font-bold text-emerald-600">After</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
-                  {allKeys.map((key) => {
-                    const oldVal = log.old_values?.[key];
-                    const newVal = log.new_values?.[key];
-                    const changed =
-                      log.old_values && log.new_values &&
-                      JSON.stringify(oldVal) !== JSON.stringify(newVal);
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+
+          {/* UPDATED: show before → after for each changed field */}
+          {log.action === "updated" && (
+            changedFields.length === 0 ? (
+              <p className="text-sm text-zinc-400 text-center py-8">No visible changes recorded.</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">What changed</p>
+                {changedFields.map((key) => {
+                  const before = formatValue(log.old_values[key]) ?? "Not set";
+                  const after  = formatValue(log.new_values[key]) ?? "Not set";
+                  return (
+                    <div key={key} className={clsx("rounded-xl border p-3 space-y-1.5", actionMeta.bg)}>
+                      <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                        {friendlyField(key)}
+                      </p>
+                      <div className="flex items-start gap-3 text-sm flex-wrap">
+                        <span className="line-through text-zinc-400 dark:text-zinc-500 break-all">{before}</span>
+                        <span className="text-zinc-400">→</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-100 break-all">{after}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {/* CREATED / DELETED: show a summary of the record */}
+          {(log.action === "created" || log.action === "deleted") && (
+            snapshotFields.length === 0 ? (
+              <p className="text-sm text-zinc-400 text-center py-8">No details recorded.</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
+                  {log.action === "created" ? "Record details" : "Removed record details"}
+                </p>
+                <div className={clsx("rounded-xl border divide-y dark:divide-dark-border overflow-hidden", actionMeta.bg)}>
+                  {snapshotFields.map((key) => {
+                    const val = formatValue(snapshotValues[key]);
+                    if (!val) return null;
                     return (
-                      <tr
-                        key={key}
-                        className={clsx(
-                          "transition-colors",
-                          changed
-                            ? "bg-amber-50/50 dark:bg-amber-900/10"
-                            : "bg-white dark:bg-dark-card"
-                        )}
-                      >
-                        <td className="px-4 py-2 font-mono text-xs text-zinc-500 dark:text-zinc-400 font-semibold whitespace-nowrap">{key}</td>
-                        {log.old_values && (
-                          <td className="px-4 py-2 font-mono text-xs text-rose-700 dark:text-rose-400 break-all max-w-[200px]">
-                            {oldVal !== undefined && oldVal !== null ? String(JSON.stringify(oldVal)).slice(0, 300) : <span className="italic text-zinc-300">—</span>}
-                          </td>
-                        )}
-                        {log.new_values && (
-                          <td className="px-4 py-2 font-mono text-xs text-emerald-700 dark:text-emerald-400 break-all max-w-[200px]">
-                            {newVal !== undefined && newVal !== null ? String(JSON.stringify(newVal)).slice(0, 300) : <span className="italic text-zinc-300">—</span>}
-                          </td>
-                        )}
-                      </tr>
+                      <div key={key} className="flex items-start justify-between gap-4 px-4 py-2.5">
+                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                          {friendlyField(key)}
+                        </span>
+                        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100 text-right break-all">
+                          {val}
+                        </span>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -389,8 +483,7 @@ function AuditLogTab() {
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{modelName(log.model_type)}</span>
-                          <span className="ml-1 text-xs text-zinc-400">#{log.model_id}</span>
+                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{friendlyModel(log.model_type)}</span>
                         </td>
                         <td className="px-4 py-3 max-w-xs">
                           <p className="text-zinc-600 dark:text-zinc-300 text-xs leading-relaxed line-clamp-2">{summary}</p>
