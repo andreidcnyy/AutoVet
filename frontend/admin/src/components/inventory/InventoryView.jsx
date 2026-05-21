@@ -126,29 +126,13 @@ function AiGuideModal({ onClose }) {
           </div>
 
           {/* Trend fit */}
-          <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border p-4 space-y-3">
+          <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border p-4 space-y-2">
             <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">What is "Trend Fit %"?</p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              This is the AI's R² score — how well your usage history fits a straight-line trend. Higher means more reliable predictions.
+              This is the AI's confidence score — how well your usage history fits a consistent pattern. A higher percentage means the forecast is more reliable. A lower percentage means usage is irregular, so treat the prediction as a rough estimate.
             </p>
-            <div className="space-y-2">
-              {[
-                { range: "90–100%", color: "bg-emerald-500", label: "Excellent", desc: "Very consistent usage — stockout date is highly reliable." },
-                { range: "70–89%", color: "bg-blue-500", label: "Good", desc: "Reasonably stable — forecast is fairly trustworthy." },
-                { range: "40–69%", color: "bg-amber-400", label: "Fair", desc: "Usage fluctuates — treat the date as a rough guide." },
-                { range: "Below 40%", color: "bg-rose-500", label: "Low", desc: "Irregular usage — the model is estimating, not predicting." },
-              ].map(({ range, color, label, desc }) => (
-                <div key={range} className="flex items-start gap-2">
-                  <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${color}`} />
-                  <div>
-                    <p className="text-[11px] font-black text-zinc-700 dark:text-zinc-200">{range} — {label}</p>
-                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500">{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed border-t border-zinc-200 dark:border-dark-border pt-2">
-              A dash (—) means not enough data yet or the AI service is currently unavailable. Run more appointments to build up usage history.
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              A dash (—) means not enough usage data yet to compute a score.
             </p>
           </div>
 
