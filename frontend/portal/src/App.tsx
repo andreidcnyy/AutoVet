@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './Login';
@@ -16,6 +16,7 @@ import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
 import Invoices from './pages/Invoices';
 import AccountPendingDeletion from './pages/AccountPendingDeletion';
+import MaintenancePage from './pages/MaintenancePage';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
@@ -24,6 +25,13 @@ import WarningPopup from './components/WarningPopup';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const [maintenance, setMaintenance] = useState(false);
+
+  useEffect(() => {
+    const onMaintenance = () => setMaintenance(true);
+    window.addEventListener('maintenance-mode', onMaintenance);
+    return () => window.removeEventListener('maintenance-mode', onMaintenance);
+  }, []);
 
   // Guard against bfcache restoring a logged-out page
   useEffect(() => {
@@ -41,6 +49,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (user.account_pending_deletion) return <AccountPendingDeletion />;
+
+  if (maintenance) return <MaintenancePage />;
 
   return (
     <>

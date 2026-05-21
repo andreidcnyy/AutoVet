@@ -30,6 +30,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Detect maintenance mode (503) and broadcast globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 503) {
+      window.dispatchEvent(new CustomEvent('maintenance-mode'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth
 export const login = (credentials: any) => api.post('/login', { ...credentials, source: 'portal' });
 export const register = (data: any) => api.post('/register', data);
