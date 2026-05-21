@@ -20,8 +20,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
-  const [aiForecastData, setAiForecastData] = useState(null); 
-  const [isLoadingForecast, setIsLoadingForecast] = useState(false); 
+  const [aiForecastData, setAiForecastData] = useState(null);
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false);
+  const [isFetchingScore, setIsFetchingScore] = useState(false);
 
 
   const { user } = useAuth();
@@ -48,6 +49,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
                 const score = data.trend_fit_score ?? data.confidence_score;
                 if (score === null || score === undefined) {
+                    setIsFetchingScore(true);
                     fetch(`/api/inventory/${product.id}/forecast`, {
                         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
                     })
@@ -56,12 +58,13 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                             if (live && live.prediction_status !== 'Insufficient Data') {
                                 setAiForecastData(prev => prev ? {
                                     ...prev,
-                                    trend_fit_score: live.trend_fit_score ?? null,
-                                    confidence_score: live.confidence_score ?? null,
+                                    trend_fit_score: live.trend_fit_score ?? live.confidence_score ?? null,
+                                    confidence_score: live.confidence_score ?? live.trend_fit_score ?? null,
                                 } : prev);
                             }
                         })
-                        .catch(() => {});
+                        .catch(() => {})
+                        .finally(() => setIsFetchingScore(false));
                 }
             }
             setIsLoadingForecast(false);
@@ -178,9 +181,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
   return (
-    <div className="fixed inset-0 z-[60] bg-zinc-900/60 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
-      <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm dark:bg-zinc-950/70 p-4">
+      <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col" style={{ maxHeight: '90vh' }}>
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border shrink-0">
@@ -366,9 +368,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     <div className="rounded-lg bg-violet-50 p-3 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
                       <p className="text-[10px] font-bold text-violet-600 dark:text-violet-500 uppercase">Trend Fit</p>
                       <p className="text-sm font-black text-violet-700 dark:text-violet-400">
-                        {(() => {
-                          const score = aiForecastData.trend_fit_score ?? aiForecastData.confidence_score;
-                          return typeof score === 'number' ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : '—';
+                        {isFetchingScore ? (
+                          <span className="inline-block w-10 h-4 bg-violet-200 dark:bg-violet-800 rounded animate-pulse" />
+                        ) : (() => {
+                          const raw = aiForecastData.trend_fit_score ?? aiForecastData.confidence_score;
+                          const n = raw != null ? Number(raw) : null;
+                          return (n != null && !isNaN(n)) ? `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%` : '—';
                         })()}
                       </p>
                     </div>
@@ -470,7 +475,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             Close
           </button>
         </div>
-      </div>
       </div>
     </div>
   );
