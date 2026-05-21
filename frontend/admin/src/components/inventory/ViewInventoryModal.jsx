@@ -22,7 +22,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
   const [isLoadingForecast, setIsLoadingForecast] = useState(false);
-  const [isFetchingScore, setIsFetchingScore] = useState(false);
 
 
   const { user } = useAuth();
@@ -34,6 +33,12 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       setIsEditing(false);
       setAiForecastData(null); 
       
+      // Seed trend_fit_score immediately from the already-loaded latest_forecast on the product
+      const latestForecast = product.latest_forecast;
+      const seedScore = latestForecast
+        ? (Number(latestForecast.trend_fit_score) || Number(latestForecast.confidence_score) || null)
+        : null;
+
       setIsLoadingForecast(true);
       fetch(`/api/inventory/${product.id}/forecast/saved?t=${Date.now()}`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
@@ -41,31 +46,14 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         .then(res => res.json())
         .then(data => {
             if (data && data.prediction_status !== 'No Forecast Available') {
-                const forecastData = {
+                const savedScore = Number(data.trend_fit_score) || Number(data.confidence_score) || null;
+                const resolvedScore = savedScore ?? seedScore;
+                setAiForecastData({
                     ...data,
-                    last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null
-                };
-                setAiForecastData(forecastData);
-
-                const score = data.trend_fit_score ?? data.confidence_score;
-                if (score === null || score === undefined) {
-                    setIsFetchingScore(true);
-                    fetch(`/api/inventory/${product.id}/forecast`, {
-                        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
-                    })
-                        .then(r => r.json())
-                        .then(live => {
-                            if (live && live.prediction_status !== 'Insufficient Data') {
-                                setAiForecastData(prev => prev ? {
-                                    ...prev,
-                                    trend_fit_score: live.trend_fit_score ?? live.confidence_score ?? null,
-                                    confidence_score: live.confidence_score ?? live.trend_fit_score ?? null,
-                                } : prev);
-                            }
-                        })
-                        .catch(() => {})
-                        .finally(() => setIsFetchingScore(false));
-                }
+                    trend_fit_score: resolvedScore,
+                    confidence_score: resolvedScore,
+                    last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null,
+                });
             }
             setIsLoadingForecast(false);
         })
@@ -368,12 +356,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     <div className="rounded-lg bg-violet-50 p-3 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
                       <p className="text-[10px] font-bold text-violet-600 dark:text-violet-500 uppercase">Trend Fit</p>
                       <p className="text-sm font-black text-violet-700 dark:text-violet-400">
-                        {isFetchingScore ? (
-                          <span className="inline-block w-10 h-4 bg-violet-200 dark:bg-violet-800 rounded animate-pulse" />
-                        ) : (() => {
+                        {(() => {
                           const raw = aiForecastData.trend_fit_score ?? aiForecastData.confidence_score;
                           const n = raw != null ? Number(raw) : null;
-                          return (n != null && !isNaN(n)) ? `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%` : '—';
+                          return (n != null && !isNaN(n) && n > 0) ? `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%` : '—';
                         })()}
                       </p>
                     </div>
