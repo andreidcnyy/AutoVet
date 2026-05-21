@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { 
@@ -402,9 +403,9 @@ export default function BookAppointment() {
         </div>
       </div>
 
-      {/* Booking Modal — centered on all screens */}
-      <div className={clsx(
-        "fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
+      {/* Booking Modal — portal into body to escape overflow scroll container */}
+      {createPortal(<div className={clsx(
+        "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
         isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
         <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
@@ -675,7 +676,7 @@ export default function BookAppointment() {
             )}
           </div>
         </aside>
-      </div>
+      </div>, document.body)}
     </div>
   );
 }
