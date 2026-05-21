@@ -1,14 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES } from "../../constants/roles";
 
-/**
- * ProtectedRoute component - Guards routes based on authentication and roles.
- * Implements a "Default Deny" strategy for maximum security.
- */
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const { user, loading } = useAuth();
+
+  // Guard against bfcache restoring a logged-out page
+  useEffect(() => {
+    const handlePageShow = (e) => {
+      if (e.persisted && !localStorage.getItem("user")) {
+        window.location.replace("/login");
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   // 1. Loading State - Prevent false redirects while the context is hydrating
   if (loading) {

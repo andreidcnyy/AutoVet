@@ -46,7 +46,8 @@ export function AuthProvider({ children }) {
     destroyEcho();
     setUser(null);
     localStorage.removeItem("user");
-    setAuthToken(null); // Clear the token from the API client
+    setAuthToken(null);
+    window.location.replace("/login");
   };
 
   // Handle auth failures triggered by the API client

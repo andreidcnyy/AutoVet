@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     destroyEcho();
     setUser(null);
     localStorage.removeItem("user");
+    window.location.replace("/login");
   };
 
   return (
