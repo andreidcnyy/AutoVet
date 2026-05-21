@@ -39,6 +39,9 @@ export function NewItemsProvider({ children, enabled = true }) {
 
   useEffect(() => {
     if (!enabled) return;
+    // Stamp NOW for any unseen key — existing records never count as "new"
+    if (!getStamp(KEYS.patients))     setStamp(KEYS.patients);
+    if (!getStamp(KEYS.appointments)) setStamp(KEYS.appointments);
     fetchCounts();
     intervalRef.current = setInterval(fetchCounts, 30000);
     return () => clearInterval(intervalRef.current);
