@@ -1,29 +1,16 @@
 import clsx from "clsx";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
-import { useNewItems } from "../../context/NewItemsContext";
 
 function NavItem({ item, onClose }) {
   const Icon = item.icon;
-  const location = useLocation();
-  const { markPatientsSeen, markAppointmentsSeen } = useNewItems();
-
-  // Suppress badge when already viewing this page (handles refresh + navigation)
-  const isCurrentPage = location.pathname.startsWith(item.path) && item.path !== "/";
-  const showCount = item.newCount > 0 && !isCurrentPage;
-
-  const handleClick = () => {
-    if (item.id === "patients")     markPatientsSeen();
-    if (item.id === "appointments") markAppointmentsSeen();
-    onClose?.();
-  };
 
   return (
     <NavLink
       to={item.path}
       end={item.end}
-      onClick={handleClick}
+      onClick={onClose}
       className={({ isActive }) =>
         clsx(
           "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors duration-150",
@@ -41,7 +28,7 @@ function NavItem({ item, onClose }) {
             {item.badge}
           </span>
         )}
-        {showCount && (
+        {item.newCount > 0 && (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400">
             +{item.newCount}
           </span>

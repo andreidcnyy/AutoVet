@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Outlet, useMatches, useNavigate } from "react-router-dom";
+import { Outlet, useMatches, useNavigate, useLocation } from "react-router-dom";
 import { NewItemsProvider, useNewItems } from "../context/NewItemsContext";
 import Sidebar from "../components/layout/Sidebar";
 import TopHeader from "../components/layout/TopHeader";
@@ -17,7 +17,8 @@ import autovetLogo from "../assets/autovet-logo.png";
 function AppLayoutInner() {
   const { user, loading, login: setUser } = useAuth();
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
-  const { patientCount, appointmentCount } = useNewItems();
+  const { patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen } = useNewItems();
+  const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -35,6 +36,12 @@ function AppLayoutInner() {
   const matches = useMatches();
   const navigate = useNavigate();
   const [isMaintenance, setIsMaintenance] = useState(false);
+
+  // Mark pages as seen when navigating to them (clears badge + stamps timestamp)
+  React.useEffect(() => {
+    if (location.pathname.startsWith("/patients"))     markPatientsSeen();
+    if (location.pathname.startsWith("/appointments")) markAppointmentsSeen();
+  }, [location.pathname]);
 
   // --- AUTOMATIC SYNC HEARTBEAT ---
   // This triggers a background sync every 5 seconds as long as the dashboard is open.
@@ -158,6 +165,8 @@ function AppLayoutInner() {
 
   const filteredPrimaryNav = useMemo(() => {
     if (!user || !user.role) return [];
+    const onPatients     = location.pathname.startsWith("/patients");
+    const onAppointments = location.pathname.startsWith("/appointments");
     return primaryNavigation
       .filter((item) => {
         if (!item.allowedRoles?.includes(user.role)) return false;
@@ -165,13 +174,13 @@ function AppLayoutInner() {
         return true;
       })
       .map((item) => {
-        if (item.id === "patients" && patientCount > 0)
+        if (item.id === "patients"     && patientCount     > 0 && !onPatients)
           return { ...item, newCount: patientCount };
-        if (item.id === "appointments" && appointmentCount > 0)
+        if (item.id === "appointments" && appointmentCount > 0 && !onAppointments)
           return { ...item, newCount: appointmentCount };
         return item;
       });
-  }, [user, patientCount, appointmentCount]);
+  }, [user, patientCount, appointmentCount, location.pathname]);
 
   const filteredBottomNav = useMemo(() => {
     if (!user || !user.role) return [];
