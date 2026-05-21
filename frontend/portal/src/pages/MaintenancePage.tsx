@@ -1,8 +1,11 @@
-import { FiTool } from 'react-icons/fi';
+import { FiTool, FiLogOut } from 'react-icons/fi';
 import logo from '../assets/logo.png';
 import { PawPrint } from './Landing';
+import { useAuth } from '../context/AuthContext';
 
 export default function MaintenancePage() {
+  const { logout } = useAuth();
+
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-zinc-50 dark:bg-dark-bg overflow-hidden">
       <PawPrint className="absolute -top-10 -right-10 w-72 h-72 text-brand-400 opacity-10 rotate-12 pointer-events-none" />
@@ -49,6 +52,14 @@ export default function MaintenancePage() {
         <p className="text-[10px] font-bold text-zinc-300 dark:text-zinc-600 uppercase tracking-widest">
           This page will refresh automatically when the system is back online.
         </p>
+
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 mx-auto px-6 py-3 rounded-2xl border-2 border-zinc-200 dark:border-dark-border text-zinc-500 dark:text-zinc-400 font-bold text-sm hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all"
+        >
+          <FiLogOut className="w-4 h-4" />
+          Sign Out
+        </button>
       </div>
     </div>
   );
