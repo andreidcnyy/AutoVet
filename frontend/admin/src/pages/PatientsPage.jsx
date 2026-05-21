@@ -90,6 +90,18 @@ function PatientsPage() {
     }
   }, [user?.token, activeTab, fetchOwners]);
 
+  // Re-fetch when tab regains focus (fallback when WebSocket is unavailable)
+  useEffect(() => {
+    if (!user?.token) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && activeTab === "owners") {
+        fetchOwners(paginationRef.current.current_page || 1);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [user?.token, activeTab, fetchOwners]);
+
   // Auto-refresh when portal users create pets or owners
   const paginationRef = useRef(pagination);
   useEffect(() => { paginationRef.current = pagination; }, [pagination]);

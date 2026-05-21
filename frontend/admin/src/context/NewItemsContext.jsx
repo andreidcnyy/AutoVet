@@ -3,12 +3,11 @@ import api from "../api";
 
 const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0 });
 
-const KEYS = { patients: "nv_seen_patients", appointments: "nv_seen_appointments" };
+// sessionStorage: survives F5, clears on tab/browser close — no stale values across deploys
+const KEYS = { patients: "nv_since_patients", appointments: "nv_since_appointments" };
 
-// sessionStorage survives F5 refresh but clears on tab/browser close — no stale values
-const todayStr = () => new Date().toISOString().slice(0, 10); // "2026-05-21"
-const hasSeen  = (key) => sessionStorage.getItem(key) === todayStr();
-const setSeen  = (key) => sessionStorage.setItem(key, todayStr());
+const getStamp  = (key) => sessionStorage.getItem(key);               // ISO string or null
+const setStamp  = (key) => sessionStorage.setItem(key, new Date().toISOString());
 
 export function NewItemsProvider({ children, enabled = true }) {
   const [patientCount,     setPatientCount]     = useState(0);
@@ -19,16 +18,20 @@ export function NewItemsProvider({ children, enabled = true }) {
     if (!enabled) return;
     const path = window.location.pathname;
 
-    // Mark current page as seen before the fetch so the count resolves to 0
-    if (path.startsWith("/patients"))     setSeen(KEYS.patients);
-    if (path.startsWith("/appointments")) setSeen(KEYS.appointments);
+    // Stamp the current page BEFORE fetching — backend will count 0 for it
+    if (path.startsWith("/patients"))     setStamp(KEYS.patients);
+    if (path.startsWith("/appointments")) setStamp(KEYS.appointments);
+
+    const params = {};
+    const pSince = getStamp(KEYS.patients);
+    const aSince = getStamp(KEYS.appointments);
+    if (pSince) params.since_patients     = pSince;
+    if (aSince) params.since_appointments = aSince;
 
     try {
-      const data = await api.get("/api/new-counts");
-      if (typeof data?.new_patients     === "number")
-        setPatientCount(hasSeen(KEYS.patients) ? 0 : data.new_patients);
-      if (typeof data?.new_appointments === "number")
-        setAppointmentCount(hasSeen(KEYS.appointments) ? 0 : data.new_appointments);
+      const data = await api.get("/api/new-counts", { params });
+      if (typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
+      if (typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
     } catch (_) {}
   }, [enabled]);
 
@@ -39,13 +42,14 @@ export function NewItemsProvider({ children, enabled = true }) {
     return () => clearInterval(intervalRef.current);
   }, [enabled, fetchCounts]);
 
+  // When navigating to the page: instant visual reset + stamp so F5 refresh stays 0
   const markPatientsSeen = useCallback(() => {
-    setSeen(KEYS.patients);
+    setStamp(KEYS.patients);
     setPatientCount(0);
   }, []);
 
   const markAppointmentsSeen = useCallback(() => {
-    setSeen(KEYS.appointments);
+    setStamp(KEYS.appointments);
     setAppointmentCount(0);
   }, []);
 

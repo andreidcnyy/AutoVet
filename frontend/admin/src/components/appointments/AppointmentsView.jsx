@@ -162,6 +162,16 @@ function AppointmentsView() {
     return () => ctrl.abort();
   }, [fetchCalendarSummaries, fetchAppointments]);
 
+  // Re-fetch when tab regains focus (fallback when WebSocket is unavailable)
+  useEffect(() => {
+    if (!user?.token) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchAppointments();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [user?.token, fetchAppointments]);
+
   const [formDataLoaded, setFormDataLoaded] = useState(false);
   useEffect(() => {
     if (!isDrawerOpen || formDataLoaded || !user?.token) return;
