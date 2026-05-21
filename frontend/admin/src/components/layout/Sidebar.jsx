@@ -22,16 +22,18 @@ function NavItem({ item, onClose }) {
     >
       <Icon className="h-5 w-5 shrink-0" />
       <span>{item.label}</span>
-      {item.badge && (
-        <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400">
-          {item.badge}
-        </span>
-      )}
-      {item.newCount > 0 && (
-        <span className={`${item.badge ? "" : "ml-auto"} rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-black text-white`}>
-          +{item.newCount}
-        </span>
-      )}
+      <span className="ml-auto flex items-center gap-1">
+        {item.badge && (
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400">
+            {item.badge}
+          </span>
+        )}
+        {item.newCount > 0 && (
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400">
+            +{item.newCount}
+          </span>
+        )}
+      </span>
     </NavLink>
   );
 }
