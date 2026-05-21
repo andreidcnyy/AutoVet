@@ -30,9 +30,16 @@ export function NewItemsProvider({ children, enabled = true }) {
     return () => clearInterval(intervalRef.current);
   }, [enabled, fetchCounts]);
 
-  // Instant visual reset when navigating to these pages (next fetch confirms it)
-  const markPatientsSeen     = useCallback(() => setPatientCount(0),     []);
-  const markAppointmentsSeen = useCallback(() => setAppointmentCount(0), []);
+  // Instant visual reset + immediate DB stamp so refresh doesn't bring the badge back
+  const markPatientsSeen = useCallback(() => {
+    setPatientCount(0);
+    fetchCounts(); // fires GET with path=/patients → backend stamps last_seen right now
+  }, [fetchCounts]);
+
+  const markAppointmentsSeen = useCallback(() => {
+    setAppointmentCount(0);
+    fetchCounts(); // fires GET with path=/appointments → backend stamps last_seen right now
+  }, [fetchCounts]);
 
   return (
     <NewItemsContext.Provider value={{ patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen }}>
