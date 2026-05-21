@@ -30,6 +30,12 @@ class AuditLogController extends Controller
                 $query->where('clinic_id', $user->clinic_id);
             }
 
+            // Only include logs from clinic staff — exclude portal owners and super_admin
+            $staffRoles = [Roles::CLINIC_ADMIN->value, Roles::VETERINARIAN->value, Roles::STAFF->value];
+            $query->whereHas('user', function ($q) use ($staffRoles) {
+                $q->withoutGlobalScopes()->whereIn('role', $staffRoles);
+            });
+
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
             }
@@ -60,12 +66,6 @@ class AuditLogController extends Controller
             $result = $query->with(['user' => function($q) {
                 $q->withoutGlobalScopes();
             }])->orderBy('created_at', 'desc')->paginate(20);
-
-            // Filter out super_admin logs manually for extra safety
-            $items = $result->getCollection()->filter(function($log) {
-                return !$log->user || $log->user->role !== Roles::SUPER_ADMIN->value;
-            });
-            $result->setCollection($items->values());
 
             return response()->json($result);
         } catch (\Throwable $e) {
