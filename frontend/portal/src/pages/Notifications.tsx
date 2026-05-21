@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getNotifications, markNotificationAsRead } from '../api';
 import echo from '../utils/echo';
 import {
@@ -185,9 +186,9 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* Notification Detail Modal — outside animated container so fixed positioning works correctly */}
-      {isModalOpen && selectedNotification && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      {/* Notification Detail Modal — rendered via portal into document.body to escape any CSS containment */}
+      {isModalOpen && selectedNotification && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
 
           <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
@@ -233,7 +234,8 @@ export default function Notifications() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
