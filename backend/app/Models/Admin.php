@@ -31,7 +31,9 @@ class Admin extends Authenticatable
         'must_change_password',
         'ai_features_enabled',
         'deleted_by',
-        'restore_until'
+        'restore_until',
+        'last_seen_patients_at',
+        'last_seen_appointments_at',
     ];
 
     protected $hidden = [
@@ -44,9 +46,11 @@ class Admin extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'    => 'datetime',
-            'must_change_password' => 'boolean',
-            'ai_features_enabled'  => 'boolean',
+            'email_verified_at'           => 'datetime',
+            'must_change_password'        => 'boolean',
+            'ai_features_enabled'         => 'boolean',
+            'last_seen_patients_at'       => 'datetime',
+            'last_seen_appointments_at'   => 'datetime',
         ];
     }
 

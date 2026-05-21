@@ -99,7 +99,8 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // -----------------------------------------------------------------------
     Route::get('/user',     function (Request $request) { return $request->user(); });
     Route::get('/vets',     [UserController::class, 'vets']);
-    Route::get('/new-counts', [\App\Http\Controllers\NewCountsController::class, 'counts']);
+    Route::get('/new-counts',  [\App\Http\Controllers\NewCountsController::class, 'counts']);
+    Route::post('/mark-seen',  [\App\Http\Controllers\NewCountsController::class, 'markSeen']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout',          [AuthController::class, 'logout']);
 

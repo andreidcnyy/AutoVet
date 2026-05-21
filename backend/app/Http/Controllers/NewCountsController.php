@@ -11,26 +11,38 @@ class NewCountsController extends Controller
 {
     public function counts(Request $request)
     {
-        $patientsQuery     = Owner::query();
-        $appointmentsQuery = Appointment::query();
+        $user = $request->user();
 
-        if ($request->filled('since_patients')) {
-            try {
-                $since = Carbon::parse($request->input('since_patients'));
-                $patientsQuery->where('created_at', '>', $since);
-            } catch (\Exception $e) {}
-        }
+        $todayMidnight = Carbon::today('UTC');
 
-        if ($request->filled('since_appointments')) {
-            try {
-                $since = Carbon::parse($request->input('since_appointments'));
-                $appointmentsQuery->where('created_at', '>', $since);
-            } catch (\Exception $e) {}
-        }
+        $patientsSince     = $user->last_seen_patients_at     && $user->last_seen_patients_at->gt($todayMidnight)
+                             ? $user->last_seen_patients_at
+                             : $todayMidnight;
+
+        $appointmentsSince = $user->last_seen_appointments_at && $user->last_seen_appointments_at->gt($todayMidnight)
+                             ? $user->last_seen_appointments_at
+                             : $todayMidnight;
 
         return response()->json([
-            'new_patients'     => $patientsQuery->count(),
-            'new_appointments' => $appointmentsQuery->count(),
+            'new_patients'     => Owner::where('created_at', '>', $patientsSince)->count(),
+            'new_appointments' => Appointment::where('created_at', '>', $appointmentsSince)->count(),
         ]);
+    }
+
+    public function markSeen(Request $request)
+    {
+        $user = $request->user();
+        $now  = Carbon::now('UTC');
+
+        if ($request->boolean('patients')) {
+            $user->last_seen_patients_at = $now;
+        }
+        if ($request->boolean('appointments')) {
+            $user->last_seen_appointments_at = $now;
+        }
+
+        $user->save();
+
+        return response()->json(['ok' => true]);
     }
 }
