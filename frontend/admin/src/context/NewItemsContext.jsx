@@ -4,8 +4,13 @@ import api from "../api";
 const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0 });
 
 const KEYS = { patients: "lv_patients", appointments: "lv_appointments" };
-const getStamp = (key) => localStorage.getItem(key);
 const setStamp = (key) => localStorage.setItem(key, new Date().toISOString());
+// Return existing stamp, or initialize to NOW so pre-existing records never count as new
+const getOrInitStamp = (key) => {
+  let val = localStorage.getItem(key);
+  if (!val) { val = new Date().toISOString(); localStorage.setItem(key, val); }
+  return val;
+};
 
 export function NewItemsProvider({ children, enabled = true }) {
   const [patientCount,     setPatientCount]     = useState(0);
@@ -21,11 +26,10 @@ export function NewItemsProvider({ children, enabled = true }) {
     if (onPatients)     { setPatientCount(0);     setStamp(KEYS.patients); }
     if (onAppointments) { setAppointmentCount(0); setStamp(KEYS.appointments); }
 
-    const params = {};
-    const pSince = getStamp(KEYS.patients);
-    const aSince = getStamp(KEYS.appointments);
-    if (pSince) params.since_patients     = pSince;
-    if (aSince) params.since_appointments = aSince;
+    const params = {
+      since_patients:     getOrInitStamp(KEYS.patients),
+      since_appointments: getOrInitStamp(KEYS.appointments),
+    };
 
     try {
       const data = await api.get("/api/new-counts", { params });
