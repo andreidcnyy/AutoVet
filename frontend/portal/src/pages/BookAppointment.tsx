@@ -563,7 +563,7 @@ export default function BookAppointment() {
                     <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
                       {services.map(s => {
                         const checked = selectedServiceIds.includes(s.id.toString());
-                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : 'Price varies';
+                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : '';
                         return (
                           <button
                             key={s.id}
@@ -582,7 +582,7 @@ export default function BookAppointment() {
                             )}
                           >
                             <span>{s.name}</span>
-                            <span className={clsx("text-[10px] font-black shrink-0 ml-2", checked ? "text-brand-500" : "text-zinc-400")}>{priceLabel}</span>
+                            {priceLabel && <span className={clsx("text-[10px] font-black shrink-0 ml-2", checked ? "text-brand-500" : "text-zinc-400")}>{priceLabel}</span>}
                           </button>
                         );
                       })}
