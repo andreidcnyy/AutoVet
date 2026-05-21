@@ -142,6 +142,7 @@ function AuditLogTab() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({
     current_page: 1,
     last_page: 1,
@@ -151,7 +152,7 @@ function AuditLogTab() {
   const [filters, setFilters] = useState({
     action_type: "",
     model_type: "",
-    user_name: "",
+    user_id: "",
     date_from: "",
     date_to: "",
   });
@@ -159,8 +160,14 @@ function AuditLogTab() {
   const AUDIT_CACHE_KEY = "settings_audit_logs_cache";
   const AUDIT_CACHE_TTL = 5 * 60 * 1000;
 
+  useEffect(() => {
+    api.get("/users").then((data) => {
+      if (Array.isArray(data)) setUsers(data);
+    }).catch(() => {});
+  }, []);
+
   const isDefaultView = (page, f) =>
-    page === 1 && !f.action_type && !f.model_type && !f.user_name && !f.date_from && !f.date_to;
+    page === 1 && !f.action_type && !f.model_type && !f.user_id && !f.date_from && !f.date_to;
 
   const applyResponse = (data) => {
     if (!data) return;
@@ -197,13 +204,13 @@ function AuditLogTab() {
     }
 
     try {
-      const { data } = await api.get("/audit-logs", {
+      const response = await api.get("/audit-logs", {
         params: { ...filters, page },
         signal: controller.signal,
       });
-      applyResponse(data);
+      applyResponse(response);
       if (isDefaultView(page, filters)) {
-        try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
+        try { localStorage.setItem(AUDIT_CACHE_KEY, JSON.stringify({ data: response, ts: Date.now() })); } catch (_) {}
       }
     } catch (err) {
       if (err.name === "AbortError" || err.code === "ERR_CANCELED") return;
@@ -287,8 +294,20 @@ function AuditLogTab() {
 
       {/* Filters */}
       <div className="grid grid-cols-1 gap-3 border-b border-zinc-200 bg-zinc-50/50 p-5 sm:grid-cols-5 dark:border-dark-border dark:bg-dark-surface/50">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">User</label>
+          <select
+            value={filters.user_id}
+            onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+          >
+            <option value="">All Users</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+        </div>
         {[
-          { label: "User", key: "user_name", type: "text", placeholder: "Search by name…" },
           { label: "Model / Target", key: "model_type", type: "text", placeholder: "e.g. Invoice, Pet" },
           { label: "Date From", key: "date_from", type: "date" },
           { label: "Date To", key: "date_to", type: "date" },
