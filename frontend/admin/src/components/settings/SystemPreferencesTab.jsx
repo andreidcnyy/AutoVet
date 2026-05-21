@@ -96,28 +96,6 @@ export default function SystemPreferencesTab() {
     updateSetting('enable_cloud_sync', newValue);
   };
 
-  const [processingBackup, setProcessingBackup] = useState(false);
-
-  const initiateManualBackup = async () => {
-    setProcessingBackup(true);
-    toast.info("Manual database backup initiated...");
-    try {
-      const res = await fetch("/api/backups", { 
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${user?.token}`,
-          "Accept": "application/json"
-        }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to create backup");
-      toast.success(data.message || "Backup created successfully.");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setProcessingBackup(false);
-    }
-  };
 
   if (loading) return <div className="p-6 text-zinc-500">Loading system preferences...</div>;
 
@@ -154,13 +132,6 @@ export default function SystemPreferencesTab() {
         </div>
       </div>
 
-      <button
-        onClick={initiateManualBackup}
-        disabled={processingBackup}
-        className="mt-7 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-300 dark:hover:bg-dark-surface disabled:opacity-50"
-      >
-        {processingBackup ? "Processing Backup..." : "Perform Manual Backup"}
-      </button>
     </section>
   );
 }

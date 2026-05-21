@@ -92,7 +92,7 @@ Route::get('/public/system-announcements', function(\Illuminate\Http\Request $re
 // Authenticated routes — all require a valid Sanctum token
 // ---------------------------------------------------------------------------
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
+Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
 
     // -----------------------------------------------------------------------
     // User profile

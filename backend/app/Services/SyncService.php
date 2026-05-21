@@ -17,6 +17,11 @@ class SyncService
             return;
         }
 
+        $syncEnabled = \App\Models\Setting::where('key', 'enable_cloud_sync')->value('value');
+        if ($syncEnabled === 'false') {
+            return;
+        }
+
         $pending = SyncOutbox::pending()->oldestFirst()->limit(50)->get();
 
         if ($pending->isEmpty()) {

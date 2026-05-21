@@ -820,6 +820,11 @@ class DashboardController extends Controller
      */
     public function runForecastSync(): JsonResponse
     {
+        $aiEnabled = \App\Models\Setting::where('key', 'enable_ai_forecasting')->value('value');
+        if ($aiEnabled === 'false') {
+            return response()->json(['status' => 'disabled', 'message' => 'AI forecasting is currently disabled.'], 503);
+        }
+
         try {
             $inventoryIds = Inventory::whereNotNull('code')->pluck('id')->toArray();
             

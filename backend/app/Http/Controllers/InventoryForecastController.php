@@ -24,9 +24,18 @@ class InventoryForecastController extends Controller
      * @param  \App\Models\Inventory  $inventory
      * @return \Illuminate\Http\JsonResponse
      */
+    private function forecastingEnabled(): bool
+    {
+        $val = \App\Models\Setting::where('key', 'enable_ai_forecasting')->value('value');
+        return $val !== 'false';
+    }
+
     public function forecast(Request $request, Inventory $inventory): JsonResponse
     {
-        // Validate request, e.g., ensure history_days is an integer
+        if (!$this->forecastingEnabled()) {
+            return response()->json(['message' => 'AI forecasting is currently disabled.'], 503);
+        }
+
         $request->validate([
             'history_days' => 'sometimes|integer|min:7|max:365',
         ]);
@@ -85,6 +94,10 @@ class InventoryForecastController extends Controller
      */
     public function savedForecast(Inventory $inventory): JsonResponse
     {
+        if (!$this->forecastingEnabled()) {
+            return response()->json(['message' => 'AI forecasting is currently disabled.'], 503);
+        }
+
         $forecast = $this->inventoryForecastService->getLatestSavedForecast($inventory->id);
 
         if (!$forecast) {

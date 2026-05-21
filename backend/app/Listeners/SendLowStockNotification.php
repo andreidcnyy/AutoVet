@@ -22,6 +22,9 @@ class SendLowStockNotification
      */
     public function handle(LowStockDetected $event): void
     {
+        $enabled = \App\Models\Setting::where('key', 'enable_low_stock_alerts')->value('value');
+        if ($enabled === 'false') return;
+
         $item = $event->inventoryItem;
         \App\Models\Notification::create([
             'type' => 'LowStockAlert',
