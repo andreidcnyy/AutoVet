@@ -33,9 +33,10 @@ class NewCountsController extends Controller
             } catch (\Exception $e) {}
         }
 
+        $now = now();
         return response()->json([
-            'new_patients'     => Owner::where('created_at', '>', $pSince)->count(),
-            'new_appointments' => Appointment::where('created_at', '>', $aSince)->count(),
+            'new_patients'     => Owner::where('created_at', '>', $pSince)->where('created_at', '<=', $now)->count(),
+            'new_appointments' => Appointment::where('created_at', '>', $aSince)->where('created_at', '<=', $now)->count(),
         ]);
     }
 }
