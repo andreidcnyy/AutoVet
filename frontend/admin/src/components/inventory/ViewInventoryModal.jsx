@@ -159,8 +159,9 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
     "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
-      <div className="my-auto w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] bg-zinc-900/60 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border shrink-0">
@@ -319,31 +320,15 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
                   <p className="text-lg font-semibold text-zinc-800 dark:text-zinc-50">
                     {product.stock_level <= 0 ? (
-                        <span className="text-rose-600 uppercase font-black italic">Stockout Occurred</span>
+                      <span className="text-rose-600 uppercase font-black italic">Stockout Occurred</span>
                     ) : aiForecastData.predicted_stockout_date ? (
-                      <>
-                        Predicted Stockout: <span className="text-rose-600">
-                          {new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                        {typeof (aiForecastData.trend_fit_score ?? aiForecastData.confidence_score) === 'number' && (
-                          <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            · Trend Fit {Math.round(Math.max(0, Math.min(1, aiForecastData.trend_fit_score ?? aiForecastData.confidence_score)) * 100)}%
-                          </span>
-                        )}
-                      </>
+                      <>Predicted Stockout: <span className="text-rose-600">{new Date(aiForecastData.predicted_stockout_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span></>
                     ) : (
-                      <span className="text-emerald-600">
-                        {aiForecastData.message || "No stockout predicted — usage trend is stable or rising."}
-                        {typeof (aiForecastData.trend_fit_score ?? aiForecastData.confidence_score) === 'number' && (
-                          <span className="ml-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            · Trend Fit {Math.round(Math.max(0, Math.min(1, aiForecastData.trend_fit_score ?? aiForecastData.confidence_score)) * 100)}%
-                          </span>
-                        )}
-                      </span>
+                      <span className="text-emerald-600">{aiForecastData.message || "No stockout predicted — usage trend is stable or rising."}</span>
                     )}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className={clsx(
                         "rounded-lg p-3 border",
                         product.stock_level <= 0 ? "bg-rose-50/30 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30" : "bg-zinc-50 dark:bg-dark-surface border-zinc-100 dark:border-dark-border"
@@ -357,6 +342,15 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                       <p className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase">Est. Monthly Need</p>
                       <p className="text-sm font-black text-blue-700 dark:text-blue-400">
                         {Number(aiForecastData.predicted_monthly_sales || 0).toFixed(0)} units
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-violet-50 p-3 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
+                      <p className="text-[10px] font-bold text-violet-600 dark:text-violet-500 uppercase">Trend Fit</p>
+                      <p className="text-sm font-black text-violet-700 dark:text-violet-400">
+                        {(() => {
+                          const score = aiForecastData.trend_fit_score ?? aiForecastData.confidence_score;
+                          return typeof score === 'number' ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : '—';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -457,6 +451,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             Close
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
