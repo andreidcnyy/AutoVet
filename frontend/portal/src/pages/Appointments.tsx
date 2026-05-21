@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { getAppointments, getAppointment, cancelAppointment } from '../api';
 import echo from '../utils/echo';
 import {
@@ -250,152 +251,155 @@ export default function Appointments() {
         )}
       </div>
 
-      {/* Appointment Details Modal Overlay */}
-      <div className={clsx(
-        "fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
-        isDetailsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      )}>
-        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
-
-        <aside className={clsx(
-          "relative w-full max-w-lg max-h-[88vh] overflow-y-auto bg-white dark:bg-dark-card rounded-3xl shadow-2xl transition-all duration-300",
-          isDetailsOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+      {/* Appointment Details Modal — portal into body to escape overflow scroll container */}
+      {createPortal(
+        <div className={clsx(
+          "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
+          isDetailsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}>
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-          </div>
-          {selectedAppointment && (
-            <div className="px-5 sm:px-8 pb-8 pt-2 space-y-6">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
-                    <span className="text-brand-500 mr-2">/</span>Visit Details
-                  </h3>
-                  <div className={clsx(
-                    "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
-                    selectedAppointment.status === 'pending' && "bg-zinc-100 text-zinc-600",
-                    selectedAppointment.status === 'approved' && "bg-emerald-50 text-emerald-700",
-                    (selectedAppointment.status === 'cancelled' || selectedAppointment.status === 'declined') && "bg-rose-50 text-rose-700",
-                    selectedAppointment.status === 'completed' && "bg-blue-50 text-blue-700"
-                  )}>
-                    {selectedAppointment.status}
-                  </div>
-                </div>
-                <button onClick={() => setIsDetailsOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
-                  <FiXCircle className="w-6 h-6" />
-                </button>
-              </div>
+          <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
 
-              <div className="space-y-6">
-                <div className="p-4 sm:p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                      <FiHeart className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Patient</p>
-                      <p className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiCalendar className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date, true)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiClock className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                      <FiCheckCircle className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name || 'N/A'}</p>
-                    </div>
-                  </div>
-
-                  {selectedAppointment.vet && (
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
-                        <FiUser className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Doctor</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Dr. {selectedAppointment.vet.name}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedAppointment.notes && (
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
-                        <FiAlertCircle className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">{selectedAppointment.notes}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {(selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') && (
-                  <div className="p-5 rounded-[1.5rem] bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
-                    <div className="flex items-start gap-3">
-                      <FiXCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">
-                          {selectedAppointment.status === 'declined' ? 'Reason for Decline' : 'Cancellation Reason'}
-                        </p>
-                        <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed break-words">
-                          {selectedAppointment.decline_reason || selectedAppointment.cancellation_reason || "No reason provided"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedAppointment.status === 'pending' && (
-                  <button 
-                    onClick={() => {
-                      handleCancel(selectedAppointment.id);
-                      setIsDetailsOpen(false);
-                    }}
-                    className="w-full h-14 rounded-2xl border-2 border-rose-100 text-rose-600 font-bold uppercase tracking-widest hover:bg-rose-50 transition-all mb-3 flex items-center justify-center gap-2"
-                  >
-                    <FiXCircle className="w-5 h-5" /> Cancel Appointment
-                  </button>
-                )}
-
-                <button 
-                  onClick={() => setIsDetailsOpen(false)}
-                  className="w-full h-16 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all"
-                >
-                  Close Details
-                </button>
-              </div>
+          <aside className={clsx(
+            "relative w-full max-w-lg max-h-[88vh] overflow-y-auto bg-white dark:bg-dark-card rounded-3xl shadow-2xl transition-all duration-300",
+            isDetailsOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+          )}>
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700" />
             </div>
-          )}
-        </aside>
-      </div>
+            {selectedAppointment && (
+              <div className="px-5 sm:px-8 pb-8 pt-2 space-y-6">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100 italic tracking-tight uppercase">
+                      <span className="text-brand-500 mr-2">/</span>Visit Details
+                    </h3>
+                    <div className={clsx(
+                      "inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mt-2",
+                      selectedAppointment.status === 'pending' && "bg-zinc-100 text-zinc-600",
+                      selectedAppointment.status === 'approved' && "bg-emerald-50 text-emerald-700",
+                      (selectedAppointment.status === 'cancelled' || selectedAppointment.status === 'declined') && "bg-rose-50 text-rose-700",
+                      selectedAppointment.status === 'completed' && "bg-blue-50 text-blue-700"
+                    )}>
+                      {selectedAppointment.status}
+                    </div>
+                  </div>
+                  <button onClick={() => setIsDetailsOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
+                    <FiXCircle className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="p-4 sm:p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiHeart className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Patient</p>
+                        <p className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.pet?.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                          <FiCalendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Date</p>
+                          <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatPortalDateLocal(selectedAppointment.date, true)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                          <FiClock className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
+                          <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                        <FiCheckCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.service?.name || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    {selectedAppointment.vet && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                          <FiUser className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Doctor</p>
+                          <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Dr. {selectedAppointment.vet.name}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedAppointment.notes && (
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                          <FiAlertCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
+                          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">{selectedAppointment.notes}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {(selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') && (
+                    <div className="p-5 rounded-[1.5rem] bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
+                      <div className="flex items-start gap-3">
+                        <FiXCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">
+                            {selectedAppointment.status === 'declined' ? 'Reason for Decline' : 'Cancellation Reason'}
+                          </p>
+                          <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed break-words">
+                            {selectedAppointment.decline_reason || selectedAppointment.cancellation_reason || "No reason provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAppointment.status === 'pending' && (
+                    <button
+                      onClick={() => {
+                        handleCancel(selectedAppointment.id);
+                        setIsDetailsOpen(false);
+                      }}
+                      className="w-full h-14 rounded-2xl border-2 border-rose-100 text-rose-600 font-bold uppercase tracking-widest hover:bg-rose-50 transition-all mb-3 flex items-center justify-center gap-2"
+                    >
+                      <FiXCircle className="w-5 h-5" /> Cancel Appointment
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setIsDetailsOpen(false)}
+                    className="w-full h-16 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-xl hover:opacity-90 transition-all"
+                  >
+                    Close Details
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>,
+        document.body
+      )}
 
       {/* Pet Profile Modal */}
-      <PetProfileModal 
+      <PetProfileModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         petId={selectedPetId}
