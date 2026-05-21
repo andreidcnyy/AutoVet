@@ -212,8 +212,8 @@ class AuthController extends Controller
 
         // Portal user self-deletion: 30-day grace period
         if ($user instanceof PortalUser && $user->deletion_requested_at) {
-            $daysElapsed = (int) now()->diffInDays($user->deletion_requested_at);
-            $daysRemaining = max(0, 30 - $daysElapsed);
+            $deadline = $user->deletion_requested_at->copy()->addDays(30);
+            $daysRemaining = max(0, (int) ceil(now()->diffInDays($deadline)));
 
             if ($daysRemaining <= 0) {
                 // Grace period expired — fully soft-delete now

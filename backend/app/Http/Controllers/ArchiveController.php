@@ -41,8 +41,8 @@ class ArchiveController extends Controller
 
         $items->getCollection()->transform(function ($user) {
             $deletionDate  = $user->deletion_requested_at ?? $user->deleted_at;
-            $daysElapsed   = (int) now()->diffInDays($deletionDate);
-            $daysRemaining = max(0, 30 - $daysElapsed);
+            $deadline      = $deletionDate->copy()->addDays(30);
+            $daysRemaining = max(0, (int) ceil(now()->diffInDays($deadline)));
             $user->days_remaining        = $daysRemaining;
             $user->deletion_requested_at = $deletionDate;
             return $user;

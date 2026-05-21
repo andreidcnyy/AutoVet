@@ -49,8 +49,8 @@ class GoogleAuthController extends Controller
                     $deletionDate = $user->deletion_requested_at;
                 }
 
-                $daysElapsed   = (int) now()->diffInDays($deletionDate);
-                $daysRemaining = max(0, 30 - $daysElapsed);
+                $deadline      = $deletionDate->copy()->addDays(30);
+                $daysRemaining = max(0, (int) ceil(now()->diffInDays($deadline)));
 
                 if ($daysRemaining <= 0) {
                     $user->delete();
