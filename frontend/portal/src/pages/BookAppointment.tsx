@@ -184,6 +184,7 @@ export default function BookAppointment() {
         // Correctly handle paginated or array responses
         const petsArray = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
         const servicesArray = (Array.isArray(servRes.data) ? servRes.data : (servRes.data?.data || []))
+          .filter((s: any) => s.status === 'Active' && Number(s.price) > 0)
           .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
         const vetsArray = Array.isArray(vetsRes.data) ? vetsRes.data : (vetsRes.data?.data || []);
 
