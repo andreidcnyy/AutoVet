@@ -22,15 +22,16 @@ function NavItem({ item, onClose }) {
     >
       <Icon className="h-5 w-5 shrink-0" />
       <span>{item.label}</span>
-      {item.newCount > 0 ? (
-        <span className="ml-auto rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-black text-white shadow-sm shadow-emerald-500/30 animate-pulse">
-          +{item.newCount} new
-        </span>
-      ) : item.badge ? (
+      {item.badge && (
         <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400">
           {item.badge}
         </span>
-      ) : null}
+      )}
+      {item.newCount > 0 && (
+        <span className={`${item.badge ? "" : "ml-auto"} rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-black text-white`}>
+          +{item.newCount}
+        </span>
+      )}
     </NavLink>
   );
 }
