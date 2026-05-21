@@ -40,10 +40,29 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         .then(res => res.json())
         .then(data => {
             if (data && data.prediction_status !== 'No Forecast Available') {
-                setAiForecastData({
+                const forecastData = {
                     ...data,
                     last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null
-                });
+                };
+                setAiForecastData(forecastData);
+
+                const score = data.trend_fit_score ?? data.confidence_score;
+                if (score === null || score === undefined) {
+                    fetch(`/api/inventory/${product.id}/forecast`, {
+                        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+                    })
+                        .then(r => r.json())
+                        .then(live => {
+                            if (live && live.prediction_status !== 'Insufficient Data') {
+                                setAiForecastData(prev => prev ? {
+                                    ...prev,
+                                    trend_fit_score: live.trend_fit_score ?? null,
+                                    confidence_score: live.confidence_score ?? null,
+                                } : prev);
+                            }
+                        })
+                        .catch(() => {});
+                }
             }
             setIsLoadingForecast(false);
         })
@@ -175,7 +194,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar">
+        <div className="p-6 overflow-y-auto custom-scrollbar min-h-0 flex-1">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex-1">
               {isEditing ? (
