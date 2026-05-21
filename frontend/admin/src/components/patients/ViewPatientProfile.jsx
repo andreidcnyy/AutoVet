@@ -562,7 +562,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
         </nav>
 
         <div className="p-6">
-          {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} />}
+          {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} photoUpdating={photoUpdating} photoInputRef={photoInputRef} onChangePhoto={() => photoInputRef.current?.click()} onRemovePhoto={handleRemovePhoto} onPhotoFileChange={handlePhotoChange} />}
           {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
           {activeTab === "invoices" && <InvoiceTab invoices={patient.invoices || []} />}
@@ -622,7 +622,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 
 /* ──────────────── Overview Tab ──────────────── */
 
-function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
+function OverviewTab({ patient, determinedSizeName, onOpenOwner, photoUpdating, photoInputRef, onChangePhoto, onRemovePhoto, onPhotoFileChange }) {
   const owner = patient.owner;
   const hasOwner = owner && typeof owner === 'object' && owner.id;
 
@@ -675,7 +675,7 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
           {/* Hover overlay */}
           <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
             <button
-              onClick={() => photoInputRef.current?.click()}
+              onClick={onChangePhoto}
               disabled={photoUpdating}
               className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-zinc-800 text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
             >
@@ -684,7 +684,7 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
             </button>
             {patient.photo && (
               <button
-                onClick={handleRemovePhoto}
+                onClick={onRemovePhoto}
                 disabled={photoUpdating}
                 className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
               >
@@ -705,7 +705,7 @@ function OverviewTab({ patient, determinedSizeName, onOpenOwner }) {
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={handlePhotoChange}
+            onChange={onPhotoFileChange}
           />
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
