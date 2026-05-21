@@ -3,11 +3,13 @@ import api from "../api";
 
 const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0 });
 
+const KEYS = { patients: "lv_patients", appointments: "lv_appointments" };
+const getStamp = (key) => localStorage.getItem(key);
+const setStamp = (key) => localStorage.setItem(key, new Date().toISOString());
+
 export function NewItemsProvider({ children, enabled = true }) {
   const [patientCount,     setPatientCount]     = useState(0);
   const [appointmentCount, setAppointmentCount] = useState(0);
-  const baselineRef = useRef({ patients: null, appointments: null });
-  const latestRef   = useRef({ patients: 0,    appointments: 0 });
   const intervalRef = useRef(null);
 
   const fetchCounts = useCallback(async () => {
@@ -16,25 +18,19 @@ export function NewItemsProvider({ children, enabled = true }) {
     const onPatients     = path.startsWith("/patients");
     const onAppointments = path.startsWith("/appointments");
 
-    if (onPatients)     setPatientCount(0);
-    if (onAppointments) setAppointmentCount(0);
+    if (onPatients)     { setPatientCount(0);     setStamp(KEYS.patients); }
+    if (onAppointments) { setAppointmentCount(0); setStamp(KEYS.appointments); }
+
+    const params = {};
+    const pSince = getStamp(KEYS.patients);
+    const aSince = getStamp(KEYS.appointments);
+    if (pSince) params.since_patients     = pSince;
+    if (aSince) params.since_appointments = aSince;
 
     try {
-      const data = await api.get("/api/new-counts");
-      const total_p = data?.total_patients     ?? 0;
-      const total_a = data?.total_appointments ?? 0;
-
-      latestRef.current = { patients: total_p, appointments: total_a };
-
-      // First fetch sets the baseline — everything that existed at mount is not "new"
-      if (baselineRef.current.patients     === null) baselineRef.current.patients     = total_p;
-      if (baselineRef.current.appointments === null) baselineRef.current.appointments = total_a;
-
-      const new_p = Math.max(0, total_p - baselineRef.current.patients);
-      const new_a = Math.max(0, total_a - baselineRef.current.appointments);
-
-      if (!onPatients)     setPatientCount(new_p);
-      if (!onAppointments) setAppointmentCount(new_a);
+      const data = await api.get("/api/new-counts", { params });
+      if (!onPatients     && typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
+      if (!onAppointments && typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
     } catch (_) {}
   }, [enabled]);
 
@@ -46,13 +42,13 @@ export function NewItemsProvider({ children, enabled = true }) {
   }, [enabled, fetchCounts]);
 
   const markPatientsSeen = useCallback(() => {
+    setStamp(KEYS.patients);
     setPatientCount(0);
-    baselineRef.current.patients = latestRef.current.patients;
   }, []);
 
   const markAppointmentsSeen = useCallback(() => {
+    setStamp(KEYS.appointments);
     setAppointmentCount(0);
-    baselineRef.current.appointments = latestRef.current.appointments;
   }, []);
 
   return (
