@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
 import echo from "../../utils/echo";
 import {
@@ -14,7 +15,10 @@ import {
   FiX,
   FiPlus,
   FiChevronLeft,
-  FiChevronRight
+  FiChevronRight,
+  FiCheckCircle,
+  FiClock,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
@@ -28,6 +32,118 @@ const statusStyles = {
   Expiring: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
   Expired: "border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 };
+
+function AiGuideModal({ onClose }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border bg-gradient-to-r from-emerald-50 to-zinc-50 dark:from-emerald-900/10 dark:to-dark-surface">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+              <LuSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">AI Forecasting</p>
+              <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100 leading-tight">How It Works</h3>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-dark-border transition-colors text-zinc-400">
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+          {/* Intro */}
+          <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+            The AI Forecast system automatically watches your inventory and predicts when items are going to run low — before they actually run out. No manual counting needed.
+          </p>
+
+          {/* Steps */}
+          <div className="space-y-3">
+            {[
+              {
+                icon: FiRefreshCw,
+                color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
+                title: "It learns from usage history",
+                desc: "Every time a product is used in an appointment or medical record, the AI tracks it. Over time, it builds a picture of how fast each item gets used.",
+              },
+              {
+                icon: FiTrendingUp,
+                color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
+                title: "It predicts when stock will run out",
+                desc: "Based on the usage pattern, it estimates how many days are left before an item hits zero. You'll see this as \"Out in ~X days\" in the AI Forecast column.",
+              },
+              {
+                icon: FiAlertTriangle,
+                color: "text-amber-500 bg-amber-50 dark:bg-amber-900/20",
+                title: "It warns you early",
+                desc: "When an item is predicted to run out soon, it gets flagged as Low Stock — giving you time to reorder before patients are affected.",
+              },
+              {
+                icon: FiCheckCircle,
+                color: "text-zinc-500 bg-zinc-50 dark:bg-zinc-800",
+                title: "It updates automatically",
+                desc: "The forecast refreshes every time you open the Inventory page, so the predictions are always based on the latest usage data.",
+              },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div key={title} className="flex gap-3 p-4 rounded-xl border border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/50">
+                <div className={clsx("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", color)}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-zinc-800 dark:text-zinc-100">{title}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Status guide */}
+          <div className="rounded-xl border border-zinc-100 dark:border-dark-border overflow-hidden">
+            <div className="bg-zinc-50 dark:bg-dark-surface px-4 py-2.5 border-b border-zinc-100 dark:border-dark-border">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">What the status colors mean</p>
+            </div>
+            <div className="divide-y divide-zinc-100 dark:divide-dark-border">
+              {[
+                { dot: "bg-emerald-500", label: "In Stock", desc: "Enough supply — no action needed right now." },
+                { dot: "bg-amber-400", label: "Low Stock", desc: "The AI predicts this item will run out soon. Time to reorder." },
+                { dot: "bg-rose-500", label: "Out of Stock", desc: "Zero units left. Immediate reorder required." },
+              ].map(({ dot, label, desc }) => (
+                <div key={label} className="flex items-start gap-3 px-4 py-3">
+                  <span className={clsx("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
+                  <div>
+                    <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">{label}</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Trend fit */}
+          <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border p-4">
+            <p className="text-xs font-black text-zinc-700 dark:text-zinc-200 mb-1">What is "Trend Fit %"?</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              This shows how confident the AI is in its prediction. A higher percentage means the usage pattern is consistent and the forecast is reliable. A lower percentage means usage is irregular, so treat the prediction as a rough guide.
+            </p>
+          </div>
+
+          {/* Note */}
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center leading-relaxed">
+            The more appointment and usage data the system has, the more accurate the forecasts become over time.
+          </p>
+
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function InventoryView() {
   const toast = useToast();
@@ -43,6 +159,7 @@ function InventoryView() {
   const [categories, setCategories] = useState([]);
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAiGuide, setShowAiGuide] = useState(false);
   const itemsPerPage = 8;
 
   const { user } = useAuth();
@@ -225,7 +342,7 @@ function InventoryView() {
                 className="w-full rounded-xl border border-zinc-200 bg-white px-10 py-2 text-sm font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
               />
             </div>
-            <select 
+            <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-300"
@@ -233,6 +350,14 @@ function InventoryView() {
                 <option value="all">Categories</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+
+            <button
+              onClick={() => setShowAiGuide(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 px-3 py-2 text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all whitespace-nowrap"
+            >
+              <LuSparkles className="h-3.5 w-3.5" />
+              How AI Works
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 bg-zinc-100/50 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-100 dark:border-dark-border">
@@ -376,6 +501,7 @@ function InventoryView() {
 
       <AddInventoryModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveNewItem} />
       <ViewInventoryModal isOpen={!!viewedProduct} onClose={() => setViewedProduct(null)} product={viewedProduct} onDeleteRequest={handleDeleteProduct} onUpdate={handleEditProduct} />
+      {showAiGuide && <AiGuideModal onClose={() => setShowAiGuide(false)} />}
     </div>
   );
 }
