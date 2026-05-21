@@ -20,6 +20,7 @@ import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
 import { triggerSync } from './api';
+import WarningPopup from './components/WarningPopup';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,7 +31,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (user.account_pending_deletion) return <AccountPendingDeletion />;
 
-  return <PortalLayout>{children}</PortalLayout>;
+  return (
+    <>
+      <WarningPopup />
+      <PortalLayout>{children}</PortalLayout>
+    </>
+  );
 }
 
 function AppContent() {

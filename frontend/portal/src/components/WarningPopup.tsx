@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import { FiAlertTriangle, FiX } from "react-icons/fi";
 import clsx from "clsx";
+import { useAuth } from "../context/AuthContext";
 
 export default function WarningPopup() {
-  const [warnings, setWarnings]   = useState<any[]>([]);
-  const [current, setCurrent]     = useState<any | null>(null);
+  const { user } = useAuth();
+  const [warnings, setWarnings]     = useState<any[]>([]);
+  const [current, setCurrent]       = useState<any | null>(null);
   const [dismissing, setDismissing] = useState(false);
 
   useEffect(() => {
+    if (!user?.token) return;
+
     fetch("/api/notifications/warnings/unread", {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${user.token}`,
         Accept: "application/json",
       },
     })
@@ -21,16 +25,16 @@ export default function WarningPopup() {
         if (list.length > 0) setCurrent(list[0]);
       })
       .catch(() => {});
-  }, []);
+  }, [user?.token]);
 
   const dismiss = async () => {
-    if (!current) return;
+    if (!current || !user?.token) return;
     setDismissing(true);
     try {
       await fetch(`/api/notifications/${current.id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${user.token}`,
           Accept: "application/json",
           "Content-Type": "application/json",
         },

@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
-import WarningPopup from '../components/WarningPopup';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import { useAuth } from '../context/AuthContext';
@@ -101,7 +100,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <WarningPopup />
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         {/* Paw decoratives */}
