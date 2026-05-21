@@ -50,7 +50,7 @@ export function useNotifications() {
         uchnl.current.listen('.notification.created', handleNewNotification);
       }
 
-      const pollInterval = setInterval(fetchNotifications, 15000);
+      const pollInterval = setInterval(fetchNotifications, 5000);
 
       return () => {
         echo.leave('admin.notifications');

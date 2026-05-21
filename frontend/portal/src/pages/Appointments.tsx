@@ -85,32 +85,38 @@ export default function Appointments() {
     fetchAppointments();
 
     const handleAppointmentUpdate = (e: any) => {
-      // Invalidate caches and refetch
       localStorage.removeItem('portal_appointments_cache');
       localStorage.removeItem('portal_book_appointments_cache');
       localStorage.removeItem('portal_overview_cache');
-
       fetchAppointments();
-
-      // Use ref to get current selectedAppointment (avoids stale closure)
       if (selectedAppointmentRef.current?.id === e.appointment.id) {
-          setSelectedAppointment(e.appointment);
+        setSelectedAppointment(e.appointment);
       }
     };
 
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        localStorage.removeItem('portal_appointments_cache');
+        fetchAppointments();
+      }
+    };
+
+    const pollInterval = setInterval(fetchAppointments, 10000);
+    document.addEventListener('visibilitychange', onVisible);
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.id) {
-        const channel = echo.private(`client.appointments.${user.id}`)
-            .listen('.appointment.status.updated', handleAppointmentUpdate);
-        
-        // Also listen for a generic update event after booking
-        echo.private(`client.appointments.${user.id}`)
-            .listen('.appointment.created', handleAppointmentUpdate);
-
-        return () => {
-            echo.leave(`client.appointments.${user.id}`);
-        };
+      echo.private(`client.appointments.${user.id}`)
+        .listen('.appointment.status.updated', handleAppointmentUpdate)
+        .listen('.appointment.created', handleAppointmentUpdate);
     }
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisible);
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      if (u.id) echo.leave(`client.appointments.${u.id}`);
+    };
   }, []);
 
   useEffect(() => {
