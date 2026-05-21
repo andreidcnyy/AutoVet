@@ -160,10 +160,15 @@ $inventory->each(function ($item) use ($daysRemaining) {
                     'source_type' => 'manual_adjustment',
                     'unit_price' => $inventory->selling_price
                 ]);
-                
+
                 // Clear AI forecast reorder suggestions if item just became out of stock
                 if ($newStock <= 0) {
                     \App\Models\InventoryForecast::where('inventory_id', $inventory->id)->update(['forecast_status' => 'Out of Stock']);
+                }
+
+                // Fire low stock alert if stock has dropped to or below threshold
+                if ($newStock <= $inventory->min_stock_level) {
+                    event(new \App\Events\LowStockDetected($inventory));
                 }
             }
 
