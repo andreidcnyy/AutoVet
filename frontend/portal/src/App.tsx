@@ -33,6 +33,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('maintenance-mode', onMaintenance);
   }, []);
 
+  // Poll every 15 s while in maintenance mode — clear when backend responds normally
+  useEffect(() => {
+    if (!maintenance || !user) return;
+    const check = async () => {
+      try {
+        const res = await fetch('/api/profile', {
+          headers: { Authorization: `Bearer ${user.token}`, Accept: 'application/json' },
+        });
+        if (res.status !== 503) setMaintenance(false);
+      } catch (_) {}
+    };
+    const id = setInterval(check, 15000);
+    return () => clearInterval(id);
+  }, [maintenance, user]);
+
   // Guard against bfcache restoring a logged-out page
   useEffect(() => {
     const handlePageShow = (e: PageTransitionEvent) => {
