@@ -184,7 +184,7 @@ export default function BookAppointment() {
         // Correctly handle paginated or array responses
         const petsArray = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
         const servicesArray = (Array.isArray(servRes.data) ? servRes.data : (servRes.data?.data || []))
-          .filter((s: any) => s.status === 'Active' && Number(s.price) > 0)
+          .filter((s: any) => s.status === 'Active')
           .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
         const vetsArray = Array.isArray(vetsRes.data) ? vetsRes.data : (vetsRes.data?.data || []);
 
@@ -564,7 +564,11 @@ export default function BookAppointment() {
                     <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
                       {services.map(s => {
                         const checked = selectedServiceIds.includes(s.id.toString());
-                        const priceLabel = s.price > 0 ? `₱${Number(s.price).toLocaleString()}` : '';
+                        const rules = s.pricingRules ?? s.sizePrices ?? [];
+                        const minTier = rules.length > 0 ? Math.min(...rules.map((r: any) => Number(r.price))) : 0;
+                        const priceLabel = Number(s.price) > 0
+                          ? `₱${Number(s.price).toLocaleString()}`
+                          : minTier > 0 ? `From ₱${minTier.toLocaleString()}` : '';
                         return (
                           <button
                             key={s.id}
