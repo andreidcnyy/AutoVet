@@ -6,6 +6,7 @@ import PetsListView from "../components/patients/PetsListView";
 import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import { useNewItems } from "../context/NewItemsContext";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
@@ -17,6 +18,7 @@ function PatientsPage() {
   const [view, setView] = useState("records");
   const [activeTab, setActiveTab] = useState("owners");
   const { user } = useAuth();
+  const { refreshCounts } = useNewItems();
   const [owners, setOwners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
@@ -226,6 +228,7 @@ function PatientsPage() {
                 }
                 const newOwner = await res.json();
                 handleSaveNewOwner(newOwner);
+                refreshCounts();
                 toast.success("Owner registered successfully!");
               } catch (err) {
                 toast.error(err.message);

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import { useAuth } from "../../context/AuthContext";
+import { useNewItems } from "../../context/NewItemsContext";
 import { VET_AND_ADMIN } from "../../constants/roles";
 import { getAgeGroup } from "../../utils/petAgeGroups";
 import { PH_LOCATION_DATA } from "../../utils/phLocationData";
@@ -97,6 +98,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   
   const [availableCities, setAvailableCities] = useState([]);
   const { user } = useAuth();
+  const { refreshCounts } = useNewItems();
 
   const {
     register, handleSubmit, setValue, watch, formState: { errors, isSubmitting }
@@ -238,6 +240,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
         }
         const newOwner = await ownerRes.json();
         finalOwnerId = newOwner.id;
+        refreshCounts();
       }
 
       const res = await fetch("/api/pets", {

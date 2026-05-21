@@ -41,7 +41,7 @@ export function NewItemsProvider({ children, enabled = true }) {
   useEffect(() => {
     if (!enabled) return;
     fetchCounts();
-    intervalRef.current = setInterval(fetchCounts, 30000);
+    intervalRef.current = setInterval(fetchCounts, 10000);
     return () => clearInterval(intervalRef.current);
   }, [enabled, fetchCounts]);
 
@@ -56,7 +56,7 @@ export function NewItemsProvider({ children, enabled = true }) {
   }, []);
 
   return (
-    <NewItemsContext.Provider value={{ patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen }}>
+    <NewItemsContext.Provider value={{ patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen, refreshCounts: fetchCounts }}>
       {children}
     </NewItemsContext.Provider>
   );

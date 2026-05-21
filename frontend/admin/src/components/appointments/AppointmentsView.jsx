@@ -33,6 +33,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/AuthContext";
+import { useNewItems } from "../../context/NewItemsContext";
 import ManualSendModal from "../notifications/ManualSendModal";
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -65,6 +66,7 @@ function AppointmentsView() {
   const [calendarSummaries, setCalendarSummaries] = useState([]); 
   const [aiForecast, setAiForecast] = useState(null);
   const { user } = useAuth();
+  const { refreshCounts } = useNewItems();
 
   const [params, setParams] = useState({
     page: 1,
@@ -239,6 +241,7 @@ function AppointmentsView() {
       setSelectedServiceIds([]);
       setIsWalkIn(false);
       fetchAppointments();
+      refreshCounts();
     } catch (err) { toast.error(err?.response?.data?.message || "Failed to schedule."); }
   };
 
