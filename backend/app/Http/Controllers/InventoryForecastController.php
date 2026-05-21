@@ -168,7 +168,9 @@ class InventoryForecastController extends Controller
             'prediction_source'          => $forecast->prediction_source,
             'is_live_synced'             => true,
             'current_stock'              => $currentStock,
-            'min_stock_level'            => $minStock
+            'min_stock_level'            => $minStock,
+            'confidence_score'           => $forecast->confidence_score !== null ? (float) $forecast->confidence_score : null,
+            'trend_fit_score'            => $forecast->trend_fit_score !== null ? (float) $forecast->trend_fit_score : null,
         ]);
     }
 }
