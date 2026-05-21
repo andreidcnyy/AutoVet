@@ -15,9 +15,11 @@ export function NewItemsProvider({ children, enabled = true }) {
     const onAppointments = path.startsWith("/appointments");
 
     try {
-      const data = await api.get("/api/new-counts");
-      if (!onPatients     && typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
-      if (!onAppointments && typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
+      // Sending path lets the backend atomically stamp last_seen for the current page
+      const data = await api.get("/api/new-counts", { params: { path } });
+      // Backend already marked current page as seen — count will be 0 for it
+      if (typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
+      if (typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
     } catch (_) {}
   }, [enabled]);
 
@@ -28,15 +30,9 @@ export function NewItemsProvider({ children, enabled = true }) {
     return () => clearInterval(intervalRef.current);
   }, [enabled, fetchCounts]);
 
-  const markPatientsSeen = useCallback(() => {
-    setPatientCount(0);
-    api.post("/api/mark-seen", { patients: true }).catch(() => {});
-  }, []);
-
-  const markAppointmentsSeen = useCallback(() => {
-    setAppointmentCount(0);
-    api.post("/api/mark-seen", { appointments: true }).catch(() => {});
-  }, []);
+  // Instant visual reset when navigating to these pages (next fetch confirms it)
+  const markPatientsSeen     = useCallback(() => setPatientCount(0),     []);
+  const markAppointmentsSeen = useCallback(() => setAppointmentCount(0), []);
 
   return (
     <NewItemsContext.Provider value={{ patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen }}>
