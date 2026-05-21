@@ -128,8 +128,11 @@ function PatientRecordsView({
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-                {isLoading ? (
+              <tbody className={clsx(
+                "divide-y divide-zinc-50 dark:divide-dark-border transition-opacity duration-200",
+                isLoading && owners.length > 0 && "opacity-50 pointer-events-none"
+              )}>
+                {isLoading && owners.length === 0 ? (
                   Array(5).fill(0).map((_, i) => (
                     <tr key={i}>
                       <td className="px-6 py-5"><div className="h-12 rounded-xl bg-zinc-100 animate-pulse dark:bg-dark-surface" /></td>

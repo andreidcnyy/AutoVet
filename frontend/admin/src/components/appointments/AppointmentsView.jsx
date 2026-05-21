@@ -360,8 +360,8 @@ function AppointmentsView() {
                     <th className="px-8 py-5">Status</th><th className="px-8 py-5">Patient & Guardian</th><th className="px-8 py-5">Clinical Service</th><th className="px-8 py-5">Schedule</th><th className="px-8 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-                  {isLoading ? Array(5).fill(0).map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-8 py-10"><div className="h-4 bg-zinc-100 rounded-full w-full"></div></td></tr>) : 
+                <tbody className={clsx("divide-y divide-zinc-50 dark:divide-dark-border transition-opacity duration-200", isLoading && (params.date ? appointments : monthAppointments).length > 0 && "opacity-50 pointer-events-none")}>
+                  {isLoading && (params.date ? appointments : monthAppointments).length === 0 ? Array(5).fill(0).map((_, i) => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-8 py-10"><div className="h-4 bg-zinc-100 rounded-full w-full"></div></td></tr>) :
                    (params.date ? appointments : monthAppointments).map(appt => (
                     <tr key={appt.id} onClick={(e) => handleAppointmentClick(e, appt)} className="group hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 cursor-pointer transition-all">
 
