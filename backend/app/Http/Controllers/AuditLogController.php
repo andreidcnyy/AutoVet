@@ -34,6 +34,12 @@ class AuditLogController extends Controller
                 $query->where('user_id', $request->input('user_id'));
             }
 
+            if ($request->filled('user_name')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->withoutGlobalScopes()->where('name', 'like', '%' . $request->input('user_name') . '%');
+                });
+            }
+
             if ($request->filled('action_type')) {
                 $query->where('action', $request->input('action_type'));
             }
