@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useNewItems } from "../context/NewItemsContext";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
 import PetsListView from "../components/patients/PetsListView";
@@ -14,6 +15,9 @@ import clsx from "clsx";
 function PatientsPage() {
   const toast = useToast();
   const navigate = useNavigate();
+  const { clearPatients } = useNewItems();
+
+  useEffect(() => { clearPatients(); }, []);
   const [view, setView] = useState("records");
   const [activeTab, setActiveTab] = useState("owners");
   const { user } = useAuth();

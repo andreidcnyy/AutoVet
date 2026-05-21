@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Outlet, useMatches, useNavigate } from "react-router-dom";
+import { NewItemsProvider, useNewItems } from "../context/NewItemsContext";
 import Sidebar from "../components/layout/Sidebar";
 import TopHeader from "../components/layout/TopHeader";
 import BroadcastBanner from "../components/ui/BroadcastBanner";
@@ -13,9 +14,10 @@ import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 import api, { triggerSync } from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
 
-function AppLayout() {
+function AppLayoutInner() {
   const { user, loading, login: setUser } = useAuth();
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
+  const { patientCount, appointmentCount } = useNewItems();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -156,12 +158,20 @@ function AppLayout() {
 
   const filteredPrimaryNav = useMemo(() => {
     if (!user || !user.role) return [];
-    return primaryNavigation.filter((item) => {
-      if (!item.allowedRoles?.includes(user.role)) return false;
-      if (item.aiOnly && !user.ai_features_enabled) return false;
-      return true;
-    });
-  }, [user]);
+    return primaryNavigation
+      .filter((item) => {
+        if (!item.allowedRoles?.includes(user.role)) return false;
+        if (item.aiOnly && !user.ai_features_enabled) return false;
+        return true;
+      })
+      .map((item) => {
+        if (item.id === "patients" && patientCount > 0)
+          return { ...item, newCount: patientCount };
+        if (item.id === "appointments" && appointmentCount > 0)
+          return { ...item, newCount: appointmentCount };
+        return item;
+      });
+  }, [user, patientCount, appointmentCount]);
 
   const filteredBottomNav = useMemo(() => {
     if (!user || !user.role) return [];
@@ -196,6 +206,16 @@ function AppLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+function AppLayout() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
+  return (
+    <NewItemsProvider enabled={!!user && !isSuperAdmin}>
+      <AppLayoutInner />
+    </NewItemsProvider>
   );
 }
 
