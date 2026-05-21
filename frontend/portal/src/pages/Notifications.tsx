@@ -86,108 +86,110 @@ export default function Notifications() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
-        <FiArrowLeft /> Back
-      </button>
+    <>
+      <div className="space-y-6">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition font-semibold text-sm">
+          <FiArrowLeft /> Back
+        </button>
 
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
-        <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
-        <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Inbox</p>
-            <h1 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-3">
-              <FiBell /> Notifications
-            </h1>
-            <p className="text-white/80 mt-1 text-sm font-medium">Stay updated on your pet's health and appointments.</p>
+        {/* Hero Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
+          <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
+          <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Inbox</p>
+              <h1 className="text-2xl font-black italic uppercase tracking-tight flex items-center gap-3">
+                <FiBell /> Notifications
+              </h1>
+              <p className="text-white/80 mt-1 text-sm font-medium">Stay updated on your pet's health and appointments.</p>
+            </div>
+            {notifications.some(n => !n.read_at) && (
+              <button
+                onClick={handleMarkAllRead}
+                className="shrink-0 px-5 py-2.5 rounded-xl bg-white text-brand-600 text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all active:scale-[0.98] shadow-lg"
+              >
+                Mark all as read
+              </button>
+            )}
           </div>
-          {notifications.some(n => !n.read_at) && (
-            <button
-              onClick={handleMarkAllRead}
-              className="shrink-0 px-5 py-2.5 rounded-xl bg-white text-brand-600 text-xs font-black uppercase tracking-widest hover:bg-emerald-50 transition-all active:scale-[0.98] shadow-lg"
-            >
-              Mark all as read
-            </button>
+        </div>
+
+        <div className="space-y-3">
+          {loading ? (
+            Array(3).fill(0).map((_, i) => (
+              <div key={i} className="h-24 rounded-[2rem] bg-zinc-100 dark:bg-dark-surface animate-pulse" />
+            ))
+          ) : notifications.length > 0 ? (
+            <div className="grid gap-3">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={clsx(
+                    "group relative p-6 rounded-[2rem] border-2 transition-all cursor-pointer overflow-hidden",
+                    notification.read_at
+                    ? "bg-white dark:bg-dark-card/50 border-zinc-100 dark:border-dark-border opacity-70"
+                    : "bg-white dark:bg-dark-card border-brand-100 dark:border-brand-500/30 shadow-sm hover:shadow-md"
+                  )}
+                >
+                  {!notification.read_at && (
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-500" />
+                  )}
+
+                  <div className="flex items-start gap-4">
+                    <div className={clsx(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
+                      notification.read_at ? "bg-zinc-100 dark:bg-dark-surface text-zinc-400" : "bg-brand-50 dark:bg-brand-500/10 text-brand-500"
+                    )}>
+                      {notification.type === 'alert' ? <FiAlertCircle className="w-6 h-6" /> : <FiInfo className="w-6 h-6" />}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className={clsx(
+                          "text-sm font-black uppercase tracking-tight truncate",
+                          notification.read_at ? "text-zinc-500" : "text-zinc-800 dark:text-zinc-100"
+                        )}>
+                          {notification.title}
+                        </h3>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                            <FiClock className="w-3 h-3" /> {new Date(notification.created_at).toLocaleDateString()}
+                          </span>
+                          {notification.read_at && <FiCheck className="text-emerald-500 w-4 h-4" />}
+                        </div>
+                      </div>
+                      <p className={clsx(
+                        "text-sm leading-relaxed line-clamp-2",
+                        notification.read_at ? "text-zinc-400 font-medium" : "text-zinc-600 dark:text-zinc-400 font-semibold"
+                      )}>
+                        {notification.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card-shell p-16 text-center space-y-4 bg-zinc-50/50 border-dashed">
+              <div className="w-20 h-20 bg-zinc-100 dark:bg-dark-surface rounded-[2rem] mx-auto flex items-center justify-center text-zinc-300">
+                <FiBell className="w-10 h-10" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-zinc-400">Your inbox is empty</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">We'll let you know when something happens</p>
+              </div>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="space-y-3">
-        {loading ? (
-          Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-24 rounded-[2rem] bg-zinc-100 dark:bg-dark-surface animate-pulse" />
-          ))
-        ) : notifications.length > 0 ? (
-          <div className="grid gap-3">
-            {notifications.map((notification) => (
-              <div 
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={clsx(
-                  "group relative p-6 rounded-[2rem] border-2 transition-all cursor-pointer overflow-hidden",
-                  notification.read_at 
-                  ? "bg-white dark:bg-dark-card/50 border-zinc-100 dark:border-dark-border opacity-70" 
-                  : "bg-white dark:bg-dark-card border-brand-100 dark:border-brand-500/30 shadow-sm hover:shadow-md"
-                )}
-              >
-                {!notification.read_at && (
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-500" />
-                )}
-                
-                <div className="flex items-start gap-4">
-                  <div className={clsx(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
-                    notification.read_at ? "bg-zinc-100 dark:bg-dark-surface text-zinc-400" : "bg-brand-50 dark:bg-brand-500/10 text-brand-500"
-                  )}>
-                    {notification.type === 'alert' ? <FiAlertCircle className="w-6 h-6" /> : <FiInfo className="w-6 h-6" />}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className={clsx(
-                        "text-sm font-black uppercase tracking-tight truncate",
-                        notification.read_at ? "text-zinc-500" : "text-zinc-800 dark:text-zinc-100"
-                      )}>
-                        {notification.title}
-                      </h3>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1">
-                          <FiClock className="w-3 h-3" /> {new Date(notification.created_at).toLocaleDateString()}
-                        </span>
-                        {notification.read_at && <FiCheck className="text-emerald-500 w-4 h-4" />}
-                      </div>
-                    </div>
-                    <p className={clsx(
-                      "text-sm leading-relaxed line-clamp-2",
-                      notification.read_at ? "text-zinc-400 font-medium" : "text-zinc-600 dark:text-zinc-400 font-semibold"
-                    )}>
-                      {notification.message}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="card-shell p-16 text-center space-y-4 bg-zinc-50/50 border-dashed">
-            <div className="w-20 h-20 bg-zinc-100 dark:bg-dark-surface rounded-[2rem] mx-auto flex items-center justify-center text-zinc-300">
-              <FiBell className="w-10 h-10" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-zinc-400">Your inbox is empty</p>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">We'll let you know when something happens</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Notification Detail Modal */}
+      {/* Notification Detail Modal — outside animated container so fixed positioning works correctly */}
       {isModalOpen && selectedNotification && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          
+
           <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-zinc-100 dark:border-dark-border flex justify-between items-center bg-zinc-50/50 dark:bg-dark-surface/30">
               <div className="flex items-center gap-4">
@@ -223,7 +225,7 @@ export default function Notifications() {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="w-full py-4 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all shadow-xl"
               >
@@ -233,6 +235,6 @@ export default function Notifications() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
