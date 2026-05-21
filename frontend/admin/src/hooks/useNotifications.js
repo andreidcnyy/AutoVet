@@ -41,20 +41,23 @@ export function useNotifications() {
         toast.info(e.notification.message, { title: e.notification.title });
         fetchNotifications();
       };
-      
+
       achnl.current = echo.private('admin.notifications');
       achnl.current.listen('.notification.created', handleNewNotification);
-      
+
       if (user.id) {
         uchnl.current = echo.private(`notifications.${user.id}`);
         uchnl.current.listen('.notification.created', handleNewNotification);
       }
+
+      const pollInterval = setInterval(fetchNotifications, 15000);
 
       return () => {
         echo.leave('admin.notifications');
         if (user.id) {
           echo.leave(`notifications.${user.id}`);
         }
+        clearInterval(pollInterval);
       };
     } else {
       setIsLoading(false);
