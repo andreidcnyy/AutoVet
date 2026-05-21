@@ -43,20 +43,29 @@ export default function Notifications() {
     }
     fetchNotifications();
 
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchNotifications();
+    };
+    const pollInterval = setInterval(fetchNotifications, 10000);
+    document.addEventListener('visibilitychange', onVisible);
+
     const userStr = localStorage.getItem('user');
     if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.id) {
-            const channel = echo.private(`notifications.${user.id}`)
-                .listen('.notification.created', (e: any) => {
-                    setNotifications(prev => [e.notification, ...prev]);
-                });
-
-            return () => {
-                echo.leave(`notifications.${user.id}`);
-            };
-        }
+      const user = JSON.parse(userStr);
+      if (user.id) {
+        echo.private(`notifications.${user.id}`)
+          .listen('.notification.created', (e: any) => {
+            setNotifications(prev => [e.notification, ...prev]);
+          });
+      }
     }
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisible);
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      if (u.id) echo.leave(`notifications.${u.id}`);
+    };
   }, []);
 
   const handleMarkRead = async (id: number) => {
@@ -77,12 +86,15 @@ export default function Notifications() {
   };
 
   const handleMarkAllRead = async () => {
+    const unread = notifications.filter(n => !n.read_at);
+    if (!unread.length) return;
+    const readAt = new Date().toISOString();
+    setNotifications(prev => prev.map(n => n.read_at ? n : { ...n, read_at: readAt }));
     try {
-      const unread = notifications.filter(n => !n.read_at);
       await Promise.all(unread.map(n => markNotificationAsRead(n.id)));
-      fetchNotifications();
     } catch (err) {
       console.error("Failed to mark all as read:", err);
+      fetchNotifications();
     }
   };
 
