@@ -78,7 +78,11 @@ const formatValue = (val) => {
 
 const extractLabel = (values) => {
   if (!values) return null;
-  return values.name || values.title || values.invoice_number || values.item_name || values.subject || values.email || null;
+  const raw = values.name || values.title || values.invoice_number || values.item_name || values.subject || values.email || null;
+  if (raw) return raw;
+  // Settings store their identity in a "key" field (e.g. "maintenance_mode")
+  if (values.key) return friendlyField(values.key);
+  return null;
 };
 
 // Plain-English one-line summary for the table row
@@ -483,7 +487,16 @@ function AuditLogTab() {
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="font-semibold text-zinc-700 dark:text-zinc-200">{friendlyModel(log.model_type)}</span>
+                          {(() => {
+                            const vals = log.action === "deleted" ? log.old_values : log.new_values;
+                            const lbl = extractLabel(vals);
+                            return (
+                              <>
+                                <span className="font-semibold text-zinc-700 dark:text-zinc-200">{friendlyModel(log.model_type)}</span>
+                                {lbl && <p className="text-xs text-zinc-400 mt-0.5 max-w-[140px] truncate">{lbl}</p>}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 max-w-xs">
                           <p className="text-zinc-600 dark:text-zinc-300 text-xs leading-relaxed line-clamp-2">{summary}</p>
