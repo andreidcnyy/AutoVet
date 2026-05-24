@@ -24,3 +24,11 @@ export function writeCache(key: string, data: any): void {
 export function clearCache(key: string): void {
   try { localStorage.removeItem(key); } catch {}
 }
+
+export function clearAllPortalCache(): void {
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('portal_'))
+      .forEach(k => localStorage.removeItem(k));
+  } catch {}
+}

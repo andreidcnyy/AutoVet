@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { destroyEcho } from "../utils/echo";
+import { clearAllPortalCache } from "../utils/swrCache";
 
 interface AuthContextType {
   user: any;
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("AuthContext: Attempted to login with error data", data);
       return;
     }
+    clearAllPortalCache();
     const sanitized = sanitizeUser(data);
     setUser(sanitized);
     localStorage.setItem("user", JSON.stringify(sanitized));
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("AuthContext: Attempted to register with error data", data);
       return;
     }
+    clearAllPortalCache();
     const sanitized = sanitizeUser(data);
     setUser(sanitized);
     localStorage.setItem("user", JSON.stringify(sanitized));
@@ -72,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     destroyEcho();
+    clearAllPortalCache();
     setUser(null);
     localStorage.removeItem("user");
     window.location.replace("/login");
