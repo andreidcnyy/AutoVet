@@ -54,7 +54,7 @@ function BackupRestoreTab() {
 
   const createBackup = () => {
     setProcessing(true);
-    fetch("/api/backups", { 
+    fetch("/api/backups", {
       method: "POST",
       headers: authHeader
     })
@@ -65,7 +65,11 @@ function BackupRestoreTab() {
       })
       .then((data) => {
         toast.success(data.message);
-        fetchBackups();
+        if (data.backup) {
+          setBackups((prev) => [data.backup, ...prev]);
+        } else {
+          fetchBackups();
+        }
       })
       .catch((err) => toast.error(err.message))
       .finally(() => setProcessing(false));

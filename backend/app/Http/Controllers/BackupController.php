@@ -40,7 +40,23 @@ class BackupController extends Controller
             $exitCode = Artisan::call('db:backup');
 
             if ($exitCode === 0) {
-                return response()->json(['message' => 'CSV backup created successfully.']);
+                // Return the newly created file's metadata so the frontend
+                // can prepend it to the list without a second GET request.
+                $backupPath = storage_path('app/backups');
+                $files = File::files($backupPath);
+                usort($files, fn($a, $b) => $b->getMTime() - $a->getMTime());
+                $newest = collect($files)->first(
+                    fn($f) => preg_match('/^backup_[\d_]+\.tar\.gz$/', $f->getFilename())
+                );
+
+                return response()->json([
+                    'message' => 'CSV backup created successfully.',
+                    'backup'  => $newest ? [
+                        'filename'   => $newest->getFilename(),
+                        'size'       => $newest->getSize(),
+                        'created_at' => date('Y-m-d H:i:s', $newest->getMTime()),
+                    ] : null,
+                ]);
             }
 
             $output = trim(Artisan::output());
