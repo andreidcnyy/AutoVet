@@ -1,21 +1,100 @@
 import { useState, useEffect, useCallback } from "react";
-import { FiStar, FiCheck, FiX, FiTrash2, FiRefreshCw } from "react-icons/fi";
+import { FiStar, FiCheck, FiTrash2, FiRefreshCw, FiEyeOff, FiEye, FiGlobe } from "react-icons/fi";
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 
-function StarDisplay({ rating }) {
+function Stars({ rating, size = "sm" }) {
+  const cls = size === "lg" ? "h-5 w-5" : "h-3.5 w-3.5";
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
-        <FiStar
-          key={s}
-          className={clsx(
-            "h-3.5 w-3.5",
-            s <= rating ? "text-amber-400 fill-amber-400" : "text-zinc-300 dark:text-zinc-600"
-          )}
-        />
+        <FiStar key={s} className={clsx(cls, s <= rating ? "text-amber-400 fill-amber-400" : "text-zinc-300 dark:text-zinc-600")} />
       ))}
+    </div>
+  );
+}
+
+/* Card that mimics the landing page testimonial style */
+function LandingCard({ review, busy, onRemove, onUnfeature, onFeature }) {
+  return (
+    <div className={clsx(
+      "relative rounded-2xl border p-6 overflow-hidden transition-all duration-200",
+      review.is_featured
+        ? "border-amber-300 dark:border-amber-600/50 bg-amber-50/40 dark:bg-amber-900/10"
+        : "border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface"
+    )}>
+      {review.is_featured && (
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">
+          <FiStar className="h-3 w-3 fill-current" /> Featured
+        </span>
+      )}
+      <Stars rating={review.rating} size="lg" />
+      <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed italic">"{review.body}"</p>
+      <div className="mt-4">
+        <div className="font-black text-zinc-800 dark:text-zinc-100 text-sm">{review.reviewer_name}</div>
+        {review.pet_name && <div className="text-xs text-zinc-400 dark:text-zinc-500">Owner of {review.pet_name}</div>}
+      </div>
+
+      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-200 dark:border-dark-border">
+        <button
+          onClick={() => review.is_featured ? onUnfeature(review.id) : onFeature(review.id)}
+          disabled={busy[review.id]}
+          className={clsx(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95",
+            review.is_featured
+              ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200"
+              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600"
+          )}
+        >
+          <FiStar className={clsx("h-3.5 w-3.5", review.is_featured && "fill-current")} />
+          {review.is_featured ? "Unfeature" : "Feature"}
+        </button>
+        <button
+          onClick={() => onRemove(review.id)}
+          disabled={busy[review.id]}
+          title="Remove from landing page"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-all active:scale-95 ml-auto"
+        >
+          <FiEyeOff className="h-3.5 w-3.5" /> Remove from page
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* Row for a pending review */
+function PendingRow({ review, busy, onApprove, onDelete }) {
+  return (
+    <div className="card-shell p-4 flex flex-col sm:flex-row sm:items-start gap-4">
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <span className="font-bold text-zinc-800 dark:text-zinc-100 text-sm">{review.reviewer_name}</span>
+          {review.pet_name && <span className="text-xs text-zinc-400 dark:text-zinc-500">· {review.pet_name}</span>}
+          <Stars rating={review.rating} />
+        </div>
+        {review.title && <p className="text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-0.5">{review.title}</p>}
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">{review.body}</p>
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1.5">
+          {review.created_at ? new Date(review.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : ""}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => onApprove(review.id)}
+          disabled={busy[review.id]}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all active:scale-95"
+        >
+          <FiEye className="h-3.5 w-3.5" /> Show on page
+        </button>
+        <button
+          onClick={() => onDelete(review.id)}
+          disabled={busy[review.id]}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-dark-surface text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-all active:scale-95"
+        >
+          <FiTrash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -43,14 +122,10 @@ export default function ReviewsTab() {
   const patch = async (id, endpoint) => {
     setBusy((b) => ({ ...b, [id]: true }));
     try {
-      const res = await fetch(`/api/reviews/${id}/${endpoint}`, {
-        method: "PATCH",
-        headers: authHeader,
-      });
+      const res = await fetch(`/api/reviews/${id}/${endpoint}`, { method: "PATCH", headers: authHeader });
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setReviews((prev) => prev.map((r) => (r.id === id ? updated.review ?? updated.data ?? updated : r)));
-      toast.success(endpoint === "approve" ? "Approval status updated." : "Featured status updated.");
     } catch {
       toast.error("Action failed. Please try again.");
     } finally {
@@ -59,7 +134,7 @@ export default function ReviewsTab() {
   };
 
   const remove = async (id) => {
-    if (!window.confirm("Delete this review? This cannot be undone.")) return;
+    if (!window.confirm("Delete this review permanently? This cannot be undone.")) return;
     setBusy((b) => ({ ...b, [id]: true }));
     try {
       const res = await fetch(`/api/reviews/${id}`, { method: "DELETE", headers: authHeader });
@@ -73,13 +148,29 @@ export default function ReviewsTab() {
     }
   };
 
+  const live    = reviews.filter((r) => r.is_approved).sort((a, b) => b.is_featured - a.is_featured);
+  const pending = reviews.filter((r) => !r.is_approved);
+
+  if (loading) return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="card-shell p-5 animate-pulse">
+          <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/3 mb-3" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-full mb-2" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-2/3" />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">Reviews &amp; Feedback</h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Approve reviews to show them publicly. Feature top reviews to display them prominently on the landing page.
+            Manage what visitors see in the Testimonials section of the landing page.
           </p>
         </div>
         <button
@@ -90,107 +181,66 @@ export default function ReviewsTab() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="card-shell p-5 animate-pulse">
-              <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/3 mb-3" />
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-full mb-2" />
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-2/3" />
-            </div>
-          ))}
+      {/* ── Live on Landing Page ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <FiGlobe className="h-4 w-4 text-emerald-500" />
+          <h3 className="text-sm font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+            Live on Landing Page
+          </h3>
+          <span className="ml-1 text-xs font-bold text-zinc-400 dark:text-zinc-500">({live.length})</span>
         </div>
-      ) : reviews.length === 0 ? (
-        <div className="card-shell p-12 text-center">
-          <FiStar className="h-10 w-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
-          <p className="text-zinc-500 dark:text-zinc-400 font-semibold">No reviews yet.</p>
-          <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">Reviews submitted through the portal will appear here.</p>
+
+        {live.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-dark-border p-10 text-center">
+            <FiGlobe className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">Nothing is displayed yet.</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Approve a review below to show it on the landing page.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {live.map((r) => (
+              <LandingCard
+                key={r.id}
+                review={r}
+                busy={busy}
+                onRemove={(id) => patch(id, "approve")}
+                onFeature={(id) => patch(id, "feature")}
+                onUnfeature={(id) => patch(id, "feature")}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Pending Reviews ── */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <FiCheck className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+            Pending Reviews
+          </h3>
+          <span className="ml-1 text-xs font-bold text-zinc-400 dark:text-zinc-500">({pending.length})</span>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {reviews.map((review) => (
-            <div
-              key={review.id}
-              className={clsx(
-                "card-shell p-5 transition-all duration-200",
-                review.is_featured && "border-amber-300 dark:border-amber-600/50 bg-amber-50/30 dark:bg-amber-900/10"
-              )}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="font-black text-zinc-800 dark:text-zinc-100 text-sm">{review.reviewer_name}</span>
-                    {review.pet_name && (
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500">· {review.pet_name}</span>
-                    )}
-                    <StarDisplay rating={review.rating} />
-                    {review.is_approved && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">
-                        <FiCheck className="h-3 w-3" /> Approved
-                      </span>
-                    )}
-                    {review.is_featured && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">
-                        <FiStar className="h-3 w-3 fill-current" /> Featured
-                      </span>
-                    )}
-                  </div>
-                  {review.title && (
-                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-1">{review.title}</p>
-                  )}
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{review.body}</p>
-                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2">
-                    {review.created_at ? new Date(review.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : ""}
-                    {review.invoice_id && ` · Invoice #${review.invoice_id}`}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => patch(review.id, "approve")}
-                    disabled={busy[review.id]}
-                    title={review.is_approved ? "Revoke approval" : "Approve"}
-                    className={clsx(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95",
-                      review.is_approved
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                        : "bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600"
-                    )}
-                  >
-                    <FiCheck className="h-3.5 w-3.5" />
-                    {review.is_approved ? "Approved" : "Approve"}
-                  </button>
-
-                  <button
-                    onClick={() => patch(review.id, "feature")}
-                    disabled={busy[review.id] || !review.is_approved}
-                    title={!review.is_approved ? "Approve first to feature" : review.is_featured ? "Unfeature" : "Feature"}
-                    className={clsx(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95",
-                      !review.is_approved && "opacity-40 cursor-not-allowed",
-                      review.is_featured
-                        ? "bg-amber-400 text-white hover:bg-amber-500"
-                        : "bg-zinc-100 dark:bg-dark-surface text-zinc-600 dark:text-zinc-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600"
-                    )}
-                  >
-                    <FiStar className={clsx("h-3.5 w-3.5", review.is_featured && "fill-current")} />
-                    {review.is_featured ? "Featured" : "Feature"}
-                  </button>
-
-                  <button
-                    onClick={() => remove(review.id)}
-                    disabled={busy[review.id]}
-                    title="Delete review"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-dark-surface text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-all active:scale-95"
-                  >
-                    <FiTrash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        {pending.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-dark-border p-8 text-center">
+            <p className="text-sm text-zinc-400 dark:text-zinc-500">No pending reviews — all caught up.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((r) => (
+              <PendingRow
+                key={r.id}
+                review={r}
+                busy={busy}
+                onApprove={(id) => patch(id, "approve")}
+                onDelete={remove}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
