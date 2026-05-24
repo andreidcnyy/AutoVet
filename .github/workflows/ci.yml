@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [Seb1, main]
+  pull_request:
+    branches: [Seb1, main]
+
+jobs:
+  backend:
+    name: Backend (PHP 8.2)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: phar, pdo, mbstring, xml, curl, zip
+          coverage: none
+
+      - name: Validate composer.json
+        working-directory: backend
+        run: composer validate --strict
+
+      - name: Install dependencies
+        working-directory: backend
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Check PHP syntax (app/)
+        working-directory: backend
+        run: find app -name "*.php" | xargs php -l
+
+      - name: Check PHP syntax (routes/)
+        working-directory: backend
+        run: find routes -name "*.php" | xargs php -l
+
+  frontend-portal:
+    name: Portal Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/portal/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend/portal
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend/portal
+        run: npm run build
+
+  frontend-admin:
+    name: Admin Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend/admin
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend/admin
+        run: npm run build

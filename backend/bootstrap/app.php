@@ -57,4 +57,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 500);
             }
         });
+
+        // Report unhandled exceptions to Sentry when DSN is configured.
+        if (app()->bound('sentry')) {
+            $exceptions->reportable(function (\Throwable $e) {
+                app('sentry')->captureException($e);
+            });
+        }
     })->create();
