@@ -27,6 +27,11 @@ class BackupDatabaseCommand extends Command
 
     public function handle()
     {
+        if (!class_exists('ZipArchive')) {
+            $this->error('The ZipArchive PHP extension is not installed on this server.');
+            return 1;
+        }
+
         $backupPath = storage_path('app/backups');
         if (!is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);
@@ -57,7 +62,7 @@ class BackupDatabaseCommand extends Command
                     foreach ($rows as $row) {
                         $values = array_map(function ($v) {
                             if ($v === null) return '';
-                            $v = str_replace('"', '""', $v);
+                            $v = str_replace('"', '""', (string) $v);
                             return '"' . $v . '"';
                         }, (array) $row);
                         $csv .= implode(',', $values) . "\n";

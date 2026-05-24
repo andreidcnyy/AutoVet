@@ -44,8 +44,10 @@ class BackupController extends Controller
                 return response()->json(['message' => 'CSV backup created successfully.']);
             }
 
-            return response()->json(['message' => 'Failed to create backup.'], 500);
-        } catch (\Exception $e) {
+            $output = trim(Artisan::output());
+            $detail = $output ?: 'The backup command exited with an error.';
+            return response()->json(['message' => $detail], 500);
+        } catch (\Throwable $e) {
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
