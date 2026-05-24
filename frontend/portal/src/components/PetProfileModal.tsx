@@ -239,10 +239,12 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                           <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
                           <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
                         </div>
+                        {pet.size_category?.name && (
                         <div className="col-span-2">
                           <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
-                          <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category?.name || 'N/A'}</div>
+                          <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category.name}</div>
                         </div>
+                        )}
                         <div className="col-span-2 border-t border-zinc-100 dark:border-dark-border pt-3 sm:pt-4 mt-1 sm:mt-2">
                           <div className="flex justify-between gap-4">
                             <div>

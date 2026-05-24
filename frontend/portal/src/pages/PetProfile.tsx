@@ -161,10 +161,12 @@ function PetProfile() {
                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
                     <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
                   </div>
+                  {pet.size_category?.name && (
                   <div className="col-span-2">
                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
-                    <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category?.name || 'N/A'}</div>
+                    <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category.name}</div>
                   </div>
+                  )}
                </div>
             </div>
 

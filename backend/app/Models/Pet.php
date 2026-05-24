@@ -43,8 +43,6 @@ class Pet extends Model
 
                 if ($range && $range->size_category_id) {
                     $pet->size_category_id = $range->size_category_id;
-                } else {
-                    $pet->size_category_id = null;
                 }
             }
 
