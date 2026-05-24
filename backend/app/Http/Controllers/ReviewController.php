@@ -28,7 +28,7 @@ class ReviewController extends Controller
             ->whereIn('status', ['Finalized', 'Paid'])
             ->where('created_at', '>=', now()->subDays(30))
             ->whereDoesntHave('review')
-            ->with('pet')
+            ->with('pet.species')
             ->latest()
             ->first();
 
@@ -48,7 +48,7 @@ class ReviewController extends Controller
         $user = $request->user('portal_api');
 
         $invoice = Invoice::whereHas('pet.owner', fn ($q) => $q->where('user_id', $user->id))
-            ->with('pet')
+            ->with('pet.species')
             ->findOrFail($validated['invoice_id']);
 
         if (Review::where('invoice_id', $invoice->id)->exists()) {
@@ -64,6 +64,7 @@ class ReviewController extends Controller
             'body'           => $validated['body'],
             'reviewer_name'  => $user->name,
             'pet_name'       => $invoice->pet->name ?? null,
+            'pet_species'    => $invoice->pet->species->name ?? null,
             'is_approved'    => false,
             'is_featured'    => false,
         ]);

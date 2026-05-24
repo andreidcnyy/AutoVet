@@ -24,10 +24,11 @@ import { triggerSync, getPendingReview } from './api';
 import WarningPopup from './components/WarningPopup';
 import ReviewModal from './components/ReviewModal';
 
-function ProtectedRoute({ children, onReviewDismiss, pendingReviewInvoice }: {
+function ProtectedRoute({ children, onReviewDismiss, onReviewSubmitted, pendingReviewInvoice }: {
   children: React.ReactNode;
   pendingReviewInvoice: any;
   onReviewDismiss: () => void;
+  onReviewSubmitted: () => void;
 }) {
   const { user, loading } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
@@ -76,7 +77,7 @@ function ProtectedRoute({ children, onReviewDismiss, pendingReviewInvoice }: {
     <>
       <WarningPopup />
       {pendingReviewInvoice && (
-        <ReviewModal invoice={pendingReviewInvoice} onClose={onReviewDismiss} />
+        <ReviewModal invoice={pendingReviewInvoice} onClose={onReviewDismiss} onSubmitted={onReviewSubmitted} />
       )}
       <PortalLayout>{children}</PortalLayout>
     </>
@@ -94,6 +95,14 @@ function AppContent() {
       .then(res => setPendingReviewInvoice(res.data?.invoice ?? null))
       .catch(() => {});
   }, [user?.id]);
+
+  // After submitting a review, re-check for any other unreviewed invoice
+  const handleReviewSubmitted = () => {
+    setPendingReviewInvoice(null);
+    getPendingReview()
+      .then(res => setPendingReviewInvoice(res.data?.invoice ?? null))
+      .catch(() => {});
+  };
 
   // --- AUTOMATIC SYNC HEARTBEAT ---
   // This triggers a background sync every 5 seconds as long as the app is open.
@@ -139,7 +148,7 @@ function AppContent() {
     {
       path: "/dashboard",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <Dashboard />
         </ProtectedRoute>
       ),
@@ -148,7 +157,7 @@ function AppContent() {
     {
       path: "/add-pet",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <AddPet />
         </ProtectedRoute>
       ),
@@ -157,7 +166,7 @@ function AppContent() {
     {
       path: "/pets/:id",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <PetProfile />
         </ProtectedRoute>
       ),
@@ -166,7 +175,7 @@ function AppContent() {
     {
       path: "/pets/:id/edit",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <EditPet />
         </ProtectedRoute>
       ),
@@ -175,7 +184,7 @@ function AppContent() {
     {
       path: "/book",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <BookAppointment />
         </ProtectedRoute>
       ),
@@ -184,7 +193,7 @@ function AppContent() {
     {
       path: "/appointments",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <Appointments />
         </ProtectedRoute>
       ),
@@ -193,7 +202,7 @@ function AppContent() {
     {
       path: "/notifications",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <Notifications />
         </ProtectedRoute>
       ),
@@ -202,7 +211,7 @@ function AppContent() {
     {
       path: "/invoices",
       element: (
-        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)} onReviewSubmitted={handleReviewSubmitted}>
           <Invoices />
         </ProtectedRoute>
       ),

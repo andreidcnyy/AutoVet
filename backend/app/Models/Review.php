@@ -8,7 +8,7 @@ class Review extends Model
 {
     protected $fillable = [
         'clinic_id', 'portal_user_id', 'invoice_id',
-        'rating', 'title', 'body', 'reviewer_name', 'pet_name',
+        'rating', 'title', 'body', 'reviewer_name', 'pet_name', 'pet_species',
         'is_approved', 'is_featured',
     ];
 
