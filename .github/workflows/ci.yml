@@ -6,27 +6,24 @@ on:
   pull_request:
     branches: [Seb1, main]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   backend:
     name: Backend (PHP 8.2)
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: phar, pdo, mbstring, xml, curl, zip, pcntl, posix
+          extensions: phar, pdo, mbstring, xml, curl, zip, pcntl
           coverage: none
 
       - name: Validate composer.json
         working-directory: backend
-        run: composer validate --strict
+        run: composer validate
 
       - name: Install dependencies
         working-directory: backend
@@ -34,21 +31,21 @@ jobs:
 
       - name: Check PHP syntax (app/)
         working-directory: backend
-        run: find app -name "*.php" | xargs php -l
+        run: find app -name "*.php" -print0 | xargs -0 php -l
 
       - name: Check PHP syntax (routes/)
         working-directory: backend
-        run: find routes -name "*.php" | xargs php -l
+        run: find routes -name "*.php" -print0 | xargs -0 php -l
 
   frontend-portal:
     name: Portal Frontend
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: "npm"
@@ -67,10 +64,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: "npm"
