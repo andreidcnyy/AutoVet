@@ -41,3 +41,14 @@ extract_mapping.py
 run_backend.ps1
 digivet_logo.png
 .claude/
+
+# Windows system cache files
+%SystemDrive%/
+
+# Public debug scripts
+backend/public/test.php
+backend/public/test_minimal.php
+
+# Dataset artifacts
+backend/storage/datasets/*.bak
+backend/storage/datasets/*_out.txt
