@@ -218,7 +218,7 @@ export default function ReviewsTab() {
         <div className="flex items-center gap-2 mb-3">
           <FiCheck className="h-4 w-4 text-zinc-400" />
           <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-            Pending Reviews
+            Reviews
           </h3>
           <span className="ml-1 text-xs font-bold text-zinc-400 dark:text-zinc-500">({pending.length})</span>
         </div>

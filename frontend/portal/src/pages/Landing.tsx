@@ -134,10 +134,6 @@ const STATS = [
   { value: '5★',     label: 'Average Rating'       },
 ];
 
-const FALLBACK_TESTIMONIALS = [
-  { reviewer_name: 'Maria Santos', pet_name: 'Brownie (Shih Tzu)', body: "The portal made everything so easy! I can book appointments and check Brownie's records anytime. The vets here truly care about our pets.", rating: 5 },
-  { reviewer_name: 'Carlo Reyes',  pet_name: 'Luna (Persian Cat)',  body: "Excellent service! I love getting notifications for Luna's vaccination schedules. The online booking is smooth and the staff is very professional.", rating: 5 },
-];
 
 const NAV_LINKS = [
   { label: 'Home',     href: '#home'     },
@@ -520,46 +516,43 @@ export default function Landing() {
       </section>
 
       {/* ══════════════════════════════════════
-          TESTIMONIALS
+          TESTIMONIALS — only shown when there are approved reviews
       ══════════════════════════════════════ */}
-      <section className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
-        <PawPrint      className="absolute top-6   left-4   w-44 h-44 text-brand-500  dark:text-emerald-400 opacity-[0.12] dark:opacity-20 -rotate-15 pointer-events-none" />
-        <PawPrint      className="absolute bottom-6 right-4  w-52 h-52 text-emerald-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 rotate-20  pointer-events-none" />
-        <CatSilhouette className="absolute top-0   right-8  w-40 text-brand-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 pointer-events-none" />
+      {reviews !== null && reviews.length > 0 && (
+        <section className="relative py-24 px-6 bg-white dark:bg-dark-card overflow-hidden">
+          <PawPrint      className="absolute top-6   left-4   w-44 h-44 text-brand-500  dark:text-emerald-400 opacity-[0.12] dark:opacity-20 -rotate-15 pointer-events-none" />
+          <PawPrint      className="absolute bottom-6 right-4  w-52 h-52 text-emerald-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 rotate-20  pointer-events-none" />
+          <CatSilhouette className="absolute top-0   right-8  w-40 text-brand-500 dark:text-emerald-400 opacity-[0.10] dark:opacity-20 pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Testimonials</span>
-            <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-              What Pet Owners{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Are Saying</span>
-            </h2>
-          </div>
+          <div className="relative max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Testimonials</span>
+              <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+                What Pet Owners{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Are Saying</span>
+              </h2>
+            </div>
 
-          {(() => {
-            const displayList = reviews !== null && reviews.length > 0 ? reviews : FALLBACK_TESTIMONIALS;
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                {displayList.map((t, idx) => (
-                  <div key={t.id ?? idx} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                    <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
-                    <div className="flex gap-1 mb-4">
-                      {Array.from({ length: t.rating }).map((_, i) => (
-                        <span key={i} className="text-amber-400 text-lg">★</span>
-                      ))}
-                    </div>
-                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6 italic">"{t.body}"</p>
-                    <div>
-                      <div className="font-black text-zinc-800 dark:text-zinc-100">{t.reviewer_name}</div>
-                      {t.pet_name && <div className="text-sm text-zinc-500 dark:text-zinc-400">Owner of {t.pet_name}</div>}
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {reviews.map((t, idx) => (
+                <div key={t.id ?? idx} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                  <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
+                  <div className="flex gap-1 mb-4">
+                    {Array.from({ length: t.rating }).map((_, i) => (
+                      <span key={i} className="text-amber-400 text-lg">★</span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-      </section>
+                  <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6 italic">"{t.body}"</p>
+                  <div>
+                    <div className="font-black text-zinc-800 dark:text-zinc-100">{t.reviewer_name}</div>
+                    {t.pet_name && <div className="text-sm text-zinc-500 dark:text-zinc-400">Owner of {t.pet_name}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ══════════════════════════════════════
           CTA BANNER

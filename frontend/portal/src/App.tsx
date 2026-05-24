@@ -24,17 +24,13 @@ import { triggerSync, getPendingReview } from './api';
 import WarningPopup from './components/WarningPopup';
 import ReviewModal from './components/ReviewModal';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, onReviewDismiss, pendingReviewInvoice }: {
+  children: React.ReactNode;
+  pendingReviewInvoice: any;
+  onReviewDismiss: () => void;
+}) {
   const { user, loading } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
-  const [pendingReviewInvoice, setPendingReviewInvoice] = useState<any>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    getPendingReview()
-      .then(res => setPendingReviewInvoice(res.data?.invoice ?? null))
-      .catch(() => {});
-  }, [user]);
 
   useEffect(() => {
     const onMaintenance = () => setMaintenance(true);
@@ -80,7 +76,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     <>
       <WarningPopup />
       {pendingReviewInvoice && (
-        <ReviewModal invoice={pendingReviewInvoice} onClose={() => setPendingReviewInvoice(null)} />
+        <ReviewModal invoice={pendingReviewInvoice} onClose={onReviewDismiss} />
       )}
       <PortalLayout>{children}</PortalLayout>
     </>
@@ -89,6 +85,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const { user } = useAuth();
+  const [pendingReviewInvoice, setPendingReviewInvoice] = useState<any>(null);
+
+  // Fetch once when user logs in — not on every route change
+  useEffect(() => {
+    if (!user) { setPendingReviewInvoice(null); return; }
+    getPendingReview()
+      .then(res => setPendingReviewInvoice(res.data?.invoice ?? null))
+      .catch(() => {});
+  }, [user?.id]);
 
   // --- AUTOMATIC SYNC HEARTBEAT ---
   // This triggers a background sync every 5 seconds as long as the app is open.
@@ -134,7 +139,7 @@ function AppContent() {
     {
       path: "/dashboard",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <Dashboard />
         </ProtectedRoute>
       ),
@@ -143,7 +148,7 @@ function AppContent() {
     {
       path: "/add-pet",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <AddPet />
         </ProtectedRoute>
       ),
@@ -152,7 +157,7 @@ function AppContent() {
     {
       path: "/pets/:id",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <PetProfile />
         </ProtectedRoute>
       ),
@@ -161,7 +166,7 @@ function AppContent() {
     {
       path: "/pets/:id/edit",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <EditPet />
         </ProtectedRoute>
       ),
@@ -170,7 +175,7 @@ function AppContent() {
     {
       path: "/book",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <BookAppointment />
         </ProtectedRoute>
       ),
@@ -179,7 +184,7 @@ function AppContent() {
     {
       path: "/appointments",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <Appointments />
         </ProtectedRoute>
       ),
@@ -188,7 +193,7 @@ function AppContent() {
     {
       path: "/notifications",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <Notifications />
         </ProtectedRoute>
       ),
@@ -197,7 +202,7 @@ function AppContent() {
     {
       path: "/invoices",
       element: (
-        <ProtectedRoute>
+        <ProtectedRoute pendingReviewInvoice={pendingReviewInvoice} onReviewDismiss={() => setPendingReviewInvoice(null)}>
           <Invoices />
         </ProtectedRoute>
       ),
