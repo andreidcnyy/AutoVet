@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
@@ -1265,8 +1266,8 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     onSave(data, setLaravelErrors);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[10100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
@@ -1274,7 +1275,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           </h2>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
         </div>
-        <div className="overflow-y-auto p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
           <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
@@ -1450,7 +1451,8 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
