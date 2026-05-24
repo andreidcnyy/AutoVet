@@ -65,27 +65,6 @@ class ServicesSeeder extends Seeder
                 'status' => 'Active',
             ],
             [
-                'name' => 'Deworming',
-                'category' => 'Preventive Care',
-                'pricing_mode' => 'size_based', // Weight Based
-                'price' => 0.00,
-                'status' => 'Active',
-            ],
-            [
-                'name' => 'Tick and Flea Treatment',
-                'category' => 'Preventive Care',
-                'pricing_mode' => 'size_based', // Weight Based
-                'price' => 0.00,
-                'status' => 'Active',
-            ],
-            [
-                'name' => 'Tick and Flea Prevention',
-                'category' => 'Preventive Care',
-                'pricing_mode' => 'size_based', // Weight Based
-                'price' => 0.00,
-                'status' => 'Active',
-            ],
-            [
                 'name' => '6 in 1 Vaccine (Dogs)',
                 'category' => 'Vaccination',
                 'pricing_mode' => 'fixed',

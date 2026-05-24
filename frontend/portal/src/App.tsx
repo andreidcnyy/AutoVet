@@ -20,12 +20,21 @@ import MaintenancePage from './pages/MaintenancePage';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
-import { triggerSync } from './api';
+import { triggerSync, getPendingReview } from './api';
 import WarningPopup from './components/WarningPopup';
+import ReviewModal from './components/ReviewModal';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
+  const [pendingReviewInvoice, setPendingReviewInvoice] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    getPendingReview()
+      .then(res => setPendingReviewInvoice(res.data?.invoice ?? null))
+      .catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     const onMaintenance = () => setMaintenance(true);
@@ -70,6 +79,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
       <WarningPopup />
+      {pendingReviewInvoice && (
+        <ReviewModal invoice={pendingReviewInvoice} onClose={() => setPendingReviewInvoice(null)} />
+      )}
       <PortalLayout>{children}</PortalLayout>
     </>
   );

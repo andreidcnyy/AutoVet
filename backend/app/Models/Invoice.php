@@ -48,4 +48,9 @@ class Invoice extends Model
     {
         return $this->belongsTo(Appointment::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
 }

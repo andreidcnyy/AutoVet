@@ -37,10 +37,14 @@ use App\Http\Controllers\SpeciesController;
 use App\Http\Controllers\BreedController;
 use App\Http\Controllers\WeightRangeController;
 use App\Models\Owner;
+use App\Http\Controllers\ReviewController;
 
 // ---------------------------------------------------------------------------
 // Public-facing routes (Login, Registration, etc.)
 // ---------------------------------------------------------------------------
+
+// Public reviews — landing page
+Route::get('/reviews/public', [ReviewController::class, 'publicIndex']);
 
 Route::post('/auth/google',     [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
 Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
@@ -111,6 +115,12 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('/profile/devices',              [ProfileController::class, 'devices']);
     Route::delete('/profile/devices/{id}',      [ProfileController::class, 'revokeDevice']);
     Route::delete('/profile/devices',           [ProfileController::class, 'revokeOtherDevices']);
+
+    // -----------------------------------------------------------------------
+    // Reviews (portal users)
+    // -----------------------------------------------------------------------
+    Route::get('/portal/reviews/pending', [ReviewController::class, 'pending']);
+    Route::post('/portal/reviews',        [ReviewController::class, 'store']);
 
     // -----------------------------------------------------------------------
     // Dashboard & Metrics
@@ -292,6 +302,12 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
         // Audit Logs
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+        // Reviews & Feedback
+        Route::get('/reviews',                     [ReviewController::class, 'index']);
+        Route::patch('/reviews/{review}/approve',  [ReviewController::class, 'approve']);
+        Route::patch('/reviews/{review}/feature',  [ReviewController::class, 'feature']);
+        Route::delete('/reviews/{review}',         [ReviewController::class, 'destroy']);
 
         // Backup & Restore
         Route::get('/backups',                     [BackupController::class, 'index']);

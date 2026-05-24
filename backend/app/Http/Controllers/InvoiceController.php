@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ReviewRequestMail;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Services\InvoiceFinalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Traits\IdentifiesPortalOwner;
 
@@ -284,6 +286,11 @@ class InvoiceController extends Controller
                     $owner = $invoice->pet->owner;
                     if ($owner) {
                         $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
+                        // Send review request email if owner has a portal account
+                        if ($owner->email && $owner->user_id) {
+                            Mail::mailer('invoice')->to($owner->email)
+                                ->send(new ReviewRequestMail($owner, $invoice));
+                        }
                     }
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());

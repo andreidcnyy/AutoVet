@@ -5,7 +5,7 @@ import {
   FiMail, FiPhone, FiMapPin, FiCalendar, FiBell, FiFileText,
   FiUsers, FiLock, FiChevronRight, FiMenu, FiX, FiVolume2, FiVolumeX
 } from 'react-icons/fi';
-import { getPublicSystemAnnouncements } from '../api';
+import { getPublicSystemAnnouncements, getPublicReviews } from '../api';
 import BroadcastBanner from '../components/BroadcastBanner';
 import clsx from 'clsx';
 import DarkModeToggle from '../components/DarkModeToggle';

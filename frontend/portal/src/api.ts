@@ -97,4 +97,9 @@ export const triggerSync = () => api.post('/sync/trigger');
 // Settings
 export const getSettings = () => api.get('/settings');
 
+// Reviews
+export const getPendingReview = () => api.get('/portal/reviews/pending');
+export const submitReview = (data: any) => api.post('/portal/reviews', data);
+export const getPublicReviews = () => axios.get('/api/reviews/public');
+
 export default api;
