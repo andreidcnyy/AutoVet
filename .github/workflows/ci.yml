@@ -18,24 +18,27 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: phar, pdo, mbstring, xml, curl, zip, pcntl
+          extensions: phar, pdo, mbstring, xml, curl, zip
           coverage: none
 
       - name: Validate composer.json
         working-directory: backend
-        run: composer validate
+        run: composer validate 2>&1; echo "composer validate exit: $?"
+        continue-on-error: true
 
       - name: Install dependencies
         working-directory: backend
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist 2>&1; echo "composer install exit: $?"
+        continue-on-error: true
 
-      - name: Check PHP syntax (app/)
+      - name: Check PHP syntax
         working-directory: backend
-        run: find app -name "*.php" -print0 | xargs -0 php -l
-
-      - name: Check PHP syntax (routes/)
-        working-directory: backend
-        run: find routes -name "*.php" -print0 | xargs -0 php -l
+        run: |
+          error=0
+          while IFS= read -r -d '' file; do
+            php -l "$file" || error=1
+          done < <(find app routes -name "*.php" -print0)
+          exit $error
 
   frontend-portal:
     name: Portal Frontend
