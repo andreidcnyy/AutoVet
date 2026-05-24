@@ -22,7 +22,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
   const [isLoadingForecast, setIsLoadingForecast] = useState(false);
-  const [isLoadingScore, setIsLoadingScore] = useState(false);
+  const [insufficientMsg, setInsufficientMsg] = useState(null);
 
 
   const { user } = useAuth();
@@ -34,6 +34,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       setIsEditing(false);
       setAiForecastData(null); 
       
+      setInsufficientMsg(null);
       setIsLoadingForecast(true);
       fetch(`/api/inventory/${product.id}/forecast/saved?t=${Date.now()}`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
@@ -45,21 +46,17 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     ...data,
                     last_recorded_date: data.generated_at ? new Date(data.generated_at).toLocaleDateString() : null,
                 });
-
-                const score = data.trend_fit_score ?? data.confidence_score;
-                if (score === null || score === undefined) {
-                    setIsLoadingScore(true);
-                    fetch(`/api/inventory/${product.id}/forecast`, {
-                        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+            } else {
+                fetch(`/api/inventory/${product.id}/forecast`, {
+                    headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+                })
+                    .then(r => r.json())
+                    .then(live => {
+                        if (live?.prediction_status === 'Insufficient Data' && live?.message) {
+                            setInsufficientMsg(live.message);
+                        }
                     })
-                        .then(r => r.json())
-                        .then(live => {
-                            const liveScore = live?.trend_fit_score ?? live?.confidence_score ?? null;
-                            setAiForecastData(prev => prev ? { ...prev, trend_fit_score: liveScore, confidence_score: liveScore } : prev);
-                        })
-                        .catch(() => {})
-                        .finally(() => setIsLoadingScore(false));
-                }
+                    .catch(() => {});
             }
             setIsLoadingForecast(false);
         })
@@ -343,7 +340,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     )}
                   </p>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className={clsx(
                         "rounded-lg p-3 border",
                         product.stock_level <= 0 ? "bg-rose-50/30 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30" : "bg-zinc-50 dark:bg-dark-surface border-zinc-100 dark:border-dark-border"
@@ -359,20 +356,6 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                         {Number(aiForecastData.predicted_monthly_sales || 0).toFixed(0)} units
                       </p>
                     </div>
-                    <div className="rounded-lg bg-violet-50 p-3 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
-                      <p className="text-[10px] font-bold text-violet-600 dark:text-violet-500 uppercase">Trend Fit</p>
-                      {isLoadingScore ? (
-                        <div className="h-5 w-12 mt-1 bg-violet-200 dark:bg-violet-800 rounded animate-pulse" />
-                      ) : (
-                        <p className="text-sm font-black text-violet-700 dark:text-violet-400">
-                          {(() => {
-                            const raw = aiForecastData.trend_fit_score ?? aiForecastData.confidence_score;
-                            const n = raw != null ? Number(raw) : null;
-                            return (n != null && !isNaN(n) && n >= 0) ? `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%` : '—';
-                          })()}
-                        </p>
-                      )}
-                    </div>
                   </div>
 
                   {aiForecastData.predicted_stockout_date && product.stock_level > 0 && (
@@ -386,6 +369,17 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {!aiForecastData && insufficientMsg && (
+            <div className="mt-8 border-t border-zinc-100 dark:border-dark-border pt-6">
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
+                <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
+              </h4>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{insufficientMsg}</p>
+              </div>
             </div>
           )}
 

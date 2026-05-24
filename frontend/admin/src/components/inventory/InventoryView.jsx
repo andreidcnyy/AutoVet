@@ -125,17 +125,6 @@ function AiGuideModal({ onClose }) {
             </div>
           </div>
 
-          {/* Trend fit */}
-          <div className="rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border p-4 space-y-2">
-            <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">What is "Trend Fit %"?</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              This is the AI's confidence score — how well your usage history fits a consistent pattern. A higher percentage means the forecast is more reliable. A lower percentage means usage is irregular, so treat the prediction as a rough estimate.
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              A dash (—) means not enough usage data yet to compute a score.
-            </p>
-          </div>
-
           {/* Note */}
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center leading-relaxed">
             The more appointment and usage data the system has, the more accurate the forecasts become over time.
@@ -474,13 +463,8 @@ function InventoryView() {
                                             ? "Stable trend — no stockout predicted"
                                             : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
                                 </span>
-                                {typeof (row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score) === 'number' && row.stock_level > 0 && (
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                                        Trend Fit {Math.round(Math.max(0, Math.min(1, row.latest_forecast.trend_fit_score ?? row.latest_forecast.confidence_score)) * 100)}%
-                                    </span>
-                                )}
                             </div>
-                         ) : <span className="text-xs text-zinc-300 font-bold uppercase">No Analysis</span>}
+                         ) : <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-600 italic">Needs more transaction data</span>}
                       </td>
                       <td className="px-6 py-5 text-right">
                         <button onClick={() => setViewedProduct(row)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
