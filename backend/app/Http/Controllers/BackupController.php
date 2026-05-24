@@ -21,13 +21,12 @@ class BackupController extends Controller
         $backups = [];
 
         foreach ($files as $file) {
-            if ($file->getExtension() === 'zip') {
-                $backups[] = [
-                    'filename' => $file->getFilename(),
-                    'size'     => $file->getSize(),
-                    'created_at' => date('Y-m-d H:i:s', $file->getMTime()),
-                ];
-            }
+            if (!preg_match('/^backup_[\d_]+\.tar\.gz$/', $file->getFilename())) continue;
+            $backups[] = [
+                'filename'   => $file->getFilename(),
+                'size'       => $file->getSize(),
+                'created_at' => date('Y-m-d H:i:s', $file->getMTime()),
+            ];
         }
 
         usort($backups, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
@@ -55,7 +54,7 @@ class BackupController extends Controller
     public function destroy($filename)
     {
         $filename = basename($filename);
-        if (!preg_match('/^backup_[\d_]+\.zip$/', $filename)) {
+        if (!preg_match('/^backup_[\d_]+\.tar\.gz$/', $filename)) {
             return response()->json(['message' => 'Invalid backup filename.'], 422);
         }
         $backupPath = storage_path('app/backups/' . $filename);
@@ -71,7 +70,7 @@ class BackupController extends Controller
     public function download($filename)
     {
         $filename = basename($filename);
-        if (!preg_match('/^backup_[\d_]+\.zip$/', $filename)) {
+        if (!preg_match('/^backup_[\d_]+\.tar\.gz$/', $filename)) {
             return response()->json(['message' => 'Invalid backup filename.'], 422);
         }
         $backupPath = storage_path('app/backups/' . $filename);

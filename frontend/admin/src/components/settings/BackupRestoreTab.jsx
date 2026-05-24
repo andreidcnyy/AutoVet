@@ -137,7 +137,7 @@ function BackupRestoreTab() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Data Backup</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Download clinic data as a ZIP of CSV spreadsheets</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Download clinic data as a compressed archive of CSV spreadsheets</p>
             </div>
           </div>
           <button
@@ -158,7 +158,7 @@ function BackupRestoreTab() {
           <div className="text-sm text-sky-800 dark:text-sky-200">
             <p className="font-bold">CSV Format</p>
             <p className="mt-1 leading-relaxed opacity-80">
-              Each backup is a ZIP file containing one CSV spreadsheet per data table — easy to open in Excel or Google Sheets. Download a backup to keep a safe copy of your clinic data.
+              Each backup is a .tar.gz archive containing one CSV spreadsheet per data table — easy to open in Excel or Google Sheets. Download a backup to keep a safe copy of your clinic data.
             </p>
           </div>
         </div>
@@ -204,7 +204,7 @@ function BackupRestoreTab() {
                     title="Download CSV Backup"
                   >
                     {processing ? <FiRefreshCw className="h-3.5 w-3.5 animate-spin" /> : <FiDownload className="h-3.5 w-3.5" />}
-                    Download CSV
+                    Download
                   </button>
                   <button
                     onClick={() => deleteBackup(backup.filename)}

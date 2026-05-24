@@ -4,14 +4,12 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use ZipArchive;
 
 class BackupDatabaseCommand extends Command
 {
     protected $signature = 'db:backup';
-    protected $description = 'Backup key clinic data as CSV files inside a ZIP archive';
+    protected $description = 'Backup key clinic data as CSV files inside a tar.gz archive';
 
-    // Tables to include in the backup
     private const TABLES = [
         'clinics',
         'users',
@@ -27,57 +25,56 @@ class BackupDatabaseCommand extends Command
 
     public function handle()
     {
-        if (!class_exists('ZipArchive')) {
-            $this->error('The ZipArchive PHP extension is not installed on this server.');
-            return 1;
-        }
-
         $backupPath = storage_path('app/backups');
         if (!is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);
         }
 
-        $filename = 'backup_' . date('Y_m_d_H_i_s') . '.zip';
-        $fullPath = $backupPath . '/' . $filename;
-
-        $zip = new ZipArchive();
-        if ($zip->open($fullPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->error("Failed to create ZIP archive at: {$fullPath}");
-            return 1;
-        }
+        $basename = 'backup_' . date('Y_m_d_H_i_s');
+        $tarPath  = $backupPath . '/' . $basename . '.tar';
+        $gzPath   = $tarPath . '.gz';
 
         $this->info("Creating CSV backup...");
 
-        foreach (self::TABLES as $table) {
-            try {
-                $rows = DB::table($table)->get();
+        try {
+            $phar = new \PharData($tarPath);
 
-                if ($rows->isEmpty()) {
-                    // Write header-only CSV so the file still appears in the ZIP
-                    $columns = DB::getSchemaBuilder()->getColumnListing($table);
-                    $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
-                } else {
-                    $columns = array_keys((array) $rows->first());
-                    $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
-                    foreach ($rows as $row) {
-                        $values = array_map(function ($v) {
-                            if ($v === null) return '';
-                            $v = str_replace('"', '""', (string) $v);
-                            return '"' . $v . '"';
-                        }, (array) $row);
-                        $csv .= implode(',', $values) . "\n";
+            foreach (self::TABLES as $table) {
+                try {
+                    $rows = DB::table($table)->get();
+
+                    if ($rows->isEmpty()) {
+                        $columns = DB::connection()->getSchemaBuilder()->getColumnListing($table);
+                        $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
+                    } else {
+                        $columns = array_keys((array) $rows->first());
+                        $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
+                        foreach ($rows as $row) {
+                            $values = array_map(function ($v) {
+                                if ($v === null) return '';
+                                $v = str_replace('"', '""', (string) $v);
+                                return '"' . $v . '"';
+                            }, (array) $row);
+                            $csv .= implode(',', $values) . "\n";
+                        }
                     }
-                }
 
-                $zip->addFromString("{$table}.csv", $csv);
-                $this->info("  + {$table}.csv (" . $rows->count() . " rows)");
-            } catch (\Exception $e) {
-                $this->warn("  ! Skipped {$table}: " . $e->getMessage());
+                    $phar->addFromString("{$table}.csv", $csv);
+                    $this->info("  + {$table}.csv (" . $rows->count() . " rows)");
+                } catch (\Exception $e) {
+                    $this->warn("  ! Skipped {$table}: " . $e->getMessage());
+                }
             }
+
+            $phar->compress(\Phar::GZ);
+            unlink($tarPath);
+        } catch (\Throwable $e) {
+            if (file_exists($tarPath)) unlink($tarPath);
+            $this->error("Failed to create backup: " . $e->getMessage());
+            return 1;
         }
 
-        $zip->close();
-        $this->info("Backup successfully created at: {$fullPath}");
+        $this->info("Backup successfully created: {$basename}.tar.gz");
         return 0;
     }
 }
