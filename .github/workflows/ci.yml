@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [Seb1, main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   backend:
     name: Backend (PHP 8.2)
@@ -18,7 +21,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: phar, pdo, mbstring, xml, curl, zip
+          extensions: phar, pdo, mbstring, xml, curl, zip, pcntl, posix
           coverage: none
 
       - name: Validate composer.json
@@ -44,10 +47,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node 20
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/portal/package-lock.json
 
@@ -66,10 +69,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node 20
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/admin/package-lock.json
 
