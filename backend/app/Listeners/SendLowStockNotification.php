@@ -44,7 +44,8 @@ class SendLowStockNotification
 
         if (empty($emails)) return;
 
-        $subject = "[{$urgencyLabel}] {$item->item_name} — AutoVet Inventory Alert";
+        $clinicName = \App\Models\Clinic::find($item->clinic_id)?->clinic_name ?? 'AutoVet';
+        $subject = "[{$urgencyLabel}] {$item->item_name} — {$clinicName} Inventory Alert";
         $html = <<<HTML
 <!DOCTYPE html>
 <html>
