@@ -33,3 +33,10 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Debug / dev scripts
+check_appts.php
+debug_forecast.php
+extract_mapping.py
+run_backend.ps1
+digivet_logo.png
