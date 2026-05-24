@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 function ChangePasswordPage() {
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,9 +34,10 @@ function ChangePasswordPage() {
           "Accept": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
-        body: JSON.stringify({ 
-          password, 
-          password_confirmation: passwordConfirmation 
+        body: JSON.stringify({
+          current_password: currentPassword,
+          password,
+          password_confirmation: passwordConfirmation
         }),
       });
 
@@ -69,6 +71,18 @@ function ChangePasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Current Password</label>
+            <input
+              type="password"
+              required
+              className="input-field"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              placeholder="Enter your current password"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">New Password</label>
             <div className="relative">

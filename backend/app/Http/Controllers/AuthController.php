@@ -11,6 +11,8 @@ use App\Models\Owner;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Roles;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use App\Mail\PasswordResetMail;
 
 class AuthController extends Controller
@@ -59,17 +61,20 @@ class AuthController extends Controller
                 'email.unique' => 'An account with this email already exists. If this is you, try logging in or resetting your password.',
             ]);
 
+            $token = Str::random(64);
+            Cache::put('pending_reg_' . $token, [
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'phone'    => $request->phone,
+                'address'  => $request->address,
+                'city'     => $request->city,
+                'province' => $request->province,
+                'zip'      => $request->zip,
+                'password' => Hash::make($request->password),
+            ], now()->addHours(24));
+
             $verificationUrl = \URL::temporarySignedRoute(
-                'registration.verify', now()->addHours(24), [
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'phone' => $request->phone,
-                    'address' => $request->address,
-                    'city' => $request->city,
-                    'province' => $request->province,
-                    'zip' => $request->zip,
-                    'password' => Hash::make($request->password), // Hash password before sending
-                ]
+                'registration.verify', now()->addHours(24), ['token' => $token]
             );
             
             // Send custom notification
@@ -99,9 +104,14 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid or expired verification link.'], 401);
         }
 
+        $pending = Cache::get('pending_reg_' . $request->query('token'));
+        if (!$pending) {
+            return response()->json(['error' => 'Verification link has expired or already been used.'], 410);
+        }
+
         try {
-            return DB::transaction(function () use ($request) {
-                $email = strtolower(trim((string) $request->email));
+            return DB::transaction(function () use ($request, $pending) {
+                $email = strtolower(trim((string) $pending['email']));
 
                 // Idempotent: if a PortalUser already exists for this email (e.g. the user
                 // clicked the verification link a second time, or had a duplicate link from
@@ -115,19 +125,21 @@ class AuthController extends Controller
                     }
                 } else {
                     $user = PortalUser::create([
-                        'clinic_id' => 1, // Default clinic
-                        'name' => $request->name,
-                        'email' => $email,
-                        'phone' => $request->phone,
-                        'password' => $request->password, // Already hashed
-                        'address' => $request->address,
-                        'city' => $request->city,
-                        'province' => $request->province,
-                        'zip' => $request->zip,
-                        'status' => 'active',
+                        'clinic_id' => 1,
+                        'name'              => $pending['name'],
+                        'email'             => $email,
+                        'phone'             => $pending['phone'],
+                        'password'          => $pending['password'],
+                        'address'           => $pending['address'],
+                        'city'              => $pending['city'],
+                        'province'          => $pending['province'],
+                        'zip'               => $pending['zip'],
+                        'status'            => 'active',
                         'email_verified_at' => now(),
                     ]);
                 }
+
+                Cache::forget('pending_reg_' . $request->query('token'));
 
                 // Find the canonical owner for this user: first by user_id, then by email.
                 $owner = Owner::where('user_id', $user->id)->first()
@@ -136,14 +148,14 @@ class AuthController extends Controller
                 if (!$owner) {
                     Owner::create([
                         'clinic_id' => 1,
-                        'name' => $request->name,
-                        'email' => $email,
-                        'phone' => $request->phone,
-                        'address' => $request->address,
-                        'city' => $request->city,
-                        'province' => $request->province,
-                        'zip' => $request->zip,
-                        'user_id' => $user->id,
+                        'name'     => $pending['name'],
+                        'email'    => $email,
+                        'phone'    => $pending['phone'],
+                        'address'  => $pending['address'],
+                        'city'     => $pending['city'],
+                        'province' => $pending['province'],
+                        'zip'      => $pending['zip'],
+                        'user_id'  => $user->id,
                     ]);
                 } else {
                     // Always ensure the owner is linked to the current portal user.
@@ -293,10 +305,16 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
+            'current_password' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'The current password is incorrect.'], 422);
+        }
+
         $user->update([
             'password' => Hash::make($request->password),
             'must_change_password' => false,
