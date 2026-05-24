@@ -343,7 +343,7 @@ function PatientRecordsView({
                              />
                              <div className="min-w-0 flex-1">
                                 <p className="font-black text-zinc-900 dark:text-zinc-50">{pet.name}</p>
-                                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.breed?.name || 'N/A'}</p>
+                                {pet.breed?.name && <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.breed.name}</p>}
                              </div>
                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-300 shadow-sm dark:bg-dark-card">
                                 <FiChevronRight className="h-4 w-4" />
