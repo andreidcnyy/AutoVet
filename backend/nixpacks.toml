@@ -29,6 +29,7 @@ cmds = [
 ]
 
 [start]
-# Clear any stale config cache so newly-added Railway env vars (AWS_*, etc.)
-# are picked up at runtime, run any pending migrations, then start the server.
+# Web service start command.
+# For the queue worker, create a separate Railway service in the same project
+# using the same repo with start command: php artisan horizon
 cmd = "php artisan config:clear && php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT"

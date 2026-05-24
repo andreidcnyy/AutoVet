@@ -1,0 +1,19 @@
+# Railway worker service config — point a new Railway service at this file
+# via: Settings > Build > Nixpacks config file path = backend/nixpacks.worker.toml
+# Start command override: php artisan horizon
+
+[phases.setup]
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "python3", "python3Packages.pip"]
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+]
+
+[phases.build]
+cmds = [
+  "chmod -R ug+rwx storage bootstrap/cache",
+]
+
+[start]
+cmd = "php artisan config:clear && php artisan horizon"
