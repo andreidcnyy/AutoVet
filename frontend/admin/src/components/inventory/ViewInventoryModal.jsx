@@ -158,6 +158,18 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
       }
       const data = await response.json();
       setAiForecastData(data);
+
+      // Fetch the freshly saved forecast and push it into the parent table row
+      const savedRes = await fetch(`/api/inventory/${product.id}/forecast/saved?t=${Date.now()}`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      });
+      if (savedRes.ok) {
+        const savedData = await savedRes.json();
+        if (savedData && savedData.prediction_status !== 'No Forecast Available') {
+          onUpdate({ ...product, latest_forecast: savedData });
+        }
+      }
+
       toast.success("AI Forecast updated successfully!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "An error occurred during forecasting.");

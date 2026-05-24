@@ -214,8 +214,15 @@ function InventoryView() {
   };
 
   const handleEditProduct = (updatedProduct) => {
-    setInventoryRows((prev) => prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)));
-    setViewedProduct(updatedProduct);
+    setInventoryRows((prev) => prev.map((item) =>
+      item.id === updatedProduct.id
+        ? { ...item, ...updatedProduct, latest_forecast: updatedProduct.latest_forecast ?? item.latest_forecast }
+        : item
+    ));
+    setViewedProduct((prev) => prev?.id === updatedProduct.id
+      ? { ...prev, ...updatedProduct, latest_forecast: updatedProduct.latest_forecast ?? prev?.latest_forecast }
+      : prev
+    );
   };
 
   const handleDeleteProduct = async (product) => {
