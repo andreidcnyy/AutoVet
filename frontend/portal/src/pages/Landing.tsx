@@ -134,9 +134,9 @@ const STATS = [
   { value: '5★',     label: 'Average Rating'       },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Maria Santos', pet: 'Owner of Brownie (Shih Tzu)',  text: "The portal made everything so easy! I can book appointments and check Brownie's records anytime. The vets here truly care about our pets.", rating: 5 },
-  { name: 'Carlo Reyes',  pet: 'Owner of Luna (Persian Cat)',  text: "Excellent service! I love getting notifications for Luna's vaccination schedules. The online booking is smooth and the staff is very professional.", rating: 5 },
+const FALLBACK_TESTIMONIALS = [
+  { reviewer_name: 'Maria Santos', pet_name: 'Brownie (Shih Tzu)', body: "The portal made everything so easy! I can book appointments and check Brownie's records anytime. The vets here truly care about our pets.", rating: 5 },
+  { reviewer_name: 'Carlo Reyes',  pet_name: 'Luna (Persian Cat)',  body: "Excellent service! I love getting notifications for Luna's vaccination schedules. The online booking is smooth and the staff is very professional.", rating: 5 },
 ];
 
 const NAV_LINKS = [
@@ -154,6 +154,7 @@ export default function Landing() {
   const [scrolled, setScrolled]             = useState(false);
   const [landingBanners, setLandingBanners] = useState<any[]>([]);
   const [isMuted, setIsMuted]               = useState(true);
+  const [reviews, setReviews]               = useState<any[] | null>(null);
   const videoRef                            = useRef<HTMLVideoElement>(null);
 
   const toggleMute = () => {
@@ -173,6 +174,12 @@ export default function Landing() {
     getPublicSystemAnnouncements('landing')
       .then(res => setLandingBanners(Array.isArray(res) ? res : res.data ?? []))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    getPublicReviews()
+      .then(res => setReviews(res.data?.data ?? res.data ?? []))
+      .catch(() => setReviews([]));
   }, []);
 
   const scrollTo = (id: string) => {
@@ -529,23 +536,28 @@ export default function Landing() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-                <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <span key={i} className="text-amber-400 text-lg">★</span>
-                  ))}
-                </div>
-                <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6 italic">"{t.text}"</p>
-                <div>
-                  <div className="font-black text-zinc-800 dark:text-zinc-100">{t.name}</div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">{t.pet}</div>
-                </div>
+          {(() => {
+            const displayList = reviews !== null && reviews.length > 0 ? reviews : FALLBACK_TESTIMONIALS;
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                {displayList.map((t, idx) => (
+                  <div key={t.id ?? idx} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
+                    <div className="flex gap-1 mb-4">
+                      {Array.from({ length: t.rating }).map((_, i) => (
+                        <span key={i} className="text-amber-400 text-lg">★</span>
+                      ))}
+                    </div>
+                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6 italic">"{t.body}"</p>
+                    <div>
+                      <div className="font-black text-zinc-800 dark:text-zinc-100">{t.reviewer_name}</div>
+                      {t.pet_name && <div className="text-sm text-zinc-500 dark:text-zinc-400">Owner of {t.pet_name}</div>}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       </section>
 
