@@ -385,32 +385,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const [weightRanges, setWeightRanges] = useState([]);
   const { user } = useAuth();
-
-  useEffect(() => {
-    api.get("/api/weight-ranges")
-      .then(data => {
-        const ranges = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-        setWeightRanges(ranges);
-      })
-      .catch(err => console.error("Failed to fetch weight ranges:", err));
-  }, []);
-
-  const determinedSizeName = useMemo(() => {
-    if (!patient) return "N/A";
-    if (patient.size_category?.name) return patient.size_category.name;
-    if (!patient.weight || !patient.species_id || weightRanges.length === 0) return "N/A";
-    
-    const weight = Number(patient.weight);
-    const range = weightRanges.find(r => 
-      Number(r.species_id) === Number(patient.species_id) &&
-      weight >= Number(r.min_weight) &&
-      (r.max_weight === null || weight <= Number(r.max_weight))
-    );
-    
-    return range?.label || range?.size_category?.name || "N/A";
-  }, [patient, weightRanges]);
 
   const isStaff = user?.role === ROLES.STAFF;
   const isVet = VET_AND_ADMIN.includes(user?.role);
@@ -560,7 +535,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
         </nav>
 
         <div className="p-6">
-          {activeTab === "overview" && <OverviewTab patient={patient} determinedSizeName={determinedSizeName} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} photoUpdating={photoUpdating} photoInputRef={photoInputRef} onChangePhoto={() => photoInputRef.current?.click()} onRemovePhoto={handleRemovePhoto} onPhotoFileChange={handlePhotoChange} />}
+          {activeTab === "overview" && <OverviewTab patient={patient} onOpenOwner={() => setSelectedOwnerId(patient.owner?.id)} photoUpdating={photoUpdating} photoInputRef={photoInputRef} onChangePhoto={() => photoInputRef.current?.click()} onRemovePhoto={handleRemovePhoto} onPhotoFileChange={handlePhotoChange} />}
           {activeTab === "medical" && <MedicalRecordsTab patient={patient} isStaff={isStaff} isVet={isVet} />}
           {activeTab === "appointments" && <AppointmentsTab appointments={patient.appointments || []} />}
           {activeTab === "invoices" && <InvoiceTab invoices={patient.invoices || []} />}
@@ -619,7 +594,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 
 /* ──────────────── Overview Tab ──────────────── */
 
-function OverviewTab({ patient, determinedSizeName, onOpenOwner, photoUpdating, photoInputRef, onChangePhoto, onRemovePhoto, onPhotoFileChange }) {
+function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onChangePhoto, onRemovePhoto, onPhotoFileChange }) {
   const owner = patient.owner;
   const hasOwner = owner && typeof owner === 'object' && owner.id;
 
