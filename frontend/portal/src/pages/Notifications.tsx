@@ -14,6 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
+import { useAuth } from '../context/AuthContext';
 import { PawPrint } from './Landing';
 
 export default function Notifications() {
@@ -22,8 +23,9 @@ export default function Notifications() {
   const [selectedNotification, setSelectedNotification] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const NOTIF_CACHE_KEY = 'portal_notifications_cache';
+  const NOTIF_CACHE_KEY = `portal_notifications_${user?.id}_cache`;
 
   const fetchNotifications = () => {
     getNotifications()

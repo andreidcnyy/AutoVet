@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
 import PetProfileModal from '../components/PetProfileModal';
+import { useAuth } from '../context/AuthContext';
 import { PawPrint } from './Landing';
 import clsx from 'clsx';
 
@@ -30,16 +31,17 @@ export default function Appointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
-  
+
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const selectedAppointmentRef = useRef<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const CACHE_KEY = 'portal_appointments_cache';
+  const CACHE_KEY = `portal_appointments_${user?.id}_cache`;
   const CACHE_TTL = 5 * 60 * 1000;
 
   const sortAppointments = (data: any[]) => {

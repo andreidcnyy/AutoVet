@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Admin;
+use App\Models\Owner;
 use App\Models\PortalUser;
 
 class ProfileController extends Controller
@@ -139,6 +141,19 @@ class ProfileController extends Controller
         ]);
 
         $user->update($validated);
+
+        // Sync name/email to linked Owner record so admin side reflects changes
+        if ($user instanceof PortalUser) {
+            $owner = Owner::where('user_id', $user->id)->first();
+            if ($owner) {
+                $syncData = array_filter([
+                    'name'  => $validated['name']  ?? null,
+                    'email' => $validated['email'] ?? null,
+                ]);
+                if ($syncData) $owner->update($syncData);
+            }
+            Cache::forget("portal_overview_{$user->id}");
+        }
 
         // Return the full user object for frontend sync
         return response()->json([

@@ -38,7 +38,7 @@ export default function Dashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const CACHE_KEY = 'portal_overview_cache';
+  const CACHE_KEY = `portal_overview_${user?.id}_cache`;
 
   const applyData = (data: any) => {
     const petsData = Array.isArray(data.pets) ? data.pets : data.pets?.data || [];

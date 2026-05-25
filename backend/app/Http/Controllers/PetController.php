@@ -54,7 +54,9 @@ class PetController extends Controller
                 $q->where('email', '!=', 'dataset.seeder@autovet.ai');
             });
 
-            if ($ownerId = $this->getPortalOwnerId()) {
+            if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+                $ownerId = $this->getPortalOwnerId();
+                if (!$ownerId) return response()->json([]);
                 $query->where('owner_id', $ownerId);
             }
             return response()->json($query->orderBy('name')->get());
@@ -73,8 +75,13 @@ class PetController extends Controller
             $q->where('email', '!=', 'dataset.seeder@autovet.ai');
         });
 
-        if ($ownerId = $this->getPortalOwnerId()) {
-            $query->where('owner_id', $ownerId);
+        if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+            $ownerId = $this->getPortalOwnerId();
+            if (!$ownerId) {
+                $query->whereRaw('0 = 1');
+            } else {
+                $query->where('owner_id', $ownerId);
+            }
         } elseif ($request->has('owner_id')) {
             $query->where('owner_id', $request->owner_id);
         }

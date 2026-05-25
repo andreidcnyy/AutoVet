@@ -33,7 +33,11 @@ class DashboardController extends Controller
 
     public function getPortalOverview(Request $request)
     {
-        $userId = $request->user()?->id;
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['pets' => [], 'appointments' => [], 'notifications' => []]);
+        }
+        $userId = $user->id;
 
         return response()->json(Cache::remember("portal_overview_{$userId}", 60, function () use ($request) {
             $petController = app(\App\Http\Controllers\PetController::class);

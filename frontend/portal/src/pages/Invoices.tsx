@@ -33,7 +33,7 @@ export default function Invoices() {
   const { user } = useAuth();
 
   useEffect(() => {
-    const CACHE_KEY = 'portal_invoices_cache';
+    const CACHE_KEY = `portal_invoices_${user?.id}_cache`;
     const cached = readCache<any>(CACHE_KEY);
     if (cached) {
       setInvoices(Array.isArray(cached.invoices) ? cached.invoices : []);
