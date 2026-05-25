@@ -59,7 +59,14 @@ export default function UserManagementTab() {
   useEffect(() => {
     const controller = new AbortController();
     fetchUsers(controller.signal);
-    return () => controller.abort();
+    const poll = setInterval(() => fetchUsers(), 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchUsers(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      controller.abort();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.token]);
 
   const handleOpenModal = (user = null) => {

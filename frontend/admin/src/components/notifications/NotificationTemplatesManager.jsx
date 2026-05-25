@@ -42,7 +42,15 @@ export default function NotificationTemplatesManager() {
   const toast = useToast();
 
   useEffect(() => {
-    if (user?.token) fetchTemplates();
+    if (!user?.token) return;
+    fetchTemplates();
+    const poll = setInterval(() => fetchTemplates(), 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchTemplates(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.token]);
 
   const fetchTemplates = async () => {

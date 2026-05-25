@@ -70,12 +70,14 @@ export default function InventoryForecastInsights() {
 
     window.addEventListener('inventory-forecast-refresh', handleGlobalRefresh);
     
-    // Auto-refresh every 2 minutes for ambient updates
     const interval = setInterval(() => fetchForecasts(), 120000);
-    
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchForecasts(); };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       window.removeEventListener('inventory-forecast-refresh', handleGlobalRefresh);
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.token]);
 

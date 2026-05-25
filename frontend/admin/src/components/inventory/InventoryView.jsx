@@ -202,12 +202,14 @@ function InventoryView() {
         toast.warning(`Low Stock Alert: ${e.inventoryItem.item_name} is running low!`);
       });
 
-    // Poll every 60 s so forecast updates from background jobs appear without a manual refresh
     const pollInterval = setInterval(() => fetchInventory(), 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchInventory(); };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       controller.abort();
       clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisible);
       echo.leave('admin.inventory');
     };
   }, [user?.token, fetchInventory]);

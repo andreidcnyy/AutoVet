@@ -101,7 +101,14 @@ export default function ServiceManagementTab() {
       console.error(err);
     });
 
-    return () => controller.abort();
+    const poll = setInterval(() => fetchServices(), 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchServices(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      controller.abort();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.token]);
 
   const handleOpenModal = (service = null) => {
