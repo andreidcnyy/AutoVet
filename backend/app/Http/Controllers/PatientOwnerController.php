@@ -30,8 +30,13 @@ class PatientOwnerController extends Controller
         // Always hide AI Training Records from the list for Admins/Staff
         $query->where('email', '!=', 'dataset.seeder@autovet.ai');
 
-        if ($ownerId = $this->getPortalOwnerId()) {
-            $query->where('id', $ownerId);
+        if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+            $ownerId = $this->getPortalOwnerId();
+            if (!$ownerId) {
+                $query->whereRaw('0 = 1');
+            } else {
+                $query->where('id', $ownerId);
+            }
         }
 
         // Add Search functionality
