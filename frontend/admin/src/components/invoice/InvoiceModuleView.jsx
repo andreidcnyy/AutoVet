@@ -1253,8 +1253,9 @@ function InvoiceModuleView() {
         localStorage.removeItem('dashboard_stats_cache');
         localStorage.removeItem(INVOICES_CACHE_KEY);
 
-        // Reset form to clear the UI after successful finalization
+        // Reset form and immediately refresh history list
         resetForm();
+        fetchInvoices(1, '', null, true);
 
         // Visibility sequence for AI workflow defense
         setTimeout(() => toast.info("Analyzing AI Inventory Impact...", 3000), 1000);

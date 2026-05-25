@@ -969,11 +969,21 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   };
 
   useEffect(() => {
-    Promise.all([
-      fetchRecords(),
-      fetchAppointments(),
-      fetchVets(),
-    ]);
+    Promise.all([fetchRecords(), fetchAppointments(), fetchVets()]);
+
+    // Poll every 30s so records/appointments added by another admin appear without a refresh
+    const poll = setInterval(() => {
+      fetchRecords();
+      fetchAppointments();
+    }, 30000);
+
+    const onVisible = () => { if (document.visibilityState === 'visible') { fetchRecords(); fetchAppointments(); } };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [patient.id]);
 
   const onSave = (record, setErrors) => {

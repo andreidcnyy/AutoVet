@@ -36,6 +36,15 @@ function ViewPatientProfilePage() {
 
   useEffect(() => {
     fetchPatient();
+
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchPatient(); };
+    document.addEventListener('visibilitychange', onVisible);
+    const poll = setInterval(fetchPatient, 30000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(poll);
+    };
   }, [id, user?.token]);
 
   if (error) {

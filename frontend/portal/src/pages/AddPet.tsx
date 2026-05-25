@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getPetSizeCategories, getWeightRanges, createPet, getBreeds } from '../api';
 import { getAgeGroup, calculateAgeDisplay } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
-import { readCache, writeCache } from '../utils/swrCache';
+import { readCache, writeCache, clearAllPortalCache } from '../utils/swrCache';
 
 const petSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
@@ -152,6 +152,7 @@ export default function AddPet() {
     setError(null);
     try {
       await createPet(data);
+      clearAllPortalCache();
       navigate('/');
     } catch (err: any) {
       console.error(err);
@@ -167,7 +168,7 @@ export default function AddPet() {
         </button>
       </div>
 
-      <div className="card-shell p-8 bg-white dark:bg-dark-card">
+      <div className="card-shell p-4 sm:p-8 bg-white dark:bg-dark-card">
         <h3 className="flex items-center gap-3 text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-8 italic uppercase tracking-tight">
           <span className="text-brand-500">/</span> Register Pet
         </h3>

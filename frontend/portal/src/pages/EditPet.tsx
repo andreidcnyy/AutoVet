@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet } from '../api';
 import { getAgeGroup } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
-import { readCache, writeCache } from '../utils/swrCache';
+import { readCache, writeCache, clearAllPortalCache } from '../utils/swrCache';
 
 const petSchema = z.object({
   name: z.string().min(1, "Pet name is required").max(255),
@@ -199,6 +199,7 @@ export default function EditPet() {
     setError(null);
     try {
       await updatePet(parseInt(id), data);
+      clearAllPortalCache();
       navigate('/');
     } catch (err: any) {
       console.error("SUBMIT ERROR:", err);
@@ -224,7 +225,7 @@ export default function EditPet() {
         </button>
       </div>
 
-      <div className="card-shell p-8 bg-white dark:bg-dark-card">
+      <div className="card-shell p-4 sm:p-8 bg-white dark:bg-dark-card">
         <h3 className="flex items-center gap-3 text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-8 italic uppercase tracking-tight">
           <span className="text-brand-500">/</span> Edit Pet Details
         </h3>
@@ -236,7 +237,7 @@ export default function EditPet() {
           </div>
         )}
 
-        <form className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <div className="flex flex-col items-center gap-4 py-4 border-b border-zinc-100 dark:border-dark-border">
             <button 
               type="button" 
@@ -350,11 +351,22 @@ export default function EditPet() {
 
           <div>
             <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Medical Notes</label>
-            <textarea 
+            <textarea
               {...register("notes")}
               className="input-field h-32 py-4 resize-none font-medium text-base"
               placeholder="Any other details the vet should know?"
             />
+          </div>
+
+          <div className="pt-6 border-t border-zinc-100 dark:border-dark-border">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-brand-500 text-white text-base font-black uppercase tracking-widest shadow-lg shadow-brand-500/25 hover:bg-brand-600 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+            >
+              <FiCheckCircle className="w-5 h-5" />
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </button>
           </div>
         </form>
       </div>

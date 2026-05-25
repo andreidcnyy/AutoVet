@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getInvoices, getPets, getSettings } from '../api';
 import {
   FiCreditCard,
@@ -32,8 +32,23 @@ export default function Invoices() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const CACHE_KEY = `portal_invoices_${user?.id}_cache`;
+
+  const fetchInvoices = useCallback(() => {
+    return Promise.all([getInvoices(), getPets(), getSettings()])
+      .then(([invRes, petsRes, settingsRes]) => {
+        const invData = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
+        const petsData = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
+        setInvoices(invData);
+        setPets(petsData);
+        setClinicSettings(settingsRes.data);
+        writeCache(CACHE_KEY, { invoices: invData, pets: petsData, clinicSettings: settingsRes.data });
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [CACHE_KEY]);
+
   useEffect(() => {
-    const CACHE_KEY = `portal_invoices_${user?.id}_cache`;
     const cached = readCache<any>(CACHE_KEY);
     if (cached) {
       setInvoices(Array.isArray(cached.invoices) ? cached.invoices : []);
@@ -41,25 +56,20 @@ export default function Invoices() {
       setClinicSettings(cached.clinicSettings || null);
       setLoading(false);
     }
+    fetchInvoices();
 
-    Promise.all([getInvoices(), getPets(), getSettings()])
-      .then(([invRes, petsRes, settingsRes]) => {
-        const invData = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
-        const petsData = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
+    // Re-fetch when tab regains focus
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchInvoices(); };
+    document.addEventListener('visibilitychange', onVisible);
 
-        setInvoices(invData);
-        setPets(petsData);
-        setClinicSettings(settingsRes.data);
+    // Poll every 30s so invoice status changes from admin are reflected promptly
+    const poll = setInterval(fetchInvoices, 30000);
 
-        writeCache(CACHE_KEY, {
-          invoices: invData,
-          pets: petsData,
-          clinicSettings: settingsRes.data,
-        });
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(poll);
+    };
+  }, [fetchInvoices]);
 
   const handleDownload = (invoice: any) => {
     const enrichedInvoice = {
