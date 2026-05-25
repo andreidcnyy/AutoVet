@@ -72,10 +72,15 @@ class InvoiceController extends Controller
               });
         });
 
-        if ($ownerId = $this->getPortalOwnerId()) {
-            $query->whereHas('pet', function ($q) use ($ownerId) {
-                $q->where('owner_id', $ownerId);
-            });
+        if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+            $ownerId = $this->getPortalOwnerId();
+            if (!$ownerId) {
+                $query->whereRaw('0 = 1');
+            } else {
+                $query->whereHas('pet', function ($q) use ($ownerId) {
+                    $q->where('owner_id', $ownerId);
+                });
+            }
         }
 
         // Date range filter
