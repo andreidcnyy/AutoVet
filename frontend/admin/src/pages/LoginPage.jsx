@@ -75,8 +75,14 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
-      <div className="absolute top-6 right-6 flex items-center gap-3">
+    <div
+      className="relative flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 overflow-y-auto px-4 py-8"
+      style={{ minHeight: '100dvh' }}
+    >
+      <div
+        className="absolute flex items-center gap-3"
+        style={{ top: 'max(1.5rem, env(safe-area-inset-top))', right: 'max(1.5rem, env(safe-area-inset-right))' }}
+      >
         <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
           
         </span>
