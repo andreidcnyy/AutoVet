@@ -30,6 +30,15 @@ export default function InventoryAiStatusCard() {
     };
 
     fetchData();
+    const poll = setInterval(fetchData, 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('inventory-forecast-refresh', fetchData);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('inventory-forecast-refresh', fetchData);
+    };
   }, [user?.token]);
 
   if (loading) {

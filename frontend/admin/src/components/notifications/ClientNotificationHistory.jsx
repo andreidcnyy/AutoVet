@@ -16,9 +16,15 @@ export default function ClientNotificationHistory() {
     const { user } = useAuth();
 
     useEffect(() => {
-        if (user?.token) {
-            fetchHistory();
-        }
+        if (!user?.token) return;
+        fetchHistory();
+        const poll = setInterval(fetchHistory, 30000);
+        const onVisible = () => { if (document.visibilityState === 'visible') fetchHistory(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            clearInterval(poll);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
     }, [page, channel, status, user?.token]);
 
     const fetchHistory = async () => {

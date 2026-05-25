@@ -321,7 +321,14 @@ function AuditLogTab() {
 
   useEffect(() => {
     fetchLogs(1);
-    return () => { if (controllerRef.current) controllerRef.current.abort(); };
+    const poll = setInterval(() => fetchLogs(1), 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(1); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      if (controllerRef.current) controllerRef.current.abort();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [filters]);
 
   const handlePageChange = (page) => {

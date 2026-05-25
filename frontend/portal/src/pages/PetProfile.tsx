@@ -41,25 +41,31 @@ function PetProfile() {
       setLoading(false);
     }
 
-    Promise.all([
-      getPet(petId),
-      getMedicalRecords(petId),
-      getInvoices({ pet_id: petId })
-    ])
-    .then(([petRes, medicalRes, invoiceRes]) => {
-      const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data?.data || [];
-      setPet(petRes.data);
-      setMedicalRecords(medicalRes.data);
-      setInvoices(invoiceData);
-      writeCache(CACHE_KEY, {
-        pet: petRes.data,
-        medicalRecords: medicalRes.data,
-        invoices: invoiceData,
-      });
-      writeCache(`portal_pet_${petId}_cache`, petRes.data);
-    })
-    .catch(console.error)
-    .finally(() => setLoading(false));
+    const fetchAll = () =>
+      Promise.all([
+        getPet(petId),
+        getMedicalRecords(petId),
+        getInvoices({ pet_id: petId })
+      ])
+      .then(([petRes, medicalRes, invoiceRes]) => {
+        const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data?.data || [];
+        setPet(petRes.data);
+        setMedicalRecords(medicalRes.data);
+        setInvoices(invoiceData);
+        writeCache(CACHE_KEY, { pet: petRes.data, medicalRecords: medicalRes.data, invoices: invoiceData });
+        writeCache(`portal_pet_${petId}_cache`, petRes.data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+
+    fetchAll();
+    const poll = setInterval(fetchAll, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [id]);
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading pet profile...</div>;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getPortalOverview, cancelAppointment, getPendingReview } from '../api';
-import { readCache, writeCache } from '../utils/swrCache';
+import { readCache, writeCache, clearCache } from '../utils/swrCache';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard, FiAlertCircle, FiCheckCircle, FiStar } from 'react-icons/fi';
 import ReviewModal from '../components/ReviewModal';
@@ -109,8 +109,17 @@ export default function Dashboard() {
   };
 
   const completeReview = (invoiceId: number) => {
-    setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId));
     setReviewTarget(null);
+    // Re-fetch from server so the list reflects the actual saved state
+    if (!user?.id) return;
+    const dismissKey = `dismissed_reviews_${user.id}`;
+    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
+    getPendingReview()
+      .then((res: any) => {
+        const all: any[] = res.data?.invoices ?? [];
+        setPendingReviews(all.filter((inv: any) => !dismissed.includes(inv.id)));
+      })
+      .catch(() => setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId)));
   };
 
   const handlePetClick = (id: number) => {
@@ -134,6 +143,7 @@ export default function Dashboard() {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
     try {
       await cancelAppointment(id);
+      clearCache(CACHE_KEY);
       fetchData();
       setIsDetailsOpen(false);
     } catch (err: any) {

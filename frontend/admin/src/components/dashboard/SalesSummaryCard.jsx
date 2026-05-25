@@ -38,7 +38,18 @@ export default function SalesSummaryCard() {
     }).finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const poll = setInterval(load, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('inventory-forecast-refresh', load);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('inventory-forecast-refresh', load);
+    };
+  }, []);
 
   // Today / this week / this month from daily revenue data
   const { today, week, month } = useMemo(() => {

@@ -40,16 +40,23 @@ function CalendarView() {
 
   useEffect(() => {
     if (!user?.token) return;
-    
-    fetch("/api/appointments", {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
-      }
-    })
-      .then((res) => res.json())
-      .then((data) => setAppointments(data))
-      .catch((err) => console.error("Error fetching calendar appointments:", err));
+
+    const fetchAppointments = () =>
+      fetch("/api/appointments", {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
+      })
+        .then((res) => res.json())
+        .then((data) => setAppointments(data))
+        .catch((err) => console.error("Error fetching calendar appointments:", err));
+
+    fetchAppointments();
+    const poll = setInterval(fetchAppointments, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAppointments(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.token]);
 
   const calendarDays = generateCalendarGrid(currentDate, appointments);

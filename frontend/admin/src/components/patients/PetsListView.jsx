@@ -54,6 +54,13 @@ function PetsListView() {
 
   useEffect(() => {
     fetchPets();
+    const poll = setInterval(fetchPets, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchPets(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.token]);
 
   const filteredPets = useMemo(() => {

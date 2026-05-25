@@ -61,11 +61,15 @@ export default function ArchiveRecoveryTab() {
   };
 
   useEffect(() => {
-    if (user?.token) {
-      fetchArchives(activeType, 1);
-    }
+    if (!user?.token) return;
+    fetchArchives(activeType, 1);
+    const poll = setInterval(() => fetchArchives(activeType, 1), 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchArchives(activeType, 1); };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [activeType, user?.token]);
 
