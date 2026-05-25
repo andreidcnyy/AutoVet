@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { getPortalOverview, cancelAppointment } from '../api';
+import { createPortal } from 'react-dom';
+import { getPortalOverview, cancelAppointment, getPendingReview } from '../api';
 import { readCache, writeCache } from '../utils/swrCache';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, FiPlusCircle, FiUser, FiXCircle, FiCreditCard, FiAlertCircle, FiCheckCircle, FiStar } from 'react-icons/fi';
+import ReviewModal from '../components/ReviewModal';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
@@ -45,6 +47,11 @@ export default function Dashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  // To Review
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
+  const [isReviewPanelOpen, setIsReviewPanelOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<any>(null);
+
   const CACHE_KEY = `portal_overview_${user?.id}_cache`;
 
   const applyData = (data: any) => {
@@ -74,6 +81,31 @@ export default function Dashboard() {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const dismissKey = `dismissed_reviews_${user.id}`;
+    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
+    getPendingReview()
+      .then((res: any) => {
+        const all: any[] = res.data?.invoices ?? [];
+        setPendingReviews(all.filter((inv: any) => !dismissed.includes(inv.id)));
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  const dismissReview = (invoiceId: number) => {
+    if (!user?.id) return;
+    const dismissKey = `dismissed_reviews_${user.id}`;
+    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
+    localStorage.setItem(dismissKey, JSON.stringify([...dismissed, invoiceId]));
+    setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId));
+  };
+
+  const completeReview = (invoiceId: number) => {
+    setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId));
+    setReviewTarget(null);
+  };
 
   const handlePetClick = (id: number) => {
     setSelectedPetId(id);
@@ -196,6 +228,24 @@ export default function Dashboard() {
 
         {/* Appointments Section */}
         <div className="space-y-6">
+          {/* To Review */}
+          {pendingReviews.length > 0 && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setIsReviewPanelOpen(true)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FiStar className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-black text-amber-800 dark:text-amber-300">To Review</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black">
+                  +{pendingReviews.length}
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* Notifications Highlight */}
           {notifications.filter(n => !n.id?.startsWith?.('invoice') && n.iconName !== 'FiFileText').length > 0 && (
             <div className="space-y-3">
@@ -452,6 +502,77 @@ export default function Dashboard() {
         petId={petToEditId}
         onSuccess={fetchData}
       />
+
+      {/* To Review Panel */}
+      {isReviewPanelOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setIsReviewPanelOpen(false)}
+          />
+          <div className="relative w-full max-w-md bg-white dark:bg-dark-card rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 max-h-[85vh]">
+            <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-orange-400 shrink-0" />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border shrink-0">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-0.5">Pending Reviews</p>
+                <h3 className="text-lg font-black text-zinc-800 dark:text-zinc-100">Share Your Experience</h3>
+              </div>
+              <button
+                onClick={() => setIsReviewPanelOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface hover:text-zinc-600 transition-all"
+              >
+                <FiPlusCircle className="h-5 w-5 rotate-45" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-3">
+              {pendingReviews.map(invoice => (
+                <div key={invoice.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-zinc-800 dark:text-zinc-100 truncate">
+                      {invoice.pet?.name ?? 'Your pet'}'s Visit
+                    </p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">Invoice #{invoice.invoice_number ?? invoice.id}</p>
+                    {invoice.pet?.species?.name && (
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wide">
+                        {invoice.pet.species.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button
+                      onClick={() => { setReviewTarget(invoice); setIsReviewPanelOpen(false); }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-black hover:bg-amber-600 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                      Write Review
+                    </button>
+                    <button
+                      onClick={() => dismissReview(invoice.id)}
+                      className="px-3 py-1.5 rounded-xl text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors text-center"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {pendingReviews.length === 0 && (
+                <p className="text-center text-sm text-zinc-400 py-8">No pending reviews.</p>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Review Modal */}
+      {reviewTarget && createPortal(
+        <ReviewModal
+          invoice={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          onDismiss={() => dismissReview(reviewTarget.id)}
+          onSubmitted={() => completeReview(reviewTarget.id)}
+        />,
+        document.body
+      )}
     </div>
   );
 }

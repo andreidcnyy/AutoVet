@@ -19,23 +19,23 @@ class ReviewController extends Controller
         return response()->json($reviews);
     }
 
-    // Portal — check if current user has an invoice awaiting review
+    // Portal — return all invoices awaiting review (last 30 days)
     public function pending(Request $request)
     {
         $user = $request->user();
         if (!$user || !method_exists($user, 'isOwner') || !$user->isOwner()) {
-            return response()->json(['invoice' => null]);
+            return response()->json(['invoices' => []]);
         }
 
-        $invoice = Invoice::whereHas('pet.owner', fn ($q) => $q->where('user_id', $user->id))
+        $invoices = Invoice::whereHas('pet.owner', fn ($q) => $q->where('user_id', $user->id))
             ->whereIn('status', ['Finalized', 'Paid'])
             ->where('created_at', '>=', now()->subDays(30))
             ->whereDoesntHave('review')
             ->with('pet.species')
             ->latest()
-            ->first();
+            ->get();
 
-        return response()->json(['invoice' => $invoice]);
+        return response()->json(['invoices' => $invoices]);
     }
 
     // Portal — submit a review

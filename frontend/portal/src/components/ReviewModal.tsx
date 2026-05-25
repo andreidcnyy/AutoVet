@@ -10,10 +10,11 @@ interface Props {
     pet?: { name?: string; species?: { name?: string } };
   };
   onClose: () => void;
+  onDismiss?: () => void;
   onSubmitted?: () => void;
 }
 
-export default function ReviewModal({ invoice, onClose, onSubmitted }: Props) {
+export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }: Props) {
   const [rating, setRating]         = useState(0);
   const [hovered, setHovered]       = useState(0);
   const [lastClicked, setLastClicked] = useState(0);
@@ -212,7 +213,7 @@ export default function ReviewModal({ invoice, onClose, onSubmitted }: Props) {
             {/* Footer */}
             <div className="flex items-center justify-between px-7 py-4 border-t border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30 mt-2 animate-in fade-in duration-300 delay-200">
               <button
-                onClick={handleClose}
+                onClick={() => { onDismiss?.(); onClose(); }}
                 className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
               >
                 Maybe later
