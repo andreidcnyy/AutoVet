@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import echo from "../../utils/echo";
@@ -411,6 +412,7 @@ function AppointmentsView() {
         </section>
       </div>
 
+      {createPortal(
       <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
         <aside className={clsx("relative z-10 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
@@ -533,15 +535,18 @@ function AppointmentsView() {
             </>
           )}
         </aside>
-      </div>
-      {declineModal.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-8">
-            <h3 className="text-xl font-black text-rose-600 mb-2">Decline Appointment</h3>
-            <textarea value={declineModal.reason} onChange={(e) => setDeclineModal(prev => ({ ...prev, reason: e.target.value }))} rows={5} className="w-full rounded-xl border p-3" placeholder="Reason (min 10 chars)..." />
-            <div className="flex justify-end gap-3 mt-6"><button onClick={() => setDeclineModal({ open: false, reason: "", error: "", submitting: false })} className="px-6 py-2.5 font-bold">Cancel</button><button onClick={submitDecline} disabled={declineModal.submitting || declineModal.reason.length < 10} className="px-6 py-2.5 bg-rose-600 text-white font-black rounded-xl">Confirm Decline</button></div>
-          </div>
+      </div>,
+      document.body
+      )}
+      {createPortal(
+      <div className={clsx("fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-200", declineModal.open ? "opacity-100" : "opacity-0 pointer-events-none")}>
+        <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-dark-card p-8">
+          <h3 className="text-xl font-black text-rose-600 mb-2">Decline Appointment</h3>
+          <textarea value={declineModal.reason} onChange={(e) => setDeclineModal(prev => ({ ...prev, reason: e.target.value }))} rows={5} className="w-full rounded-xl border dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 p-3" placeholder="Reason (min 10 chars)..." />
+          <div className="flex justify-end gap-3 mt-6"><button onClick={() => setDeclineModal({ open: false, reason: "", error: "", submitting: false })} className="px-6 py-2.5 font-bold dark:text-zinc-300">Cancel</button><button onClick={submitDecline} disabled={declineModal.submitting || declineModal.reason.length < 10} className="px-6 py-2.5 bg-rose-600 text-white font-black rounded-xl disabled:opacity-50">Confirm Decline</button></div>
         </div>
+      </div>,
+      document.body
       )}
       <ManualSendModal isOpen={isSendModalOpen} onClose={() => setIsSendModalOpen(false)} owner={Array.isArray(owners) ? owners.find(o => o.id === selectedAppointment?.pet?.owner_id) : null} relatedObject={selectedAppointment} relatedType="App\Models\Appointment" />
     </div>
