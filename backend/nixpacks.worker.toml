@@ -3,12 +3,11 @@
 # Start command override: php artisan horizon
 
 [phases.setup]
-nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "python3", "python3Packages.pip"]
+nixPkgs = ["php82", "php82Packages.composer"]
 
 [phases.install]
 cmds = [
   "composer install --no-dev --optimize-autoloader --no-interaction",
-  "pip3 install --no-cache-dir --break-system-packages -r ai/requirements.txt"
 ]
 
 [phases.build]

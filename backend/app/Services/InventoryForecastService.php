@@ -348,7 +348,9 @@ class InventoryForecastService
     }
 
     /**
-     * Run batch forecast for multiple items in a single process.
+     * Run batch forecast for multiple items.
+     * When AI_API_URL is set, calls the API per-item (no local Python required).
+     * Falls back to the local batch_forecast.py script otherwise.
      */
     public function runBatchForecast(array $inventoryIds, int $historyDays = 365, string $triggerSource = 'manual'): void
     {
@@ -357,113 +359,156 @@ class InventoryForecastService
         $this->updateBatchProgress($batchId, 0, $totalItems, 'Preparing inventory data...');
 
         try {
-            $itemsToProcess = [];
-            foreach ($inventoryIds as $id) {
-                $inventory = Inventory::find($id);
-                if ($inventory) {
-                    $itemsToProcess[] = [
-                        'id' => $inventory->id,
-                        'code' => $inventory->code ?? $inventory->item_name,
-                        'min_stock_level' => $inventory->min_stock_level,
-                        'current_stock' => $inventory->stock_level,
-                        'history_days' => $historyDays
-                    ];
-                }
+            if (env('AI_API_URL')) {
+                $this->runBatchViaApi($inventoryIds, $historyDays, $triggerSource, $batchId, $totalItems);
+            } else {
+                $this->runBatchViaPython($inventoryIds, $historyDays, $triggerSource, $batchId, $totalItems);
             }
-
-            if (empty($itemsToProcess)) {
-                $this->updateBatchProgress($batchId, 100, 0, 'No items found with valid codes for analysis.');
-                return;
-            }
-
-            // Write temporary JSON input for Python
-            $tempDir = storage_path('app/temp');
-            if (!is_dir($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-            
-            $inputPath = $tempDir . "/batch_input_{$batchId}.json";
-            file_put_contents($inputPath, json_encode($itemsToProcess));
-
-            // Export live usage history to a temporary CSV for the batch job
-            $batchCsvPath = $tempDir . "/batch_usage_{$batchId}.csv";
-            $usageRows = InventoryUsageHistory::forecastingSafe()
-                ->whereIn('inventory_id', $inventoryIds)
-                ->where('usage_date', '>=', now()->subDays($historyDays)->toDateString())
-                ->get(['inventory_id', 'usage_date', 'quantity_used']);
-
-            $f = fopen($batchCsvPath, 'w');
-            fputcsv($f, ['id', 'code', 'date', 'quantity_used']);
-            
-            // Map IDs back to codes for Python filtering
-            $idToCode = [];
-            foreach ($itemsToProcess as $item) { $idToCode[$item['id']] = $item['code']; }
-
-            foreach ($usageRows as $row) {
-                fputcsv($f, [
-                    $row->inventory_id,
-                    $idToCode[$row->inventory_id] ?? 'UNK',
-                    $row->usage_date instanceof \Carbon\Carbon ? $row->usage_date->toDateString() : $row->usage_date,
-                    $row->quantity_used
-                ]);
-            }
-            fclose($f);
-
-            $this->updateBatchProgress($batchId, 15, $totalItems, 'Executing AI Batch Model...');
-
-            $pythonExecutable = env('PYTHON_BIN_PATH')
-                ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
-            $scriptPath = base_path('ai/batch_forecast.py');
-
-            $command = $pythonExecutable
-                . ' ' . escapeshellarg($scriptPath)
-                . ' ' . escapeshellarg($batchCsvPath)
-                . ' ' . escapeshellarg($inputPath);
-
-            // Using long timeout for batch process
-            $process = Process::path(base_path())->timeout(300)->run($command);
-
-            if ($process->failed()) {
-                throw new \Exception("Batch Python script failed: " . $process->errorOutput());
-            }
-
-            $allResults = json_decode($process->output(), true);
-            if (!$allResults || isset($allResults['error'])) {
-                $errorMsg = $allResults['error'] ?? 'Invalid JSON output from AI script.';
-                throw new \Exception($errorMsg);
-            }
-
-            $this->updateBatchProgress($batchId, 70, $totalItems, 'Syncing results to database...');
-
-            $successCount = 0;
-            foreach ($allResults as $inventoryId => $result) {
-                if (isset($result['error']) || ($result['prediction_status'] ?? '') === 'Error') {
-                    Log::warning("Batch forecast item failure ID {$inventoryId}: " . ($result['error'] ?? 'Unknown error'));
-                    continue;
-                }
-                
-                $this->saveForecast((int)$inventoryId, $result, $triggerSource);
-                $successCount++;
-            }
-
-            // Cleanup
-            if (file_exists($inputPath)) {
-                @unlink($inputPath);
-            }
-            
-            $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
-            Log::info("[AI-BATCH-SUCCESS] Processed {$totalItems} items, saved {$successCount} results.");
-
-            // Clear relevant caches
-            Cache::forget('dashboard_inventory_forecast');
-            Cache::forget('dashboard_stats');
-            Cache::forget('dashboard_inventory_consumption_6');
-            Cache::forget('dashboard_inventory_consumption_12');
-
         } catch (\Throwable $e) {
             Log::error("[AI-BATCH-ERROR] " . $e->getMessage());
             $this->updateBatchProgress($batchId, 0, $totalItems, 'Error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Batch forecast using the remote AI API (no Python needed).
+     * Calls runPythonForecast per-item, which already handles the API path.
+     */
+    private function runBatchViaApi(array $inventoryIds, int $historyDays, string $triggerSource, string $batchId, int $totalItems): void
+    {
+        $successCount = 0;
+        $processed = 0;
+
+        foreach ($inventoryIds as $id) {
+            $inventory = Inventory::find($id);
+            if (!$inventory) continue;
+
+            $usageCount = InventoryUsageHistory::forecastingSafe()
+                ->where('inventory_id', $id)
+                ->count();
+
+            if ($usageCount < 3) {
+                $processed++;
+                continue;
+            }
+
+            $result = $this->runPythonForecast($inventory, $historyDays);
+            if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
+                $this->saveForecast($id, $result, $triggerSource);
+                $successCount++;
+            }
+
+            $processed++;
+            $percent = (int) min(95, ($processed / $totalItems) * 95);
+            $this->updateBatchProgress($batchId, $percent, $totalItems, "Processing item {$processed} of {$totalItems}...");
+        }
+
+        $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
+        Log::info("[AI-BATCH-SUCCESS] API mode: processed {$totalItems} items, saved {$successCount} results.");
+
+        Cache::forget('dashboard_inventory_forecast');
+        Cache::forget('dashboard_stats');
+        Cache::forget('dashboard_inventory_consumption_6');
+        Cache::forget('dashboard_inventory_consumption_12');
+    }
+
+    /**
+     * Batch forecast using local batch_forecast.py (requires Python).
+     */
+    private function runBatchViaPython(array $inventoryIds, int $historyDays, string $triggerSource, string $batchId, int $totalItems): void
+    {
+        $itemsToProcess = [];
+        foreach ($inventoryIds as $id) {
+            $inventory = Inventory::find($id);
+            if ($inventory) {
+                $itemsToProcess[] = [
+                    'id' => $inventory->id,
+                    'code' => $inventory->code ?? $inventory->item_name,
+                    'min_stock_level' => $inventory->min_stock_level,
+                    'current_stock' => $inventory->stock_level,
+                    'history_days' => $historyDays
+                ];
+            }
+        }
+
+        if (empty($itemsToProcess)) {
+            $this->updateBatchProgress($batchId, 100, 0, 'No items found with valid codes for analysis.');
+            return;
+        }
+
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $inputPath = $tempDir . "/batch_input_{$batchId}.json";
+        file_put_contents($inputPath, json_encode($itemsToProcess));
+
+        $batchCsvPath = $tempDir . "/batch_usage_{$batchId}.csv";
+        $usageRows = InventoryUsageHistory::forecastingSafe()
+            ->whereIn('inventory_id', $inventoryIds)
+            ->where('usage_date', '>=', now()->subDays($historyDays)->toDateString())
+            ->get(['inventory_id', 'usage_date', 'quantity_used']);
+
+        $idToCode = [];
+        foreach ($itemsToProcess as $item) { $idToCode[$item['id']] = $item['code']; }
+
+        $f = fopen($batchCsvPath, 'w');
+        fputcsv($f, ['id', 'code', 'date', 'quantity_used']);
+        foreach ($usageRows as $row) {
+            fputcsv($f, [
+                $row->inventory_id,
+                $idToCode[$row->inventory_id] ?? 'UNK',
+                $row->usage_date instanceof \Carbon\Carbon ? $row->usage_date->toDateString() : $row->usage_date,
+                $row->quantity_used
+            ]);
+        }
+        fclose($f);
+
+        $this->updateBatchProgress($batchId, 15, $totalItems, 'Executing AI Batch Model...');
+
+        $pythonExecutable = env('PYTHON_BIN_PATH')
+            ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
+        $scriptPath = base_path('ai/batch_forecast.py');
+
+        $process = Process::path(base_path())->timeout(300)->run(
+            $pythonExecutable
+            . ' ' . escapeshellarg($scriptPath)
+            . ' ' . escapeshellarg($batchCsvPath)
+            . ' ' . escapeshellarg($inputPath)
+        );
+
+        if (file_exists($inputPath)) @unlink($inputPath);
+        if (file_exists($batchCsvPath)) @unlink($batchCsvPath);
+
+        if ($process->failed()) {
+            throw new \Exception("Batch Python script failed: " . $process->errorOutput());
+        }
+
+        $allResults = json_decode($process->output(), true);
+        if (!$allResults || isset($allResults['error'])) {
+            throw new \Exception($allResults['error'] ?? 'Invalid JSON output from AI script.');
+        }
+
+        $this->updateBatchProgress($batchId, 70, $totalItems, 'Syncing results to database...');
+
+        $successCount = 0;
+        foreach ($allResults as $inventoryId => $result) {
+            if (isset($result['error']) || ($result['prediction_status'] ?? '') === 'Error') {
+                Log::warning("Batch forecast item failure ID {$inventoryId}: " . ($result['error'] ?? 'Unknown error'));
+                continue;
+            }
+            $this->saveForecast((int)$inventoryId, $result, $triggerSource);
+            $successCount++;
+        }
+
+        $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
+        Log::info("[AI-BATCH-SUCCESS] Python mode: processed {$totalItems} items, saved {$successCount} results.");
+
+        Cache::forget('dashboard_inventory_forecast');
+        Cache::forget('dashboard_stats');
+        Cache::forget('dashboard_inventory_consumption_6');
+        Cache::forget('dashboard_inventory_consumption_12');
     }
 
     /**
