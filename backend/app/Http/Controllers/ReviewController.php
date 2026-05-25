@@ -22,7 +22,10 @@ class ReviewController extends Controller
     // Portal — check if current user has an invoice awaiting review
     public function pending(Request $request)
     {
-        $user = $request->user('portal_api');
+        $user = $request->user();
+        if (!$user || !method_exists($user, 'isOwner') || !$user->isOwner()) {
+            return response()->json(['invoice' => null]);
+        }
 
         $invoice = Invoice::whereHas('pet.owner', fn ($q) => $q->where('user_id', $user->id))
             ->whereIn('status', ['Finalized', 'Paid'])
@@ -45,7 +48,10 @@ class ReviewController extends Controller
             'body'       => 'required|string|min:10|max:1000',
         ]);
 
-        $user = $request->user('portal_api');
+        $user = $request->user();
+        if (!$user || !method_exists($user, 'isOwner') || !$user->isOwner()) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
         $invoice = Invoice::whereHas('pet.owner', fn ($q) => $q->where('user_id', $user->id))
             ->with('pet.species')
