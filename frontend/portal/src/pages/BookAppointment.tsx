@@ -636,7 +636,7 @@ export default function BookAppointment() {
                                       : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-400"
                                   )}
                                 >
-                                  {slot}
+                                  {formatTime(slot)}
                                 </button>
                               );
                             })}
