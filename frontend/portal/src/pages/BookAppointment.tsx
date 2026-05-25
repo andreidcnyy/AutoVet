@@ -29,6 +29,13 @@ const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // No longer needed — doctor requirement is now a per-service flag from the DB
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatTime = (t: string | undefined) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 const formatPortalDateLocal = (dateStr: string, formatStr = "MMMM d, yyyy") => {
   if (!dateStr) return "";
   const normalizedDate = dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
@@ -467,7 +474,7 @@ export default function BookAppointment() {
                   {[
                     { icon: FiHeart, label: 'Patient', value: selectedAppointment.pet?.name },
                     { icon: FiCalendar, label: 'Date', value: formatPortalDateLocal(selectedAppointment.date, "MMM d, yyyy") },
-                    { icon: FiClock, label: 'Time', value: selectedAppointment.time?.substring(0, 5) },
+                    { icon: FiClock, label: 'Time', value: formatTime(selectedAppointment.time) },
                     { icon: FiPlusCircle, label: 'Service', value: selectedAppointment.service?.name },
                     ...(selectedAppointment.vet ? [{ icon: FiUser, label: 'Doctor', value: `Dr. ${selectedAppointment.vet.name}` }] : []),
                     ...(selectedAppointment.notes ? [{ icon: FiInfo, label: 'Notes', value: selectedAppointment.notes }] : []),

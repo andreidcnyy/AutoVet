@@ -77,6 +77,13 @@ const toneDotStyles = {
   zinc: "bg-zinc-400",
 };
 
+const formatTime = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
@@ -1107,7 +1114,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                       {record.appointment?.time && (
                         <>
                           <span className="text-[10px] text-zinc-300">•</span>
-                          <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {record.appointment.time.substring(0, 5)}</span>
+                          <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {formatTime(record.appointment.time)}</span>
                         </>
                       )}
                     </div>
@@ -1365,7 +1372,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                             >
                               <div className="flex justify-between items-center">
                                 <span>{formatDate(apt.date)}</span>
-                                <span className="opacity-60">{apt.time?.substring(0, 5)}</span>
+                                <span className="opacity-60">{formatTime(apt.time)}</span>
                               </div>
                               <div className="truncate opacity-80">{apt.service?.name || apt.title || "General Visit"}</div>
                             </button>

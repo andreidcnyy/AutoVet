@@ -99,7 +99,7 @@ export default function ClientNotificationHistory() {
                             history.map(item => (
                                 <tr key={item.id} className="border-b border-gray-700/50 hover:bg-[#252538] transition-colors relative group">
                                     <td className="p-4 align-top whitespace-nowrap text-gray-400">
-                                        {format(new Date(item.created_at), 'MMM d, yyyy HH:mm')}
+                                        {format(new Date(item.created_at), 'MMM d, yyyy h:mm a')}
                                     </td>
                                     <td className="p-4 align-top">
                                         <div className="font-medium text-gray-200">{item.owner?.name || 'Unknown'}</div>

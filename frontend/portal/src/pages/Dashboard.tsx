@@ -11,6 +11,13 @@ import { useAuth } from '../context/AuthContext';
 import { PawPrint, PawTrail } from './Landing';
 import clsx from 'clsx';
 
+const formatTime = (t: string | undefined) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatPortalDateLocal = (dateStr: string) => {
   if (!dateStr) return "N/A";
@@ -276,7 +283,7 @@ export default function Dashboard() {
                           </div>
                           <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
                             <FiClock className="w-3 h-3" />
-                            {appt.time?.substring(0, 5) || '00:00'}
+                            {formatTime(appt.time) || '12:00 AM'}
                           </div>
                         </div>
                       </div>
@@ -354,7 +361,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatTime(selectedAppointment.time) || '12:00 AM'}</p>
                       </div>
                     </div>
                   </div>

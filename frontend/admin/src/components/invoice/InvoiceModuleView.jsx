@@ -47,6 +47,13 @@ async function getBase64ImageFromUrl(imageUrl) {
   });
 }
 
+const formatTime = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";
   try {
@@ -1602,7 +1609,7 @@ function InvoiceModuleView() {
                                 >
                                   <div className="flex justify-between items-center">
                                     <span>{formatDate(appt.date)}</span>
-                                    <span className="opacity-60">{appt.time?.substring(0, 5)}</span>
+                                    <span className="opacity-60">{formatTime(appt.time)}</span>
                                   </div>
                                   <div className="truncate opacity-80">{appt.title || appt.service?.name}</div>
                                 </button>

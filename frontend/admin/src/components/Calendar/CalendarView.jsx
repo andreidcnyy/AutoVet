@@ -1,4 +1,11 @@
 import { FiChevronLeft, FiChevronRight, FiX, FiCalendar, FiClock } from "react-icons/fi";
+
+const formatTime = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
 import { format, addMonths, subMonths, isToday } from "date-fns";
 import { useAuth } from "../../context/AuthContext";
 import { generateCalendarGrid } from "../../utils/calendarUtils";
@@ -154,7 +161,7 @@ function CalendarView() {
                               eventStyles[statusTone] || eventStyles.zinc
                             )}
                           >
-                            <p className="font-semibold">{event.time?.substring(0, 5)}</p>
+                            <p className="font-semibold">{formatTime(event.time)}</p>
                             <p className="truncate uppercase font-bold text-[10px]">{event.title}</p>
                           </article>
                         );
@@ -219,7 +226,7 @@ function CalendarView() {
                         <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">{event.title}</p>
                         <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
                           <FiClock className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>{event.time}</span>
+                          <span>{formatTime(event.time)}</span>
                         </div>
                         {event.pet_owner && (
                           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">

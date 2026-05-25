@@ -19,6 +19,13 @@ import { PawPrint } from './Landing';
 import clsx from 'clsx';
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
+const formatTime = (t: string | undefined) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 const formatPortalDateLocal = (dateStr: string, long = false) => {
   if (!dateStr) return "N/A";
   const normalizedDate = dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
@@ -221,7 +228,7 @@ export default function Appointments() {
                       <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 hover:text-brand-500 transition-colors">Patient: {appt.pet?.name}</h3>
                       <div className="flex items-center gap-4 mt-2 text-sm text-zinc-500 font-medium">
                         <span className="flex items-center gap-1.5"><FiCalendar className="w-4 h-4" /> {formatPortalDateLocal(appt.date, true)}</span>
-                        <span className="flex items-center gap-1.5"><FiClock className="w-4 h-4" /> {appt.time?.substring(0, 5) || '00:00'}</span>
+                        <span className="flex items-center gap-1.5"><FiClock className="w-4 h-4" /> {formatTime(appt.time) || '12:00 AM'}</span>
                       </div>
                     </div>
                   </div>
@@ -324,7 +331,7 @@ export default function Appointments() {
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time</p>
-                          <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{selectedAppointment.time?.substring(0, 5) || '00:00'}</p>
+                          <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{formatTime(selectedAppointment.time) || '12:00 AM'}</p>
                         </div>
                       </div>
                     </div>

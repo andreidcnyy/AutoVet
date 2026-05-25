@@ -39,6 +39,13 @@ import ManualSendModal from "../notifications/ManualSendModal";
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const formatTime = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
 const formatDateLocal = (dateStr, formatStr = "MMMM d, yyyy") => {
   if (!dateStr) return "";
   const normalizedDate = typeof dateStr === 'string' && dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
@@ -400,7 +407,7 @@ function AppointmentsView() {
                           : <p className="text-[10px] font-bold text-emerald-600 uppercase">{appt.service?.name}</p>
                         }
                       </td>
-                      <td className="px-8 py-6"><div className="flex items-center gap-2 font-black italic"><FiClock className="text-emerald-500" />{appt.time?.substring(0, 5)}</div>{!params.date && <p className="text-[10px] font-bold text-zinc-400 uppercase">{formatDateLocal(appt.date, "MMM d, yyyy")}</p>}</td>
+                      <td className="px-8 py-6"><div className="flex items-center gap-2 font-black italic"><FiClock className="text-emerald-500" />{formatTime(appt.time)}</div>{!params.date && <p className="text-[10px] font-bold text-zinc-400 uppercase">{formatDateLocal(appt.date, "MMM d, yyyy")}</p>}</td>
                       <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition-all"><button className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"><FiChevronRight /></button></td>
                     </tr>
                   ))}
@@ -492,7 +499,7 @@ function AppointmentsView() {
                 </div>
                 <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8">
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
-                  <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{selectedAppointment?.time?.substring(0, 5)}</p></div></div>
+                  <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{formatTime(selectedAppointment?.time)}</p></div></div>
                   <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name} | Guardian ID #{selectedAppointment?.pet?.owner_id}</p></div></div>
                   <div className="flex items-center gap-5"><FiList className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">SERVICES</p>
                     {selectedAppointment?.services?.length > 0

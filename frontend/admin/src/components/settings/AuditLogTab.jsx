@@ -472,7 +472,7 @@ function AuditLogTab() {
                             {new Date(log.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
                           </div>
                           <div className="text-zinc-400">
-                            {new Date(log.created_at).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(log.created_at).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit", hour12: true })}
                           </div>
                         </td>
                         <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-100 whitespace-nowrap">

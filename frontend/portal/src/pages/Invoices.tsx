@@ -199,7 +199,7 @@ export default function Invoices() {
                       <div className="text-xs text-zinc-500 font-medium mt-1 uppercase tracking-tighter flex items-center gap-2">
                         <span>{new Date(invoice.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                         <span className="w-1 h-1 rounded-full bg-zinc-300"></span>
-                        <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                       </div>
                     </div>
                   </div>
