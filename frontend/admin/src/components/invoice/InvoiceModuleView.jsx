@@ -1077,7 +1077,7 @@ function InvoiceModuleView() {
 
 
   const manuallyAddItem = () => {
-    if (!serviceInput) return;
+    if (!serviceInput || !selectedService) return;
     const price = Number(priceInput) || 0;
     const qty = Number(qtyInput) || 1;
 
@@ -1777,7 +1777,7 @@ function InvoiceModuleView() {
                             <div className="border-t border-zinc-100 dark:border-dark-border px-5 py-4 shrink-0">
                               <button
                                 type="button"
-                                onClick={() => { setServiceInput(itemModalSearch); setIsItemModalOpen(false); setItemModalSearch(""); }}
+                                onClick={() => { setServiceInput(itemModalSearch); setSelectedService({ type: 'service', custom: true, name: itemModalSearch, id: null }); setIsItemModalOpen(false); setItemModalSearch(""); }}
                                 className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
                               >
                                 <FiPlusCircle className="w-4 h-4" />
@@ -1811,7 +1811,7 @@ function InvoiceModuleView() {
                     <button
                       type="button"
                       onClick={() => manuallyAddItem()}
-                      disabled={!serviceInput || status === "Finalized"}
+                      disabled={!serviceInput || !selectedService || status === "Finalized"}
                       className="h-11 w-full rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
                       Add
