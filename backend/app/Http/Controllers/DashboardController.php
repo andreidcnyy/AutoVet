@@ -621,9 +621,9 @@ class DashboardController extends Controller
         
         $userId = $user->id;
         $showAll = $request->query('all') === '1';
-        $cacheKey = "dashboard_notifications_{$userId}" . ($showAll ? "_all" : "");
+        $cacheKey = "dashboard_notifications_{$userId}";
 
-        return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($request, $user, $showAll) {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($request, $user, $showAll) {
             if ($user->isOwner()) {
                 $ownerId = $this->getPortalOwnerId();
                 if (!$ownerId) return [];
@@ -636,7 +636,7 @@ class DashboardController extends Controller
                     $query->whereNull('read_at');
                 }
                 
-                $dbNotifications = $query->latest()->limit($showAll ? 50 : 8)->get();
+                $dbNotifications = $query->latest()->limit(50)->get();
 
                 foreach ($dbNotifications as $notif) {
                     $iconName = 'FiBell';
@@ -719,7 +719,7 @@ class DashboardController extends Controller
                 });
             }
 
-            $dbNotifications = $query->limit($showAll ? 50 : 8)->get();
+            $dbNotifications = $query->limit($showAll ? 50 : 50)->get();
             $notifications = [];
 
             foreach ($dbNotifications as $notif) {

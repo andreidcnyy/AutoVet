@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import clsx from "clsx";
 import {
   FiCalendar,
@@ -957,19 +958,21 @@ function InvoiceModuleView() {
   const [serviceInput, setServiceInput] = useState("");
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [itemModalSearch, setItemModalSearch] = useState("");
   const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
 
   const groupedItems = useMemo(() => {
-    const term = serviceInput.toLowerCase();
+    const term = itemModalSearch.toLowerCase();
 
     const filteredServices = (Array.isArray(services) ? services : []).filter(s =>
-      s.name.toLowerCase().includes(term) ||
+      !term || s.name.toLowerCase().includes(term) ||
       (s.category && s.category.toLowerCase().includes(term))
     ).map(s => ({ ...s, type: 'service' }));
 
     const filteredInventory = (Array.isArray(inventory) ? inventory : []).filter(i =>
+      !term ||
       i.item_name.toLowerCase().includes(term) ||
       i.sku?.toLowerCase().includes(term) ||
       i.code?.toLowerCase().includes(term) ||
@@ -991,7 +994,7 @@ function InvoiceModuleView() {
       acc[cat].push(item);
       return acc;
     }, {});
-  }, [services, inventory, serviceInput]);
+  }, [services, inventory, itemModalSearch]);
 
   const calculateDynamicPrice = (service) => {
     if (service.pricing_type === "size_based" && patientDetails?.size_category_id) {
@@ -1060,13 +1063,13 @@ function InvoiceModuleView() {
       setPriceInput(item.selling_price || item.price || 0);
     }
     setSelectedService(item);
-    setIsDropdownOpen(false);
+    setIsItemModalOpen(false);
+    setItemModalSearch("");
   };
 
   const handleServiceChange = (e) => {
     const val = e.target.value;
     setServiceInput(val);
-    setIsDropdownOpen(true);
 
     // Check services first
     const matchedService = services.find(s => s.name.toLowerCase() === val.toLowerCase());
@@ -1639,117 +1642,135 @@ function InvoiceModuleView() {
 
 
                   <div className="grid grid-cols-[1fr_54px_80px_auto] gap-2 items-center">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search or add service..."
-                        value={serviceInput}
-                        onChange={handleServiceChange}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            manuallyAddItem();
-                            setIsDropdownOpen(false);
-                          }
-                        }}
-                        disabled={status === "Finalized"}
-                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
-                      />
-                      {serviceInput && (
-                        <button
-                          onClick={() => {
-                            setServiceInput("");
-                            setSelectedService(null);
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Type item name..."
+                          value={serviceInput}
+                          onChange={handleServiceChange}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              manuallyAddItem();
+                            }
                           }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
-                        >
-                          <FiX className="h-4 w-4" />
-                        </button>
-                      )}
-                      {isDropdownOpen && (
-                        <div className="absolute left-0 top-full mt-1 max-h-[400px] w-[500px] md:w-[650px] overflow-y-auto rounded-2xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-3 shadow-2xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                          {Object.keys(groupedItems).length > 0 ? (
-                            Object.entries(groupedItems).map(([category, svcs]) => (
-                              <div key={category} className="mb-4 last:mb-0">
-                                <div className="flex items-center gap-2 mb-2 px-2">
-                                  <div className="h-4 w-1 bg-emerald-500 rounded-full" />
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
-                                    {category}
-                                  </span>
-                                </div>
-                                <ul className="space-y-1">
-                                  {svcs.map((item) => (
-                                    <li key={`${item.type}-${item.id}`}>
-                                      <button
-                                        type="button"
-                                        onMouseDown={(e) => e.preventDefault()}
-                                        onClick={() => selectItemFromDropdown(item)}
-                                        className="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-zinc-50 dark:hover:bg-dark-surface border border-transparent hover:border-zinc-100 dark:hover:border-dark-border"
-                                      >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                          <div className={clsx(
-                                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-xs uppercase transition-colors",
-                                            item.type === 'inventory' ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                          )}>
-                                            {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p className="truncate font-bold text-zinc-900 dark:text-zinc-100">{item.name}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                              {item.sku && (
-                                                <span className="text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-dark-surface dark:text-zinc-500 px-1.5 py-0.5 rounded leading-none">
-                                                  {item.sku}
-                                                </span>
-                                              )}
-                                              {item.type === 'inventory' && (
-                                                <span className={clsx(
-                                                  "text-[10px] font-bold px-1.5 py-0.5 rounded leading-none",
-                                                  item.stock > 10 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
-                                                )}>
-                                                  Stock: {item.stock}
-                                                </span>
-                                              )}
+                          disabled={status === "Finalized"}
+                          className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
+                        />
+                        {serviceInput && (
+                          <button
+                            onClick={() => { setServiceInput(""); setSelectedService(null); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
+                          >
+                            <FiX className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={status === "Finalized"}
+                        onClick={() => { setItemModalSearch(""); setIsItemModalOpen(true); }}
+                        className="h-11 px-3 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all disabled:opacity-50"
+                        title="Browse services & items"
+                      >
+                        <FiSearch className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {isItemModalOpen && createPortal(
+                      <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                        <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border">
+                          <div className="flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-5 py-4 shrink-0">
+                            <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100">Services &amp; Items</h3>
+                            <button onClick={() => setIsItemModalOpen(false)} className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-dark-surface text-zinc-400 transition-colors">
+                              <FiX className="h-5 w-5" />
+                            </button>
+                          </div>
+                          <div className="px-5 py-3 border-b border-zinc-100 dark:border-dark-border shrink-0">
+                            <div className="relative">
+                              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                              <input
+                                autoFocus
+                                type="text"
+                                placeholder="Search services or inventory..."
+                                value={itemModalSearch}
+                                onChange={(e) => setItemModalSearch(e.target.value)}
+                                className="h-10 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-4 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                            {Object.keys(groupedItems).length > 0 ? (
+                              Object.entries(groupedItems).map(([category, svcs]) => (
+                                <div key={category}>
+                                  <div className="flex items-center gap-2 mb-2 px-1">
+                                    <div className="h-4 w-1 bg-emerald-500 rounded-full" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">{category}</span>
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {svcs.map((item) => (
+                                      <li key={`${item.type}-${item.id}`}>
+                                        <button
+                                          type="button"
+                                          onClick={() => selectItemFromDropdown(item)}
+                                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-zinc-50 dark:hover:bg-dark-surface border border-transparent hover:border-zinc-100 dark:hover:border-dark-border"
+                                        >
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <div className={clsx(
+                                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-[10px] uppercase",
+                                              item.type === 'inventory' ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                            )}>
+                                              {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="truncate font-bold text-sm text-zinc-900 dark:text-zinc-100">{item.name}</p>
+                                              <div className="flex items-center gap-2 mt-0.5">
+                                                {item.sku && item.sku !== 'N/A' && (
+                                                  <span className="text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-dark-surface dark:text-zinc-500 px-1.5 py-0.5 rounded">{item.sku}</span>
+                                                )}
+                                                {item.type === 'inventory' && (
+                                                  <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded", item.stock > 10 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50")}>
+                                                    Stock: {item.stock}
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                          <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.price)}</p>
-                                          <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tight">Price</p>
-                                        </div>
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
+                                          <div className="text-right shrink-0 ml-3">
+                                            <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.price)}</p>
+                                          </div>
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="py-16 flex flex-col items-center justify-center text-center">
+                                <FiSearch className="h-10 w-10 text-zinc-200 dark:text-zinc-700 mb-3" />
+                                <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">
+                                  {services.length === 0 && inventory.length === 0 ? "No data available." : "No matching items."}
+                                </p>
                               </div>
-                            ))
-                          ) : (
-                            <div className="py-12 flex flex-col items-center justify-center text-center">
-                              <div className="h-12 w-12 rounded-full bg-zinc-50 dark:bg-dark-surface flex items-center justify-center mb-3">
-                                <FiSearch className="text-zinc-300 w-6 h-6" />
-                              </div>
-                              <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">
-                                {services.length === 0 && inventory.length === 0 ? "No data available." : "No matching items."}
-                              </p>
-                            </div>
-                          )}
-                          {serviceInput && !services.find(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && !inventory.find(i => i.item_name.toLowerCase() === serviceInput.toLowerCase()) && (
-                            <div className="mt-3 border-t border-zinc-100 dark:border-dark-border pt-4">
+                            )}
+                          </div>
+                          {itemModalSearch && !services.find(s => s.name.toLowerCase() === itemModalSearch.toLowerCase()) && !inventory.find(i => i.item_name.toLowerCase() === itemModalSearch.toLowerCase()) && (
+                            <div className="border-t border-zinc-100 dark:border-dark-border px-5 py-4 shrink-0">
                               <button
                                 type="button"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                                onClick={() => { setServiceInput(itemModalSearch); setIsItemModalOpen(false); setItemModalSearch(""); }}
                                 className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-sm font-bold hover:opacity-90 transition-all"
                               >
                                 <FiPlusCircle className="w-4 h-4" />
-                                Add "{serviceInput}" as Service
+                                Add "{itemModalSearch}" as custom service
                               </button>
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </div>,
+                      document.body
+                    )}
                     <input
                       type="number"
                       min="1"
