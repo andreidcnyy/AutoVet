@@ -76,7 +76,7 @@ function LoginPage() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 overflow-y-auto px-4 py-8"
+      className="relative flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 px-4 py-8"
       style={{ minHeight: '100dvh' }}
     >
       <div
