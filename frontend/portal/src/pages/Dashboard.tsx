@@ -531,13 +531,29 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-4 space-y-3">
-              {pendingReviews.map(invoice => (
+              {pendingReviews.map(invoice => {
+                const appt = invoice.appointment;
+                return (
                 <div key={invoice.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black text-zinc-800 dark:text-zinc-100 truncate">
                       {invoice.pet?.name ?? 'Your pet'}'s Visit
                     </p>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">Invoice #{invoice.invoice_number ?? invoice.id}</p>
+                    {appt ? (
+                      <>
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-semibold truncate">
+                          {appt.service?.name ?? 'Appointment'}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 mt-0.5">
+                          {appt.date ? formatPortalDateLocal(appt.date) : ''}
+                          {appt.date && appt.time ? ' · ' : ''}
+                          {appt.time ? formatTime(appt.time) : ''}
+                          {appt.vet ? ` · Dr. ${appt.vet.name}` : ''}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-zinc-400 mt-0.5">Invoice #{invoice.invoice_number ?? invoice.id}</p>
+                    )}
                     {invoice.pet?.species?.name && (
                       <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wide">
                         {invoice.pet.species.name}
@@ -559,7 +575,8 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {pendingReviews.length === 0 && (
                 <p className="text-center text-sm text-zinc-400 py-8">No pending reviews.</p>
               )}

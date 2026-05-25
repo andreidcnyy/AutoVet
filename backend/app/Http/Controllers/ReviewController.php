@@ -31,7 +31,7 @@ class ReviewController extends Controller
             ->whereIn('status', ['Finalized', 'Paid'])
             ->where('created_at', '>=', now()->subDays(30))
             ->whereDoesntHave('review')
-            ->with('pet.species')
+            ->with(['pet.species', 'appointment.service', 'appointment.vet'])
             ->latest()
             ->get();
 
