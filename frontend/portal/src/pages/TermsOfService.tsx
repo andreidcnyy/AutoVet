@@ -30,7 +30,7 @@ export default function TermsOfService() {
 
         <div className="space-y-2">
           <h1 className="text-4xl font-black text-zinc-800 dark:text-zinc-100">Terms of Service</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 19, 2026</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium">Last updated: May 25, 2026</p>
         </div>
 
         <div className="prose prose-zinc dark:prose-invert max-w-none space-y-6 text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -55,6 +55,7 @@ export default function TermsOfService() {
               <li>View and track invoices for veterinary services</li>
               <li>Receive appointment reminders and health notifications</li>
               <li>Receive system-wide announcements and clinic updates via broadcast notifications</li>
+              <li>Submit ratings and written reviews for completed veterinary visits</li>
             </ul>
           </section>
 
@@ -84,12 +85,38 @@ export default function TermsOfService() {
               <li>Attempt to gain unauthorized access to any part of the Service</li>
               <li>Attempt to log in using credentials belonging to clinic staff or admin accounts</li>
               <li>Interfere with or disrupt the integrity or performance of the Service</li>
-              <li>Use the Service to transmit harmful or offensive content</li>
+              <li>Use the Service to transmit harmful, offensive, or defamatory content</li>
+              <li>Submit reviews that are false, misleading, or not based on genuine personal experience</li>
             </ul>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">5. Medical Disclaimer</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">5. Reviews & Ratings</h2>
+            <p>
+              After a veterinary visit resulting in a finalized or paid invoice, you may be invited to submit a
+              star rating and written review of your experience. By submitting a review, you agree to the following:
+            </p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Reviews must reflect your honest, first-hand experience with our clinic</li>
+              <li>Reviews must not contain false statements, personal attacks, or offensive language</li>
+              <li>You grant Pet Wellness Animal Clinic a non-exclusive, royalty-free license to display, reproduce,
+                and feature your review on our website and other communications</li>
+              <li>All submitted reviews are subject to moderation and must be approved by clinic staff before
+                being published publicly on our website</li>
+              <li>We reserve the right to reject, remove, or decline to publish any review that violates these
+                Terms or that we deem inappropriate at our sole discretion</li>
+              <li>Once published, your review may be visible to all visitors of our public website, including
+                your name and your pet's name and species</li>
+            </ul>
+            <p>
+              Only one review may be submitted per invoice. Reviews may be submitted within 30 days of the
+              invoice date. The review prompt will no longer appear after this window, or once a review has
+              been submitted or dismissed.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">6. Medical Disclaimer</h2>
             <p>
               The information provided through this portal is for administrative and informational purposes only and
               does not constitute veterinary medical advice. Always consult with a licensed veterinarian for diagnosis
@@ -99,34 +126,42 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">6. Appointment Cancellation Policy</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Appointment Cancellation Policy</h2>
             <p>
               We request at least 24 hours' notice for appointment cancellations. Repeated no-shows or last-minute
-              cancellations may affect your ability to book future appointments through the portal.
+              cancellations may affect your ability to book future appointments through the portal. Appointments
+              that are not cancelled in advance and where the client does not attend may be marked as "No-Show"
+              in our records.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">7. Invoices and Billing</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Invoices and Billing</h2>
             <p>
               Invoice records accessible through the portal are provided for your reference and transparency. All
               billing inquiries, disputes, or payment arrangements must be directed to the clinic directly. Invoice
-              records are generated and maintained by our clinic staff.
+              records are generated and maintained by our clinic staff and reflect the services rendered during
+              your pet's visit.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. System Announcements</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Notifications & Announcements</h2>
             <p>
-              The clinic may send system-wide broadcast announcements to portal users and visitors of our website.
-              These announcements may include important service updates, clinic closures, health advisories, or
-              other relevant notices. Broadcast announcements are informational and may be dismissed at your
-              discretion; however, we recommend reading all clinic announcements promptly.
+              The Service delivers two types of notifications:
+            </p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li><span className="font-bold text-zinc-700 dark:text-zinc-300">Personal notifications</span> — appointment status updates, invoice alerts, and health reminders specific to your account</li>
+              <li><span className="font-bold text-zinc-700 dark:text-zinc-300">Broadcast announcements</span> — system-wide messages from the clinic, which may include service updates, clinic closures, or health advisories, sent to all portal users or to the public website</li>
+            </ul>
+            <p>
+              Announcements are informational and may be dismissed at your discretion; however, we recommend
+              reading all clinic announcements promptly.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">9. Intellectual Property</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Intellectual Property</h2>
             <p>
               All content, trademarks, and data on this Service, including but not limited to text, graphics, logos,
               and software, are the property of Pet Wellness Animal Clinic and are protected by applicable intellectual
@@ -135,7 +170,7 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">10. Limitation of Liability</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Limitation of Liability</h2>
             <p>
               Pet Wellness Animal Clinic shall not be liable for any indirect, incidental, special, or consequential
               damages arising out of or in connection with your use of the Service. Our total liability shall not
@@ -144,22 +179,22 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">11. Account Termination & Recovery</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">12. Account Termination & Recovery</h2>
             <p>
               We reserve the right to suspend or terminate your account at any time for violation of these Terms or
               for any other reason at our sole discretion. You may also request deletion of your account at any time
-              through the portal or by contacting our support team.
+              through the portal settings or by contacting our support team.
             </p>
             <p>
               Upon account deletion, your account and associated data are scheduled for permanent removal after a
               <strong> 30-day recovery period</strong>. During this window, you may log in to cancel the deletion
               and restore full access to your account. After 30 days, all account data will be permanently deleted
-              and cannot be recovered.
+              and cannot be recovered. Published reviews may be retained in anonymized form for record-keeping.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">12. Changes to Terms</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">13. Changes to Terms</h2>
             <p>
               We may update these Terms of Service from time to time. We will notify registered users of significant
               changes via email or in-app notification. Continued use of the Service after changes constitutes
@@ -168,7 +203,16 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">13. Contact Us</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">14. Governing Law</h2>
+            <p>
+              These Terms of Service shall be governed by and construed in accordance with the laws of the
+              Republic of the Philippines. Any disputes arising from your use of the Service shall be subject
+              to the exclusive jurisdiction of the courts of Quezon City, Philippines.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">15. Contact Us</h2>
             <p>
               If you have any questions about these Terms of Service, please contact us at:
             </p>
