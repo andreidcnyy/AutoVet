@@ -25,11 +25,15 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
   }
   body, #root {
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
+  }
+  body {
+    touch-action: pan-y;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
