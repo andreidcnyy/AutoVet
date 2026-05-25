@@ -152,6 +152,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // -----------------------------------------------------------------------
     Route::post('appointments/{appointment}/approve', [AppointmentStatusController::class, 'approve']);
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
+    Route::post('appointments/{appointment}/complete', [AppointmentStatusController::class, 'complete']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);

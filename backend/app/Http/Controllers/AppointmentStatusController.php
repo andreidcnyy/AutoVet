@@ -108,6 +108,25 @@ class AppointmentStatusController extends Controller
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
 
+    public function complete(Request $request, Appointment $appointment)
+    {
+        $appointment->status = 'completed';
+        $appointment->save();
+
+        $this->invalidatePortalCache($appointment->pet?->owner_id);
+
+        event(new \App\Events\AppointmentStatusUpdated($appointment));
+
+        $this->createInternalNotification(
+            'AppointmentCompleted',
+            'Appointment Completed',
+            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been marked as completed.",
+            ['appointment_id' => $appointment->id]
+        );
+
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+    }
+
     public function remind(Request $request, Appointment $appointment)
     {
         try {

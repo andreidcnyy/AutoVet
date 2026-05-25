@@ -226,7 +226,11 @@ function AppointmentsView() {
         }
         toast.info(`Appointment archived.`);
       });
-    return () => echo.leave('admin.appointments');
+    const poll = setInterval(() => fetchAppointments(), 30000);
+    return () => {
+      clearInterval(poll);
+      echo.leave('admin.appointments');
+    };
   }, [user?.token, currentDate]);
 
   const handleParamChange = (newParams) => setParams(prev => ({ ...prev, ...newParams, page: newParams.page || 1 }));
@@ -263,7 +267,7 @@ function AppointmentsView() {
         localStorage.removeItem('dashboard_stats_cache');
         localStorage.removeItem('dashboard_notifications_cache');
         api.invalidateCache?.();
-        const newStatus = action === 'approve' ? 'approved' : action === 'completed' ? 'completed' : action;
+        const newStatus = action === 'approve' ? 'approved' : action === 'complete' ? 'completed' : action;
         const updated = { ...selectedAppointment, status: newStatus };
         setSelectedAppointment(updated);
         setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
@@ -465,9 +469,9 @@ function AppointmentsView() {
             </>
           ) : (
             <>
-              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6 bg-white/80 dark:bg-dark-card/80">
+              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6 bg-white dark:bg-dark-card sticky top-0 z-10">
                 <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> Details</h3>
-                <button onClick={() => setIsDrawerOpen(false)} className="rounded-2xl bg-zinc-100 p-3 text-zinc-500 transition-all"><FiX /></button>
+                <button onClick={() => setIsDrawerOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 transition-all border border-zinc-200 dark:border-zinc-600"><FiX className="h-4 w-4" /></button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-8 space-y-10">
                 <div className="flex items-start gap-6">
@@ -515,9 +519,14 @@ function AppointmentsView() {
                     </div>
                   )}
                   {selectedAppointment?.status === 'approved' && (
-                    <button onClick={() => handleStatusAction('no_show')} disabled={actionSubmitting} className="h-12 w-full rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-black uppercase text-sm disabled:opacity-60 transition-all hover:bg-zinc-300">
-                      {actionSubmitting ? "..." : "Mark as No-Show"}
-                    </button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button onClick={() => handleStatusAction('complete')} disabled={actionSubmitting} className="h-12 rounded-2xl bg-emerald-600 text-white font-black uppercase text-sm disabled:opacity-60 transition-all hover:bg-emerald-700">
+                        {actionSubmitting ? "..." : "Mark as Completed"}
+                      </button>
+                      <button onClick={() => handleStatusAction('no_show')} disabled={actionSubmitting} className="h-12 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-black uppercase text-sm disabled:opacity-60 transition-all hover:bg-zinc-300">
+                        {actionSubmitting ? "..." : "No-Show"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

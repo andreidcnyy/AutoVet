@@ -87,7 +87,7 @@ export default function Appointments() {
     fetchAppointments();
 
     const handleAppointmentUpdate = (e: any) => {
-      localStorage.removeItem('portal_appointments_cache');
+      localStorage.removeItem(CACHE_KEY);
       localStorage.removeItem('portal_book_appointments_cache');
       localStorage.removeItem('portal_overview_cache');
       fetchAppointments();
@@ -98,7 +98,7 @@ export default function Appointments() {
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        localStorage.removeItem('portal_appointments_cache');
+        localStorage.removeItem(CACHE_KEY);
         fetchAppointments();
       }
     };
