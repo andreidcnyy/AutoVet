@@ -460,7 +460,7 @@ class AppointmentController extends Controller
             $query->where('vet_id', $request->vet_id);
         }
 
-        $appointments = $query->get(['id', 'time', 'status', 'vet_id', 'service_id']);
+        $appointments = $query->get(['time', 'vet_id']);
 
         return response()->json($appointments);
     }

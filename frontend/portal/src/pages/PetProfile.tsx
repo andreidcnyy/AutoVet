@@ -18,10 +18,12 @@ import { LuPawPrint } from 'react-icons/lu';
 import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
 import { getActualPetImageUrl } from '../utils/petImages';
+import { useAuth } from '../context/AuthContext';
 
 function PetProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [pet, setPet] = useState<any>(null);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -31,7 +33,7 @@ function PetProfile() {
   useEffect(() => {
     if (!id) return;
     const petId = parseInt(id);
-    const CACHE_KEY = `portal_pet_profile_${petId}_cache`;
+    const CACHE_KEY = `portal_pet_profile_${user?.id}_${petId}_cache`;
 
     const cached = readCache<any>(CACHE_KEY);
     if (cached) {

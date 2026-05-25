@@ -788,6 +788,11 @@ class DashboardController extends Controller
 
     public function dismissNotification(Request $request, $id)
     {
+        $u = $request->user();
+        if ($u && method_exists($u, 'isOwner') && $u->isOwner()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         try {
             // Strip 'notif-' prefix if present
             $dbId = str_replace('notif-', '', $id);
@@ -867,6 +872,11 @@ class DashboardController extends Controller
      */
     public function markAllRead()
     {
+        $u = auth()->user();
+        if ($u && method_exists($u, 'isOwner') && $u->isOwner()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         try {
             $userId = auth()->id();
             if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
@@ -894,6 +904,11 @@ class DashboardController extends Controller
      */
     public function clearAll()
     {
+        $u = auth()->user();
+        if ($u && method_exists($u, 'isOwner') && $u->isOwner()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         try {
             $userId = auth()->id();
             if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);

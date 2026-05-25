@@ -121,7 +121,8 @@ class GoogleAuthController extends Controller
             ]);
 
             // Link or create the Owner companion record (same as manual registration).
-            $owner = Owner::where('email', $googleUser['email'])->first();
+            // Must scope by clinic_id — ClinicScope is not active in unauthenticated contexts.
+            $owner = Owner::where('email', $googleUser['email'])->where('clinic_id', $clinic->id)->first();
             if ($owner) {
                 if ($owner->user_id !== $user->id) {
                     $owner->update(['user_id' => $user->id]);

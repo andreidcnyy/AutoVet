@@ -19,6 +19,7 @@ import {
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment } from '../api';
+import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -74,6 +75,7 @@ type BookingForm = z.infer<typeof bookingSchema>;
 
 export default function BookAppointment() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +136,7 @@ export default function BookAppointment() {
     }
   }, [selectedDate, selectedVetId, isViewMode]);
 
-  const CACHE_KEY = 'portal_book_appointments_cache';
+  const CACHE_KEY = `portal_book_appointments_${user?.id}_cache`;
   const CACHE_TTL = 5 * 60 * 1000;
   const [formDataLoaded, setFormDataLoaded] = useState(false);
 
@@ -169,7 +171,7 @@ export default function BookAppointment() {
   }, [currentDate]);
 
   // Lazy-load form data only when booking drawer first opens
-  const FORM_CACHE_KEY = 'portal_book_form_cache';
+  const FORM_CACHE_KEY = `portal_book_form_${user?.id}_cache`;
   useEffect(() => {
     if (!isDrawerOpen || formDataLoaded) return;
 
@@ -254,9 +256,9 @@ export default function BookAppointment() {
       await createAppointment(payload);
       
       // Invalidate caches
-      localStorage.removeItem('portal_appointments_cache');
-      localStorage.removeItem('portal_book_appointments_cache');
-      localStorage.removeItem('portal_overview_cache');
+      localStorage.removeItem(`portal_appointments_${user?.id}_cache`);
+      localStorage.removeItem(`portal_book_appointments_${user?.id}_cache`);
+      localStorage.removeItem(`portal_overview_${user?.id}_cache`);
 
       // Refresh calendar for current month only (scoped re-fetch, not all)
       const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');

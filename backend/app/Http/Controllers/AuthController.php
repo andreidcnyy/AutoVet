@@ -142,8 +142,9 @@ class AuthController extends Controller
                 Cache::forget('pending_reg_' . $request->query('token'));
 
                 // Find the canonical owner for this user: first by user_id, then by email.
+                // Must scope email fallback by clinic_id — ClinicScope is not active here (unauthenticated).
                 $owner = Owner::where('user_id', $user->id)->first()
-                    ?? Owner::where('email', $email)->first();
+                    ?? Owner::where('email', $email)->where('clinic_id', 1)->first();
 
                 if (!$owner) {
                     Owner::create([

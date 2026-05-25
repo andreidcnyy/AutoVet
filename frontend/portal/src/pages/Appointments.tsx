@@ -95,8 +95,8 @@ export default function Appointments() {
 
     const handleAppointmentUpdate = (e: any) => {
       localStorage.removeItem(CACHE_KEY);
-      localStorage.removeItem('portal_book_appointments_cache');
-      localStorage.removeItem('portal_overview_cache');
+      localStorage.removeItem(`portal_book_appointments_${user?.id}_cache`);
+      localStorage.removeItem(`portal_overview_${user?.id}_cache`);
       fetchAppointments();
       if (selectedAppointmentRef.current?.id === e.appointment.id) {
         setSelectedAppointment(e.appointment);
@@ -138,9 +138,9 @@ export default function Appointments() {
       await cancelAppointment(id);
       
       // Invalidate caches
-      localStorage.removeItem('portal_appointments_cache');
-      localStorage.removeItem('portal_book_appointments_cache');
-      localStorage.removeItem('portal_overview_cache');
+      localStorage.removeItem(`portal_appointments_${user?.id}_cache`);
+      localStorage.removeItem(`portal_book_appointments_${user?.id}_cache`);
+      localStorage.removeItem(`portal_overview_${user?.id}_cache`);
 
       fetchAppointments();
     } catch (err: any) {

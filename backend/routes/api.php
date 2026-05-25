@@ -103,7 +103,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // -----------------------------------------------------------------------
     Route::get('/user',     function (Request $request) { return $request->user(); });
     Route::get('/vets',     [UserController::class, 'vets']);
-    Route::get('/new-counts', [\App\Http\Controllers\NewCountsController::class, 'counts']);
+    Route::get('/new-counts', [\App\Http\Controllers\NewCountsController::class, 'counts'])->middleware('role:' . implode(',', Roles::adminRoles()));
     Route::post('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout',          [AuthController::class, 'logout']);
 
@@ -125,27 +125,31 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // -----------------------------------------------------------------------
     // Dashboard & Metrics
     // -----------------------------------------------------------------------
-    Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
     Route::get('/portal/overview',                 [DashboardController::class, 'getPortalOverview']);
-    Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
-    Route::post('/ai/clinical-support',             [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions']);
     Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
     Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markAllRead']);
     Route::post('/dashboard/notifications/clear-all', [DashboardController::class, 'clearAll']);
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
-    Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
-    Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecasts']);
-    Route::post('/dashboard/run-forecast', [DashboardController::class, 'runForecastSync'])->middleware('role:' . implode(',', Roles::adminRoles()));
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
-    Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
-    Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
-    Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
-    Route::get('/dashboard/appointments/upcoming', [DashboardController::class, 'appointmentsUpcoming']);
-    Route::get('/dashboard/pets',                  [DashboardController::class, 'petsList']);
-    Route::get('/dashboard/clients',               [DashboardController::class, 'clientsList']);
-    Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
-    Route::get('/dashboard/analytics/monthly-clients',   [DashboardController::class, 'getMonthlyClients']);
-    Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
+
+    // Admin-only dashboard & metrics
+    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
+        Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
+        Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
+        Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecasts']);
+        Route::post('/dashboard/run-forecast',         [DashboardController::class, 'runForecastSync']);
+        Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
+        Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
+        Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
+        Route::get('/dashboard/appointments/upcoming', [DashboardController::class, 'appointmentsUpcoming']);
+        Route::get('/dashboard/pets',                  [DashboardController::class, 'petsList']);
+        Route::get('/dashboard/clients',               [DashboardController::class, 'clientsList']);
+        Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
+        Route::get('/dashboard/analytics/monthly-clients',   [DashboardController::class, 'getMonthlyClients']);
+        Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
+    });
+    Route::post('/ai/clinical-support', [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions']);
 
     // -----------------------------------------------------------------------
     // Core Modules
@@ -234,14 +238,19 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('/inventory-categories', [\App\Http\Controllers\InventoryCategoryController::class, 'index']);
     Route::get('/service-categories',    [\App\Http\Controllers\ServiceCategoryController::class, 'index']);
 
-    Route::apiResource('pet-size-categories', PetSizeCategoryController::class);
-    Route::apiResource('units-of-measure',    UnitOfMeasureController::class);
-    Route::apiResource('species',             SpeciesController::class);
-    Route::apiResource('breeds',              BreedController::class);
-    Route::apiResource('weight-ranges',       WeightRangeController::class);
+    Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->only(['index', 'show']);
+    Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->only(['index', 'show']);
+    Route::apiResource('species',             SpeciesController::class)->only(['index', 'show']);
+    Route::apiResource('breeds',              BreedController::class)->only(['index', 'show']);
+    Route::apiResource('weight-ranges',       WeightRangeController::class)->only(['index', 'show']);
 
     // Master Data Write Access - Admin only
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+        Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index', 'show']);
+        Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->except(['index', 'show']);
+        Route::apiResource('species',             SpeciesController::class)->except(['index', 'show']);
+        Route::apiResource('breeds',              BreedController::class)->except(['index', 'show']);
+        Route::apiResource('weight-ranges',       WeightRangeController::class)->except(['index', 'show']);
         Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
         Route::apiResource('service-categories',    \App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
     });
