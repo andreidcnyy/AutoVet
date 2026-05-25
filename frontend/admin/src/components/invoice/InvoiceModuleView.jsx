@@ -610,6 +610,8 @@ function InvoiceModuleView() {
   const [owners, setOwners] = useState([]);
   const [pets, setPets] = useState([]);
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [ownerSearchText, setOwnerSearchText] = useState("");
+  const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
 
   const [selectedPatientId, setSelectedPatientId] = useState("");
 
@@ -728,6 +730,7 @@ function InvoiceModuleView() {
       setItems(mappedItems);
       setSelectedPatientId(fullInv.pet_id.toString());
       setSelectedOwnerId(fullInv.pet?.owner_id?.toString() || "");
+      setOwnerSearchText(fullInv.pet?.owner?.name || "");
       setSelectedAppointmentId(fullInv.appointment_id?.toString() || "");
       setPatientDetails(fullInv.pet);
       setNotes(fullInv.notes_to_client || "");
@@ -1068,25 +1071,7 @@ function InvoiceModuleView() {
   };
 
   const handleServiceChange = (e) => {
-    const val = e.target.value;
-    setServiceInput(val);
-
-    // Check services first
-    const matchedService = services.find(s => s.name.toLowerCase() === val.toLowerCase());
-    if (matchedService) {
-      setPriceInput(calculateDynamicPrice(matchedService));
-      setSelectedService({ ...matchedService, type: 'service' });
-      return;
-    }
-
-    // Check inventory
-    const matchedInv = inventory.find(i => i.item_name.toLowerCase() === val.toLowerCase());
-    if (matchedInv) {
-      setPriceInput(matchedInv.selling_price || 0);
-      setSelectedService({ ...matchedInv, name: matchedInv.item_name, type: 'inventory' });
-      return;
-    }
-
+    setServiceInput(e.target.value);
     setSelectedService(null);
   };
 
@@ -1165,6 +1150,7 @@ function InvoiceModuleView() {
     setDiscountVal(0);
     setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
     setSelectedOwnerId("");
+    setOwnerSearchText("");
     setSelectedPatientId("");
     setSelectedAppointmentId("");
     setPatientDetails(null);
@@ -1465,35 +1451,67 @@ function InvoiceModuleView() {
                   <div className="space-y-3">
                     <div className="relative">
                       <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                      <select
-                        value={selectedOwnerId}
+                      <input
+                        type="text"
+                        placeholder="Search client..."
+                        value={ownerSearchText}
+                        disabled={status === "Finalized"}
                         onChange={(e) => {
-                          const oId = e.target.value;
-                          setSelectedOwnerId(oId);
-                          setSelectedPatientId(""); // reset pet
-                          setPatientDetails(null);
-                          setAppointments([]);
-
-                          if (oId) {
-                            const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === oId.toString());
-                            if (ownerPets.length === 1) {
-                              // Auto select the only pet
-                              const onlyPet = ownerPets[0];
-                              handlePatientSelect({ target: { value: onlyPet.id.toString() } });
-                            }
+                          setOwnerSearchText(e.target.value);
+                          setIsOwnerDropdownOpen(true);
+                          if (!e.target.value) {
+                            setSelectedOwnerId("");
+                            setSelectedPatientId("");
+                            setPatientDetails(null);
                           }
                         }}
-                        className="h-11 w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-8 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none"
-                        disabled={status === "Finalized"}
-                      >
-                        <option value="">Select an owner...</option>
-                        {owners.map(o => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))}
-                      </select>
-                      <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+                        onFocus={() => setIsOwnerDropdownOpen(true)}
+                        onBlur={() => setTimeout(() => setIsOwnerDropdownOpen(false), 150)}
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-4 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400 disabled:opacity-50"
+                      />
+                      {ownerSearchText && (
+                        <button
+                          type="button"
+                          onClick={() => { setOwnerSearchText(""); setSelectedOwnerId(""); setSelectedPatientId(""); setPatientDetails(null); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-zinc-400 hover:text-zinc-600"
+                        >
+                          <FiX className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {isOwnerDropdownOpen && (
+                        <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-xl">
+                          {(Array.isArray(owners) ? owners : [])
+                            .filter(o => !ownerSearchText || o.name.toLowerCase().includes(ownerSearchText.toLowerCase()))
+                            .map(o => (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setOwnerSearchText(o.name);
+                                  setSelectedOwnerId(o.id.toString());
+                                  setIsOwnerDropdownOpen(false);
+                                  setSelectedPatientId("");
+                                  setPatientDetails(null);
+                                  setAppointments([]);
+                                  const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === o.id.toString());
+                                  if (ownerPets.length === 1) {
+                                    handlePatientSelect({ target: { value: ownerPets[0].id.toString() } });
+                                  }
+                                }}
+                                className={clsx(
+                                  "w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                                  selectedOwnerId === o.id.toString() ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"
+                                )}
+                              >
+                                {o.name}
+                              </button>
+                            ))}
+                          {(Array.isArray(owners) ? owners : []).filter(o => !ownerSearchText || o.name.toLowerCase().includes(ownerSearchText.toLowerCase())).length === 0 && (
+                            <div className="px-4 py-6 text-center text-xs text-zinc-400 font-bold uppercase tracking-widest">No clients found</div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="relative">
@@ -1792,7 +1810,7 @@ function InvoiceModuleView() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { manuallyAddItem(); setIsDropdownOpen(false); }}
+                      onClick={() => manuallyAddItem()}
                       disabled={!serviceInput || status === "Finalized"}
                       className="h-11 w-full rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
