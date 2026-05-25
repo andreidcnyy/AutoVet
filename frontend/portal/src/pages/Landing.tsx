@@ -185,7 +185,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300 overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
 
       {/* ══ Landing Page Broadcast Banners ══ */}
       {landingBanners.length > 0 && (
