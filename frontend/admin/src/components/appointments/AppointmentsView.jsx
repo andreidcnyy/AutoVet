@@ -413,7 +413,7 @@ function AppointmentsView() {
 
       <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
-        <aside className={clsx("relative w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
+        <aside className={clsx("relative z-10 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
           {activePanel === "booking" ? (
             <>
               <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6">
@@ -469,7 +469,7 @@ function AppointmentsView() {
             </>
           ) : (
             <>
-              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6 bg-white dark:bg-dark-card sticky top-0 z-10">
+              <div className="shrink-0 flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-8 py-6 bg-white dark:bg-dark-card">
                 <h3 className="text-3xl font-black italic uppercase"><span className="text-emerald-600">/</span> Details</h3>
                 <button onClick={() => setIsDrawerOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 transition-all border border-zinc-200 dark:border-zinc-600"><FiX className="h-4 w-4" /></button>
               </div>
