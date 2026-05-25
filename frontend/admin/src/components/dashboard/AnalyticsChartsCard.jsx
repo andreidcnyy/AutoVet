@@ -72,6 +72,24 @@ export default function AnalyticsChartsCard() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const poll = setInterval(() => {
+      Promise.all([
+        api.get("/dashboard/analytics/monthly-clients"),
+        api.get("/dashboard/analytics/items-by-category"),
+      ]).then(([clientRes, catRes]) => {
+        setClients(Array.isArray(clientRes) ? clientRes : []);
+        setCategories(Array.isArray(catRes) ? catRes : []);
+      }).catch(() => {});
+    }, 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') {
+      Promise.all([api.get("/dashboard/analytics/monthly-clients"), api.get("/dashboard/analytics/items-by-category")])
+        .then(([c, a]) => { setClients(Array.isArray(c) ? c : []); setCategories(Array.isArray(a) ? a : []); }).catch(() => {});
+    }};
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+
   if (loading) {
     return (
       <div className="card-shell col-span-full flex items-center justify-center gap-3 py-16 text-zinc-400">

@@ -127,6 +127,10 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchData();
+    const poll = setInterval(fetchData, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   const fetchAdmins = async (clinicId, pageNum = 1) => {

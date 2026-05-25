@@ -47,8 +47,13 @@ function BackupRestoreTab() {
 
   useEffect(() => {
     fetchBackups();
+    const poll = setInterval(fetchBackups, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchBackups(); };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 

@@ -54,6 +54,13 @@ function NotificationHistoryPage() {
 
   useEffect(() => {
     fetchNotifications();
+    const poll = setInterval(fetchNotifications, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchNotifications(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const markAllRead = () => {
@@ -67,7 +74,7 @@ function NotificationHistoryPage() {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Action failed");
-        setNotifications([]);
+        fetchNotifications();
         toast.success("All notifications marked as read");
       })
       .catch((err) => toast.error(err.message));
@@ -88,7 +95,7 @@ function NotificationHistoryPage() {
         })
       ));
       
-      setNotifications((prev) => prev.filter((n) => !idArray.includes(n.id)));
+      fetchNotifications();
       toast.success(idArray.length > 1 ? "Notifications dismissed" : "Notification dismissed");
     } catch (err) {
       toast.error("Failed to dismiss some notifications");

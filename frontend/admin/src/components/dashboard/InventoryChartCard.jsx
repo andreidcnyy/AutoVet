@@ -48,6 +48,22 @@ function InventoryChartCard({ initialData }) {
       });
   }, [activeRange]);
 
+  useEffect(() => {
+    const refresh = () => {
+      fetch(`/api/dashboard/inventory-consumption?range=${activeRange}`)
+        .then(res => res.json())
+        .then(response => {
+          if (response?.data && Array.isArray(response.data)) { setData(response.data); setSource(response.prediction_source || "live"); }
+          else if (Array.isArray(response)) { setData(response); setSource("live"); }
+        }).catch(() => {});
+    };
+    const poll = setInterval(refresh, 60000);
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('inventory-forecast-refresh', refresh);
+    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('inventory-forecast-refresh', refresh); };
+  }, [activeRange]);
+
   if (isLoading) {
     return (
       <section className="card-shell flex min-h-[460px] items-center justify-center p-6 border-dashed border-2 dark:border-dark-border">

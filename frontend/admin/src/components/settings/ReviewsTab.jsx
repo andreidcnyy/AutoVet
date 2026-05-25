@@ -244,7 +244,16 @@ export default function ReviewsTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+  useEffect(() => {
+    fetchReviews();
+    const poll = setInterval(fetchReviews, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchReviews(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [fetchReviews]);
 
   const patch = async (id, endpoint) => {
     setBusy((b) => ({ ...b, [id]: true }));

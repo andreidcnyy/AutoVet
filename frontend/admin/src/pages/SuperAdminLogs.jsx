@@ -25,7 +25,13 @@ export default function SuperAdminManagement() {
     }
   };
 
-  useEffect(() => { fetchAdmins(); }, []);
+  useEffect(() => {
+    fetchAdmins();
+    const poll = setInterval(fetchAdmins, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAdmins(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
 
   const openModal = () => {
     setForm({ name: '', email: '', password: '' });

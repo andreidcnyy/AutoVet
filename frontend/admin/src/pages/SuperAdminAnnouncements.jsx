@@ -52,7 +52,13 @@ export default function SuperAdminAnnouncements() {
     }
   };
 
-  useEffect(() => { fetchAnnouncements(); }, []);
+  useEffect(() => {
+    fetchAnnouncements();
+    const poll = setInterval(fetchAnnouncements, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAnnouncements(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
 
   const openNew = () => {
     setEditingId(null);
