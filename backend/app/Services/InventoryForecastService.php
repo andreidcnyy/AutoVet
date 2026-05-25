@@ -53,6 +53,25 @@ class InventoryForecastService
                 return $insufficientDataResponse;
             }
 
+            // Even with 3+ records, the model needs usage spread across at least 2
+            // different calendar days to detect a consumption trend. All same-day
+            // transactions collapse into one CSV row and cannot produce a forecast.
+            $distinctDates = InventoryUsageHistory::forecastingSafe()
+                ->where('inventory_id', $inventoryId)
+                ->distinct()
+                ->count('usage_date');
+
+            if ($distinctDates < 2) {
+                return [
+                    'prediction_status'          => 'Insufficient Data',
+                    'ai_intelligence_progress'   => 80,
+                    'message'                    => "Almost there — your {$usageCount} transaction" . ($usageCount > 1 ? 's' : '') . " all happened on the same day. Complete at least one transaction on a different day so the AI can detect a usage trend.",
+                    'current_stock'              => $inventory->stock_level,
+                    'min_stock_level'            => $inventory->min_stock_level,
+                    'item_name'                  => $inventory->item_name,
+                ];
+            }
+
             $result = $this->runPythonForecast($inventory, $historyDays);
             if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
                 $this->saveForecast($inventoryId, $result, $triggerSource);

@@ -389,8 +389,19 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 flex items-center gap-2">
                 <LuSparkles className="h-4 w-4" /> AI Stockout Forecast
               </h4>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{insufficientMsg}</p>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/40 dark:bg-amber-900/20 space-y-3">
+                <div className="flex items-start gap-3">
+                  <FiAlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{insufficientMsg}</p>
+                </div>
+                <div className="border-t border-amber-200 dark:border-amber-900/40 pt-3 space-y-1.5">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">How AI forecasting works</p>
+                  <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1 list-disc list-inside opacity-90">
+                    <li>Needs at least 3 completed (finalized) transactions</li>
+                    <li>Transactions must be on at least 2 different days — same-day usage doesn't show a trend</li>
+                    <li>Once unlocked, the forecast auto-updates after every finalized invoice</li>
+                  </ul>
+                </div>
               </div>
             </div>
           )}
