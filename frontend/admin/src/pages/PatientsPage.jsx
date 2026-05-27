@@ -104,6 +104,13 @@ function PatientsPage() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [user?.token, activeTab, fetchOwners]);
 
+  // Poll every 5 s so portal-linked status dots update without a browser refresh
+  useEffect(() => {
+    if (!user?.token || activeTab !== "owners") return;
+    const poll = setInterval(() => fetchOwners(paginationRef.current.current_page || 1), 5000);
+    return () => clearInterval(poll);
+  }, [user?.token, activeTab, fetchOwners]);
+
   // Auto-refresh when portal users create pets or owners
   const paginationRef = useRef(pagination);
   useEffect(() => { paginationRef.current = pagination; }, [pagination]);
