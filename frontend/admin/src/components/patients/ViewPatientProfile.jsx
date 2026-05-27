@@ -523,8 +523,8 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
       </div>
 
       {/* Tabs */}
-      <div className="card-shell overflow-hidden">
-        <nav className="flex overflow-x-auto border-b border-zinc-200 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
+      <div className="card-shell">
+        <nav className="flex overflow-x-auto rounded-t-2xl border-b border-zinc-200 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
