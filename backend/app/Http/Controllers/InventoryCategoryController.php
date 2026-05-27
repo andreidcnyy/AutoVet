@@ -46,7 +46,8 @@ class InventoryCategoryController extends Controller
 
     public function destroy(InventoryCategory $inventoryCategory)
     {
-        \App\Models\Inventory::where('inventory_category_id', $inventoryCategory->id)
+        \App\Models\Inventory::withTrashed()
+            ->where('inventory_category_id', $inventoryCategory->id)
             ->update(['inventory_category_id' => null]);
 
         $inventoryCategory->delete();
