@@ -737,12 +737,18 @@ function InvoiceModuleView() {
         indicator: i.item_type === 'inventory' ? "bg-amber-400" : "bg-emerald-400"
       }));
 
+      // Fetch full pet details (includes owner address, species, breed) same as normal patient select
+      let fullPet = fullInv.pet;
+      if (fullInv.pet_id) {
+        try { fullPet = await api.get(`/api/pets/${fullInv.pet_id}`); } catch (_) {}
+      }
+
       setItems(mappedItems);
       setSelectedPatientId(fullInv.pet_id.toString());
-      setSelectedOwnerId(fullInv.pet?.owner_id?.toString() || "");
-      setOwnerSearchText(fullInv.pet?.owner?.name || "");
+      setSelectedOwnerId(fullPet?.owner_id?.toString() || fullInv.pet?.owner_id?.toString() || "");
+      setOwnerSearchText(fullPet?.owner?.name || fullInv.pet?.owner?.name || "");
       setSelectedAppointmentId(fullInv.appointment_id?.toString() || "");
-      setPatientDetails(fullInv.pet);
+      setPatientDetails(fullPet);
       setNotes(fullInv.notes_to_client || "");
       setStatus(fullInv.status);
       setAmountPaid(Number(fullInv.amount_paid) || 0);
