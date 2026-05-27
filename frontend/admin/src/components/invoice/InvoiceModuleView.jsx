@@ -2174,8 +2174,8 @@ function InvoiceModuleView() {
                   </div>
 
                   <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4">
-                    {/* Record Payment Section - Only for Finalized/Partially Paid */}
-                    {(status === "Finalized" || status === "Partially Paid") && (
+                    {/* Record Payment Section - Only for Finalized/Partially Paid, not in view-only mode */}
+                    {(status === "Finalized" || status === "Partially Paid") && !isPreviewMode && (
                       <div className="mt-6 border-t border-zinc-200 dark:border-dark-border pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 flex items-center gap-2">
                           <FiCreditCard className="w-3 h-3" /> Record Payment
