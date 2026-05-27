@@ -6,17 +6,19 @@ import { useAuth } from '../../context/AuthContext';
 
 /* Maps raw event_key values to plain-English labels */
 const EVENT_OPTIONS = [
-  { value: '',                        label: 'Send manually (not automatic)' },
-  { value: 'appointment_confirmed',   label: 'When an appointment is approved' },
+  { value: '',                        label: 'Manual only' },
+  { value: 'appointment_created',     label: 'When a client requests an appointment' },
+  { value: 'appointment_approved',    label: 'When an appointment is approved' },
   { value: 'appointment_declined',    label: 'When an appointment is declined' },
   { value: 'appointment_cancelled',   label: 'When an appointment is cancelled' },
   { value: 'appointment_reminder',    label: 'Before an appointment (reminder)' },
   { value: 'appointment_completed',   label: 'After a visit is completed' },
   { value: 'invoice_created',         label: 'When an invoice is created' },
+  { value: 'medical_summary_notice',  label: 'When a medical record is saved' },
 ];
 
 function eventLabel(key) {
-  return EVENT_OPTIONS.find(o => o.value === key)?.label || 'Send manually (not automatic)';
+  return EVENT_OPTIONS.find(o => o.value === key)?.label || key || 'Manual only';
 }
 
 function eventBadgeColor(key) {

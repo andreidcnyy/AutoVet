@@ -127,7 +127,7 @@ class ClientNotificationService
     }
 
     /**
-     * Notify client about a medical record update.
+     * Notify client about a medical record update via email (Brevo).
      */
     public function notifyMedicalRecordUpdate(\App\Models\MedicalRecord $record)
     {
@@ -135,29 +135,35 @@ class ClientNotificationService
         if (!$pet || !$pet->owner) return;
 
         $owner = $pet->owner;
+        if (empty($owner->email)) return;
 
-        // Create a portal notification record
-        ClientNotification::create([
-            'owner_id' => $owner->id,
-            'channel' => 'portal', // Internal portal alert
-            'type' => 'automated',
-            'title' => 'Medical Record Updated',
-            'message' => "A new medical record has been added for {$pet->name}. Diagnosis: " . ($record->diagnosis ?: 'Pending'),
-            'status' => 'sent',
-            'sent_at' => now(),
-            'related_type' => get_class($record),
-            'related_id' => $record->id,
-        ]);
-
-        // Optionally send email if configured...
         try {
-            $this->sendFromTemplate($owner, 'medical_record_updated', 'email', [
-                'pet_name' => $pet->name,
-                'diagnosis' => $record->diagnosis
-            ], 'automated', $record);
+            $template = \App\Models\NotificationTemplate::where('event_key', 'medical_summary_notice')
+                ->where('channel', 'email')
+                ->where('is_active', true)
+                ->first();
+
+            if (!$template) return;
+
+            $subject = $this->interpolateVariables($template->subject ?? 'Medical Record Summary', [], $owner, $record);
+            $body    = $this->interpolateVariables($template->body, [], $owner, $record);
+
+            \Mail::mailer('brevo')->to($owner->email)->send(new \App\Mail\ClientNotificationMail($subject, $body));
+
+            ClientNotification::create([
+                'clinic_id'    => $owner->clinic_id,
+                'owner_id'     => $owner->id,
+                'channel'      => 'email',
+                'type'         => 'automated',
+                'title'        => $subject,
+                'message'      => $body,
+                'status'       => 'sent',
+                'sent_at'      => now(),
+                'related_type' => get_class($record),
+                'related_id'   => $record->id,
+            ]);
         } catch (\Exception $e) {
-            // Silently fail if template doesn't exist, as this is a secondary channel
-            \Log::info("Optional email notification skipped for medical record: " . $e->getMessage());
+            \Log::error("Medical record email notification failed: " . $e->getMessage());
         }
     }
 

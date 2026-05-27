@@ -16,7 +16,7 @@ import clsx from "clsx";
 
 const StatusBadge = ({ status }) => {
   const colors = { 'approved': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'pending': 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'completed': 'bg-blue-500/10 text-blue-600 dark:text-blue-400', 'cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'declined': 'bg-rose-600/10 text-rose-500' };
-  return <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full", colors[status?.toLowerCase()] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400')}>{status}</span>;
+  return <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full", colors[status?.toLowerCase()] ?? '')}>{status}</span>;
 };
 
 function DashboardPage() {

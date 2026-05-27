@@ -71,11 +71,8 @@ class MedicalRecordController extends Controller
         }
 
         $record = MedicalRecord::create($validated);
-
-        // Notify client if record is finalized with a diagnosis
-        if ($record->diagnosis) {
-            $this->clientNotificationService->notifyMedicalRecordUpdate($record);
-        }
+        $record->load(['pet.owner', 'vet', 'appointment.service']);
+        $this->clientNotificationService->notifyMedicalRecordUpdate($record);
 
         return response()->json($record->load(['pet', 'vet', 'appointment.service']), 201);
     }
@@ -108,6 +105,10 @@ class MedicalRecordController extends Controller
         }
 
         $medicalRecord->update($validated);
+
+        $medicalRecord->load(['pet.owner', 'vet', 'appointment.service']);
+        $this->clientNotificationService->notifyMedicalRecordUpdate($medicalRecord);
+
         return response()->json($medicalRecord->load(['pet', 'vet', 'appointment.service']));
     }
 
