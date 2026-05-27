@@ -524,7 +524,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 
       {/* Tabs */}
       <div className="card-shell overflow-hidden">
-        <nav className="flex border-b border-zinc-200 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
+        <nav className="flex overflow-x-auto border-b border-zinc-200 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -532,7 +532,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={clsx(
-                  "inline-flex items-center gap-2 border-b-2 px-6 py-4 text-sm font-semibold transition",
+                  "inline-flex flex-shrink-0 items-center gap-2 border-b-2 px-6 py-4 text-sm font-semibold transition",
                   activeTab === tab.key
                     ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
                     : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
