@@ -46,12 +46,8 @@ class InventoryCategoryController extends Controller
 
     public function destroy(InventoryCategory $inventoryCategory)
     {
-        $linkedCount = \App\Models\Inventory::where('inventory_category_id', $inventoryCategory->id)->count();
-        if ($linkedCount > 0) {
-            return response()->json([
-                'message' => "Cannot delete \"{$inventoryCategory->name}\" — it is used by {$linkedCount} inventory item(s). Reassign or delete those items first."
-            ], 422);
-        }
+        \App\Models\Inventory::where('inventory_category_id', $inventoryCategory->id)
+            ->update(['inventory_category_id' => null]);
 
         $inventoryCategory->delete();
         return response()->json(null, 204);

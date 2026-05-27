@@ -7,15 +7,21 @@ import clsx from "clsx";
 export default function MasterDataManagementTab() {
   const { data: sizeCategories, isLoading: isSizesLoading } = useApi(['size-categories'], '/api/size-categories');
 
+  const inventoryCategoryColumns = [
+    { key: "name", label: "Category Name" },
+  ];
+
+  const initialInventoryCategoryForm = { name: "" };
+
   const categoryColumns = [
     { key: "name", label: "Category Name" },
-    { 
-      key: "status", 
+    {
+      key: "status",
       label: "Status",
       render: (val) => (
         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-          val === 'Active' 
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+          val === 'Active'
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
             : 'bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400'
         }`}>
           {val}
@@ -83,12 +89,12 @@ export default function MasterDataManagementTab() {
 
       <div className="grid grid-cols-1 gap-8">
         <div className="card-shell p-6 transition-all hover:shadow-md">
-          <MasterDataTable 
+          <MasterDataTable
             title="Inventory Categories"
             description="Categorize items in your stock (e.g., Medications, Consumables)."
             apiUrl="/api/inventory-categories"
-            columns={categoryColumns}
-            initialForm={initialCategoryForm}
+            columns={inventoryCategoryColumns}
+            initialForm={initialInventoryCategoryForm}
           />
         </div>
         

@@ -139,8 +139,8 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         }
       });
       if (!res.ok) {
-        console.error(`[MasterDataTable delete] Failed URL: ${apiUrl}/${id}, Status: ${res.status}`);
-        throw new Error("Failed to delete item");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to delete item");
       }
       success(`${title.slice(0, -1)} deleted`);
       try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
