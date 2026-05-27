@@ -452,7 +452,6 @@ export default function WeightRangesManager() {
                       onChange={e => setFormData({ ...formData, max_weight: e.target.value })}
                       className="w-full rounded-xl border border-zinc-200 p-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     />
-                    <p className="mt-1 text-[10px] text-zinc-400 text-right">Leave empty for open-ended</p>
                   </div>
                 </div>
 
