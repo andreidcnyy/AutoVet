@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { ROLES } from "../../constants/roles";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import {
   FiPhone,
@@ -51,6 +52,7 @@ function PatientRecordsView({
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [warnOwner, setWarnOwner] = useState(null);
+  const canManagePortal = [ROLES.CLINIC_ADMIN, ROLES.VETERINARIAN].includes(user?.role);
   const [portalModal, setPortalModal] = useState(null); // { owner, action }
   const [portalActionLoading, setPortalActionLoading] = useState(false);
 
@@ -230,7 +232,7 @@ function PatientRecordsView({
                         >
                           <FiAlertTriangle className="h-4 w-4" />
                         </button>
-                        {owner.user && (
+                        {canManagePortal && owner.user && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setPortalModal({ owner }); }}
                             className={clsx(
@@ -412,8 +414,8 @@ function PatientRecordsView({
                       </button>
                   </div>
 
-                  {/* Portal Account */}
-                  <div className="mt-6 border-t border-zinc-100 pt-6 dark:border-dark-border">
+                  {/* Portal Account — admin & vet only */}
+                  {canManagePortal && <div className="mt-6 border-t border-zinc-100 pt-6 dark:border-dark-border">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-zinc-400">
                         <FiShield className="h-4 w-4" /> Portal Account
@@ -455,7 +457,7 @@ function PatientRecordsView({
                     ) : (
                       <p className="text-xs text-zinc-400 font-bold">No portal account linked.</p>
                     )}
-                  </div>
+                  </div>}
                </div>
             </div>
           ) : (
