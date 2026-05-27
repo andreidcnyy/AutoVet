@@ -298,13 +298,18 @@ export default function WeightRangesManager() {
               <div className="flex items-center gap-3">
                  <div className="relative flex-1 sm:w-64">
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Search ranges..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                    className="w-full rounded-2xl border border-zinc-200 bg-white py-2.5 pl-10 pr-9 text-sm transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                   />
+                  {search && (
+                    <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                      <FiX className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 <button 
                   onClick={() => handleOpenModal()}

@@ -491,7 +491,12 @@ function AppointmentsView() {
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
                     <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input type="text" placeholder="Search patient/owner..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-10 pl-10 pr-4 rounded-xl border border-zinc-200 bg-white focus:border-emerald-500 dark:bg-dark-surface text-xs font-bold" />
+                    <input type="text" placeholder="Search patient/owner..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-10 pl-10 pr-9 rounded-xl border border-zinc-200 bg-white focus:border-emerald-500 dark:bg-dark-surface text-xs font-bold" />
+                    {searchTerm && (
+                      <button onClick={() => setSearchTerm("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                        <FiX className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                   <input type="date" value={params.date} onChange={(e) => handleParamChange({ date: e.target.value })} className="h-10 px-3 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface text-xs font-bold" />
                   <button onClick={() => { setSearchTerm(""); handleParamChange({ date: "", status: "all" }); }} className="h-10 px-4 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all flex items-center justify-center" title="Clear Filters"><FiRefreshCcw className={clsx(isLoading && "animate-spin")} /></button>

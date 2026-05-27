@@ -344,8 +344,13 @@ function InventoryView() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search items or codes..."
-                className="w-full rounded-xl border border-zinc-200 bg-white px-10 py-2 text-sm font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                className="w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 py-2 text-sm font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
               />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                  <FiX className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <select
                 value={selectedCategory}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
-import { FiSearch, FiRefreshCcw, FiUserCheck, FiUserX, FiAlertCircle } from "react-icons/fi";
+import { FiSearch, FiRefreshCcw, FiUserCheck, FiUserX, FiAlertCircle, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api";
@@ -74,8 +74,13 @@ export default function PortalUsersTab() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search name / email / phone..."
-              className="h-10 pl-9 pr-4 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface dark:border-dark-border text-sm w-56"
+              className="h-10 pl-9 pr-9 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface dark:border-dark-border text-sm w-56"
             />
+            {search && (
+              <button onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                <FiX className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
           <select
             value={statusFilter}
