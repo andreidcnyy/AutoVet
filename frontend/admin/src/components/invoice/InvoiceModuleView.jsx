@@ -317,6 +317,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
   const [dateTo, setDateTo]                           = useState(today);
   const [selectedOwnerId, setSelectedOwnerId]         = useState("");
   const [ownerSearch, setOwnerSearch]                 = useState("");
+  const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
   const [itemTypeFilter, setItemTypeFilter]           = useState("all");
   const [selectedServiceId, setSelectedServiceId]     = useState("");
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
@@ -379,7 +380,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
 
   const handleReset = () => {
     setLocalGenerated(false); setGenerated(false); setAllRows([]); setReportRows([]);
-    setSelectedOwnerId(""); setOwnerSearch(""); setItemTypeFilter("all");
+    setSelectedOwnerId(""); setOwnerSearch(""); setIsOwnerDropdownOpen(false); setItemTypeFilter("all");
     setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
   };
@@ -452,36 +453,48 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Client</label>
           <div className="relative">
+            <FiSearch className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search client..."
               value={ownerSearch}
-              onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); }}
-              className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none"
+              onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); setIsOwnerDropdownOpen(true); }}
+              onFocus={() => setIsOwnerDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setIsOwnerDropdownOpen(false), 150)}
+              className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
             />
             {ownerSearch && (
               <button
                 type="button"
-                onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); }}
+                onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); setIsOwnerDropdownOpen(false); }}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600"
               >
                 <FiX className="h-3 w-3" />
               </button>
             )}
-          </div>
-          <div className="relative">
-            <select value={selectedOwnerId} onChange={(e) => {
-              const o = owners.find((o) => o.id.toString() === e.target.value);
-              setSelectedOwnerId(e.target.value);
-              setOwnerSearch(o?.name || "");
-            }}
-              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
-              <option value="">All clients</option>
-              {owners
-                .filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
-                .map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-            <FiChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-400" />
+            {isOwnerDropdownOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-xl">
+                {owners
+                  .filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
+                  .map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => { setOwnerSearch(o.name); setSelectedOwnerId(o.id.toString()); setIsOwnerDropdownOpen(false); }}
+                      className={clsx(
+                        "w-full px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
+                        selectedOwnerId === o.id.toString() ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"
+                      )}
+                    >
+                      {o.name}
+                    </button>
+                  ))}
+                {owners.filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase())).length === 0 && (
+                  <div className="px-3 py-4 text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">No clients found</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="space-y-1">
