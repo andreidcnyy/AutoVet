@@ -7,12 +7,6 @@ import clsx from "clsx";
 export default function MasterDataManagementTab() {
   const { data: sizeCategories, isLoading: isSizesLoading } = useApi(['size-categories'], '/api/size-categories');
 
-  const inventoryCategoryColumns = [
-    { key: "name", label: "Category Name" },
-  ];
-
-  const initialInventoryCategoryForm = { name: "" };
-
   const categoryColumns = [
     { key: "name", label: "Category Name" },
     {
@@ -93,8 +87,8 @@ export default function MasterDataManagementTab() {
             title="Inventory Categories"
             description="Categorize items in your stock (e.g., Medications, Consumables)."
             apiUrl="/api/inventory-categories"
-            columns={inventoryCategoryColumns}
-            initialForm={initialInventoryCategoryForm}
+            columns={categoryColumns}
+            initialForm={initialCategoryForm}
           />
         </div>
         
