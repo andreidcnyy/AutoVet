@@ -15,8 +15,8 @@ import clsx from "clsx";
 
 
 const StatusBadge = ({ status }) => {
-  const colors = { 'Approved': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'Pending': 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'Completed': 'bg-blue-500/10 text-blue-600 dark:text-blue-400', 'Cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'Declined': 'bg-rose-600/10 text-rose-500', 'cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'declined': 'bg-rose-600/10 text-rose-500' };
-  return <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full", colors[status] ?? 'bg-white/10 text-white/50')}>{status}</span>;
+  const colors = { 'approved': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'pending': 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'completed': 'bg-blue-500/10 text-blue-600 dark:text-blue-400', 'cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'declined': 'bg-rose-600/10 text-rose-500' };
+  return <span className={clsx("text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full", colors[status?.toLowerCase()] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400')}>{status}</span>;
 };
 
 function DashboardPage() {
@@ -58,28 +58,18 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!enabled) return;
-    
+
+    let echoInstance = null;
     import("../utils/echo").then(module => {
-        const echo = module.default;
-        const channel = echo.private('admin.appointments')
-            .listen('.appointment.created', () => {
-                refetchStats();
-                refetchNotifications();
-                setLastUpdate(Date.now());
-            })
-            .listen('.appointment.status.updated', () => {
-                refetchStats();
-                refetchNotifications();
-                setLastUpdate(Date.now());
-            })
-            .listen('.appointment.deleted', () => {
-                refetchStats();
-                refetchNotifications();
-                setLastUpdate(Date.now());
-            });
-            
-        return () => echo.leave('admin.appointments');
+        echoInstance = module.default;
+        const refresh = () => { refetchStats(); refetchNotifications(); setLastUpdate(Date.now()); };
+        echoInstance.private('admin.appointments')
+            .listen('.appointment.created', refresh)
+            .listen('.appointment.status.updated', refresh)
+            .listen('.appointment.deleted', refresh);
     });
+
+    return () => { if (echoInstance) echoInstance.leave('admin.appointments'); };
   }, [enabled, refetchStats, refetchNotifications]);
 
   // Real-time Modal Refresh

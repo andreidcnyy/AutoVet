@@ -1,4 +1,9 @@
+import { useState, useEffect } from "react";
 import { FiChevronLeft, FiChevronRight, FiX, FiCalendar, FiClock } from "react-icons/fi";
+import { format, addMonths, subMonths, isToday } from "date-fns";
+import { useAuth } from "../../context/AuthContext";
+import { generateCalendarGrid } from "../../utils/calendarUtils";
+import echo from "../../utils/echo";
 
 const formatTime = (t) => {
   if (!t) return '';
@@ -6,9 +11,6 @@ const formatTime = (t) => {
   const hr = parseInt(h, 10);
   return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
 };
-import { format, addMonths, subMonths, isToday } from "date-fns";
-import { useAuth } from "../../context/AuthContext";
-import { generateCalendarGrid } from "../../utils/calendarUtils";
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -50,11 +52,17 @@ function CalendarView() {
         .catch((err) => console.error("Error fetching calendar appointments:", err));
 
     fetchAppointments();
-    const poll = setInterval(fetchAppointments, 30000);
+
+    const refresh = () => fetchAppointments();
+    echo.private('admin.appointments')
+      .listen('.appointment.created', refresh)
+      .listen('.appointment.status.updated', refresh)
+      .listen('.appointment.deleted', refresh);
+
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAppointments(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      clearInterval(poll);
+      echo.leave('admin.appointments');
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.token]);
@@ -157,7 +165,7 @@ function CalendarView() {
                       {entry.events.map((event) => {
                         const isPast = new Date(`${event.date}T${event.time}`) < new Date();
                         let statusTone = "zinc";
-                        if (event.status === 'completed') statusTone = "green";
+                        if (event.status === 'approved' || event.status === 'completed') statusTone = "green";
                         else if (event.status === 'cancelled' || (event.status === 'pending' && isPast)) statusTone = "rose";
 
                         return (
