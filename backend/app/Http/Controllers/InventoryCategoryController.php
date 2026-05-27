@@ -46,10 +46,6 @@ class InventoryCategoryController extends Controller
 
     public function destroy(InventoryCategory $inventoryCategory)
     {
-        \Illuminate\Support\Facades\DB::table('inventories')
-            ->where('inventory_category_id', $inventoryCategory->id)
-            ->update(['inventory_category_id' => null]);
-
         $inventoryCategory->delete();
         return response()->json(null, 204);
     }
