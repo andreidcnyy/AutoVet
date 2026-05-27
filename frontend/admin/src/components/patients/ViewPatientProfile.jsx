@@ -87,7 +87,10 @@ const formatTime = (t) => {
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
-  const normalizedDate = typeof dateStr === 'string' && dateStr.includes('-') ? dateStr.replace(/-/g, '/') : dateStr;
+  // Only apply to plain date strings (no 'T'), not ISO datetimes — replacing dashes in ISO strings breaks parsing
+  const normalizedDate = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? dateStr.replace(/-/g, '/')
+    : dateStr;
   const d = new Date(normalizedDate);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-US", {
