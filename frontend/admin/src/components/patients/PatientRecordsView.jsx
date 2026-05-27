@@ -232,19 +232,19 @@ function PatientRecordsView({
                         >
                           <FiAlertTriangle className="h-4 w-4" />
                         </button>
-                        {canManagePortal && owner.user && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setPortalModal({ owner }); }}
-                            className={clsx(
-                              "flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white hover:shadow-md dark:hover:bg-dark-surface transition-colors",
-                              owner.user.status === "active" ? "text-emerald-500 hover:text-emerald-700" :
-                              owner.user.status === "suspended" ? "text-amber-500 hover:text-amber-700" :
-                              "text-rose-400 hover:text-rose-600"
-                            )}
-                            title={`Portal account: ${owner.user.status}`}
-                          >
-                            <FiShield className="h-4 w-4" />
-                          </button>
+                        {owner.user && (
+                          <span className={clsx(
+                            "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase border select-none",
+                            owner.user.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700/30 dark:text-emerald-400" :
+                            owner.user.status === "suspended" ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/30 dark:text-amber-400" :
+                            "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:border-rose-700/30 dark:text-rose-400"
+                          )}>
+                            <span className={clsx("h-1.5 w-1.5 rounded-full shrink-0",
+                              owner.user.status === "active" ? "bg-emerald-500" :
+                              owner.user.status === "suspended" ? "bg-amber-500" : "bg-rose-500"
+                            )} />
+                            {owner.user.status}
+                          </span>
                         )}
                         <button
                           onClick={(e) => { e.stopPropagation(); onDeleteOwner(owner.id); }}
