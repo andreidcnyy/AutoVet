@@ -384,9 +384,11 @@ class DashboardController extends Controller
     {
         // No cache for real-time data accuracy
         $tz = 'Asia/Manila';
-        $totalPets = Pet::count();
-        
-        $totalOwners = \App\Models\Owner::count();
+        $totalPets = Pet::whereHas('owner', function ($q) {
+            $q->where('email', '!=', 'dataset.seeder@autovet.ai');
+        })->count();
+
+        $totalOwners = \App\Models\Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
 
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
