@@ -1,5 +1,6 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 import {
   FiCalendar,
@@ -596,6 +597,8 @@ function InvoiceModuleView() {
   const toast = useToast();
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
+  const location = useLocation();
+  const deepLinkHandled = useRef(false);
 
   const [activeTab, setActiveTab] = useState("new"); // "new", "history", or "reports"
   const [txReportRows, setTxReportRows] = useState([]);
@@ -776,6 +779,14 @@ function InvoiceModuleView() {
       fetchInvoices(1, searchQuery, null, true);
     }
   }, [activeTab]); // Only trigger on tab change
+
+  // Auto-open an invoice when navigated here from the dashboard with a viewInvoiceId
+  useEffect(() => {
+    const id = location.state?.viewInvoiceId;
+    if (!id || deepLinkHandled.current || !user?.token) return;
+    deepLinkHandled.current = true;
+    handleViewInvoiceDetails({ id });
+  }, [location.state, user?.token, handleViewInvoiceDetails]);
 
   // Debounced search effect
   useEffect(() => {

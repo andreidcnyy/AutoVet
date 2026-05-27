@@ -193,7 +193,7 @@ export default function AnalyticsChartsCard() {
                 tickLine={false}
                 axisLine={false}
               />
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'transparent' }} />
               <Bar dataKey="total_qty" radius={[6, 6, 0, 0]}>
                 {categories.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />

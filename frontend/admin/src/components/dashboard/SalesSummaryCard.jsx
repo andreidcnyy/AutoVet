@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/fi";
 import clsx from "clsx";
 import api from "../../api";
@@ -19,6 +20,7 @@ const formatDate = (dateStr) => {
 
 
 export default function SalesSummaryCard() {
+  const navigate = useNavigate();
   const [revenue, setRevenue]     = useState([]);
   const [topItems, setTopItems]   = useState([]);
   const [recent, setRecent]       = useState([]);
@@ -207,29 +209,32 @@ export default function SalesSummaryCard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-dark-border">
-                {recent.map((inv) => {
-                  return (
-                    <tr key={inv.id} className="hover:bg-zinc-50/60 dark:hover:bg-dark-surface/30 transition-colors">
-                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                        {formatDate(inv.created_at)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
-                        {inv.pet?.name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                        {inv.pet?.owner?.name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right font-black tabular-nums text-zinc-900 dark:text-zinc-50">
-                        {peso(inv.total)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                          Paid
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {recent.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    onClick={() => navigate("/invoices", { state: { viewInvoiceId: inv.id } })}
+                    className="cursor-pointer hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 transition-colors"
+                    title="Click to view invoice details"
+                  >
+                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                      {formatDate(inv.created_at)}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
+                      {inv.pet?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                      {inv.pet?.owner?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right font-black tabular-nums text-zinc-900 dark:text-zinc-50">
+                      {peso(inv.total)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        Paid
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
