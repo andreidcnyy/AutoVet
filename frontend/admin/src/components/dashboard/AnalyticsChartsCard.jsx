@@ -8,6 +8,7 @@ import {
 import { FiUsers, FiPackage, FiRefreshCw } from "react-icons/fi";
 import api from "../../api";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 
 const COLORS = [
   "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
@@ -73,7 +74,7 @@ export default function AnalyticsChartsCard() {
   }, []);
 
   useEffect(() => {
-    const poll = setInterval(() => {
+    const refreshAll = () => {
       Promise.all([
         api.get("/dashboard/analytics/monthly-clients"),
         api.get("/dashboard/analytics/items-by-category"),
@@ -81,13 +82,33 @@ export default function AnalyticsChartsCard() {
         setClients(Array.isArray(clientRes) ? clientRes : []);
         setCategories(Array.isArray(catRes) ? catRes : []);
       }).catch(() => {});
-    }, 60000);
-    const onVisible = () => { if (document.visibilityState === 'visible') {
-      Promise.all([api.get("/dashboard/analytics/monthly-clients"), api.get("/dashboard/analytics/items-by-category")])
-        .then(([c, a]) => { setClients(Array.isArray(c) ? c : []); setCategories(Array.isArray(a) ? a : []); }).catch(() => {});
-    }};
+    };
+
+    const refreshCategories = () => {
+      api.get("/dashboard/analytics/items-by-category")
+        .then((res) => { setCategories(Array.isArray(res) ? res : []); })
+        .catch(() => {});
+    };
+
+    const poll = setInterval(refreshAll, 60000);
+
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshAll(); };
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+
+    let echoInstance = null;
+    import("../../utils/echo").then((mod) => {
+      echoInstance = mod.default;
+      echoInstance.private('admin.inventory')
+        .listen('.inventory.category.deleted', refreshCategories)
+        .listen('.inventory.updated', refreshCategories)
+        .listen('.invoice.finalized', refreshAll);
+    }).catch(() => {});
+
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (echoInstance) echoInstance.leave('admin.inventory');
+    };
   }, []);
 
   if (loading) {

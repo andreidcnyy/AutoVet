@@ -1190,12 +1190,12 @@ class DashboardController extends Controller
     {
         $data = DB::table('inventory_usage_history')
             ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
-            ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
+            ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->select(
-                DB::raw("COALESCE(mdm_inventory_categories.name, 'Uncategorized') as category"),
+                DB::raw('mdm_inventory_categories.name as category'),
                 DB::raw('SUM(inventory_usage_history.quantity_used) as total_qty')
             )
-            ->groupBy('category')
+            ->groupBy('mdm_inventory_categories.id', 'mdm_inventory_categories.name')
             ->orderByDesc('total_qty')
             ->get();
 
@@ -1207,14 +1207,14 @@ class DashboardController extends Controller
         $fallback = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
-            ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
+            ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
             ->whereNotNull('invoice_items.inventory_id')
             ->select(
-                DB::raw("COALESCE(mdm_inventory_categories.name, 'Uncategorized') as category"),
+                DB::raw('mdm_inventory_categories.name as category'),
                 DB::raw('SUM(invoice_items.qty) as total_qty')
             )
-            ->groupBy('category')
+            ->groupBy('mdm_inventory_categories.id', 'mdm_inventory_categories.name')
             ->orderByDesc('total_qty')
             ->get();
 
