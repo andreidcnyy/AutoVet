@@ -16,7 +16,14 @@ const EVENT_OPTIONS = [
 ];
 
 function eventLabel(key) {
-  return EVENT_OPTIONS.find(o => o.value === key)?.label || key || 'Manual';
+  return EVENT_OPTIONS.find(o => o.value === key)?.label || 'Send manually (not automatic)';
+}
+
+function eventBadgeColor(key) {
+  if (!key) return 'bg-zinc-700/50 text-zinc-400 border-zinc-600/40';
+  if (key.startsWith('appointment_')) return 'bg-blue-500/15 text-blue-300 border-blue-500/25';
+  if (key.startsWith('invoice_')) return 'bg-amber-500/15 text-amber-300 border-amber-500/25';
+  return 'bg-zinc-700/50 text-zinc-400 border-zinc-600/40';
 }
 
 /* Clickable smart fields — label is what the user sees, tag is what gets inserted */
@@ -160,7 +167,11 @@ export default function NotificationTemplatesManager() {
                     {t.channel === 'email' ? 'Email' : 'SMS'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-zinc-400 text-xs">{eventLabel(t.event_key)}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full border ${eventBadgeColor(t.event_key)}`}>
+                    {eventLabel(t.event_key)}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-center">
                   <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
                     t.is_active
