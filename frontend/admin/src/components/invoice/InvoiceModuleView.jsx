@@ -451,13 +451,24 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
         ))}
         <div className="space-y-1">
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Client</label>
-          <input
-            type="text"
-            placeholder="Search client..."
-            value={ownerSearch}
-            onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); }}
-            className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search client..."
+              value={ownerSearch}
+              onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); }}
+              className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none"
+            />
+            {ownerSearch && (
+              <button
+                type="button"
+                onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); }}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600"
+              >
+                <FiX className="h-3 w-3" />
+              </button>
+            )}
+          </div>
           <div className="relative">
             <select value={selectedOwnerId} onChange={(e) => {
               const o = owners.find((o) => o.id.toString() === e.target.value);
