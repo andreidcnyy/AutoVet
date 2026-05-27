@@ -76,7 +76,7 @@ function PetProfile() {
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical History', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiDollarSign },
+    { id: 'invoices', label: 'Invoices', icon: FiDollarSign },
   ];
 
   return (
@@ -264,7 +264,7 @@ function PetProfile() {
               ))
             ) : (
               <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
-                No billing history found.
+                No invoice history found.
               </div>
             )}
           </div>

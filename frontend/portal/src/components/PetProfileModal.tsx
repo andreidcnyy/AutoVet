@@ -97,7 +97,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const tabs = [
     { id: 'summary', label: 'Summary', icon: FiInfo },
     { id: 'medical', label: 'Medical', icon: FiActivity },
-    { id: 'invoices', label: 'Billing', icon: FiCreditCard },
+    { id: 'invoices', label: 'Invoices', icon: FiCreditCard },
   ];
 
   return createPortal(
@@ -357,7 +357,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                       ))
                     ) : (
                       <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
-                        No billing history found.
+                        No invoice history found.
                       </div>
                     )}
                   </div>

@@ -136,10 +136,10 @@ export default function TermsOfService() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Invoices and Billing</h2>
+            <h2 className="text-xl font-black text-zinc-800 dark:text-zinc-100">8. Invoices</h2>
             <p>
               Invoice records accessible through the portal are provided for your reference and transparency. All
-              billing inquiries, disputes, or payment arrangements must be directed to the clinic directly. Invoice
+              invoice inquiries, disputes, or payment arrangements must be directed to the clinic directly. Invoice
               records are generated and maintained by our clinic staff and reflect the services rendered during
               your pet's visit.
             </p>

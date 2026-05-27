@@ -69,7 +69,7 @@ export default function PrivacyPolicy() {
                 </ul>
               </div>
               <div>
-                <p className="font-bold text-zinc-700 dark:text-zinc-300">Billing Information:</p>
+                <p className="font-bold text-zinc-700 dark:text-zinc-300">Invoice Information:</p>
                 <ul className="list-disc pl-6 space-y-1 mt-1">
                   <li>Invoice records for veterinary services rendered</li>
                   <li>Payment status and transaction history</li>

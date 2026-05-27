@@ -12,7 +12,7 @@ const EVENT_OPTIONS = [
   { value: 'appointment_cancelled',   label: 'When an appointment is cancelled' },
   { value: 'appointment_reminder',    label: 'Before an appointment (reminder)' },
   { value: 'appointment_completed',   label: 'After a visit is completed' },
-  { value: 'invoice_created',         label: 'When a billing invoice is created' },
+  { value: 'invoice_created',         label: 'When an invoice is created' },
 ];
 
 function eventLabel(key) {
