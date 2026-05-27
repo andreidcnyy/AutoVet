@@ -51,6 +51,7 @@ Route::post('/login',           [AuthController::class, 'login'])->middleware('t
 Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/password/reset',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+Route::get('/portal/check-status', [AuthController::class, 'checkPortalStatus'])->middleware('throttle:20,1');
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
 
 

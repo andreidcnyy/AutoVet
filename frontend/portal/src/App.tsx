@@ -16,6 +16,7 @@ import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
 import Invoices from './pages/Invoices';
 import AccountPendingDeletion from './pages/AccountPendingDeletion';
+import AccountBlockedPage from './pages/AccountBlockedPage';
 import MaintenancePage from './pages/MaintenancePage';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
@@ -28,11 +29,17 @@ function ProtectedRoute({ children }: {
 }) {
   const { user, loading } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
+  const [blocked, setBlocked] = useState<{ status: 'suspended' | 'deactivated'; message?: string } | null>(null);
 
   useEffect(() => {
     const onMaintenance = () => setMaintenance(true);
+    const onBlocked = (e: any) => setBlocked(e.detail);
     window.addEventListener('maintenance-mode', onMaintenance);
-    return () => window.removeEventListener('maintenance-mode', onMaintenance);
+    window.addEventListener('portal-account-blocked', onBlocked);
+    return () => {
+      window.removeEventListener('maintenance-mode', onMaintenance);
+      window.removeEventListener('portal-account-blocked', onBlocked);
+    };
   }, []);
 
   // Poll every 15 s while in maintenance mode — clear when backend responds normally
@@ -66,6 +73,8 @@ function ProtectedRoute({ children }: {
   if (!user) return <Navigate to="/login" replace />;
 
   if (user.account_pending_deletion) return <AccountPendingDeletion />;
+
+  if (blocked) return <AccountBlockedPage status={blocked.status} message={blocked.message} />;
 
   if (maintenance) return <MaintenancePage />;
 

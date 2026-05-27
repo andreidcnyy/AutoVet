@@ -30,12 +30,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Detect maintenance mode (503) and broadcast globally
+// Detect maintenance mode (503) and account suspension/deactivation (401) globally
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 503) {
       window.dispatchEvent(new CustomEvent('maintenance-mode'));
+    }
+    if (error.response?.status === 401) {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const { email } = JSON.parse(stored);
+          if (email) {
+            const res = await fetch(`/api/portal/check-status?email=${encodeURIComponent(email)}`);
+            const data = await res.json();
+            if (data.status === 'suspended' || data.status === 'deactivated') {
+              window.dispatchEvent(new CustomEvent('portal-account-blocked', { detail: { status: data.status, message: data.message } }));
+            }
+          }
+        } catch (_) {}
+      }
     }
     return Promise.reject(error);
   }

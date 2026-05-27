@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\PortalUser;
 use Illuminate\Http\Request;
 
@@ -35,22 +36,46 @@ class PortalUserAdminController extends Controller
 
     public function suspend(PortalUser $portalUser)
     {
-        $portalUser->update(['status' => 'suspended']);
-        // Revoke all tokens so the user is immediately logged out
+        $oldStatus = $portalUser->status;
+        PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'suspended']));
         $portalUser->tokens()->delete();
+        $this->auditPortalAction($portalUser, 'suspended', $oldStatus, 'suspended');
         return response()->json(['message' => "Account for {$portalUser->name} has been suspended.", 'status' => 'suspended']);
     }
 
     public function deactivate(PortalUser $portalUser)
     {
-        $portalUser->update(['status' => 'deactivated']);
+        $oldStatus = $portalUser->status;
+        PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'deactivated']));
         $portalUser->tokens()->delete();
+        $this->auditPortalAction($portalUser, 'deactivated', $oldStatus, 'deactivated');
         return response()->json(['message' => "Account for {$portalUser->name} has been deactivated.", 'status' => 'deactivated']);
     }
 
     public function reactivate(PortalUser $portalUser)
     {
-        $portalUser->update(['status' => 'active']);
+        $oldStatus = $portalUser->status;
+        PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'active']));
+        $this->auditPortalAction($portalUser, 'reactivated', $oldStatus, 'active');
         return response()->json(['message' => "Account for {$portalUser->name} has been reactivated.", 'status' => 'active']);
+    }
+
+    private function auditPortalAction(PortalUser $portalUser, string $action, string $oldStatus, string $newStatus): void
+    {
+        try {
+            AuditLog::create([
+                'clinic_id'  => $portalUser->clinic_id,
+                'user_id'    => auth()->id(),
+                'action'     => $action,
+                'model_type' => PortalUser::class,
+                'model_id'   => $portalUser->id,
+                'old_values' => ['status' => $oldStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
+                'new_values' => ['status' => $newStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Portal audit log failed: ' . $e->getMessage());
+        }
     }
 }

@@ -426,4 +426,23 @@ class AuthController extends Controller
 
         return "{$browser} on {$os}";
     }
+
+    public function checkPortalStatus(Request $request)
+    {
+        $email = $request->query('email');
+        if (!$email) return response()->json(['status' => 'unknown']);
+
+        $user = PortalUser::where('email', $email)->first();
+        if (!$user) return response()->json(['status' => 'not_found']);
+
+        $messages = [
+            'suspended'   => 'Your account has been temporarily suspended. Please contact the clinic.',
+            'deactivated' => 'Your account has been deactivated. Please contact the clinic to restore access.',
+        ];
+
+        return response()->json([
+            'status'  => $user->status ?? 'active',
+            'message' => $messages[$user->status] ?? null,
+        ]);
+    }
 }
