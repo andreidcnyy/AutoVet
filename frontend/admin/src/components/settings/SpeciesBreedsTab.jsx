@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiSearch } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,9 +9,6 @@ export default function SpeciesBreedsTab() {
   const [species, setSpecies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
-
-  const [speciesSearch, setSpeciesSearch] = useState("");
-  const [breedSearch, setBreedSearch] = useState("");
 
   const [newSpeciesName, setNewSpeciesName] = useState("");
   const [newBreedName, setNewBreedName] = useState("");
@@ -254,12 +251,12 @@ export default function SpeciesBreedsTab() {
 
   const currentSpeciesData = species.find(s => s.id === selectedSpecies?.id);
 
-  const filteredSpecies = speciesSearch.trim()
-    ? species.filter(s => s.name.toLowerCase().includes(speciesSearch.toLowerCase()))
+  const filteredSpecies = newSpeciesName.trim()
+    ? species.filter(s => s.name.toLowerCase().includes(newSpeciesName.toLowerCase()))
     : species;
 
-  const filteredBreeds = breedSearch.trim()
-    ? (currentSpeciesData?.breeds || []).filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase()))
+  const filteredBreeds = newBreedName.trim()
+    ? (currentSpeciesData?.breeds || []).filter(b => b.name.toLowerCase().includes(newBreedName.toLowerCase()))
     : (currentSpeciesData?.breeds || []);
 
   return (
@@ -269,33 +266,24 @@ export default function SpeciesBreedsTab() {
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Manage base species (e.g., Canine, Feline).</p>
 
         <form onSubmit={handleAddSpecies} className="mt-6 flex gap-2">
-          <input
-            type="text"
-            value={newSpeciesName}
-            onChange={(e) => setNewSpeciesName(e.target.value)}
-            placeholder="New Species Name..."
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={newSpeciesName}
+              onChange={(e) => setNewSpeciesName(e.target.value)}
+              placeholder="Search or add species..."
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+            />
+            {newSpeciesName && (
+              <button type="button" onClick={() => setNewSpeciesName("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                <FiX className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
           <button type="submit" disabled={!newSpeciesName.trim()} className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
             <FiPlus /> Add
           </button>
         </form>
-
-        <div className="relative mt-4">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-          <input
-            type="text"
-            value={speciesSearch}
-            onChange={(e) => setSpeciesSearch(e.target.value)}
-            placeholder="Search species..."
-            className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-          />
-          {speciesSearch && (
-            <button onClick={() => setSpeciesSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
-              <FiX className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
 
         <ul className="mt-4 space-y-2">
           {filteredSpecies.map((s) => (
@@ -342,7 +330,7 @@ export default function SpeciesBreedsTab() {
               )}
             </li>
           ))}
-          {filteredSpecies.length === 0 && <p className="text-sm text-zinc-500">{speciesSearch ? "No species match your search." : "No species found."}</p>}
+          {filteredSpecies.length === 0 && <p className="text-sm text-zinc-500">{newSpeciesName ? "No species match your search." : "No species found."}</p>}
         </ul>
       </section>
 
@@ -356,13 +344,20 @@ export default function SpeciesBreedsTab() {
           <>
             <form onSubmit={handleAddBreed} className="mt-6 flex flex-col gap-3">
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newBreedName}
-                  onChange={(e) => setNewBreedName(e.target.value)}
-                  placeholder={`New ${selectedSpecies.name} Breed...`}
-                  className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={newBreedName}
+                    onChange={(e) => setNewBreedName(e.target.value)}
+                    placeholder={`Search or add ${selectedSpecies.name} breed...`}
+                    className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                  />
+                  {newBreedName && (
+                    <button type="button" onClick={() => setNewBreedName("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                      <FiX className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
                 <select
                   value={newBreedDefaultSize}
                   onChange={(e) => setNewBreedDefaultSize(e.target.value)}
@@ -378,22 +373,6 @@ export default function SpeciesBreedsTab() {
                 </button>
               </div>
             </form>
-
-            <div className="relative mt-4">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-              <input
-                type="text"
-                value={breedSearch}
-                onChange={(e) => setBreedSearch(e.target.value)}
-                placeholder="Search breeds..."
-                className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
-              />
-              {breedSearch && (
-                <button onClick={() => setBreedSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
-                  <FiX className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
 
             <ul className="mt-4 space-y-2">
               {filteredBreeds.map((b) => (
@@ -453,7 +432,7 @@ export default function SpeciesBreedsTab() {
               ))}
               {filteredBreeds.length === 0 && (
                 <p className="text-sm text-zinc-500">
-                  {breedSearch ? "No breeds match your search." : "No breeds added yet."}
+                  {newBreedName ? "No breeds match your search." : "No breeds added yet."}
                 </p>
               )}
             </ul>
