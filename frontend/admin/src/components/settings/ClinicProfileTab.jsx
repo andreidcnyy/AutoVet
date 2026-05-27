@@ -238,10 +238,7 @@ export default function ClinicProfileTab() {
               className={getInputClass(errors.invoice_notes_template, true)}
               placeholder="Use placeholders like {clinic_name}, {pet_name}, {owner_name}..."
             />
-            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Available variables: {`{clinic_name}, {pet_name}, {owner_name}`}
-            </p>
-            {errors.invoice_notes_template && <p className="mt-1 text-sm text-red-500">{errors.invoice_notes_template.message}</p>}
+{errors.invoice_notes_template && <p className="mt-1 text-sm text-red-500">{errors.invoice_notes_template.message}</p>}
           </div>
         </div>
 
