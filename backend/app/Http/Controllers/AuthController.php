@@ -223,6 +223,15 @@ class AuthController extends Controller
             return response()->json(['error' => 'This account has been deactivated.'], 403);
         }
 
+        // Block suspended or deactivated portal users
+        if ($user instanceof PortalUser && in_array($user->status, ['suspended', 'deactivated'])) {
+            $msg = $user->status === 'suspended'
+                ? 'Your account has been temporarily suspended. Please contact the clinic.'
+                : 'Your account has been deactivated. Please contact the clinic.';
+            \Log::warning("Login blocked: portal user status={$user->status}", ['email' => $request->email]);
+            return response()->json(['error' => $msg], 403);
+        }
+
         // Portal user self-deletion: 30-day grace period
         if ($user instanceof PortalUser && $user->deletion_requested_at) {
             $deadline = $user->deletion_requested_at->copy()->addDays(30);

@@ -109,10 +109,9 @@ class ClientNotificationService
 
     public function sendInvoiceEmail(Owner $owner, $invoice)
     {
-        $clinic = \App\Models\Setting::first();
         $invoice->load(['items', 'pet.owner']);
-        
-        Mail::mailer('invoice')->to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, $clinic));
+
+        Mail::mailer('invoice')->to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, null));
 
         return ClientNotification::create([
             'owner_id' => $owner->id,

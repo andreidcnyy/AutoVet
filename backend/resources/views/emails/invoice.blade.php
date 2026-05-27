@@ -38,6 +38,9 @@
                     <tr>
                         <td>
                             <div class="brand">
+                                @if(!empty($clinic->clinic_logo))
+                                <img src="{{ $clinic->clinic_logo }}" alt="Logo" style="height:48px; width:48px; border-radius:50%; object-fit:cover; margin-bottom:8px; display:block;" />
+                                @endif
                                 <h1>{{ $clinic->clinic_name ?? 'Pet Wellness' }}</h1>
                                 <p>{{ $clinic->address ?? 'Clinic Address' }}</p>
                                 <p>{{ $clinic->phone_number ?? 'Contact Info' }}</p>
@@ -58,8 +61,17 @@
                         <td>
                             <div class="label">Client / Owner</div>
                             <div class="val">{{ $invoice->pet->owner->name ?? 'Valued Client' }}</div>
+                            @php $owner = $invoice->pet->owner ?? null; @endphp
+                            @if($owner && ($owner->address || $owner->city || $owner->province))
                             <div style="font-size: 12px; color: #64748b; font-weight: 500; margin-top: 2px;">
-                                Patient: {{ $invoice->pet->name }} ({{ $invoice->pet->breed->name ?? $invoice->pet->species->name }})
+                                {{ implode(', ', array_filter([$owner->address, $owner->city, $owner->province, $owner->zip])) }}
+                            </div>
+                            @endif
+                            @if($owner && $owner->phone)
+                            <div style="font-size: 12px; color: #64748b; font-weight: 500; margin-top: 2px;">{{ $owner->phone }}</div>
+                            @endif
+                            <div style="font-size: 12px; color: #64748b; font-weight: 500; margin-top: 2px;">
+                                Patient: {{ $invoice->pet->name }} ({{ $invoice->pet->breed->name ?? ($invoice->pet->species->name ?? '') }})
                             </div>
                         </td>
                         <td style="text-align: right;">

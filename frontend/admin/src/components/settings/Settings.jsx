@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useState, useMemo } from "react";
-import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag, FiStar } from "react-icons/fi";
+import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag, FiStar, FiShield } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, ADMIN_ONLY, VET_AND_ADMIN, ALL_ROLES } from "../../constants/roles";
 
@@ -18,6 +18,7 @@ import SpeciesBreedsTab from "./SpeciesBreedsTab";
 import VetScheduleTab from "./VetScheduleTab";
 import NotificationTemplatesManager from "../notifications/NotificationTemplatesManager";
 import ReviewsTab from "./ReviewsTab";
+import PortalUsersTab from "./PortalUsersTab";
 
 const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome, allowedRoles: VET_AND_ADMIN },
@@ -33,6 +34,7 @@ const tabs = [
   { id: "archive", label: "Archive & Recovery", icon: FiArchive, allowedRoles: VET_AND_ADMIN },
   // { id: "import", label: "Data Import", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
   { id: "client_notifications", label: "Notification Templates", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
+  { id: "portal_users", label: "Portal Users", icon: FiShield, allowedRoles: ADMIN_ONLY },
 ];
 
 function Settings() {
@@ -88,6 +90,7 @@ function Settings() {
         { activeTab === "archive" && <ArchiveRecoveryTab /> }
         { /* activeTab === "import" && <DataImportTab /> */ }
         { activeTab === "client_notifications" && <NotificationTemplatesManager /> }
+        { activeTab === "portal_users" && <PortalUsersTab /> }
       </main>
     </div>
   );

@@ -37,6 +37,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useNewItems } from "../../context/NewItemsContext";
 import ManualSendModal from "../notifications/ManualSendModal";
 
+const APPT_STAMP_KEY = "lv_appointments";
+
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const formatTime = (t) => {
@@ -101,6 +103,19 @@ function AppointmentsView() {
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  // Capture the previous visit stamp before the page clears it, so we can highlight new appointments
+  const [prevVisitStamp] = useState(() => localStorage.getItem(APPT_STAMP_KEY));
+  const [newBannerDismissed, setNewBannerDismissed] = useState(false);
+
+  // Walk-in specific state
+  const [walkInOwnerMode, setWalkInOwnerMode] = useState("new"); // "new" | "existing"
+  const [walkInOwner, setWalkInOwner] = useState({ name: "", phone: "", address: "", city: "", province: "" });
+  const [walkInPet, setWalkInPet] = useState({ name: "", species_id: "", breed_id: "" });
+  const [walkInIsEmergency, setWalkInIsEmergency] = useState(false);
+  const [walkInErrors, setWalkInErrors] = useState({});
+  const [walkInDupeWarning, setWalkInDupeWarning] = useState(null);
+  const [species, setSpecies] = useState([]);
+  const [breeds, setBreeds] = useState([]);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
@@ -190,18 +205,24 @@ function AppointmentsView() {
       api.get('/api/pets', { cache: true }),
       api.get('/api/services', { cache: true }),
       api.get('/api/vets', { cache: true }),
-    ]).then(([o, p, s, v]) => {
+      api.get('/api/species', { cache: true }),
+      api.get('/api/breeds', { cache: true }),
+    ]).then(([o, p, s, v, sp, br]) => {
       // Handle potential pagination in all dropdown sources
       const oData = o.value?.data || o.value || [];
       const pData = p.value?.data || p.value || [];
       const sData = s.value?.data || s.value || [];
       const vData = v.value?.data || v.value || [];
+      const spData = sp.value?.data || sp.value || [];
+      const brData = br.value?.data || br.value || [];
 
       setOwners(Array.isArray(oData) ? oData : []);
       setPets(Array.isArray(pData) ? pData : []);
       setServices(Array.isArray(sData) ? sData : []);
       setVets(Array.isArray(vData) ? vData : []);
-      
+      setSpecies(Array.isArray(spData) ? spData : []);
+      setBreeds(Array.isArray(brData) ? brData : []);
+
       setFormDataLoaded(true);
     });
   }, [isDrawerOpen, formDataLoaded, user?.token]);
@@ -255,6 +276,78 @@ function AppointmentsView() {
       fetchAppointments();
       refreshCounts();
     } catch (err) { toast.error(err?.response?.data?.message || "Failed to schedule."); }
+  };
+
+  // Debounced duplicate check for walk-in owner phone
+  useEffect(() => {
+    if (walkInOwnerMode !== "new" || walkInOwner.phone.length < 11) { setWalkInDupeWarning(null); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/api/owners/check-duplicate', { params: { phone: walkInOwner.phone } });
+        if (res?.exists) setWalkInDupeWarning(`An owner with phone ${walkInOwner.phone} already exists: ${res.name}. Use "Existing Owner" mode or confirm this is a different person.`);
+        else setWalkInDupeWarning(null);
+      } catch (_) { setWalkInDupeWarning(null); }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [walkInOwner.phone, walkInOwnerMode]);
+
+  const resetWalkInForm = () => {
+    setWalkInOwnerMode("new");
+    setWalkInOwner({ name: "", phone: "", address: "", city: "", province: "" });
+    setWalkInPet({ name: "", species_id: "", breed_id: "" });
+    setWalkInIsEmergency(false);
+    setWalkInErrors({});
+    setWalkInDupeWarning(null);
+  };
+
+  const [walkInSubmitting, setWalkInSubmitting] = useState(false);
+
+  const onWalkInSubmit = async () => {
+    const errors = {};
+    if (selectedServiceIds.length === 0) errors.service = "Select at least one service.";
+    if (walkInOwnerMode === "new") {
+      if (!walkInOwner.name.trim()) errors.ownerName = "Owner name is required.";
+      if (!walkInOwner.phone.trim()) errors.ownerPhone = "Phone is required.";
+    } else {
+      if (!selectedOwnerId) errors.ownerId = "Please select an existing owner.";
+    }
+    if (!walkInPet.name.trim()) errors.petName = "Pet name is required.";
+    if (!walkInPet.species_id) errors.petSpecies = "Species is required.";
+    const watchedDate = watch("date");
+    const watchedTime = watch("time");
+    if (!watchedDate) errors.date = "Date is required.";
+    if (!watchedTime) errors.time = "Time is required.";
+    if (Object.keys(errors).length > 0) { setWalkInErrors(errors); toast.error("Please fill in all required fields."); return; }
+    setWalkInErrors({});
+    setWalkInSubmitting(true);
+    try {
+      const payload = {
+        is_walk_in: true,
+        is_emergency: walkInIsEmergency,
+        service_id: selectedServiceIds[0],
+        service_ids: selectedServiceIds,
+        date: watchedDate,
+        time: watchedTime,
+        notes: watch("notes") || "",
+        ...(walkInOwnerMode === "new"
+          ? { new_owner: { name: walkInOwner.name, phone: walkInOwner.phone, address: walkInOwner.address, city: walkInOwner.city, province: walkInOwner.province } }
+          : { owner_id: selectedOwnerId }),
+        new_pet: { name: walkInPet.name, species_id: walkInPet.species_id, breed_id: walkInPet.breed_id || null },
+      };
+      await api.post("/api/walk-in", payload);
+      toast.success(walkInIsEmergency ? "Emergency walk-in registered!" : "Walk-in registered and added to queue!");
+      setIsDrawerOpen(false);
+      setSelectedServiceIds([]);
+      setIsWalkIn(false);
+      resetWalkInForm();
+      fetchAppointments();
+      refreshCounts();
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to register walk-in.";
+      const fieldErrors = err?.response?.data?.errors || {};
+      if (fieldErrors.phone) setWalkInErrors(prev => ({ ...prev, ownerPhone: fieldErrors.phone[0] }));
+      toast.error(msg);
+    } finally { setWalkInSubmitting(false); }
   };
 
   const handleAppointmentClick = (e, appt) => { e.stopPropagation(); setSelectedAppointment(appt); setActivePanel("details"); setIsDrawerOpen(true); };
@@ -361,6 +454,34 @@ function AppointmentsView() {
         </aside>
 
         <section className="flex-1 min-w-0 space-y-8">
+          {/* New appointment requests banner */}
+          {!newBannerDismissed && prevVisitStamp && (() => {
+            const newAppts = appointments.filter(a => a.created_at && new Date(a.created_at) > new Date(prevVisitStamp) && a.status === 'pending');
+            if (newAppts.length === 0) return null;
+            return (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-600/30 dark:bg-amber-600/10 px-6 py-4 flex items-start gap-4">
+                <FiBell className="mt-0.5 h-5 w-5 text-amber-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-amber-800 dark:text-amber-400 uppercase tracking-wide mb-2">
+                    {newAppts.length} New Appointment Request{newAppts.length > 1 ? 's' : ''}
+                  </p>
+                  <ul className="space-y-1">
+                    {newAppts.map(a => (
+                      <li key={a.id} className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span>{a.pet?.name}</span>
+                        <span className="text-amber-500 font-normal">•</span>
+                        <span>{formatDateLocal(a.date, "MMM d")} at {formatTime(a.time)}</span>
+                        <span className="text-amber-500 font-normal">•</span>
+                        <span className="text-amber-500">Requested {format(new Date(a.created_at), "MMM d, h:mm a")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <button onClick={() => setNewBannerDismissed(true)} className="text-amber-500 hover:text-amber-700 shrink-0"><FiX className="h-4 w-4" /></button>
+              </div>
+            );
+          })()}
           <div className="overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card">
             <div className="flex flex-wrap items-center justify-between gap-6 border-b border-zinc-100 p-8 bg-zinc-50/30 dark:bg-dark-surface/30">
               <div className="flex-1 min-w-[300px]">
@@ -430,26 +551,101 @@ function AppointmentsView() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsWalkIn(v => !v)}
+                    onClick={() => { setIsWalkIn(v => !v); resetWalkInForm(); }}
                     className={clsx("px-3 py-1.5 rounded-xl text-xs font-black uppercase border transition-all", isWalkIn ? "bg-sky-600 text-white border-sky-600" : "bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200")}
                   >Walk-in</button>
-                  <button onClick={() => { setIsDrawerOpen(false); setIsWalkIn(false); setSelectedServiceIds([]); }} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
+                  <button onClick={() => { setIsDrawerOpen(false); setIsWalkIn(false); setSelectedServiceIds([]); resetWalkInForm(); }} className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-all"><FiX /></button>
                 </div>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-8">
-                {isWalkIn && <p className="mb-4 text-xs font-bold text-sky-600 bg-sky-50 rounded-xl px-4 py-2.5 border border-sky-200">Walk-in visits are immediately approved — no pending queue.</p>}
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
-                      <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={qInputBase}><option value="">Select Owner</option>{Array.isArray(owners) && owners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
+                {isWalkIn ? (
+                  /* ── Walk-in Registration Form ── */
+                  <div className="space-y-6">
+                    {/* Emergency toggle */}
+                    <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-600/30 dark:bg-rose-600/10 px-4 py-3">
+                      <input type="checkbox" id="emergency" checked={walkInIsEmergency} onChange={e => setWalkInIsEmergency(e.target.checked)} className="h-4 w-4 accent-rose-600" />
+                      <label htmlFor="emergency" className="text-xs font-black uppercase text-rose-700 dark:text-rose-400 cursor-pointer">Mark as Emergency / Urgent Priority</label>
                     </div>
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
-                      <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+
+                    {/* Owner section */}
+                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black uppercase text-zinc-400">Owner Information</p>
+                        <div className="flex gap-1">
+                          {["new","existing"].map(m => (
+                            <button key={m} type="button" onClick={() => setWalkInOwnerMode(m)} className={clsx("px-3 py-1 rounded-lg text-[10px] font-black uppercase border transition-all", walkInOwnerMode === m ? "bg-emerald-600 text-white border-emerald-600" : "bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border text-zinc-500 hover:border-emerald-400")}>{m === "new" ? "New Owner" : "Link Existing"}</button>
+                          ))}
+                        </div>
+                      </div>
+                      {walkInOwnerMode === "new" ? (
+                        <>
+                          {walkInDupeWarning && <p className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">{walkInDupeWarning}</p>}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Full Name <span className="text-rose-500">*</span></label>
+                              <input value={walkInOwner.name} onChange={e => setWalkInOwner(p => ({...p, name: e.target.value}))} className={clsx(qInputBase, walkInErrors.ownerName && "border-rose-400")} placeholder="e.g. Juan Dela Cruz" />
+                              {walkInErrors.ownerName && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerName}</p>}
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Phone <span className="text-rose-500">*</span></label>
+                              <input value={walkInOwner.phone} onChange={e => setWalkInOwner(p => ({...p, phone: e.target.value}))} className={clsx(qInputBase, walkInErrors.ownerPhone && "border-rose-400")} placeholder="09XXXXXXXXX" maxLength={11} />
+                              {walkInErrors.ownerPhone && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerPhone}</p>}
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">City</label>
+                              <input value={walkInOwner.city} onChange={e => setWalkInOwner(p => ({...p, city: e.target.value}))} className={qInputBase} placeholder="City" />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Address</label>
+                              <input value={walkInOwner.address} onChange={e => setWalkInOwner(p => ({...p, address: e.target.value}))} className={qInputBase} placeholder="Street / Barangay" />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Select Existing Owner <span className="text-rose-500">*</span></label>
+                          <select value={selectedOwnerId} onChange={e => setSelectedOwnerId(e.target.value)} className={clsx(qInputBase, walkInErrors.ownerId && "border-rose-400")}>
+                            <option value="">— Select Owner —</option>
+                            {owners.map(o => <option key={o.id} value={o.id}>{o.name} ({o.phone})</option>)}
+                          </select>
+                          {walkInErrors.ownerId && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerId}</p>}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
-                      <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
-                        {Array.isArray(services) && services.map(s => {
+
+                    {/* Pet section */}
+                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
+                      <p className="text-[10px] font-black uppercase text-zinc-400 mb-2">Pet Information</p>
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Pet Name <span className="text-rose-500">*</span></label>
+                        <input value={walkInPet.name} onChange={e => setWalkInPet(p => ({...p, name: e.target.value}))} className={clsx(qInputBase, walkInErrors.petName && "border-rose-400")} placeholder="e.g. Buddy" />
+                        {walkInErrors.petName && <p className="text-xs text-rose-500 mt-1">{walkInErrors.petName}</p>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Species <span className="text-rose-500">*</span></label>
+                          <select value={walkInPet.species_id} onChange={e => setWalkInPet(p => ({...p, species_id: e.target.value, breed_id: ""}))} className={clsx(qInputBase, walkInErrors.petSpecies && "border-rose-400")}>
+                            <option value="">— Select —</option>
+                            {species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                          {walkInErrors.petSpecies && <p className="text-xs text-rose-500 mt-1">{walkInErrors.petSpecies}</p>}
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Breed</label>
+                          <select value={walkInPet.breed_id} onChange={e => setWalkInPet(p => ({...p, breed_id: e.target.value}))} className={qInputBase}>
+                            <option value="">— Select —</option>
+                            {breeds.filter(b => !walkInPet.species_id || String(b.species_id) === String(walkInPet.species_id)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Services */}
+                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
+                      <p className="text-[10px] font-black uppercase text-zinc-400 mb-2">Reason / Services <span className="text-rose-500">*</span></p>
+                      {walkInErrors.service && <p className="text-xs text-rose-500">{walkInErrors.service}</p>}
+                      <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                        {services.map(s => {
                           const checked = selectedServiceIds.includes(String(s.id));
                           return (
                             <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
@@ -461,19 +657,70 @@ function AppointmentsView() {
                         })}
                       </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
-                  </div>
-                  {adminBookingRequiresDoctor && (
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
-                      <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
+
+                    {/* Date & Time */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Date <span className="text-rose-500">*</span></label>
+                        <input type="date" {...register("date")} className={clsx(qInputBase, walkInErrors.date && "border-rose-400")} />
+                        {walkInErrors.date && <p className="text-xs text-rose-500 mt-1">{walkInErrors.date}</p>}
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Time <span className="text-rose-500">*</span></label>
+                        <input type="time" {...register("time")} className={clsx(qInputBase, walkInErrors.time && "border-rose-400")} />
+                        {walkInErrors.time && <p className="text-xs text-rose-500 mt-1">{walkInErrors.time}</p>}
+                      </div>
                     </div>
-                  )}
-                  <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
-                  <button type="submit" disabled={isSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", isWalkIn ? "bg-sky-600 hover:bg-sky-700" : "bg-emerald-600 hover:bg-emerald-700")}>{isSubmitting ? "Syncing..." : isWalkIn ? "Register Walk-in" : "Finalize"}</button>
-                </form>
+
+                    {/* Notes */}
+                    <div>
+                      <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Notes / Chief Complaint</label>
+                      <textarea {...register("notes")} className={clsx(qInputBase, "min-h-[80px] py-3")} placeholder="Describe reason for visit..." rows={3} />
+                    </div>
+
+                    <button type="button" onClick={onWalkInSubmit} disabled={walkInSubmitting} className={clsx("h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all", walkInIsEmergency ? "bg-rose-600 hover:bg-rose-700" : "bg-sky-600 hover:bg-sky-700")}>
+                      {walkInSubmitting ? "Registering..." : walkInIsEmergency ? "Register Emergency Walk-in" : "Register Walk-in & Add to Queue"}
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Regular Scheduling Form ── */
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
+                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
+                        <select value={selectedOwnerId} onChange={(e) => { setSelectedOwnerId(e.target.value); setValue("pet_id", ""); }} className={qInputBase}><option value="">Select Owner</option>{Array.isArray(owners) && owners.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
+                      </div>
+                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
+                        <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                      </div>
+                      <div>
+                        <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
+                        <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                          {Array.isArray(services) && services.map(s => {
+                            const checked = selectedServiceIds.includes(String(s.id));
+                            return (
+                              <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
+                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
+                                <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
+                                {s.name}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
+                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
+                    </div>
+                    {adminBookingRequiresDoctor && (
+                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
+                        <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
+                      </div>
+                    )}
+                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
+                    <button type="submit" disabled={isSubmitting} className="h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all bg-emerald-600 hover:bg-emerald-700">{isSubmitting ? "Syncing..." : "Finalize"}</button>
+                  </form>
+                )}
               </div>
             </>
           ) : (
@@ -501,6 +748,9 @@ function AppointmentsView() {
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{formatTime(selectedAppointment?.time)}</p></div></div>
                   <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name} | Guardian ID #{selectedAppointment?.pet?.owner_id}</p></div></div>
+                  {selectedAppointment?.created_at && (
+                    <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-amber-400" /><div><p className="text-[10px] font-black text-zinc-400">REQUESTED ON</p><p className="text-sm font-black text-amber-600 dark:text-amber-400">{format(new Date(selectedAppointment.created_at), "MMMM d, yyyy 'at' h:mm a")}</p></div></div>
+                  )}
                   <div className="flex items-center gap-5"><FiList className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">SERVICES</p>
                     {selectedAppointment?.services?.length > 0
                       ? <div className="flex flex-wrap gap-1.5 mt-1">{selectedAppointment.services.map(s => <span key={s.id} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">{s.name}</span>)}</div>

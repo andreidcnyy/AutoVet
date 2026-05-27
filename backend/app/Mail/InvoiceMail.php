@@ -30,6 +30,7 @@ class InvoiceMail extends Mailable
                 'clinic_name' => $settings['clinic_name'] ?? config('app.name'),
                 'address' => $settings['clinic_address'] ?? '',
                 'phone_number' => $settings['clinic_phone'] ?? '',
+                'clinic_logo' => $settings['clinic_logo'] ?? null,
             ];
         } else {
             $this->clinic = $clinic;

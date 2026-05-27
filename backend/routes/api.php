@@ -190,8 +190,12 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
 
     Route::apiResource('medical-records', MedicalRecordController::class);
 
+    Route::get('/owners/check-duplicate', [PatientOwnerController::class, 'checkDuplicate']);
     Route::apiResource('owners', PatientOwnerController::class);
     Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
+
+    // Walk-in Registration — staff and admin
+    Route::post('/walk-in', [\App\Http\Controllers\WalkInController::class, 'register']);
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::post('vet-schedules/bulk',       [VetScheduleController::class, 'bulkStore']);
         Route::post('vet-schedules',            [VetScheduleController::class, 'store']);
@@ -332,6 +336,12 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
         Route::get('/archives/{type}',              [ArchiveController::class, 'index']);
         Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore']);
         Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete']);
+
+        // Portal User Management (suspend / deactivate / reactivate)
+        Route::get('/portal-users',                            [\App\Http\Controllers\PortalUserAdminController::class, 'index']);
+        Route::post('/portal-users/{portalUser}/suspend',      [\App\Http\Controllers\PortalUserAdminController::class, 'suspend']);
+        Route::post('/portal-users/{portalUser}/deactivate',   [\App\Http\Controllers\PortalUserAdminController::class, 'deactivate']);
+        Route::post('/portal-users/{portalUser}/reactivate',   [\App\Http\Controllers\PortalUserAdminController::class, 'reactivate']);
     });
 
     // -----------------------------------------------------------------------

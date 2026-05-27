@@ -176,4 +176,26 @@ class PatientOwnerController extends Controller
         $owner->delete();
         return response()->json(null, 204);
     }
+
+    public function checkDuplicate(Request $request)
+    {
+        $phone = $request->query('phone');
+        $email = $request->query('email');
+
+        if ($phone) {
+            $owner = Owner::where('phone', $phone)->first();
+            if ($owner) {
+                return response()->json(['exists' => true, 'name' => $owner->name, 'id' => $owner->id]);
+            }
+        }
+
+        if ($email) {
+            $owner = Owner::where('email', $email)->first();
+            if ($owner) {
+                return response()->json(['exists' => true, 'name' => $owner->name, 'id' => $owner->id]);
+            }
+        }
+
+        return response()->json(['exists' => false]);
+    }
 }

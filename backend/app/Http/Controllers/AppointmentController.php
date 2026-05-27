@@ -27,7 +27,7 @@ class AppointmentController extends Controller
         
         // Use with() for eager loading to prevent N+1 queries.
         // select() only columns needed for the list to reduce memory usage.
-        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'is_walk_in', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id')
+        $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'is_walk_in', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id', 'created_at')
             ->with([
                 'pet:id,name,owner_id',
                 'pet.owner:id,name,email',
