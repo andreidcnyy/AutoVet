@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -261,7 +262,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         )}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 dark:bg-dark-card border dark:border-dark-border shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -301,7 +302,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
