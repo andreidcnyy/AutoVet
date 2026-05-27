@@ -1722,8 +1722,13 @@ function InvoiceModuleView() {
                                 placeholder="Search services or inventory..."
                                 value={itemModalSearch}
                                 onChange={(e) => setItemModalSearch(e.target.value)}
-                                className="h-10 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-4 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
+                                className="h-10 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
                               />
+                              {itemModalSearch && (
+                                <button onClick={() => setItemModalSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                                  <FiX className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
