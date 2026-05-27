@@ -255,7 +255,7 @@ function AppointmentsView() {
         }
         toast.info(`Appointment archived.`);
       });
-    const poll = setInterval(() => fetchAppointments(), 30000);
+    const poll = setInterval(() => fetchAppointments(), 5000);
     return () => {
       clearInterval(poll);
       echo.leave('admin.appointments');

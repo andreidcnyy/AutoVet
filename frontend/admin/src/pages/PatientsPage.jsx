@@ -411,6 +411,7 @@ function PatientsPage() {
             }
           }}
           onAddPet={handleAddPetToOwner}
+          onRefresh={() => fetchOwners(pagination?.current_page || 1)}
         />
       ) : (
         <PetsListView />

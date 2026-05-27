@@ -43,8 +43,9 @@ function PatientRecordsView({
   onOpenAddPatient, 
   onDeleteOwner, 
   onEditOwner, 
-  onOwnerEdited, 
-  onAddPet 
+  onOwnerEdited,
+  onRefresh,
+  onAddPet
 }) {
   const toast = useToast();
   const { user } = useAuth();
@@ -66,8 +67,8 @@ function PatientRecordsView({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Action failed.");
       toast.success(data.message || "Done.");
-      // Update the owner's portal user status in local state
       onOwnerEdited({ id: ownerId, user: { ...portalModal.owner.user, status: data.status } });
+      if (onRefresh) onRefresh();
       setPortalModal(null);
     } catch (err) {
       toast.error(err.message || "Action failed.");
