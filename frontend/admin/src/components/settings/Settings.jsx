@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useState, useMemo } from "react";
 import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag, FiStar } from "react-icons/fi";
+import { LuPawPrint } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN, ALL_ROLES } from "../../constants/roles";
 
@@ -23,7 +24,7 @@ const tabs = [
   { id: "clinic", label: "Clinic Profile", icon: FiHome, allowedRoles: VET_AND_ADMIN },
   { id: "data", label: "Master Data", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
   { id: "services", label: "Service Management", icon: FiTag, allowedRoles: VET_AND_ADMIN },
-  { id: "species", label: "Species & Breeds", icon: FiHome, allowedRoles: VET_AND_ADMIN },
+  { id: "species", label: "Species & Breeds", icon: LuPawPrint, allowedRoles: VET_AND_ADMIN },
   { id: "users", label: "Users / Roles", icon: FiUsers, allowedRoles: VET_AND_ADMIN },
   { id: "schedule", label: "Vet Schedule", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
   { id: "system", label: "System & AI Preferences", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
