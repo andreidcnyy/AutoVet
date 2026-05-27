@@ -778,10 +778,11 @@ function AppointmentsTab({ appointments }) {
     );
   }
 
+  const sortedAppointments = [...appointments].sort((a, b) => new Date(b.date) - new Date(a.date));
   const indexOfLastApt = currentPage * appointmentsPerPage;
   const indexOfFirstApt = indexOfLastApt - appointmentsPerPage;
-  const currentAppointments = appointments.slice(indexOfFirstApt, indexOfLastApt);
-  const totalPages = Math.ceil(appointments.length / appointmentsPerPage);
+  const currentAppointments = sortedAppointments.slice(indexOfFirstApt, indexOfLastApt);
+  const totalPages = Math.ceil(sortedAppointments.length / appointmentsPerPage);
 
   return (
     <div className="space-y-4">
@@ -1495,10 +1496,11 @@ function InvoiceTab({ invoices }) {
     );
   }
 
+  const sortedInvoices = [...invoices].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const indexOfLastInv = currentPage * invoicesPerPage;
   const indexOfFirstInv = indexOfLastInv - invoicesPerPage;
-  const currentInvoices = invoices.slice(indexOfFirstInv, indexOfLastInv);
-  const totalPages = Math.ceil(invoices.length / invoicesPerPage);
+  const currentInvoices = sortedInvoices.slice(indexOfFirstInv, indexOfLastInv);
+  const totalPages = Math.ceil(sortedInvoices.length / invoicesPerPage);
 
   return (
     <div className="space-y-4">
