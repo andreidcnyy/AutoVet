@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiSearch } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,6 +9,9 @@ export default function SpeciesBreedsTab() {
   const [species, setSpecies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
+
+  const [speciesSearch, setSpeciesSearch] = useState("");
+  const [breedSearch, setBreedSearch] = useState("");
 
   const [newSpeciesName, setNewSpeciesName] = useState("");
   const [newBreedName, setNewBreedName] = useState("");
@@ -24,6 +27,10 @@ export default function SpeciesBreedsTab() {
   const SPECIES_CACHE_KEY = 'settings_species_cache';
   const SIZE_CATS_CACHE_KEY = 'settings_size_cats_cache';
   const CACHE_TTL = 5 * 60 * 1000;
+
+  const invalidateCache = () => {
+    try { localStorage.removeItem(SPECIES_CACHE_KEY); } catch (_) {}
+  };
 
   const fetchSpecies = async (signal) => {
     if (!user?.token) { setLoading(false); return; }
@@ -67,7 +74,6 @@ export default function SpeciesBreedsTab() {
   };
 
   useEffect(() => {
-    // Show cached data instantly
     try {
       const speciesCached = JSON.parse(localStorage.getItem(SPECIES_CACHE_KEY) || 'null');
       if (speciesCached && Date.now() - speciesCached.ts < CACHE_TTL && Array.isArray(speciesCached.data)) {
@@ -99,17 +105,16 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/species", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
+        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${user?.token}` },
         body: JSON.stringify({ name: newSpeciesName.trim(), status: "Active" })
       });
       if (res.ok) {
+        const created = await res.json();
+        const newEntry = { ...created, breeds: created.breeds || [] };
+        setSpecies(prev => [...prev, newEntry]);
+        invalidateCache();
         toast.success("Species added.");
         setNewSpeciesName("");
-        fetchSpecies();
       } else {
         const err = await res.json();
         toast.error(err.message || "Failed to add species.");
@@ -124,15 +129,13 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/species/${id}`, {
         method: "DELETE",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
       });
       if (res.ok) {
-        toast.success("Species removed.");
+        setSpecies(prev => prev.filter(s => s.id !== id));
+        invalidateCache();
         if (selectedSpecies?.id === id) setSelectedSpecies(null);
-        fetchSpecies();
+        toast.success("Species removed.");
       }
     } catch {
       toast.error("Failed to delete species.");
@@ -144,20 +147,15 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/species/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
+        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${user?.token}` },
         body: JSON.stringify({ name: editSpeciesName.trim() })
       });
       if (res.ok) {
-        toast.success("Species updated.");
+        setSpecies(prev => prev.map(s => s.id === id ? { ...s, name: editSpeciesName.trim() } : s));
+        invalidateCache();
+        if (selectedSpecies?.id === id) setSelectedSpecies(prev => ({ ...prev, name: editSpeciesName.trim() }));
         setEditingSpecies(null);
-        fetchSpecies();
-        if (selectedSpecies?.id === id) {
-          setSelectedSpecies({ ...selectedSpecies, name: editSpeciesName.trim() });
-        }
+        toast.success("Species updated.");
       }
     } catch {
       toast.error("Failed to update species.");
@@ -170,23 +168,25 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch("/api/breeds", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({ 
-          species_id: selectedSpecies.id, 
-          name: newBreedName.trim(), 
+        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${user?.token}` },
+        body: JSON.stringify({
+          species_id: selectedSpecies.id,
+          name: newBreedName.trim(),
           default_size_category_id: newBreedDefaultSize || null,
-          status: "Active" 
+          status: "Active"
         })
       });
       if (res.ok) {
+        const created = await res.json();
+        setSpecies(prev => prev.map(s =>
+          s.id === selectedSpecies.id
+            ? { ...s, breeds: [...(s.breeds || []), created] }
+            : s
+        ));
+        invalidateCache();
         toast.success("Breed added.");
         setNewBreedName("");
         setNewBreedDefaultSize("");
-        fetchSpecies();
       } else {
         const err = await res.json();
         toast.error(err.message || "Failed to add breed.");
@@ -201,14 +201,15 @@ export default function SpeciesBreedsTab() {
     try {
       const res = await fetch(`/api/breeds/${id}`, {
         method: "DELETE",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        }
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
       });
       if (res.ok) {
+        setSpecies(prev => prev.map(s => ({
+          ...s,
+          breeds: (s.breeds || []).filter(b => b.id !== id)
+        })));
+        invalidateCache();
         toast.success("Breed removed.");
-        fetchSpecies();
       }
     } catch {
       toast.error("Failed to delete breed.");
@@ -217,24 +218,29 @@ export default function SpeciesBreedsTab() {
 
   const handleUpdateBreed = async (breed) => {
     if (!editBreedName.trim()) return;
+    const sizeCat = sizeCategories.find(c => c.id.toString() === editBreedDefaultSize.toString()) || null;
     try {
       const res = await fetch(`/api/breeds/${breed.id}`, {
         method: "PUT",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({ 
-          species_id: breed.species_id, 
+        headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${user?.token}` },
+        body: JSON.stringify({
+          species_id: breed.species_id,
           name: editBreedName.trim(),
           default_size_category_id: editBreedDefaultSize || null
         })
       });
       if (res.ok) {
-        toast.success("Breed updated.");
+        setSpecies(prev => prev.map(s => ({
+          ...s,
+          breeds: (s.breeds || []).map(b =>
+            b.id === breed.id
+              ? { ...b, name: editBreedName.trim(), default_size_category_id: editBreedDefaultSize || null, default_size_category: sizeCat }
+              : b
+          )
+        })));
+        invalidateCache();
         setEditingBreed(null);
-        fetchSpecies();
+        toast.success("Breed updated.");
       } else {
         const err = await res.json();
         toast.error(err.message || "Failed to update breed.");
@@ -247,6 +253,14 @@ export default function SpeciesBreedsTab() {
   if (loading) return <div className="p-6 text-zinc-500">Loading species data...</div>;
 
   const currentSpeciesData = species.find(s => s.id === selectedSpecies?.id);
+
+  const filteredSpecies = speciesSearch.trim()
+    ? species.filter(s => s.name.toLowerCase().includes(speciesSearch.toLowerCase()))
+    : species;
+
+  const filteredBreeds = breedSearch.trim()
+    ? (currentSpeciesData?.breeds || []).filter(b => b.name.toLowerCase().includes(breedSearch.toLowerCase()))
+    : (currentSpeciesData?.breeds || []);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -267,8 +281,24 @@ export default function SpeciesBreedsTab() {
           </button>
         </form>
 
-        <ul className="mt-6 space-y-2">
-          {species.map((s) => (
+        <div className="relative mt-4">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+          <input
+            type="text"
+            value={speciesSearch}
+            onChange={(e) => setSpeciesSearch(e.target.value)}
+            placeholder="Search species..."
+            className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+          />
+          {speciesSearch && (
+            <button onClick={() => setSpeciesSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              <FiX className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <ul className="mt-4 space-y-2">
+          {filteredSpecies.map((s) => (
             <li
               key={s.id}
               className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${selectedSpecies?.id === s.id ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-900/20' : 'border-zinc-200 bg-white hover:border-emerald-300 dark:border-dark-border dark:bg-dark-card'}`}
@@ -288,7 +318,7 @@ export default function SpeciesBreedsTab() {
               ) : (
                 <div
                   className="cursor-pointer flex-1 font-medium text-zinc-700 dark:text-zinc-200"
-                  onClick={() => setSelectedSpecies(s)}
+                  onClick={() => { setSelectedSpecies(s); setBreedSearch(""); }}
                 >
                   {s.name} <span className="text-xs text-zinc-400 ml-2">({s.breeds?.length || 0} breeds)</span>
                 </div>
@@ -312,7 +342,7 @@ export default function SpeciesBreedsTab() {
               )}
             </li>
           ))}
-          {species.length === 0 && <p className="text-sm text-zinc-500">No species found.</p>}
+          {filteredSpecies.length === 0 && <p className="text-sm text-zinc-500">{speciesSearch ? "No species match your search." : "No species found."}</p>}
         </ul>
       </section>
 
@@ -349,8 +379,24 @@ export default function SpeciesBreedsTab() {
               </div>
             </form>
 
-            <ul className="mt-6 space-y-2">
-              {currentSpeciesData?.breeds?.map((b) => (
+            <div className="relative mt-4">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                value={breedSearch}
+                onChange={(e) => setBreedSearch(e.target.value)}
+                placeholder="Search breeds..."
+                className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+              />
+              {breedSearch && (
+                <button onClick={() => setBreedSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                  <FiX className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <ul className="mt-4 space-y-2">
+              {filteredBreeds.map((b) => (
                 <li key={b.id} className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-3 dark:border-dark-border dark:bg-dark-card">
                   {editingBreed === b.id ? (
                     <div className="flex flex-1 flex-col gap-2 mr-2">
@@ -390,11 +436,7 @@ export default function SpeciesBreedsTab() {
                   {editingBreed !== b.id && (
                     <div className="flex gap-1">
                       <button
-                        onClick={() => {
-                          setEditingBreed(b.id);
-                          setEditBreedName(b.name);
-                          setEditBreedDefaultSize(b.default_size_category_id || "");
-                        }}
+                        onClick={() => { setEditingBreed(b.id); setEditBreedName(b.name); setEditBreedDefaultSize(b.default_size_category_id || ""); }}
                         className="rounded p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
                       >
                         <FiEdit2 className="h-4 w-4" />
@@ -409,8 +451,10 @@ export default function SpeciesBreedsTab() {
                   )}
                 </li>
               ))}
-              {(!currentSpeciesData?.breeds || currentSpeciesData.breeds.length === 0) && (
-                <p className="text-sm text-zinc-500">No breeds added yet.</p>
+              {filteredBreeds.length === 0 && (
+                <p className="text-sm text-zinc-500">
+                  {breedSearch ? "No breeds match your search." : "No breeds added yet."}
+                </p>
               )}
             </ul>
           </>
