@@ -2,6 +2,7 @@ import { FiX, FiTrash2, FiSave, FiEdit2, FiClock, FiAlertTriangle } from "react-
 import { LuSparkles } from "react-icons/lu";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
@@ -183,7 +184,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const inputClass =
     "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm dark:bg-zinc-950/70 p-4">
       <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col" style={{ maxHeight: '90vh' }}>
         
@@ -490,5 +491,5 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
