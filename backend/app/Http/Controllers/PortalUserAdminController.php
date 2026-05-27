@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PortalUserStatusChanged;
 use App\Models\AuditLog;
 use App\Models\PortalUser;
 use Illuminate\Http\Request;
@@ -40,6 +41,8 @@ class PortalUserAdminController extends Controller
         PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'suspended']));
         $portalUser->tokens()->delete();
         $this->auditPortalAction($portalUser, 'suspended', $oldStatus, 'suspended');
+        $msg = 'Your account has been temporarily suspended. Please contact the clinic.';
+        broadcast(new PortalUserStatusChanged($portalUser, 'suspended', $msg))->toOthers();
         return response()->json(['message' => "Account for {$portalUser->name} has been suspended.", 'status' => 'suspended']);
     }
 
@@ -49,6 +52,8 @@ class PortalUserAdminController extends Controller
         PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'deactivated']));
         $portalUser->tokens()->delete();
         $this->auditPortalAction($portalUser, 'deactivated', $oldStatus, 'deactivated');
+        $msg = 'Your account has been deactivated. Please contact the clinic to restore access.';
+        broadcast(new PortalUserStatusChanged($portalUser, 'deactivated', $msg))->toOthers();
         return response()->json(['message' => "Account for {$portalUser->name} has been deactivated.", 'status' => 'deactivated']);
     }
 
@@ -57,6 +62,8 @@ class PortalUserAdminController extends Controller
         $oldStatus = $portalUser->status;
         PortalUser::withoutEvents(fn() => $portalUser->update(['status' => 'active']));
         $this->auditPortalAction($portalUser, 'reactivated', $oldStatus, 'active');
+        $msg = 'Your account has been restored. Please log in again to continue.';
+        broadcast(new PortalUserStatusChanged($portalUser, 'active', $msg))->toOthers();
         return response()->json(['message' => "Account for {$portalUser->name} has been reactivated.", 'status' => 'active']);
     }
 

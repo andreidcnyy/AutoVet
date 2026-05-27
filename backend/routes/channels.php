@@ -25,3 +25,7 @@ Broadcast::channel('admin.notifications', function ($user) {
 Broadcast::channel('notifications.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+Broadcast::channel('client.portal.{id}', function ($user, $id) {
+    return $user->isOwner() && (int) $user->id === (int) $id;
+});

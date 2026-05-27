@@ -27,7 +27,7 @@ import WarningPopup from './components/WarningPopup';
 function ProtectedRoute({ children }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [maintenance, setMaintenance] = useState(false);
   const [blocked, setBlocked] = useState<{ status: 'suspended' | 'deactivated'; message?: string } | null>(null);
 
@@ -41,6 +41,26 @@ function ProtectedRoute({ children }: {
       window.removeEventListener('portal-account-blocked', onBlocked);
     };
   }, []);
+
+  // Real-time portal status updates via WebSocket
+  useEffect(() => {
+    if (!user?.id) return;
+    let channel: any;
+    import('./utils/echo').then(({ default: echo }) => {
+      channel = echo.private(`client.portal.${user.id}`);
+      channel.listen('.portal.status.changed', (e: any) => {
+        if (e.status === 'suspended' || e.status === 'deactivated') {
+          setBlocked({ status: e.status, message: e.message });
+        } else if (e.status === 'active') {
+          // Token was wiped on suspend; user must log in again for a fresh token
+          logout();
+        }
+      });
+    });
+    return () => {
+      if (channel) channel.stopListening('.portal.status.changed');
+    };
+  }, [user?.id, logout]);
 
   // Poll every 15 s while in maintenance mode — clear when backend responds normally
   useEffect(() => {

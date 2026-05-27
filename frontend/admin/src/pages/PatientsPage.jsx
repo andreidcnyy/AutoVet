@@ -125,9 +125,18 @@ function PatientsPage() {
           fetchOwners(paginationRef.current.current_page || 1);
         }
       });
+      channel.listen(".portal.status.changed", (e) => {
+        // Update the matching owner's portal user status in-place
+        setOwners(prev => prev.map(o =>
+          o.user?.id === e.portalUserId ? { ...o, user: { ...o.user, status: e.status } } : o
+        ));
+      });
     });
     return () => {
-      if (channel) channel.stopListening(".entity.created");
+      if (channel) {
+        channel.stopListening(".entity.created");
+        channel.stopListening(".portal.status.changed");
+      }
     };
   }, [user?.token, fetchOwners]);
 
