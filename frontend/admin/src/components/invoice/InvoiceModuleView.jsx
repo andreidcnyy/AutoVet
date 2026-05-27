@@ -1451,7 +1451,7 @@ function InvoiceModuleView() {
       {activeTab === "new" ? (
         <div className={clsx(
           "grid grid-cols-1 lg:h-[calc(100vh-16rem)]",
-          isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[410px_1fr]"
+          isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[500px_1fr]"
         )}>
           {!isPreviewMode && (
             <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-zinc-200 dark:border-dark-border">
