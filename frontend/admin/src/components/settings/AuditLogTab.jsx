@@ -419,13 +419,24 @@ function AuditLogTab() {
         ].map(({ label, key, type, placeholder }) => (
           <div key={key}>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</label>
-            <input
-              type={type}
-              placeholder={placeholder}
-              value={filters[key]}
-              onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
-            />
+            <div className="relative">
+              <input
+                type={type}
+                placeholder={placeholder}
+                value={filters[key]}
+                onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+              />
+              {filters[key] && (
+                <button
+                  type="button"
+                  onClick={() => setFilters({ ...filters, [key]: "" })}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <FiX className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         ))}
         <div>
