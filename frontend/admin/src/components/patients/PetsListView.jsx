@@ -22,6 +22,7 @@ function PetsListView() {
   const toast = useToast();
   
   const [pets, setPets] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +44,7 @@ function PetsListView() {
       if (response.ok) {
         const data = await response.json();
         setPets(data.data || []);
+        setTotalCount(data.total ?? (data.data?.length ?? 0));
       }
     } catch (error) {
       console.error("Failed to fetch pets:", error);
@@ -109,7 +111,7 @@ function PetsListView() {
         <div>
           <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Patient Directory</h2>
           <p className="mt-1 text-base font-bold text-emerald-600 uppercase tracking-tight">
-            Total of {pets.length} patient records across all clients.
+            Total of {totalCount} patient records across all clients.
           </p>
         </div>
       </div>
