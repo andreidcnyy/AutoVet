@@ -139,7 +139,6 @@ function AiGuideModal({ onClose }) {
 
 function InventoryView() {
   const toast = useToast();
-  const [pageTab, setPageTab] = useState("all");
   const [activeFilter, setActiveFilter] = useState("All Items");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewedProduct, setViewedProduct] = useState(null);
@@ -280,10 +279,6 @@ function InventoryView() {
     const t = new Date(); t.setHours(0,0,0,0);
     const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
 
-    if (pageTab === "expiring") {
-      return expDate && (expDate < t || Math.ceil((expDate - t) / 86400000) <= 30);
-    }
-
     if (activeFilter === "All Items") return true;
     if (activeFilter === "Low Stock") return row.latest_forecast?.forecast_status === 'Low Stock';
     if (activeFilter === "Expiring") return expDate && Math.ceil((expDate - t) / 86400000) <= 30 && expDate >= t;
@@ -303,9 +298,10 @@ function InventoryView() {
   const lowStockAiCount = inventoryRows.filter(r => r.latest_forecast?.forecast_status === 'Low Stock').length;
 
   const summaryCards = [
-    { id: "total", label: "TOTAL STOCK ITEMS", value: inventoryRows.length, meta: "Live DB Records", icon: FiBox, color: "text-zinc-900 dark:text-zinc-100", accent: "bg-emerald-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
-    { id: "low", label: "LOW STOCK ALERTS", value: lowStockAiCount, meta: "Predictive Need", icon: FiAlertTriangle, color: "text-amber-600", accent: "bg-amber-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
-    { id: "expired", label: "EXPIRED PRODUCTS", value: expiredCount, meta: "Check Expiry Dates", icon: FiBell, color: "text-rose-600", accent: "bg-rose-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
+    { id: "total",    label: "TOTAL STOCK ITEMS",   value: inventoryRows.length, meta: "Live DB Records",    icon: FiBox,          color: "text-zinc-900 dark:text-zinc-100", accent: "bg-emerald-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
+    { id: "low",      label: "LOW STOCK ALERTS",     value: lowStockAiCount,      meta: "Predictive Need",   icon: FiAlertTriangle, color: "text-amber-600",                  accent: "bg-amber-500",  bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
+    { id: "expiring", label: "EXPIRING PRODUCTS",    value: expiringCount,        meta: "Within 30 Days",    icon: FiClock,         color: "text-orange-500",                  accent: "bg-orange-400", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
+    { id: "expired",  label: "EXPIRED PRODUCTS",     value: expiredCount,         meta: "Check Expiry Dates", icon: FiBell,         color: "text-rose-600",                   accent: "bg-rose-500",   bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
   ];
 
   return (
@@ -323,39 +319,6 @@ function InventoryView() {
           </button>
         )}
       </header>
-
-      {/* Page-level tabs */}
-      <div className="flex gap-1 border-b border-zinc-200 dark:border-dark-border">
-        {[
-          { id: "all", label: "All Inventory", icon: FiBox },
-          { id: "expiring", label: "Expiring Products", icon: FiAlertTriangle, count: expiringCount + expiredCount },
-        ].map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => { setPageTab(tab.id); setSearchQuery(""); setCurrentPage(1); }}
-              className={clsx(
-                "inline-flex flex-shrink-0 items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition-colors",
-                pageTab === tab.id
-                  ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-              {tab.count > 0 && (
-                <span className={clsx(
-                  "inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-black",
-                  pageTab === tab.id ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
-                )}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         {summaryCards.map((card) => {
@@ -411,27 +374,25 @@ function InventoryView() {
             </button>
           </div>
 
-          {pageTab === "all" && (
-            <div className="flex flex-wrap items-center gap-2 bg-zinc-100/50 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-100 dark:border-dark-border">
-              {[
-                { id: "All Items", active: "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md" },
-                { id: "Low Stock", active: "bg-amber-500 text-white shadow-md shadow-amber-500/20 border-amber-600" },
-                { id: "Expiring", active: "bg-rose-400 text-white shadow-md shadow-rose-400/20" },
-                { id: "Expired", active: "bg-zinc-500 text-white shadow-md" },
-              ].map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => { setActiveFilter(f.id); setCurrentPage(1); }}
-                  className={clsx(
-                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                    activeFilter === f.id ? f.active : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  )}
-                >
-                  {f.id}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2 bg-zinc-100/50 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-100 dark:border-dark-border">
+            {[
+              { id: "All Items", active: "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md" },
+              { id: "Low Stock", active: "bg-amber-500 text-white shadow-md shadow-amber-500/20 border-amber-600" },
+              { id: "Expiring", active: "bg-rose-400 text-white shadow-md shadow-rose-400/20" },
+              { id: "Expired", active: "bg-zinc-500 text-white shadow-md" },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => { setActiveFilter(f.id); setCurrentPage(1); }}
+                className={clsx(
+                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                  activeFilter === f.id ? f.active : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                )}
+              >
+                {f.id}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
