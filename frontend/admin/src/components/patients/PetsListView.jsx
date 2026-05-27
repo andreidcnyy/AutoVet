@@ -103,9 +103,9 @@ function PetsListView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full gap-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Patient Directory</h2>
           <p className="mt-1 text-base font-bold text-emerald-600 uppercase tracking-tight">
@@ -115,7 +115,7 @@ function PetsListView() {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div className="relative flex-1 min-w-[300px]">
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
@@ -136,7 +136,8 @@ function PetsListView() {
         </div>
       </div>
 
-      {/* Grid List */}
+      {/* Scrollable area: grid + pagination */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {isLoading ? (
             Array(8).fill(0).map((_, i) => (
@@ -257,9 +258,10 @@ function PetsListView() {
           </button>
         </div>
       )}
+      </div>{/* end scrollable area */}
 
       {/* Detail Modal */}
-      <ViewPatientModal 
+      <ViewPatientModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         patientId={selectedPetId}

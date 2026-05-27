@@ -91,9 +91,9 @@ function PatientRecordsView({
 
   return (
     <>
-    <div className="space-y-5">
+    <div className="flex flex-col h-full gap-5">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Pet Owners</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
@@ -112,7 +112,7 @@ function PatientRecordsView({
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="shrink-0 flex flex-wrap items-center gap-4">
         <div className="relative flex-1 min-w-[300px]">
           <FiSearch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
@@ -149,10 +149,10 @@ function PatientRecordsView({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 flex-1 min-h-0">
         {/* Main List */}
-        <div className="card-shell lg:col-span-8 overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xl">
-          <div className="overflow-x-auto">
+        <div className="card-shell lg:col-span-8 overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xl flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
             <table className="w-full min-w-[600px]">
               <thead className="border-b border-zinc-100 bg-zinc-50/50 dark:border-dark-border dark:bg-dark-surface/50">
                 <tr className="text-left text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
@@ -306,9 +306,9 @@ function PatientRecordsView({
         </div>
 
         {/* Detail Sidebar */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 overflow-y-auto">
           {selectedOwner ? (
-            <div className="card-shell sticky top-24 overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
+            <div className="card-shell overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
                {/* Header Gradient */}
                <div className="h-32 bg-gradient-to-br from-emerald-600 to-indigo-700 p-6 relative">
                   <div className="absolute -bottom-6 left-6">

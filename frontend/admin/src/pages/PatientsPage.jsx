@@ -371,8 +371,8 @@ function PatientsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 p-6 dark:bg-dark-surface/30 space-y-6">
-      <div className="flex items-center gap-1 w-fit rounded-2xl bg-zinc-100 p-1.5 dark:bg-zinc-800/50 shadow-inner">
+    <div className="flex flex-col h-[calc(100vh-9rem)] bg-zinc-50/50 p-6 dark:bg-dark-surface/30 gap-4 overflow-hidden">
+      <div className="shrink-0 flex items-center gap-1 w-fit rounded-2xl bg-zinc-100 p-1.5 dark:bg-zinc-800/50 shadow-inner">
         <button
           onClick={() => setActiveTab("owners")}
           className={clsx(
@@ -399,6 +399,7 @@ function PatientsPage() {
         </button>
       </div>
 
+      <div className="flex-1 min-h-0 overflow-hidden">
       {activeTab === "owners" ? (
         <PatientRecordsView
           owners={owners}
@@ -432,6 +433,7 @@ function PatientsPage() {
       ) : (
         <PetsListView />
       )}
+      </div>
 
       <EditOwnerModal
         isOpen={isEditModalOpen}
