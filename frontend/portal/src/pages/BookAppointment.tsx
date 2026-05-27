@@ -253,14 +253,20 @@ export default function BookAppointment() {
     if (selectedServiceIds.length === 0) { return; }
     try {
       const payload = { ...data, service_ids: selectedServiceIds };
-      await createAppointment(payload);
-      
+      const created = await createAppointment(payload);
+      const newAppt = created?.data;
+
+      // Optimistically add the new appointment so the dot appears immediately
+      if (newAppt) {
+        setAppointments(prev => [...prev, newAppt]);
+      }
+
       // Invalidate caches
       localStorage.removeItem(`portal_appointments_${user?.id}_cache`);
       localStorage.removeItem(`portal_book_appointments_${user?.id}_cache`);
       localStorage.removeItem(`portal_overview_${user?.id}_cache`);
 
-      // Refresh calendar for current month only (scoped re-fetch, not all)
+      // Background re-fetch for correctness
       const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
       const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
       api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, timeout: 30000 })
