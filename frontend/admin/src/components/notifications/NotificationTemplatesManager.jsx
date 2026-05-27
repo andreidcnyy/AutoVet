@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '../../context/ToastContext';
-import { FiPlus, FiEdit2, FiTrash2, FiMail, FiMessageSquare, FiBell } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiMail, FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 
 /* Maps raw event_key values to plain-English labels */
@@ -19,17 +19,16 @@ function eventLabel(key) {
   return EVENT_OPTIONS.find(o => o.value === key)?.label || key || 'Manual';
 }
 
-/* Plain-English descriptions for template variables */
-const VARIABLE_HINTS = [
-  { tag: '{owner_name}',    desc: "Client's full name" },
-  { tag: '{pet_name}',      desc: "Pet's name" },
-  { tag: '{patient}',       desc: "Pet's name (alternative)" },
-  { tag: '{date}',          desc: 'Appointment date' },
-  { tag: '{time}',          desc: 'Appointment time' },
-  { tag: '{date_scheduled}',desc: 'Scheduled date' },
-  { tag: '{arrival_time}',  desc: 'Expected arrival time' },
-  { tag: '{findings}',      desc: "Doctor's clinical findings" },
-  { tag: '{diagnosis}',     desc: "Doctor's diagnosis" },
+/* Clickable smart fields — label is what the user sees, tag is what gets inserted */
+const SMART_FIELDS = [
+  { label: "Client's Name",     tag: '{owner_name}' },
+  { label: "Pet's Name",        tag: '{pet_name}' },
+  { label: "Appointment Date",  tag: '{date}' },
+  { label: "Appointment Time",  tag: '{time}' },
+  { label: "Scheduled Date",    tag: '{date_scheduled}' },
+  { label: "Arrival Time",      tag: '{arrival_time}' },
+  { label: "Doctor's Findings", tag: '{findings}' },
+  { label: "Diagnosis",         tag: '{diagnosis}' },
 ];
 
 export default function NotificationTemplatesManager() {
@@ -223,6 +222,21 @@ function TemplateFormModal({ template, onClose, onSave }) {
     is_active: template !== null ? template?.is_active : true,
   });
 
+  const bodyRef = useRef(null);
+
+  const insertField = (tag) => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const newBody = formData.body.slice(0, start) + tag + formData.body.slice(end);
+    setFormData({ ...formData, body: newBody });
+    setTimeout(() => {
+      el.focus();
+      el.selectionStart = el.selectionEnd = start + tag.length;
+    }, 0);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
@@ -310,27 +324,26 @@ function TemplateFormModal({ template, onClose, onSave }) {
             <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
               Message Body <span className="text-rose-400">*</span>
             </label>
-            {/* Variable hints */}
             <div className="mb-2 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700">
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                <FiBell size={10} /> Auto-fill placeholders — type these in your message
-              </p>
+              <p className="text-[11px] font-bold text-zinc-300 mb-1">Click to insert into message:</p>
+              <p className="text-[10px] text-zinc-500 mb-2">These will automatically be replaced with real information when the message is sent.</p>
               <div className="flex flex-wrap gap-1.5">
-                {VARIABLE_HINTS.map(v => (
-                  <span
-                    key={v.tag}
-                    title={v.desc}
-                    className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-emerald-900/40 text-emerald-400 border border-emerald-700/40 cursor-default"
+                {SMART_FIELDS.map(f => (
+                  <button
+                    key={f.tag}
+                    type="button"
+                    onClick={() => insertField(f.tag)}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-900/40 text-emerald-300 border border-emerald-700/40 hover:bg-emerald-800/60 hover:text-emerald-200 transition-colors"
                   >
-                    {v.tag}
-                    <span className="font-sans font-normal text-zinc-500 ml-1 not-italic">= {v.desc}</span>
-                  </span>
+                    + {f.label}
+                  </button>
                 ))}
               </div>
             </div>
             <textarea
+              ref={bodyRef}
               required rows={5}
-              placeholder={`Hi {owner_name}, your appointment for {pet_name} on {date} at {time} has been confirmed. See you soon!`}
+              placeholder={`e.g. Hi [Client's Name], your appointment for [Pet's Name] on [Appointment Date] at [Appointment Time] is confirmed. See you soon!`}
               value={formData.body}
               onChange={e => setFormData({ ...formData, body: e.target.value })}
               className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none transition-colors resize-none placeholder:text-zinc-600"
