@@ -117,6 +117,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
           throw new Error(errData.message || "Failed to save item");
       }
       success(`${title.slice(0, -1)} ${isEditing ? "updated" : "added"} successfully`);
+      try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
       fetchData();
       setIsModalOpen(false);
     } catch (err) {
@@ -142,6 +143,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         throw new Error("Failed to delete item");
       }
       success(`${title.slice(0, -1)} deleted`);
+      try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
       fetchData();
     } catch (err) {
       console.error(`[MasterDataTable delete catch] Error:`, err);
