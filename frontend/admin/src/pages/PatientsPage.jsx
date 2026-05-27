@@ -404,7 +404,7 @@ function PatientsPage() {
           onEditOwner={handleEditOwner}
           onOwnerEdited={(updatedOwner) => {
             setOwners((prev) =>
-              prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
+              prev.map((o) => (o.id === updatedOwner.id ? { ...o, ...updatedOwner } : o))
             );
             if (selectedOwnerId === updatedOwner.id) {
                setOwnerToEdit(updatedOwner);
