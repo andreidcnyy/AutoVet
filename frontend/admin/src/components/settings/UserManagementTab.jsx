@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave, FiEye, FiEyeOff } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -262,8 +263,8 @@ export default function UserManagementTab() {
         </table>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingUser ? "Edit User" : "Add User"}</h3>
@@ -319,11 +320,12 @@ export default function UserManagementTab() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {resetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
+      {resetModalOpen && createPortal(
+        <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Reset Password</h3>
@@ -359,7 +361,8 @@ export default function UserManagementTab() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
