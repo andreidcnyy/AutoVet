@@ -470,14 +470,14 @@ class AppointmentController extends Controller
     public function destroy(Appointment $appointment)
     {
         $this->authorize('delete', $appointment);
-        $ownerId = $appointment->pet?->owner_id;
+        $ownerId    = $appointment->pet?->owner_id;
+        $portalUserId = $appointment->pet?->owner?->user_id;
         $appointmentId = $appointment->id;
         $appointment->delete();
-        
+
         $this->invalidatePortalCache($ownerId);
 
-        // Broadcast for real-time sync
-        event(new \App\Events\AppointmentDeleted($appointmentId));
+        event(new \App\Events\AppointmentDeleted($appointmentId, $portalUserId));
 
         return response()->json(null, 204);
     }

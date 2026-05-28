@@ -232,37 +232,40 @@ function AppointmentsView() {
   useEffect(() => {
     if (!user?.token) return;
     api.get('/api/dashboard/appointment-forecast', { cache: true }).then(data => setAiForecast(data));
+    const refresh = () => {
+      fetchAppointments(undefined, true);
+      fetchCalendarSummaries(undefined);
+    };
+
     const channel = echo.private('admin.appointments')
       .listen('.appointment.created', (e) => {
-        const apptDate = new Date(e.appointment.date.replace(/-/g, '/'));
-        if (isSameMonth(apptDate, currentDate)) {
-            setAppointments(prev => {
-                const exists = prev.find(a => a.id === e.appointment.id);
-                if (exists) return prev;
-                return [e.appointment, ...prev];
-            });
-        }
         toast.info(`New Appointment: ${e.appointment.pet?.name || 'Unknown Pet'}`);
+        refresh();
       })
       .listen('.appointment.status.updated', (e) => {
+        // Patch in-memory immediately for instant feedback
         setAppointments(prev => prev.map(a => a.id === e.appointment.id ? e.appointment : a));
         if (selectedAppointment?.id === e.appointment.id) setSelectedAppointment(e.appointment);
         toast.info(`Appointment Updated: ${e.appointment.pet?.name} is now ${e.appointment.status}`);
+        // Also re-fetch to sync calendar summaries and catch filtered-out appointments
+        refresh();
       })
       .listen('.appointment.deleted', (e) => {
         setAppointments(prev => prev.filter(a => a.id !== e.appointmentId));
         if (selectedAppointment?.id === e.appointmentId) {
-            setIsDrawerOpen(false);
-            setSelectedAppointment(null);
+          setIsDrawerOpen(false);
+          setSelectedAppointment(null);
         }
         toast.info(`Appointment archived.`);
+        refresh();
       });
-    const poll = setInterval(() => fetchAppointments(undefined, true), 30000);
+
+    const poll = setInterval(refresh, 30000);
     return () => {
       clearInterval(poll);
       echo.leave('admin.appointments');
     };
-  }, [user?.token, currentDate]);
+  }, [user?.token, currentDate, fetchAppointments, fetchCalendarSummaries]);
 
   const handleParamChange = (newParams) => setParams(prev => ({ ...prev, ...newParams, page: newParams.page || 1 }));
 

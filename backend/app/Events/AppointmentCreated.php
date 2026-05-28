@@ -31,10 +31,15 @@ class AppointmentCreated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // Admin appointments channel
-        return [
+        $channels = [
             new PrivateChannel('admin.appointments'),
         ];
+
+        if ($this->appointment->pet?->owner?->user_id) {
+            $channels[] = new PrivateChannel('client.appointments.' . $this->appointment->pet->owner->user_id);
+        }
+
+        return $channels;
     }
 
     /**

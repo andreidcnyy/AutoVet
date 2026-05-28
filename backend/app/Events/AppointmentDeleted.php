@@ -15,23 +15,21 @@ class AppointmentDeleted implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $appointmentId;
+    public $portalUserId;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct($appointmentId)
+    public function __construct($appointmentId, $portalUserId = null)
     {
         $this->appointmentId = $appointmentId;
+        $this->portalUserId  = $portalUserId;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     */
     public function broadcastOn(): array
     {
-        return [
-            new PrivateChannel('admin.appointments'),
-        ];
+        $channels = [new PrivateChannel('admin.appointments')];
+        if ($this->portalUserId) {
+            $channels[] = new PrivateChannel('client.appointments.' . $this->portalUserId);
+        }
+        return $channels;
     }
 
     /**
