@@ -1125,6 +1125,9 @@ function InvoiceModuleView() {
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("");
 
+  const itemsRef = useRef([]);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
   const [serviceInput, setServiceInput] = useState("");
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
   const [qtyInput, setQtyInput] = useState("");
@@ -1201,8 +1204,8 @@ function InvoiceModuleView() {
         // 1. Show the actual appointment date
         setInvoiceDate(appt.date);
         
-        // 2. Auto-fetch service if items are empty or don't contain it
-        if (appt.service_id && !items.find(i => i.service_id === appt.service_id)) {
+        // 2. Auto-add service only on appointment selection, not on every items change
+        if (appt.service_id && !itemsRef.current.find(i => i.service_id === appt.service_id)) {
            const svc = services.find(s => s.id === appt.service_id);
            if (svc) {
              const price = calculateDynamicPrice(svc);
@@ -1224,7 +1227,7 @@ function InvoiceModuleView() {
         }
       }
     }
-  }, [selectedAppointmentId, appointments, services, items, toast]);
+  }, [selectedAppointmentId, appointments, services, toast]);
 
   const selectItemFromDropdown = (item) => {
     setServiceInput(item.name);
@@ -2063,7 +2066,7 @@ function InvoiceModuleView() {
                     </div>
                     <div className="h-11 flex items-center justify-end px-2 rounded-xl border border-zinc-100 dark:border-dark-border bg-zinc-100/60 dark:bg-dark-surface/50">
                       <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 tabular-nums">
-                        {currency((Number(priceInput) || 0) * (Number(qtyInput) || 1))}
+                        {priceInput !== "" || qtyInput !== "" ? currency((Number(priceInput) || 0) * (Number(qtyInput) || 1)) : ""}
                       </span>
                     </div>
                     <button
