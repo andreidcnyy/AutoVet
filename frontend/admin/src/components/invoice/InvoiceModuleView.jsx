@@ -843,6 +843,18 @@ function InvoiceModuleView() {
     }
   }, [user?.token, toast, navigate]);
 
+  const sortAppts = (appts) => {
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return [...appts].sort((a, b) => {
+      const dA = new Date(a.date); dA.setHours(0, 0, 0, 0);
+      const dB = new Date(b.date); dB.setHours(0, 0, 0, 0);
+      const pA = dA < now, pB = dB < now;
+      if (pA && !pB) return 1; if (!pA && pB) return -1;
+      if (!pA && !pB) return dA - dB;
+      return dB - dA;
+    });
+  };
+
   const fetchApprovedAppointments = useCallback((petId) => {
     return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=approved`, {
       headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
@@ -1059,18 +1071,6 @@ function InvoiceModuleView() {
     const poll = setInterval(loadDraftsCount, 30000);
     return () => { cancelled = true; clearInterval(poll); };
   }, [user?.token]);
-
-  const sortAppts = (appts) => {
-    const now = new Date(); now.setHours(0, 0, 0, 0);
-    return [...appts].sort((a, b) => {
-      const dA = new Date(a.date); dA.setHours(0, 0, 0, 0);
-      const dB = new Date(b.date); dB.setHours(0, 0, 0, 0);
-      const pA = dA < now, pB = dB < now;
-      if (pA && !pB) return 1; if (!pA && pB) return -1;
-      if (!pA && !pB) return dA - dB;
-      return dB - dA;
-    });
-  };
 
   const handlePatientSelect = (e) => {
     const pId = e.target.value;

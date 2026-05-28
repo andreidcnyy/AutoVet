@@ -290,6 +290,12 @@ class InvoiceController extends Controller
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
             }
 
+            if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
+                \App\Models\Appointment::where('id', $invoice->appointment_id)
+                    ->whereIn('status', ['approved', 'Approved'])
+                    ->update(['status' => 'completed']);
+            }
+
             if (in_array($invoice->status, ['Finalized', 'Paid'])) {
                 try {
                     $owner = $invoice->pet->owner;
@@ -490,6 +496,12 @@ class InvoiceController extends Controller
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
+            }
+
+            if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
+                \App\Models\Appointment::where('id', $invoice->appointment_id)
+                    ->whereIn('status', ['approved', 'Approved'])
+                    ->update(['status' => 'completed']);
             }
 
             if ($invoice->wasChanged('status') && $invoice->status === 'Finalized') {
