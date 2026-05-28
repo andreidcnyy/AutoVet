@@ -1108,6 +1108,7 @@ function InvoiceModuleView() {
   const [paymentMethod, setPaymentMethod] = useState("");
 
   const [serviceInput, setServiceInput] = useState("");
+  const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
   const [qtyInput, setQtyInput] = useState(1);
   const [priceInput, setPriceInput] = useState(50);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -1217,11 +1218,25 @@ function InvoiceModuleView() {
     setSelectedService(item);
     setIsItemModalOpen(false);
     setItemModalSearch("");
+    setIsServiceDropdownOpen(false);
   };
+
+  const serviceInputSuggestions = useMemo(() => {
+    const term = serviceInput.toLowerCase().trim();
+    if (!term) return [];
+    const matchedServices = (Array.isArray(services) ? services : [])
+      .filter(s => s.name.toLowerCase().includes(term) || (s.category && s.category.toLowerCase().includes(term)))
+      .map(s => ({ ...s, type: 'service' }));
+    const matchedInventory = (Array.isArray(inventory) ? inventory : [])
+      .filter(i => i.item_name.toLowerCase().includes(term) || i.code?.toLowerCase().includes(term) || i.sku?.toLowerCase().includes(term))
+      .map(i => ({ ...i, name: i.item_name, price: i.selling_price || 0, stock: i.stock_level || 0, type: 'inventory' }));
+    return [...matchedServices, ...matchedInventory].slice(0, 20);
+  }, [serviceInput, services, inventory]);
 
   const handleServiceChange = (e) => {
     setServiceInput(e.target.value);
     setSelectedService(null);
+    setIsServiceDropdownOpen(true);
   };
 
 
@@ -1840,22 +1855,49 @@ function InvoiceModuleView() {
                           placeholder="Type item name..."
                           value={serviceInput}
                           onChange={handleServiceChange}
+                          onFocus={() => { if (serviceInput) setIsServiceDropdownOpen(true); }}
+                          onBlur={() => setTimeout(() => setIsServiceDropdownOpen(false), 150)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               manuallyAddItem();
                             }
+                            if (e.key === "Escape") setIsServiceDropdownOpen(false);
                           }}
                           disabled={status === "Finalized"}
                           className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
                         />
                         {serviceInput && (
                           <button
-                            onClick={() => { setServiceInput(""); setSelectedService(null); }}
+                            onClick={() => { setServiceInput(""); setSelectedService(null); setIsServiceDropdownOpen(false); }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
                           >
                             <FiX className="h-4 w-4" />
                           </button>
+                        )}
+                        {isServiceDropdownOpen && serviceInputSuggestions.length > 0 && (
+                          <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-xl">
+                            {serviceInputSuggestions.map((item) => (
+                              <button
+                                key={`${item.type}-${item.id}`}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => selectItemFromDropdown(item)}
+                                className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors border-b border-zinc-50 dark:border-dark-border last:border-b-0"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={clsx(
+                                    "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase",
+                                    item.type === 'inventory' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                  )}>
+                                    {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
+                                  </span>
+                                  <span className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{item.name}</span>
+                                </div>
+                                <span className="shrink-0 ml-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">{currency(item.price)}</span>
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                       <button
