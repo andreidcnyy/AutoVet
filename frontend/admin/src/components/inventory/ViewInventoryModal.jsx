@@ -18,6 +18,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({});
+  const [freshProduct, setFreshProduct] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
@@ -31,11 +32,24 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
   useEffect(() => {
     if (isOpen && product) {
+      setFreshProduct(null);
       setFormData(product);
       setIsEditing(false);
-      setAiForecastData(null); 
-      
+      setAiForecastData(null);
       setInsufficientMsg(null);
+
+      // Fetch the latest item data to ensure batch/lot and all fields are current
+      fetch(`/api/inventory/${product.id}`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            setFreshProduct(data);
+            setFormData(data);
+          }
+        })
+        .catch(() => {});
       setIsLoadingForecast(true);
       fetch(`/api/inventory/${product.id}/forecast/saved?t=${Date.now()}`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
@@ -181,6 +195,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
   if (!isOpen || !product) return null;
 
+  const displayProduct = freshProduct ?? product;
+
   const inputClass =
     "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
 
@@ -211,16 +227,16 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   onChange={(e) => handleChange("item_name", e.target.value)}
                 />
               ) : (
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{product.item_name}</h2>
+                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{displayProduct.item_name}</h2>
               )}
             </div>
             <span
               className={clsx(
                 "inline-flex rounded-full border px-3 py-1 text-sm font-semibold",
-                statusStyles[product.status] || "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                statusStyles[displayProduct.status] || "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
               )}
             >
-              {product.status}
+              {displayProduct.status}
             </span>
           </div>
 
@@ -252,10 +268,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   ) : (
                     <input
                       type={
-                        field === "price" || field === "selling_price" || field === "stock_level" 
-                          ? "number" 
-                          : field === "expiration_date" 
-                            ? "date" 
+                        field === "price" || field === "selling_price" || field === "stock_level"
+                          ? "number"
+                          : field === "expiration_date"
+                            ? "date"
                             : "text"
                       }
                       className={inputClass}
@@ -265,20 +281,20 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                   )
                 ) : field === "inventory_category_id" ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {product.inventory_category?.name || "N/A"}
+                    {displayProduct.inventory_category?.name || "N/A"}
                   </p>
                 ) : (field === "price" || field === "selling_price") ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    ₱{Number(product[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{Number(displayProduct[field] || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 ) : (field === "stock_level") ? (
-                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(product[field] || 0).toLocaleString()} {product.unit || "units"}</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(displayProduct[field] || 0).toLocaleString()} {displayProduct.unit || "units"}</p>
                 ) : field === "expiration_date" ? (
                   <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {product[field] ? new Date(product[field]).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : "No Expiration"}
+                    {displayProduct[field] ? new Date(displayProduct[field]).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : "No Expiration"}
                   </p>
                 ) : (
-                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{product[field] || "N/A"}</p>
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200">{displayProduct[field] || "N/A"}</p>
                 )}
               </div>
             ))}
