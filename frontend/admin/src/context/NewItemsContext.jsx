@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import api from "../api";
 
-const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0 });
+const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0, invoiceCount: 0 });
 
 const KEYS = { patients: "lv_patients", appointments: "lv_appointments" };
 const setStamp = (key) => localStorage.setItem(key, new Date().toISOString());
@@ -15,6 +15,7 @@ const getOrInitStamp = (key) => {
 export function NewItemsProvider({ children, enabled = true }) {
   const [patientCount,     setPatientCount]     = useState(0);
   const [appointmentCount, setAppointmentCount] = useState(0);
+  const [invoiceCount,     setInvoiceCount]     = useState(0);
   const intervalRef = useRef(null);
 
   const fetchCounts = useCallback(async () => {
@@ -35,6 +36,7 @@ export function NewItemsProvider({ children, enabled = true }) {
       const data = await api.get("/api/new-counts", { params });
       if (!onPatients     && typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
       if (!onAppointments && typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
+      if (typeof data?.draft_invoices === "number") setInvoiceCount(data.draft_invoices);
     } catch (_) {}
   }, [enabled]);
 
@@ -56,7 +58,7 @@ export function NewItemsProvider({ children, enabled = true }) {
   }, []);
 
   return (
-    <NewItemsContext.Provider value={{ patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen, refreshCounts: fetchCounts }}>
+    <NewItemsContext.Provider value={{ patientCount, appointmentCount, invoiceCount, markPatientsSeen, markAppointmentsSeen, refreshCounts: fetchCounts }}>
       {children}
     </NewItemsContext.Provider>
   );

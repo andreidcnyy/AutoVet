@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Owner;
 use App\Models\Appointment;
+use App\Models\Invoice;
 use Carbon\Carbon;
 
 class NewCountsController extends Controller
@@ -37,6 +38,7 @@ class NewCountsController extends Controller
         return response()->json([
             'new_patients'     => Owner::where('created_at', '>', $pSince)->where('created_at', '<=', $now)->count(),
             'new_appointments' => Appointment::where('created_at', '>', $aSince)->where('created_at', '<=', $now)->count(),
+            'draft_invoices'   => Invoice::where('status', 'Draft')->count(),
         ]);
     }
 }
