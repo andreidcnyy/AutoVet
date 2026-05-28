@@ -1408,6 +1408,12 @@ function InvoiceModuleView() {
 
       if (finalStatus !== "Draft") {
         setStatus(actualStatus);
+
+        // If this was a draft being finalized, remove it from the drafts list immediately
+        if (invoiceId) {
+          setDrafts(prev => prev.filter(d => d.id !== invoiceId));
+        }
+
         setInvoiceId(result.id);
 
         // Clear dashboard and invoice caches to ensure live data is reflected
