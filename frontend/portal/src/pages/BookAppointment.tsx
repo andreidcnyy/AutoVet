@@ -3,22 +3,24 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { 
-  FiArrowLeft, 
-  FiCalendar, 
-  FiClock, 
-  FiUser, 
-  FiInfo, 
-  FiX, 
-  FiChevronLeft, 
+  FiArrowLeft,
+  FiCalendar,
+  FiClock,
+  FiUser,
+  FiInfo,
+  FiX,
+  FiChevronLeft,
   FiChevronRight,
   FiPlusCircle,
   FiCheckCircle,
   FiAlertCircle,
-  FiHeart
+  FiHeart,
+  FiFileText,
+  FiXCircle
 } from 'react-icons/fi';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
-import { getPets, getServices, getVets, createAppointment } from '../api';
+import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { useForm } from 'react-hook-form';
@@ -83,6 +85,9 @@ export default function BookAppointment() {
   const [services, setServices] = useState<any[]>([]);
   const [vets, setVets] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [apptInvoice, setApptInvoice] = useState<any>(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isViewMode, setIsViewMode] = useState(false);
@@ -244,9 +249,20 @@ export default function BookAppointment() {
   const handleEventClick = (e: React.MouseEvent, event: any) => {
     e.stopPropagation();
     setSelectedAppointment(event);
+    setApptInvoice(null);
     setIsViewMode(true);
     setIsDrawerOpen(true);
     setIsSuccess(false);
+    if (event.status === 'completed') {
+      setInvoiceLoading(true);
+      getInvoices({ appointment_id: event.id, per_page: 1 })
+        .then((res: any) => {
+          const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+          setApptInvoice(list[0] || null);
+        })
+        .catch(() => setApptInvoice(null))
+        .finally(() => setInvoiceLoading(false));
+    }
   };
 
   const onBookingSubmit = async (data: BookingForm) => {
@@ -503,6 +519,30 @@ export default function BookAppointment() {
                   ))}
                 </div>
 
+                {selectedAppointment.status === 'completed' && (
+                  <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                    <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <FiFileText className="w-3.5 h-3.5" /> Invoice
+                    </p>
+                    {invoiceLoading ? (
+                      <p className="text-xs text-blue-500 font-medium">Loading invoice...</p>
+                    ) : apptInvoice ? (
+                      <button
+                        onClick={() => setIsInvoiceModalOpen(true)}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-dark-card border border-blue-200 dark:border-blue-700 hover:border-blue-400 transition-all group"
+                      >
+                        <div className="text-left">
+                          <p className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">{apptInvoice.invoice_number}</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+                        </div>
+                        <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                      </button>
+                    ) : (
+                      <p className="text-xs text-zinc-400 italic">No invoice found for this visit.</p>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-[10px] text-center text-zinc-400">
                   To reschedule, cancel and re-book or contact the clinic directly.
                 </p>
@@ -701,6 +741,57 @@ export default function BookAppointment() {
           </div>
         </aside>
       </div>, document.body)}
+
+      {/* Invoice detail modal */}
+      {createPortal(
+        <div className={clsx(
+          "fixed inset-0 z-[10000] flex items-center justify-center p-4 transition-opacity duration-200",
+          isInvoiceModalOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}>
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={() => setIsInvoiceModalOpen(false)} />
+          <div className={clsx(
+            "relative w-full max-w-md bg-white dark:bg-dark-card rounded-3xl shadow-2xl overflow-hidden transition-all duration-200",
+            isInvoiceModalOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          )}>
+            {apptInvoice && (
+              <>
+                <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-dark-border">
+                  <div>
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Invoice</p>
+                    <p className="text-xl font-black text-zinc-800 dark:text-zinc-100">{apptInvoice.invoice_number}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
+                  </div>
+                  <button onClick={() => setIsInvoiceModalOpen(false)} className="p-2 rounded-xl bg-zinc-100 dark:bg-dark-surface text-zinc-400 hover:text-zinc-700 transition-all">
+                    <FiXCircle className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-2 max-h-64 overflow-y-auto">
+                  {(apptInvoice.items || []).filter((i: any) => !i.is_hidden).map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <div className="min-w-0 mr-4">
+                        <p className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">{item.name}</p>
+                        <p className="text-[10px] text-zinc-400">Qty: {item.qty}</p>
+                      </div>
+                      <p className="font-bold text-zinc-700 dark:text-zinc-300 shrink-0">₱{Number(item.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-6 pb-6 pt-4 border-t border-zinc-100 dark:border-dark-border space-y-1">
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>Status</span>
+                    <span className="font-bold">{apptInvoice.status}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-black text-zinc-900 dark:text-zinc-100">
+                    <span>Total</span>
+                    <span className="text-blue-600">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
