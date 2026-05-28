@@ -121,6 +121,10 @@ class InvoiceController extends Controller
             });
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $query->orderBy('updated_at', 'desc');
 
         if ($request->has('per_page')) {

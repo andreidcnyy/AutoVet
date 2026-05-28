@@ -696,11 +696,13 @@ function InvoiceModuleView() {
   const location = useLocation();
   const deepLinkHandled = useRef(false);
 
-  const [activeTab, setActiveTab] = useState("new"); // "new", "history", or "reports"
+  const [activeTab, setActiveTab] = useState("new"); // "new", "drafts", "history", or "reports"
   const [txReportRows, setTxReportRows] = useState([]);
   const [txGenerated, setTxGenerated]   = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [drafts, setDrafts] = useState([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -816,8 +818,18 @@ function InvoiceModuleView() {
     }
   }, [user?.token, searchQuery, toast]);
 
+  const fetchDrafts = useCallback(async () => {
+    if (!user?.token) return;
+    setDraftsLoading(true);
+    try {
+      const data = await api.get('/api/invoices', { params: { status: 'Draft', per_page: 50 } });
+      setDrafts(Array.isArray(data) ? data : (data?.data || []));
+    } catch (_) {}
+    finally { setDraftsLoading(false); }
+  }, [user?.token]);
+
   // Handle viewing full details (needed because index list is optimized/minimal)
-  const handleViewInvoiceDetails = useCallback(async (inv) => {
+  const handleViewInvoiceDetails = useCallback(async (inv, { resumeEditing = false } = {}) => {
     if (!inv?.id) return;
     
     try {
@@ -865,7 +877,7 @@ function InvoiceModuleView() {
       setDiscountType(fullInv.discount_type || "percentage");
       
       setActiveTab("new");
-      setIsPreviewMode(true);
+      setIsPreviewMode(!resumeEditing);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error("View Details Error:", err);
@@ -877,10 +889,12 @@ function InvoiceModuleView() {
 
   useEffect(() => {
     if (activeTab === "history") {
-      // Always reset to page 1 when switching to history tab to see most recent
       fetchInvoices(1, searchQuery, null, true);
     }
-  }, [activeTab]); // Only trigger on tab change
+    if (activeTab === "drafts") {
+      fetchDrafts();
+    }
+  }, [activeTab]);
 
   // Auto-open an invoice when navigated here from the dashboard with a viewInvoiceId
   useEffect(() => {
@@ -1376,7 +1390,9 @@ function InvoiceModuleView() {
         // Broadcast event for dashboard listeners
         window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
       } else {
+        localStorage.removeItem(INVOICES_CACHE_KEY);
         resetForm();
+        setActiveTab("drafts");
       }
     } catch (err) {
       toast.error(err.message || "Failed to save invoice");
@@ -1519,6 +1535,23 @@ function InvoiceModuleView() {
           )}
         >
           New Invoice
+        </button>
+        <button
+          onClick={() => setActiveTab("drafts")}
+          className={clsx(
+            "px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5",
+            activeTab === "drafts"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-lg shadow-zinc-900/10 dark:shadow-none"
+              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          Drafts
+          {drafts.length > 0 && (
+            <span className={clsx(
+              "px-1.5 py-0.5 rounded-full text-[10px] font-black",
+              activeTab === "drafts" ? "bg-white/20 text-white dark:bg-black/20 dark:text-zinc-900" : "bg-amber-100 text-amber-700"
+            )}>{drafts.length}</span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab("history")}
@@ -2347,6 +2380,88 @@ function InvoiceModuleView() {
               </article>
             </div>
           </section>
+        </div>
+      ) : activeTab === "drafts" ? (
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Drafts</h2>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Invoices saved as draft — click Continue to resume editing.</p>
+              </div>
+              <button
+                onClick={fetchDrafts}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all"
+              >
+                {draftsLoading ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+
+            {draftsLoading ? (
+              <div className="flex h-64 items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-amber-500" />
+                  <p className="text-sm font-bold text-zinc-500">Loading drafts...</p>
+                </div>
+              </div>
+            ) : drafts.length > 0 ? (
+              <div className="grid gap-4">
+                {drafts.map((inv) => (
+                  <article
+                    key={inv.id}
+                    className="group relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-dark-card border border-amber-200 dark:border-amber-800/40 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center border border-amber-100 dark:border-amber-800/30 shrink-0">
+                        <FiFileText className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">{inv.invoice_number || "Draft"}</span>
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Draft</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
+                          Patient: {inv.pet?.name || "N/A"}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-zinc-500 font-medium">
+                          <span className="flex items-center gap-1.5"><FiCalendar className="w-3.5 h-3.5" /> Last saved {formatDate(inv.updated_at)}</span>
+                          <span className="flex items-center gap-1.5"><LuPawPrint className="w-3.5 h-3.5" /> {inv.pet?.owner?.name || "N/A"}</span>
+                          <span className="flex items-center gap-1.5"><FiPlusCircle className="w-3.5 h-3.5" /> {inv.items_count || 0} Items</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-amber-100 dark:border-amber-800/30 pt-4 md:pt-0">
+                      <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-0.5">Total (est.)</p>
+                        <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">{currency(inv.total)}</p>
+                      </div>
+                      <button
+                        onClick={() => handleViewInvoiceDetails(inv, { resumeEditing: true })}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-all shadow-md shadow-amber-500/20"
+                      >
+                        <FiFileText className="w-4 h-4" /> Continue Editing
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-96 rounded-3xl border-2 border-dashed border-amber-200 dark:border-amber-800/30 bg-white/50 dark:bg-dark-card/50 p-12 text-center">
+                <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-4">
+                  <FiFileText className="w-10 h-10 text-amber-300" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Drafts</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">Invoices saved as Draft will appear here. You can resume editing them anytime.</p>
+                <button
+                  onClick={() => setActiveTab("new")}
+                  className="mt-6 px-6 py-3 rounded-2xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+                >
+                  Create New Invoice
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       ) : activeTab === "history" ? (
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
