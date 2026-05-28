@@ -782,10 +782,10 @@ function AppointmentsView() {
                 <div className="pt-6 space-y-4">
                   {selectedAppointment?.status === 'pending' && (
                     <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => handleStatusAction('approve')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-emerald-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
+                      <button onClick={() => handleStatusAction('approve')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-zinc-200 text-zinc-500 font-black uppercase hover:bg-emerald-600 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-emerald-600 dark:hover:text-white">
                         {actionSubmitting ? "..." : "Approve"}
                       </button>
-                      <button onClick={() => handleStatusAction('decline')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-rose-600 text-white font-black uppercase disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
+                      <button onClick={() => handleStatusAction('decline')} disabled={actionSubmitting} className="h-16 rounded-2xl bg-zinc-200 text-zinc-500 font-black uppercase hover:bg-rose-600 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-rose-600 dark:hover:text-white">
                         Decline
                       </button>
                     </div>
