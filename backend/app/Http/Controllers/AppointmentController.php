@@ -103,10 +103,6 @@ class AppointmentController extends Controller
              $query->whereIn('status', ['Pending', 'pending', 'Approved', 'approved', 'Cancelled', 'cancelled', 'Declined', 'declined', 'Declined (System)', 'Rejected', 'completed', 'no_show']);
         }
 
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('date', '>=', now()->toDateString());
-        }
-
         if ($request->filled('date_from')) {
             $query->where('date', '>=', $request->date_from);
         }
