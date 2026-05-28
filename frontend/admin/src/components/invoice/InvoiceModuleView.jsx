@@ -872,6 +872,7 @@ function InvoiceModuleView() {
       setOwnerSearchText(fullPet?.owner?.name || fullInv.pet?.owner?.name || "");
       setSelectedAppointmentId(fullInv.appointment_id?.toString() || "");
       setPatientDetails(fullPet);
+      fetchApprovedAppointments(fullInv.pet_id);
       setNotes(fullInv.notes_to_client || "");
       setStatus(fullInv.status);
       setAmountPaid(Number(fullInv.amount_paid) || 0);
@@ -900,7 +901,7 @@ function InvoiceModuleView() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [toast]);
+  }, [toast, fetchApprovedAppointments]);
 
   useEffect(() => {
     if (activeTab === "history") {
@@ -1047,6 +1048,30 @@ function InvoiceModuleView() {
     return () => { cancelled = true; clearInterval(poll); };
   }, [user?.token]);
 
+  const sortAppts = (appts) => {
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return [...appts].sort((a, b) => {
+      const dA = new Date(a.date); dA.setHours(0, 0, 0, 0);
+      const dB = new Date(b.date); dB.setHours(0, 0, 0, 0);
+      const pA = dA < now, pB = dB < now;
+      if (pA && !pB) return 1; if (!pA && pB) return -1;
+      if (!pA && !pB) return dA - dB;
+      return dB - dA;
+    });
+  };
+
+  const fetchApprovedAppointments = useCallback((petId) => {
+    return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=approved`, {
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const arr = Array.isArray(data) ? data : (data?.data || []);
+        setAppointments(sortAppts(arr.filter(a => a.status?.toLowerCase() === 'approved')));
+      })
+      .catch(() => setAppointments([]));
+  }, [user?.token]);
+
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
     setSelectedPatientId(pId);
@@ -1077,32 +1102,7 @@ function InvoiceModuleView() {
         toast.error("Failed to load patient records.");
       });
 
-    // Fetch appointments for this patient - Always fetch real-time data
-    const sortAppts = (appts) => {
-      const now = new Date(); now.setHours(0, 0, 0, 0);
-      return [...appts].sort((a, b) => {
-        const dA = new Date(a.date); dA.setHours(0, 0, 0, 0);
-        const dB = new Date(b.date); dB.setHours(0, 0, 0, 0);
-        const pA = dA < now, pB = dB < now;
-        if (pA && !pB) return 1; if (!pA && pB) return -1;
-        if (!pA && !pB) return dA - dB;
-        return dB - dA;
-      });
-    };
-
-    fetch(`/api/appointments?pet_id=${pId}&per_page=100&status=approved`, {
-      headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        const appointmentsArray = Array.isArray(data) ? data : (data?.data || []);
-        const sorted = sortAppts(appointmentsArray);
-        setAppointments(sorted);
-      })
-      .catch(err => {
-        console.error("Failed to load appointments", err);
-        setAppointments([]);
-      });
+    fetchApprovedAppointments(pId);
   };
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + (item.is_hidden ? 0 : item.amount), 0), [items]);
