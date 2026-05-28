@@ -74,13 +74,13 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
     y + 18,
     { align: "right" }
   );
+  // Prefer the appointment (service) date over the row creation date.
+  const rawDate = invoiceData.appointment?.date || invoiceData.created_at;
+  const docDate = rawDate
+    ? new Date(typeof rawDate === 'string' && rawDate.includes('-') && !rawDate.includes('T') ? rawDate.replace(/-/g, '/') : rawDate)
+    : new Date();
   doc.setTextColor(100, 116, 139);
-  doc.text(
-    `Date: ${invoiceData.created_at ? new Date(invoiceData.created_at).toLocaleDateString() : new Date().toLocaleDateString()}`,
-    pageW - 14,
-    y + 23,
-    { align: "right" }
-  );
+  doc.text(`Date: ${docDate.toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
   if (isPaid) {
     doc.text(`Payment: ${invoiceData.payment_method || "Cash"}`, pageW - 14, y + 28, { align: "right" });
   } else {

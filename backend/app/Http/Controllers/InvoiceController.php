@@ -38,7 +38,7 @@ class InvoiceController extends Controller
     {
         $user = auth()->user();
         $query = Invoice::select([
-            'id', 'invoice_number', 'pet_id', 'status', 'report_type', 'total',
+            'id', 'invoice_number', 'pet_id', 'appointment_id', 'status', 'report_type', 'total',
             'amount_paid', 'discount_value', 'created_at', 'updated_at'
         ])
         ->with([
@@ -47,7 +47,8 @@ class InvoiceController extends Controller
             },
             'pet.species:id,name',
             'pet.breed:id,name',
-            'pet.owner:id,name'
+            'pet.owner:id,name',
+            'appointment:id,date'
         ])
         ->withCount('items');
 
@@ -341,7 +342,7 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
-        return response()->json($invoice->load('pet', 'items'));
+        return response()->json($invoice->load('pet.owner', 'items', 'appointment'));
     }
 
     /**

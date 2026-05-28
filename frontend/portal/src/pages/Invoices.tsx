@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getInvoices, getPets, getSettings } from '../api';
+import { getInvoices, getInvoice, getPets, getSettings } from '../api';
 import {
   FiCreditCard,
   FiFileText,
@@ -22,6 +22,18 @@ import echo from '../utils/echo';
 import { readCache, writeCache } from '../utils/swrCache';
 import { PawPrint } from './Landing';
 
+// The invoice's meaningful date is the appointment (service) date, not when the
+// invoice row was created. Fall back to created_at for invoices with no appointment.
+const invoiceDate = (inv: any): Date => {
+  const raw = inv?.appointment?.date || inv?.created_at;
+  if (!raw) return new Date(0);
+  const normalized = typeof raw === 'string' && raw.includes('-') && !raw.includes('T')
+    ? raw.replace(/-/g, '/')
+    : raw;
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? new Date(0) : d;
+};
+
 export default function Invoices() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [pets, setPets] = useState<any[]>([]);
@@ -40,7 +52,7 @@ export default function Invoices() {
       .then(([invRes, petsRes, settingsRes]) => {
         const invDataRaw = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
         const invData = [...invDataRaw].sort(
-          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          (a: any, b: any) => invoiceDate(b).getTime() - invoiceDate(a).getTime()
         );
         const petsData = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
         setInvoices(invData);
@@ -81,26 +93,29 @@ export default function Invoices() {
     };
   }, [fetchInvoices, user?.id]);
 
-  const handleDownload = (invoice: any) => {
+  const handleDownload = async (invoice: any) => {
+    // The list payload is minimal (no items/totals/notes). Fetch the full
+    // invoice so the PDF matches the admin format exactly.
+    let full = invoice;
+    try {
+      const res = await getInvoice(invoice.id);
+      full = res.data || invoice;
+    } catch (e) {
+      console.error('Failed to load full invoice for PDF', e);
+    }
+
+    const ownerFromUser = {
+      name: full.pet?.owner?.name || user?.name || 'Valued Client',
+      email: full.pet?.owner?.email || user?.email || '',
+      address: full.pet?.owner?.address || user?.address || 'No address provided',
+      phone: full.pet?.owner?.phone || user?.phone || '',
+    };
+
     const enrichedInvoice = {
-      ...invoice,
-      pet: invoice.pet ? {
-        ...invoice.pet,
-        owner: {
-          name: user?.name || 'Valued Client',
-          email: user?.email || '',
-          address: user?.address || 'No address provided',
-          phone: user?.phone || ''
-        }
-      } : {
-        name: 'N/A',
-        owner: {
-          name: user?.name || 'Valued Client',
-          email: user?.email || '',
-          address: user?.address || 'No address provided',
-          phone: user?.phone || ''
-        }
-      }
+      ...full,
+      pet: full.pet
+        ? { ...full.pet, owner: ownerFromUser }
+        : { name: 'N/A', owner: ownerFromUser },
     };
     generateInvoicePDF(enrichedInvoice, clinicSettings);
   };
@@ -218,7 +233,7 @@ export default function Invoices() {
                       </div>
                       <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mt-0.5">{invoice.pet?.name}</h3>
                       <div className="text-xs text-zinc-500 font-medium mt-1 uppercase tracking-tighter flex items-center gap-2">
-                        <span>{new Date(invoice.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span>{invoiceDate(invoice).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                         <span className="w-1 h-1 rounded-full bg-zinc-300"></span>
                         <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                       </div>

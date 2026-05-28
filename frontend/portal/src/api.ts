@@ -104,7 +104,7 @@ export const recoverAccount = () => api.post('/profile/recover');
 
 // Invoices
 export const getInvoices = (params?: any) => api.get('/invoices', { params });
-export const getInvoice = (id: number) => api.get(`/invoice/${id}`);
+export const getInvoice = (id: number) => api.get(`/invoices/${id}`);
 
 // Sync
 export const triggerSync = () => api.post('/sync/trigger');
