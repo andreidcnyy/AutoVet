@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 import {
   FiCalendar,
   FiChevronDown,
@@ -935,6 +936,25 @@ function InvoiceModuleView() {
       fetchDrafts(false);
     }
   }, [activeTab]);
+
+  // Poll history tab every 30s while it's active; Echo for instant updates
+  useEffect(() => {
+    if (activeTab !== "history") return;
+    const poll = setInterval(() => fetchInvoices(1, searchQuery, null, true), 30000);
+    return () => clearInterval(poll);
+  }, [activeTab, searchQuery]);
+
+  // Echo: refresh history/drafts counts when any invoice changes
+  useEffect(() => {
+    if (!user?.token) return;
+    const ch = echo.private('admin.invoices');
+    ch.listen('.invoice.updated', () => {
+      if (activeTab === "history") fetchInvoices(1, searchQuery, null, true);
+      if (activeTab === "drafts") fetchDrafts(true);
+      fetchDrafts(true); // always keep draft badge live
+    });
+    return () => echo.leave('admin.invoices');
+  }, [user?.token, activeTab, searchQuery]);
 
   // Auto-open an invoice when navigated here from the dashboard with a viewInvoiceId
   useEffect(() => {

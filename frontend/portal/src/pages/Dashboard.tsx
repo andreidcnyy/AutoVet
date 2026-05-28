@@ -10,6 +10,7 @@ import EditPetModal from '../components/EditPetModal';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import { useAuth } from '../context/AuthContext';
+import echo from '../utils/echo';
 import { PawPrint, PawTrail } from './Landing';
 import clsx from 'clsx';
 
@@ -84,11 +85,25 @@ export default function Dashboard() {
     const poll = setInterval(fetchData, 30000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
+
+    const userId = user?.id;
+    if (userId) {
+      echo.private(`client.appointments.${userId}`)
+        .listen('.appointment.status.updated', fetchData)
+        .listen('.appointment.created', fetchData);
+      echo.private(`client.invoices.${userId}`)
+        .listen('.invoice.updated', fetchData);
+    }
+
     return () => {
       clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      if (userId) {
+        echo.leave(`client.appointments.${userId}`);
+        echo.leave(`client.invoices.${userId}`);
+      }
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;

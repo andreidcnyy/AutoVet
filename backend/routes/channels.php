@@ -29,3 +29,11 @@ Broadcast::channel('notifications.{id}', function ($user, $id) {
 Broadcast::channel('client.portal.{id}', function ($user, $id) {
     return $user->isOwner() && (int) $user->id === (int) $id;
 });
+
+Broadcast::channel('admin.invoices', function ($user) {
+    return $user->isFullAdmin() || $user->isClinical() || $user->isStaff();
+});
+
+Broadcast::channel('client.invoices.{id}', function ($user, $id) {
+    return $user->isOwner() && (int) $user->id === (int) $id;
+});

@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { generateInvoicePDF } from '../utils/invoicePdf';
 import { useAuth } from '../context/AuthContext';
+import echo from '../utils/echo';
 import { readCache, writeCache } from '../utils/swrCache';
 import { PawPrint } from './Landing';
 
@@ -62,14 +63,20 @@ export default function Invoices() {
     const onVisible = () => { if (document.visibilityState === 'visible') fetchInvoices(); };
     document.addEventListener('visibilitychange', onVisible);
 
-    // Poll every 30s so invoice status changes from admin are reflected promptly
     const poll = setInterval(fetchInvoices, 30000);
+
+    const userId = user?.id;
+    if (userId) {
+      echo.private(`client.invoices.${userId}`)
+        .listen('.invoice.updated', fetchInvoices);
+    }
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       clearInterval(poll);
+      if (userId) echo.leave(`client.invoices.${userId}`);
     };
-  }, [fetchInvoices]);
+  }, [fetchInvoices, user?.id]);
 
   const handleDownload = (invoice: any) => {
     const enrichedInvoice = {

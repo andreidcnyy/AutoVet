@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import echo from "../utils/echo";
 import { 
   FiBell, FiCheck, FiFilter, FiArrowLeft, FiTrash2, 
   FiAlertTriangle, FiPackage, FiPlusCircle, FiInfo, FiActivity, FiFileText, FiCalendar 
@@ -57,9 +58,13 @@ function NotificationHistoryPage() {
     const poll = setInterval(fetchNotifications, 30000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchNotifications(); };
     document.addEventListener('visibilitychange', onVisible);
+    echo.private('admin.notifications')
+      .listen('.notification.created', fetchNotifications)
+      .listen('.entity.created', fetchNotifications);
     return () => {
       clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      echo.leave('admin.notifications');
     };
   }, []);
 

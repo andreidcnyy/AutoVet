@@ -21,6 +21,7 @@ import {
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
+import echo from '../utils/echo';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { useForm } from 'react-hook-form';
@@ -174,6 +175,36 @@ export default function BookAppointment() {
 
     return () => controller.abort();
   }, [currentDate]);
+
+  // Real-time: refresh calendar when appointment events fire
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId) return;
+    const refetch = () => {
+      const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+      const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+      const cacheKey = `${CACHE_KEY}_${dateFrom}_${dateTo}`;
+      localStorage.removeItem(cacheKey);
+      api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 } })
+        .then(res => {
+          const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+          setAppointments(arr);
+          try { localStorage.setItem(cacheKey, JSON.stringify({ data: arr, ts: Date.now() })); } catch (_) {}
+        })
+        .catch(() => {});
+    };
+    const poll = setInterval(refetch, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') refetch(); };
+    document.addEventListener('visibilitychange', onVisible);
+    echo.private(`client.appointments.${userId}`)
+      .listen('.appointment.status.updated', refetch)
+      .listen('.appointment.created', refetch);
+    return () => {
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      echo.leave(`client.appointments.${userId}`);
+    };
+  }, [user?.id, currentDate]);
 
   // Lazy-load form data only when booking drawer first opens
   const FORM_CACHE_KEY = `portal_book_form_${user?.id}_cache`;
