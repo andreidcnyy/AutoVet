@@ -4,8 +4,12 @@
 # intentionally NOT run here — those live in the chunked /setup-wizard flow
 # to avoid build-time timeouts on the 36-month dataset import.
 
+# NOTE: ext-pcntl + ext-posix are required by `php artisan reverb:start`
+# (the Reverb websocket service). They are declared in composer.json `require`
+# so Nixpacks' PHP provider compiles them into the runtime PHP. The explicit
+# extension packages below are a safety net in case the provider is bypassed.
 [phases.setup]
-nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "python3", "python3Packages.pip"]
+nixPkgs = ["php82", "php82Extensions.pcntl", "php82Extensions.posix", "php82Packages.composer", "nodejs_20", "python3", "python3Packages.pip"]
 
 [phases.install]
 cmds = [
