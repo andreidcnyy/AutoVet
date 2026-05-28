@@ -18,6 +18,8 @@ import { useAuth } from '../context/AuthContext';
 import { PawPrint } from './Landing';
 import clsx from 'clsx';
 
+const statusLabel = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatTime = (t: string | undefined) => {
   if (!t) return '';
@@ -222,7 +224,7 @@ export default function Appointments() {
                           (appt.status === 'cancelled' || appt.status === 'declined') && 'bg-rose-50 text-rose-700',
                           appt.status === 'completed' && 'bg-blue-50 text-blue-700'
                         )}>
-                          {appt.status}
+                          {statusLabel(appt.status)}
                         </span>
                       </div>
                       <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mt-0.5 hover:text-brand-500 transition-colors">Patient: {appt.pet?.name}</h3>
@@ -295,7 +297,7 @@ export default function Appointments() {
                       (selectedAppointment.status === 'cancelled' || selectedAppointment.status === 'declined') && "bg-rose-50 text-rose-700",
                       selectedAppointment.status === 'completed' && "bg-blue-50 text-blue-700"
                     )}>
-                      {selectedAppointment.status}
+                      {statusLabel(selectedAppointment.status)}
                     </div>
                   </div>
                   <button onClick={() => setIsDetailsOpen(false)} className="p-2 rounded-xl bg-zinc-50 dark:bg-dark-surface text-zinc-400 hover:text-zinc-800 transition-all">
