@@ -623,10 +623,10 @@ export default function BookAppointment() {
                           {/* 3-col grid on mobile, 4-col on desktop */}
                           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
                             {standardSlots.filter(slot => {
-                              const isBooked = availability.some((a: any) =>
-                                a.time?.substring(0, 5) === slot &&
-                                a.status !== 'cancelled' && a.status !== 'declined'
-                              );
+                              const isBooked = availability.some((a: any) => {
+                                const t = a.time ? a.time.padStart(5, '0').substring(0, 5) : '';
+                                return t === slot && a.status !== 'cancelled' && a.status !== 'declined';
+                              });
                               const todayStr = format(new Date(), "yyyy-MM-dd");
                               const nowTime = format(new Date(), "HH:mm");
                               return !isBooked && !(selectedDate === todayStr && slot < nowTime);

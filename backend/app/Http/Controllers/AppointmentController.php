@@ -460,7 +460,13 @@ class AppointmentController extends Controller
             $query->where('vet_id', $request->vet_id);
         }
 
-        $appointments = $query->get(['time', 'vet_id']);
+        $appointments = $query->get(['time', 'vet_id'])->map(function ($a) {
+            // Normalize to HH:MM so "9:00" becomes "09:00"
+            if ($a->time && strlen($a->time) < 5) {
+                $a->time = str_pad($a->time, 5, '0', STR_PAD_LEFT);
+            }
+            return $a;
+        });
 
         return response()->json($appointments);
     }
