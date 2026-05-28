@@ -26,8 +26,8 @@ export default function SalesSummaryCard() {
   const [recent, setRecent]       = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  const load = () => {
-    setLoading(true);
+  const load = (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     Promise.all([
       api.get("/api/reports/sales/revenue-summary?days=30").catch(() => []),
       api.get("/api/reports/sales/top-services?limit=5").catch(() => []),
@@ -37,15 +37,15 @@ export default function SalesSummaryCard() {
       setTopItems(Array.isArray(top) ? top : []);
       const list = inv?.data || [];
       setRecent(Array.isArray(list) ? list : []);
-    }).finally(() => setLoading(false));
+    }).finally(() => { if (showSpinner) setLoading(false); });
   };
 
   useEffect(() => {
-    load();
-    const poll = setInterval(load, 30000);
-    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    load(true);
+    const poll = setInterval(() => load(false), 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(false); };
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('inventory-forecast-refresh', load);
+    window.addEventListener('inventory-forecast-refresh', () => load(false));
     return () => {
       clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
@@ -98,7 +98,7 @@ export default function SalesSummaryCard() {
           </h3>
         </div>
         <button
-          onClick={load}
+          onClick={() => load(true)}
           className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-dark-border px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors"
         >
           <FiRefreshCw className="h-3.5 w-3.5" /> Refresh

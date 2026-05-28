@@ -53,7 +53,7 @@ function AppLayoutInner() {
 
     const interval = setInterval(() => {
       triggerSync().catch(() => {});
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [user, isSuperAdmin]);
@@ -68,7 +68,9 @@ function AppLayoutInner() {
     const fetchAnnouncements = () => {
         api.get('/api/system-announcements?target=admin')
             .then(res => {
-                if (Array.isArray(res)) setAnnouncements(res);
+                if (Array.isArray(res)) setAnnouncements(prev =>
+                    JSON.stringify(prev) === JSON.stringify(res) ? prev : res
+                );
             })
             .catch(err => {
                 console.error("Failed to load announcements", err);
