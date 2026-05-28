@@ -843,6 +843,18 @@ function InvoiceModuleView() {
     }
   }, [user?.token, toast, navigate]);
 
+  const fetchApprovedAppointments = useCallback((petId) => {
+    return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=approved`, {
+      headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const arr = Array.isArray(data) ? data : (data?.data || []);
+        setAppointments(sortAppts(arr.filter(a => a.status?.toLowerCase() === 'approved')));
+      })
+      .catch(() => setAppointments([]));
+  }, [user?.token]);
+
   // Handle viewing full details (needed because index list is optimized/minimal)
   const handleViewInvoiceDetails = useCallback(async (inv, { resumeEditing = false } = {}) => {
     if (!inv?.id) return;
@@ -1059,18 +1071,6 @@ function InvoiceModuleView() {
       return dB - dA;
     });
   };
-
-  const fetchApprovedAppointments = useCallback((petId) => {
-    return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=approved`, {
-      headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        const arr = Array.isArray(data) ? data : (data?.data || []);
-        setAppointments(sortAppts(arr.filter(a => a.status?.toLowerCase() === 'approved')));
-      })
-      .catch(() => setAppointments([]));
-  }, [user?.token]);
 
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
