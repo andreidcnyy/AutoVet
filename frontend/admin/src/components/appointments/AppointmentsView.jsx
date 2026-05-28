@@ -155,16 +155,16 @@ function AppointmentsView() {
       .then(data => setCalendarSummaries(Array.isArray(data) ? data : []));
   }, [user?.token, currentDate]);
 
-  const fetchAppointments = useCallback((signal) => {
+  const fetchAppointments = useCallback((signal, silent = false) => {
     if (!user?.token) return;
-    setIsLoading(true);
-    
-    const fetchParams = { 
-      page: params.page, 
-      per_page: params.date ? 15 : 100, 
-      search: debouncedSearch, 
-      status: params.status, 
-      date: params.date 
+    if (!silent) setIsLoading(true);
+
+    const fetchParams = {
+      page: params.page,
+      per_page: params.date ? 15 : 100,
+      search: debouncedSearch,
+      status: params.status,
+      date: params.date
     };
 
     if (!params.date) {
@@ -177,7 +177,7 @@ function AppointmentsView() {
         setAppointments(data.data);
         setPagination({ current_page: data.current_page, last_page: data.last_page, total: data.total });
       }
-    }).finally(() => setIsLoading(false));
+    }).finally(() => { if (!silent) setIsLoading(false); });
   }, [user?.token, params, debouncedSearch, currentDate]);
 
   useEffect(() => {
@@ -191,7 +191,7 @@ function AppointmentsView() {
   useEffect(() => {
     if (!user?.token) return;
     const onVisible = () => {
-      if (document.visibilityState === "visible") fetchAppointments();
+      if (document.visibilityState === "visible") fetchAppointments(undefined, true);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
@@ -255,7 +255,7 @@ function AppointmentsView() {
         }
         toast.info(`Appointment archived.`);
       });
-    const poll = setInterval(() => fetchAppointments(), 5000);
+    const poll = setInterval(() => fetchAppointments(undefined, true), 30000);
     return () => {
       clearInterval(poll);
       echo.leave('admin.appointments');
@@ -752,7 +752,7 @@ function AppointmentsView() {
                 <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8">
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{formatTime(selectedAppointment?.time)}</p></div></div>
-                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name} | Guardian ID #{selectedAppointment?.pet?.owner_id}</p></div></div>
+                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name}</p><p className="text-xs font-bold text-zinc-400 mt-0.5">Owner: {selectedAppointment?.pet?.owner?.name || '—'}</p></div></div>
                   {selectedAppointment?.created_at && (
                     <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-amber-400" /><div><p className="text-[10px] font-black text-zinc-400">REQUESTED ON</p><p className="text-sm font-black text-amber-600 dark:text-amber-400">{format(new Date(selectedAppointment.created_at), "MMMM d, yyyy 'at' h:mm a")}</p></div></div>
                   )}
@@ -768,6 +768,14 @@ function AppointmentsView() {
                     <p className="mb-2 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
                     <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap bg-zinc-50 dark:bg-dark-surface rounded-xl px-4 py-3 border border-zinc-100 dark:border-dark-border">
                       {selectedAppointment.notes}
+                    </p>
+                  </div>
+                )}
+                {selectedAppointment?.decline_reason && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-black text-rose-400 uppercase tracking-widest">Decline Reason</p>
+                    <p className="text-sm text-rose-600 dark:text-rose-400 leading-relaxed whitespace-pre-wrap bg-rose-50 dark:bg-rose-900/10 rounded-xl px-4 py-3 border border-rose-100 dark:border-rose-800/30">
+                      {selectedAppointment.decline_reason}
                     </p>
                   </div>
                 )}
