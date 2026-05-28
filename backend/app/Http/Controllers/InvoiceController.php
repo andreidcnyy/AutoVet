@@ -316,8 +316,9 @@ class InvoiceController extends Controller
                 }
             }
 
-            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
             DB::commit();
+            // Broadcast AFTER commit so portal refetch sees the committed row.
+            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
             return response()->json($invoice->load('pet', 'items'), 201);
         } catch (ValidationException $e) {
             DB::rollBack();
@@ -521,8 +522,9 @@ class InvoiceController extends Controller
                 }
             }
 
-            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
             DB::commit();
+            // Broadcast AFTER commit so portal refetch sees the committed row.
+            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
             return response()->json($invoice->load('pet', 'items'));
         } catch (ValidationException $e) {
             DB::rollBack();

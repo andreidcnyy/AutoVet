@@ -104,8 +104,6 @@ class WalkInController extends Controller
 
                 $appointment->services()->sync($serviceIds);
 
-                event(new \App\Events\AppointmentCreated($appointment));
-
                 $this->createInternalNotification(
                     'WalkIn',
                     ($request->boolean('is_emergency') ? '[EMERGENCY] ' : '') . 'Walk-in Registration',
@@ -115,6 +113,10 @@ class WalkInController extends Controller
 
                 return $appointment->load(['pet.owner', 'service', 'services']);
             });
+
+            // Broadcast AFTER the transaction commits so subscribers' refetch
+            // sees the committed appointment row.
+            event(new \App\Events\AppointmentCreated($result));
 
             return response()->json($result, 201);
         } catch (\Exception $e) {
