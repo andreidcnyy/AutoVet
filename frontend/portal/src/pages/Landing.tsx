@@ -447,9 +447,9 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((feature) => (
               <div key={feature.title}
-                className="group relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:border-brand-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                className="relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm overflow-hidden">
                 <PawPrint className="absolute bottom-2 right-3 w-12 h-12 text-brand-500 dark:text-emerald-400 opacity-[0.14] dark:opacity-25 rotate-12 pointer-events-none" />
-                <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300">
+                <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4">
                   {feature.icon}
                 </div>
                 <h3 className="text-lg font-black text-zinc-800 dark:text-zinc-100 mb-2">{feature.title}</h3>
@@ -612,7 +612,7 @@ export default function Landing() {
             <div>
               <h4 className="font-black text-white mb-4 uppercase tracking-wider text-sm">Quick Links</h4>
               <ul className="space-y-2">
-                {NAV_LINKS.map(link => (
+                {NAV_LINKS.filter(link => link.label !== 'Contact').map(link => (
                   <li key={link.label}>
                     <button onClick={() => scrollTo(link.href)}
                       className="text-zinc-400 hover:text-brand-500 text-sm font-medium transition-colors flex items-center gap-1">
