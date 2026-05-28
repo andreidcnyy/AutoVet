@@ -19,6 +19,18 @@ import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { useAuth } from '../context/AuthContext';
+import echo from '../utils/echo';
+
+// Use the appointment (service) date when present, else the row creation date.
+const invoiceDate = (inv: any): Date => {
+  const raw = inv?.appointment?.date || inv?.created_at;
+  if (!raw) return new Date(0);
+  const normalized = typeof raw === 'string' && raw.includes('-') && !raw.includes('T')
+    ? raw.replace(/-/g, '/')
+    : raw;
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? new Date(0) : d;
+};
 
 function PetProfile() {
   const { id } = useParams<{ id: string }>();
@@ -64,11 +76,26 @@ function PetProfile() {
     const poll = setInterval(fetchAll, 30000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(); };
     document.addEventListener('visibilitychange', onVisible);
+
+    // Real-time: refresh when admin updates this client's invoices or appointments
+    const userId = user?.id;
+    if (userId) {
+      echo.private(`client.invoices.${userId}`)
+        .listen('.invoice.updated', fetchAll);
+      echo.private(`client.appointments.${userId}`)
+        .listen('.appointment.status.updated', fetchAll)
+        .listen('.appointment.created', fetchAll);
+    }
+
     return () => {
       clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      if (userId) {
+        echo.leave(`client.invoices.${userId}`);
+        echo.leave(`client.appointments.${userId}`);
+      }
     };
-  }, [id]);
+  }, [id, user?.id]);
 
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading pet profile...</div>;
   if (!pet) return <div className="p-8 text-center text-rose-500 font-bold">Pet not found.</div>;
@@ -237,8 +264,12 @@ function PetProfile() {
 
         {activeTab === 'invoices' && (
           <div className="space-y-4">
-            {invoices.length > 0 ? (
-              invoices.map(invoice => (
+            {(() => {
+              const visibleInvoices = invoices
+                .filter(inv => inv.status !== 'Draft')
+                .sort((a, b) => invoiceDate(b).getTime() - invoiceDate(a).getTime());
+              return visibleInvoices.length > 0 ? (
+              visibleInvoices.map(invoice => (
                 <div key={invoice.id} className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 group">
                    <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
@@ -247,7 +278,7 @@ function PetProfile() {
                       <div>
                          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
-                         <div className="text-xs text-zinc-500">{new Date(invoice.created_at).toLocaleDateString()}</div>
+                         <div className="text-xs text-zinc-500">{invoiceDate(invoice).toLocaleDateString()}</div>
                       </div>
                    </div>
                    <div className="flex flex-col gap-1 sm:items-end sm:text-right">
@@ -266,7 +297,8 @@ function PetProfile() {
               <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
                 No invoice history found.
               </div>
-            )}
+            );
+            })()}
           </div>
         )}
 
