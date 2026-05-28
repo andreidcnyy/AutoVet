@@ -1026,18 +1026,25 @@ function InvoiceModuleView() {
     return () => controller.abort();
   }, [user?.token]);
 
-  // Keep draft count live regardless of active tab
+  // Keep draft count badge live regardless of active tab
   useEffect(() => {
     if (!user?.token) return;
-    const loadDraftsCount = async () => {
-      try {
-        const data = await api.get('/api/invoices', { params: { status: 'Draft', per_page: 50 } });
-        setDrafts(Array.isArray(data) ? data : (data?.data || []));
-      } catch (_) {}
+    let cancelled = false;
+    const loadDraftsCount = () => {
+      fetch('/api/invoices?status=Draft&per_page=50', {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${user.token}` },
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (cancelled || !data) return;
+          const list = Array.isArray(data) ? data : (data?.data ?? []);
+          setDrafts(list);
+        })
+        .catch(() => {});
     };
     loadDraftsCount();
     const poll = setInterval(loadDraftsCount, 30000);
-    return () => clearInterval(poll);
+    return () => { cancelled = true; clearInterval(poll); };
   }, [user?.token]);
 
   const handlePatientSelect = (e) => {
