@@ -324,6 +324,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
   const [loading, setLoading]                         = useState(false);
   const [allRows, setAllRows]                         = useState([]);
   const [localGenerated, setLocalGenerated]           = useState(false);
+  const [reportView, setReportView]                   = useState("detailed"); // "detailed" | "summary"
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -383,6 +384,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
     setSelectedOwnerId(""); setOwnerSearch(""); setIsOwnerDropdownOpen(false); setItemTypeFilter("all");
     setSelectedServiceId(""); setSelectedInventoryId("");
     setDateFrom(monthStart); setDateTo(today);
+    setReportView("detailed");
   };
 
   const summary = useMemo(() => {
@@ -392,13 +394,27 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
     return { totalGross, totalDiscount, totalNet: totalGross - totalDiscount };
   }, [displayRows]);
 
+  // Aggregate displayRows by item name — no client, just item totals
+  const summaryRows = useMemo(() => {
+    const map = {};
+    displayRows.forEach((row) => {
+      const key = row.itemName;
+      if (!map[key]) {
+        map[key] = { itemName: row.itemName, itemType: row.itemType, totalQty: 0, unitPrice: row.sellingPrice, totalGross: 0 };
+      }
+      map[key].totalQty  += Number(row.qty) || 1;
+      map[key].totalGross += row.grossSales;
+    });
+    return Object.values(map).sort((a, b) => b.totalGross - a.totalGross);
+  }, [displayRows]);
+
   const exportReportsPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
     const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Invoice Reports", 14, 18);
+    doc.text(reportView === "summary" ? "Items / Services Sales Summary" : "Invoice Reports", 14, 18);
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
@@ -407,36 +423,45 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
     doc.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, pageWidth - 14, 26, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    const showQty = itemTypeFilter === "inventory";
-    const head = [showQty
-      ? ["Date", "Client", "Item / Service", "Qty", "Selling Price (PHP)", "Gross Sales (PHP)"]
-      : ["Date", "Client", "Item / Service", "Selling Price (PHP)", "Gross Sales (PHP)"]];
+    let head, body, foot;
 
-    const body = displayRows.map((row) => showQty
-      ? [formatDate(row.date), row.client, row.itemName, row.qty, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]
-      : [formatDate(row.date), row.client, row.itemName, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]);
+    if (reportView === "summary") {
+      head = [["Item / Service", "Total Qty", "Unit Price (PHP)", "Total Gross Sales (PHP)"]];
+      body = summaryRows.map((r) => [r.itemName, r.totalQty, Number(r.unitPrice).toFixed(2), Number(r.totalGross).toFixed(2)]);
+      foot = [["", "", "Total Gross Sales:", Number(summary.totalGross).toFixed(2)]];
+      autoTable(doc, {
+        startY: 32, head, body, foot,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+        footStyles: { fontStyle: "bold", fillColor: [245, 245, 245], textColor: 0 },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+      });
+    } else {
+      const showQty = itemTypeFilter === "inventory";
+      head = [showQty
+        ? ["Date", "Client", "Item / Service", "Qty", "Selling Price (PHP)", "Gross Sales (PHP)"]
+        : ["Date", "Client", "Item / Service", "Selling Price (PHP)", "Gross Sales (PHP)"]];
+      body = displayRows.map((row) => showQty
+        ? [formatDate(row.date), row.client, row.itemName, row.qty, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]
+        : [formatDate(row.date), row.client, row.itemName, Number(row.sellingPrice).toFixed(2), Number(row.grossSales).toFixed(2)]);
+      const colCount = showQty ? 6 : 5;
+      foot = [Array(colCount).fill("").map((_, i) => {
+        if (i === colCount - 2) return "Total Gross Sales:";
+        if (i === colCount - 1) return Number(summary.totalGross).toFixed(2);
+        return "";
+      })];
+      autoTable(doc, {
+        startY: 32, head, body, foot,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+        footStyles: { fontStyle: "bold", fillColor: [245, 245, 245], textColor: 0 },
+        columnStyles: showQty
+          ? { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
+          : { 3: { halign: "right" }, 4: { halign: "right" } },
+      });
+    }
 
-    const colCount = showQty ? 6 : 5;
-    const foot = [Array(colCount).fill("").map((_, i) => {
-      if (i === colCount - 2) return "Total Gross Sales:";
-      if (i === colCount - 1) return Number(summary.totalGross).toFixed(2);
-      return "";
-    })];
-
-    autoTable(doc, {
-      startY: 32,
-      head,
-      body,
-      foot,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
-      footStyles: { fontStyle: "bold", fillColor: [245, 245, 245], textColor: 0 },
-      columnStyles: showQty
-        ? { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } }
-        : { 3: { halign: "right" }, 4: { halign: "right" } },
-    });
-
-    doc.save(`Invoice_Reports_${dateFrom}_to_${dateTo}.pdf`);
+    doc.save(`Invoice_Reports_${reportView}_${dateFrom}_to_${dateTo}.pdf`);
   };
 
   return (
@@ -464,32 +489,19 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
               className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
             />
             {ownerSearch && (
-              <button
-                type="button"
-                onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); setIsOwnerDropdownOpen(false); }}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600"
-              >
+              <button type="button" onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); setIsOwnerDropdownOpen(false); }} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600">
                 <FiX className="h-3 w-3" />
               </button>
             )}
             {isOwnerDropdownOpen && (
               <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-xl">
-                {owners
-                  .filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase()))
-                  .map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => { setOwnerSearch(o.name); setSelectedOwnerId(o.id.toString()); setIsOwnerDropdownOpen(false); }}
-                      className={clsx(
-                        "w-full px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
-                        selectedOwnerId === o.id.toString() ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"
-                      )}
-                    >
-                      {o.name}
-                    </button>
-                  ))}
+                {owners.filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase())).map((o) => (
+                  <button key={o.id} type="button" onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setOwnerSearch(o.name); setSelectedOwnerId(o.id.toString()); setIsOwnerDropdownOpen(false); }}
+                    className={clsx("w-full px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface", selectedOwnerId === o.id.toString() ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300")}>
+                    {o.name}
+                  </button>
+                ))}
                 {owners.filter((o) => !ownerSearch || o.name.toLowerCase().includes(ownerSearch.toLowerCase())).length === 0 && (
                   <div className="px-3 py-4 text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">No clients found</div>
                 )}
@@ -549,9 +561,27 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
 
       {/* Report document */}
       <div className="card-shell p-5">
-        <div className="mb-4 text-right">
-          <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">Invoice Reports</h2>
-          {localGenerated && <p className="text-xs text-zinc-500 mt-0.5">Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}</p>}
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50">Invoice Reports</h2>
+            {localGenerated && <p className="text-xs text-zinc-500 mt-0.5">Bill Date From {formatDate(dateFrom)} To {formatDate(dateTo)}</p>}
+          </div>
+          {localGenerated && (
+            <div className="flex items-center rounded-lg border border-zinc-200 dark:border-dark-border overflow-hidden shrink-0">
+              <button
+                onClick={() => setReportView("detailed")}
+                className={clsx("px-3 py-1.5 text-[11px] font-bold transition-colors", reportView === "detailed" ? "bg-emerald-600 text-white" : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface")}
+              >
+                By Client
+              </button>
+              <button
+                onClick={() => setReportView("summary")}
+                className={clsx("px-3 py-1.5 text-[11px] font-bold transition-colors border-l border-zinc-200 dark:border-dark-border", reportView === "summary" ? "bg-emerald-600 text-white" : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface")}
+              >
+                Items Only
+              </button>
+            </div>
+          )}
         </div>
 
         {!localGenerated ? (
@@ -561,6 +591,49 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
               <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Set filters and click Search</p>
             </div>
           </div>
+        ) : reportView === "summary" ? (
+          <>
+            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+              <table className="w-full text-xs" style={{ minWidth: 400 }}>
+                <thead>
+                  <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
+                    {["Item / Service", "Total Qty Sold", "Unit Price", "Total Gross Sales"].map((h, i) => (
+                      <th key={h} className={clsx("px-3 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 border-r border-zinc-200 dark:border-dark-border last:border-r-0", i === 0 ? "text-left" : "text-right")}
+                        style={{ width: ["46%", "16%", "19%", "19%"][i] }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryRows.length === 0 ? (
+                    <tr><td colSpan={4} className="px-3 py-8 text-center text-xs text-zinc-400 italic">No transactions match the current filters.</td></tr>
+                  ) : summaryRows.map((row, idx) => (
+                    <tr key={idx} className="border-b border-zinc-100 dark:border-dark-border hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20">
+                      <td className="px-3 py-2 border-r border-zinc-100 dark:border-dark-border">
+                        <div className="flex items-center gap-1.5">
+                          <CatBadge type={getShortType({ name: row.itemName })} size="xs" />
+                          <span className="text-zinc-700 dark:text-zinc-300 truncate">{row.itemName}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-right text-zinc-600 dark:text-zinc-400 border-r border-zinc-100 dark:border-dark-border tabular-nums">{row.totalQty}</td>
+                      <td className="px-3 py-2 text-right text-zinc-700 dark:text-zinc-300 border-r border-zinc-100 dark:border-dark-border tabular-nums">{fmt(row.unitPrice)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">{fmt(row.totalGross)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-end justify-between">
+              <button onClick={exportReportsPDF} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+                <FiDownload className="h-3.5 w-3.5" /> Download PDF
+              </button>
+              <div className="w-56 space-y-1">
+                <div className="flex justify-between items-center font-black text-emerald-600 dark:text-emerald-400 border-t border-zinc-200 dark:border-dark-border pt-1">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Total Gross Sales</span>
+                  <span className="text-xs font-black tabular-nums">{fmt(summary.totalGross)}</span>
+                </div>
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
@@ -599,8 +672,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
               </table>
             </div>
             <div className="flex items-end justify-between">
-              <button onClick={exportReportsPDF}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
+              <button onClick={exportReportsPDF} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">
                 <FiDownload className="h-3.5 w-3.5" /> Download PDF
               </button>
               <div className="w-56 space-y-1">
