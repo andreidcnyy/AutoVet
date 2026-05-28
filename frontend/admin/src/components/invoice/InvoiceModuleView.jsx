@@ -1127,8 +1127,8 @@ function InvoiceModuleView() {
 
   const [serviceInput, setServiceInput] = useState("");
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
-  const [qtyInput, setQtyInput] = useState(1);
-  const [priceInput, setPriceInput] = useState(50);
+  const [qtyInput, setQtyInput] = useState("");
+  const [priceInput, setPriceInput] = useState("");
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [itemModalSearch, setItemModalSearch] = useState("");
   const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
@@ -1303,8 +1303,8 @@ function InvoiceModuleView() {
 
     // Clean up
     setServiceInput("");
-    setQtyInput(1);
-    setPriceInput(0);
+    setQtyInput("");
+    setPriceInput("");
     setSelectedService(null);
   };
 
@@ -1872,7 +1872,7 @@ function InvoiceModuleView() {
 
 
                   {/* Column labels */}
-                  <div className="grid grid-cols-[1fr_64px_100px_80px_auto] gap-2 mb-1 px-0.5">
+                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 mb-1 px-0.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Item / Service</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-center">Qty</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Unit Price</p>
@@ -1880,7 +1880,7 @@ function InvoiceModuleView() {
                     <p className="text-[10px]"> </p>
                   </div>
 
-                  <div className="grid grid-cols-[1fr_64px_100px_80px_auto] gap-2 items-center">
+                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 items-center">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <input
@@ -2081,7 +2081,7 @@ function InvoiceModuleView() {
                       <div
                         key={item.id}
                         className={clsx(
-                          "group grid grid-cols-[1fr_64px_100px_80px_auto] gap-2 items-center px-3 py-2.5",
+                          "group grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 items-center px-3 py-2.5",
                           idx !== items.length - 1 && "border-b border-zinc-100 dark:border-dark-border"
                         )}
                       >
