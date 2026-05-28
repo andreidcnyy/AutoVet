@@ -821,14 +821,14 @@ function InvoiceModuleView() {
     }
   }, [user?.token, searchQuery, toast]);
 
-  const fetchDrafts = useCallback(async () => {
+  const fetchDrafts = useCallback(async (silent = false) => {
     if (!user?.token) return;
-    setDraftsLoading(true);
+    if (!silent) setDraftsLoading(true);
     try {
       const data = await api.get('/api/invoices', { params: { status: 'Draft', per_page: 50 } });
       setDrafts(Array.isArray(data) ? data : (data?.data || []));
     } catch (_) {}
-    finally { setDraftsLoading(false); }
+    finally { if (!silent) setDraftsLoading(false); }
   }, [user?.token]);
 
   const handleDeleteDraft = useCallback(async (inv) => {
@@ -907,7 +907,7 @@ function InvoiceModuleView() {
       fetchInvoices(1, searchQuery, null, true);
     }
     if (activeTab === "drafts") {
-      fetchDrafts();
+      fetchDrafts(false);
     }
   }, [activeTab]);
 
@@ -1025,6 +1025,14 @@ function InvoiceModuleView() {
 
     return () => controller.abort();
   }, [user?.token]);
+
+  // Keep draft count live regardless of active tab
+  useEffect(() => {
+    if (!user?.token) return;
+    fetchDrafts(true);
+    const poll = setInterval(() => fetchDrafts(true), 30000);
+    return () => clearInterval(poll);
+  }, [user?.token, fetchDrafts]);
 
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
