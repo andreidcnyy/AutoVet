@@ -61,6 +61,23 @@ $inventory->each(function ($item) use ($daysRemaining) {
         return response()->json($lowStockItems);
     }
 
+    public function batchLotOptions()
+    {
+        $batches = Inventory::whereNotNull('batch_number')
+            ->where('batch_number', '!=', '')
+            ->distinct()
+            ->pluck('batch_number')
+            ->values();
+
+        $lots = Inventory::whereNotNull('lot_number')
+            ->where('lot_number', '!=', '')
+            ->distinct()
+            ->pluck('lot_number')
+            ->values();
+
+        return response()->json(['batch_numbers' => $batches, 'lot_numbers' => $lots]);
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([

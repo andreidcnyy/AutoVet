@@ -40,6 +40,8 @@ const inventorySchema = z.object({
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
   const toast = useToast();
   const [categoryOptions, setCategoryOptions] = useState([]);
+  const [batchOptions, setBatchOptions] = useState([]);
+  const [lotOptions, setLotOptions] = useState([]);
   const [costPriceDisplay, setCostPriceDisplay] = useState("");
   const [sellingPriceDisplay, setSellingPriceDisplay] = useState("");
   const { user } = useAuth();
@@ -99,6 +101,16 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
             (c) => c.status === "Active" || c.status === "active"
           );
           setCategoryOptions(activeCategories);
+        })
+        .catch(console.error);
+
+      fetch("/api/inventory/batch-lot-options", {
+        headers: { Accept: "application/json", Authorization: `Bearer ${user.token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setBatchOptions(data.batch_numbers || []);
+          setLotOptions(data.lot_numbers || []);
         })
         .catch(console.error);
     }
@@ -253,11 +265,21 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #</label>
-                  <input type="text" {...register("lot_number")} placeholder="e.g. LOT-2025-001" className={getInputClass(errors.lot_number)} />
+                  <select {...register("lot_number")} className={getInputClass(errors.lot_number)}>
+                    <option value="">— None —</option>
+                    {lotOptions.map((lot) => (
+                      <option key={lot} value={lot}>{lot}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch #</label>
-                  <input type="text" {...register("batch_number")} placeholder="e.g. BATCH-A" className={getInputClass(errors.batch_number)} />
+                  <select {...register("batch_number")} className={getInputClass(errors.batch_number)}>
+                    <option value="">— None —</option>
+                    {batchOptions.map((batch) => (
+                      <option key={batch} value={batch}>{batch}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
