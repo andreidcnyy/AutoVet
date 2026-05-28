@@ -1871,8 +1871,9 @@ function InvoiceModuleView() {
                   <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Services &amp; Meds</h3>
 
 
+                  <div className="rounded-xl border border-zinc-200 dark:border-dark-border overflow-hidden">
                   {/* Column labels */}
-                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 mb-1 px-0.5">
+                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 px-3 py-2 bg-zinc-50 dark:bg-dark-surface border-b border-zinc-200 dark:border-dark-border">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Item / Service</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-center">Qty</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Unit Price</p>
@@ -1880,7 +1881,7 @@ function InvoiceModuleView() {
                     <p className="text-[10px]"> </p>
                   </div>
 
-                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 items-center">
+                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 items-center px-3 py-2 border-b border-zinc-200 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/30">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <input
@@ -2076,7 +2077,6 @@ function InvoiceModuleView() {
                     </button>
                   </div>
 
-                  <div className="mt-2 rounded-xl border border-zinc-200 dark:border-dark-border overflow-hidden">
                     {items.length > 0 ? items.map((item, idx) => (
                       <div
                         key={item.id}
@@ -2327,16 +2327,17 @@ function InvoiceModuleView() {
                 </section>
 
                 <section className="mt-8 border-y border-zinc-200 dark:border-dark-border py-3">
-                  <div className="grid grid-cols-[1fr_60px_100px_100px] text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  <div className="grid grid-cols-[1fr_60px_100px_100px_auto] gap-4 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                     <p>Description</p>
                     <p className="text-right">Qty</p>
                     <p className="text-right">Unit Price</p>
                     <p className="text-right">Amount</p>
+                    <p className="w-7"></p>
                   </div>
 
                   <div className="mt-3 space-y-3">
                     {items.filter(item => !item.is_hidden).map((item) => (
-                      <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px] items-start gap-4 border-b border-zinc-100 dark:border-dark-border pb-4 last:border-0 last:pb-0">
+                      <div key={`doc-${item.id}`} className="grid grid-cols-[1fr_60px_100px_100px_auto] items-start gap-4 border-b border-zinc-100 dark:border-dark-border pb-4 last:border-0 last:pb-0">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{item.name}</p>
@@ -2364,9 +2365,9 @@ function InvoiceModuleView() {
                           <p className="text-sm text-zinc-700 dark:text-zinc-300">{currency(item.unitPrice)}</p>
                           <p className="text-[10px] text-zinc-400 uppercase font-bold">Rate</p>
                         </div>
-                        <div className="flex items-center justify-end gap-3 px-1">
-                          <p className="text-right text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                          {status === "Draft" && (
+                        <p className="text-right text-sm font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
+                        <div className="flex justify-center">
+                          {status === "Draft" ? (
                             <button
                               onClick={() => removeItem(item.id)}
                               className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm"
@@ -2374,7 +2375,7 @@ function InvoiceModuleView() {
                             >
                               <FiX className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                          ) : <span className="w-7" />}
                         </div>
                       </div>
                     ))}
