@@ -124,6 +124,32 @@ server. If it's not running, no websocket messages are delivered.
 
 ---
 
+## Private-channel authorization route (critical, easy to miss)
+
+Both SPAs use **Bearer-token (Sanctum) auth**, not session cookies, and their Echo
+clients point at **`/api/broadcasting/auth`**. Laravel's default broadcasting auth
+route is `/broadcasting/auth` on the **session/web** guard — which does NOT match.
+
+So a custom route is registered inside the Sanctum group in `routes/api.php`:
+
+```php
+Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return \Illuminate\Support\Facades\Broadcast::auth($request);
+    });
+    // ...
+});
+```
+
+Without this, the websocket connects (`101 Switching Protocols`) but every private
+channel subscription is rejected — so it *looks* connected yet nothing is live.
+
+**How to verify:** DevTools → Network → `broadcasting/auth` must return **200**
+(403/419 = auth misconfigured), and the WS frames must show
+`pusher_internal:subscription_succeeded` (not `pusher:subscription_error`).
+
+---
+
 ## Checklist: adding a new real-time feature
 
 1. **Event** — create `app/Events/MyEvent.php` implementing `ShouldBroadcastNow`,
