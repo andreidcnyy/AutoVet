@@ -1029,10 +1029,16 @@ function InvoiceModuleView() {
   // Keep draft count live regardless of active tab
   useEffect(() => {
     if (!user?.token) return;
-    fetchDrafts(true);
-    const poll = setInterval(() => fetchDrafts(true), 30000);
+    const loadDraftsCount = async () => {
+      try {
+        const data = await api.get('/api/invoices', { params: { status: 'Draft', per_page: 50 } });
+        setDrafts(Array.isArray(data) ? data : (data?.data || []));
+      } catch (_) {}
+    };
+    loadDraftsCount();
+    const poll = setInterval(loadDraftsCount, 30000);
     return () => clearInterval(poll);
-  }, [user?.token, fetchDrafts]);
+  }, [user?.token]);
 
   const handlePatientSelect = (e) => {
     const pId = e.target.value;
