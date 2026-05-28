@@ -78,7 +78,7 @@ class AppointmentController extends Controller
             } elseif ($status === 'past') {
                 $query->where('date', '<', now()->toDateString());
             } else {
-                $query->where('status', $status);
+                $query->whereRaw('LOWER(status) = ?', [strtolower($status)]);
             }
         }
 

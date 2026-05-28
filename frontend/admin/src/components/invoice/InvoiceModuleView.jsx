@@ -935,12 +935,9 @@ function InvoiceModuleView() {
   }, [searchQuery]);
 
   const filteredAppointments = useMemo(() => {
-    // Only show non-cancelled and non-declined appointments
-    const activeAppts = appointments.filter(appt => 
-      appt.status !== 'cancelled' && 
-      appt.status !== 'declined' && 
-      appt.status !== 'Cancelled' && 
-      appt.status !== 'Declined'
+    // Only approved appointments can be invoiced
+    const activeAppts = appointments.filter(appt =>
+      appt.status?.toLowerCase() === 'approved'
     );
     
     if (!appointmentSearch) return activeAppts;
@@ -1072,7 +1069,7 @@ function InvoiceModuleView() {
       });
     };
 
-    fetch(`/api/appointments?pet_id=${pId}&per_page=100`, {
+    fetch(`/api/appointments?pet_id=${pId}&per_page=100&status=approved`, {
       headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
     })
       .then(res => res.json())
