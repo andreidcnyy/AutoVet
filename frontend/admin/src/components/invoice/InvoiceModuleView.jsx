@@ -705,6 +705,7 @@ function InvoiceModuleView() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [drafts, setDrafts] = useState([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
+  const [draftsSearch, setDraftsSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -2402,17 +2403,37 @@ function InvoiceModuleView() {
       ) : activeTab === "drafts" ? (
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Drafts</h2>
                 <p className="text-zinc-500 dark:text-zinc-400 mt-1">Invoices saved as draft — click Continue to resume editing.</p>
               </div>
-              <button
-                onClick={fetchDrafts}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all"
-              >
-                {draftsLoading ? "Refreshing..." : "Refresh"}
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="relative w-64">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search patient or owner..."
+                    value={draftsSearch}
+                    onChange={(e) => setDraftsSearch(e.target.value)}
+                    className="w-full pl-10 pr-8 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+                  />
+                  {draftsSearch && (
+                    <button
+                      onClick={() => setDraftsSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                    >
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={fetchDrafts}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-all shrink-0"
+                >
+                  {draftsLoading ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
             </div>
 
             {draftsLoading ? (
@@ -2422,9 +2443,17 @@ function InvoiceModuleView() {
                   <p className="text-sm font-bold text-zinc-500">Loading drafts...</p>
                 </div>
               </div>
-            ) : drafts.length > 0 ? (
+            ) : (() => {
+              const q = draftsSearch.toLowerCase();
+              const filtered = drafts.filter(inv =>
+                !q ||
+                (inv.pet?.name || "").toLowerCase().includes(q) ||
+                (inv.pet?.owner?.name || "").toLowerCase().includes(q) ||
+                (inv.invoice_number || "").toLowerCase().includes(q)
+              );
+              return filtered.length > 0 ? (
               <div className="grid gap-4">
-                {drafts.map((inv) => (
+                {filtered.map((inv) => (
                   <article
                     key={inv.id}
                     className="group relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-2xl bg-white dark:bg-dark-card border border-amber-200 dark:border-amber-800/40 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300"
@@ -2476,16 +2505,32 @@ function InvoiceModuleView() {
                 <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-4">
                   <FiFileText className="w-10 h-10 text-amber-300" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Drafts</h3>
-                <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">Invoices saved as Draft will appear here. You can resume editing them anytime.</p>
-                <button
-                  onClick={() => setActiveTab("new")}
-                  className="mt-6 px-6 py-3 rounded-2xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
-                >
-                  Create New Invoice
-                </button>
+                {draftsSearch ? (
+                  <>
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Results</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">No drafts match "{draftsSearch}".</p>
+                    <button
+                      onClick={() => setDraftsSearch("")}
+                      className="mt-6 px-6 py-3 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-all"
+                    >
+                      Clear Search
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No Drafts</h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">Invoices saved as Draft will appear here. You can resume editing them anytime.</p>
+                    <button
+                      onClick={() => setActiveTab("new")}
+                      className="mt-6 px-6 py-3 rounded-2xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+                    >
+                      Create New Invoice
+                    </button>
+                  </>
+                )}
               </div>
-            )}
+            );
+            })()}
           </div>
         </div>
       ) : activeTab === "history" ? (
