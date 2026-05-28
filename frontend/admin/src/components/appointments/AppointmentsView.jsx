@@ -97,6 +97,8 @@ function AppointmentsView() {
 
   const [activePanel, setActivePanel] = useState("booking");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [apptInvoice, setApptInvoice] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [declineModal, setDeclineModal] = useState({ open: false, reason: "", error: "", submitting: false });
@@ -350,7 +352,23 @@ function AppointmentsView() {
     } finally { setWalkInSubmitting(false); }
   };
 
-  const handleAppointmentClick = (e, appt) => { e.stopPropagation(); setSelectedAppointment(appt); setActivePanel("details"); setIsDrawerOpen(true); };
+  const handleAppointmentClick = (e, appt) => {
+    e.stopPropagation();
+    setSelectedAppointment(appt);
+    setApptInvoice(null);
+    setActivePanel("details");
+    setIsDrawerOpen(true);
+    if (appt.status?.toLowerCase() === 'completed') {
+      setInvoiceLoading(true);
+      api.get('/api/invoices', { params: { appointment_id: appt.id, per_page: 1 } })
+        .then(data => {
+          const list = Array.isArray(data) ? data : (data?.data || []);
+          setApptInvoice(list[0] || null);
+        })
+        .catch(() => setApptInvoice(null))
+        .finally(() => setInvoiceLoading(false));
+    }
+  };
   
   const handleStatusAction = async (action) => {
     if (action === 'decline') { setDeclineModal({ open: true, reason: "", error: "", submitting: false }); return; }
@@ -781,6 +799,25 @@ function AppointmentsView() {
                     </p>
                   </div>
                 )}
+                {selectedAppointment?.status?.toLowerCase() === 'completed' && (
+                  <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-4 space-y-2">
+                    <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">Tied Invoice</p>
+                    {invoiceLoading ? (
+                      <p className="text-xs text-blue-400 font-medium">Loading...</p>
+                    ) : apptInvoice ? (
+                      <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl px-4 py-3 border border-blue-200 dark:border-blue-700">
+                        <div>
+                          <p className="text-sm font-black text-blue-700 dark:text-blue-400">{apptInvoice.invoice_number}</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} · {apptInvoice.status}</p>
+                        </div>
+                        <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-400 italic">No invoice linked to this appointment.</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="pt-6 space-y-4">
                   {selectedAppointment?.status === 'pending' && (
                     <div className="grid grid-cols-2 gap-4">

@@ -108,6 +108,10 @@ class InvoiceController extends Controller
             $query->where('pet_id', $request->pet_id);
         }
 
+        if ($request->filled('appointment_id')) {
+            $query->where('appointment_id', $request->appointment_id);
+        }
+
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
