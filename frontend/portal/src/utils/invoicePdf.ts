@@ -2,189 +2,200 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getPetImageUrl, getActualPetImageUrl } from "./petImages";
 
-const pdfCurrency = (value: any) => "P " + (parseFloat(value) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pdfCurrency = (value: any) =>
+  "P " + (parseFloat(value) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/**
- * Converts an image URL to a base64 data URI.
- */
 async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
-    const res = await fetch(imageUrl);
-    const blob = await res.blob();
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => reject("Failed to convert image to base64");
-        reader.readAsDataURL(blob);
-    });
+  const res = await fetch(imageUrl);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject("Failed to convert image to base64");
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function generateInvoicePDF(invoiceData: any, clinic: any) {
+  if (!invoiceData) return;
+
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const patient = invoiceData.pet;
 
-  // 1. Light Theme Background (White)
-  doc.setFillColor(255, 255, 255); 
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, "F");
 
   let y = 15;
 
-  // 2. Header Section
+  // Logo
   if (clinic?.clinic_logo) {
     try {
-      doc.addImage(clinic.clinic_logo, 'PNG', 14, y, 16, 16, undefined, 'FAST');
+      const logoBase64 = clinic.clinic_logo.startsWith("data:")
+        ? clinic.clinic_logo
+        : await getBase64ImageFromUrl(clinic.clinic_logo).catch(() => null);
+      if (logoBase64) {
+        doc.addImage(logoBase64, "PNG", 14, y, 16, 16, undefined, "FAST");
+      }
     } catch (e) {
       console.error("PDF Logo error:", e);
     }
   }
 
-  // Clinic Info (Left Aligned)
-  doc.setTextColor(30, 41, 59); // zinc-800 (Dark)
+  // Clinic info
+  doc.setTextColor(30, 41, 59);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.text(clinic?.clinic_name || "AutoVet Clinic", 34, y + 8);
-  
+
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139); // zinc-500
+  doc.setTextColor(100, 116, 139);
   doc.text(clinic?.address || "", 34, y + 13);
   doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 34, y + 17);
 
-  // Invoice Title (Right Aligned)
-  doc.setTextColor(203, 213, 225); // Light zinc for the word "INVOICE"
+  // INVOICE / RECEIPT title
+  const isPaid =
+    invoiceData.status === "Paid" ||
+    (Number(invoiceData.amount_paid) >= Number(invoiceData.total) && Number(invoiceData.total) > 0);
+  const docTitle = isPaid ? "RECEIPT" : "INVOICE";
+
+  doc.setTextColor(203, 213, 225);
   doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", pageW - 14, y + 10, { align: "right" });
+  doc.text(docTitle, pageW - 14, y + 10, { align: "right" });
 
   doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
-  doc.text(`#${invoiceData.invoice_number || "INV-000"}`, pageW - 14, y + 18, { align: "right" });
+  doc.text(
+    `${isPaid ? "Receipt" : "Invoice"} #${invoiceData.invoice_number || "VB-2026-000"}`,
+    pageW - 14,
+    y + 18,
+    { align: "right" }
+  );
   doc.setTextColor(100, 116, 139);
-  doc.text(`Date: ${new Date(invoiceData.created_at).toLocaleDateString()}`, pageW - 14, y + 23, { align: "right" });
-  doc.text(`Due: Upon Receipt`, pageW - 14, y + 28, { align: "right" });
+  doc.text(
+    `Date: ${invoiceData.created_at ? new Date(invoiceData.created_at).toLocaleDateString() : new Date().toLocaleDateString()}`,
+    pageW - 14,
+    y + 23,
+    { align: "right" }
+  );
+  if (isPaid) {
+    doc.text(`Payment: ${invoiceData.payment_method || "Cash"}`, pageW - 14, y + 28, { align: "right" });
+  } else {
+    doc.text("Due: Upon Receipt", pageW - 14, y + 28, { align: "right" });
+  }
 
   y = 55;
 
-  // 3. Invoice Sections
-  // Bill To Box
+  // Bill To
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.text("BILL TO", 14, y);
-  
+
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(12);
-  doc.text(patient?.owner?.name || "Client", 14, y + 7);
-  
+  doc.text(patient?.owner?.name || "Guest Client", 14, y + 7);
+
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(patient?.owner?.address || "No address provided", 14, y + 13);
+  doc.text(patient?.owner?.address || "No address", 14, y + 13);
   doc.text(patient?.owner?.email || "", 14, y + 18);
   doc.text(patient?.owner?.phone || "", 14, y + 23);
 
-  // Patient Card (Subtle Gray Box)
+  // Patient card
   const patientCardX = 110;
-  doc.setFillColor(248, 250, 252); // zinc-50 (Very light gray)
-  doc.roundedRect(patientCardX - 4, y - 4, 90, 32, 4, 4, "F");
-  
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(patientCardX - 4, y - 4, 90, 36, 4, 4, "F");
+
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.text("PATIENT", patientCardX, y + 2);
 
   if (patient) {
-    const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species, patient.breed);
-    if (photoUrl && !photoUrl.endsWith(".svg")) { 
+    const speciesName = typeof patient.species === "string" ? patient.species : patient.species?.name || "";
+    const breedName = typeof patient.breed === "string" ? patient.breed : patient.breed?.name || "";
+    const photoUrl = patient.photo
+      ? getActualPetImageUrl(patient.photo)
+      : getPetImageUrl(speciesName, breedName);
+
+    if (photoUrl && !photoUrl.endsWith(".svg")) {
       try {
-          const base64 = await getBase64ImageFromUrl(photoUrl);
-          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 20, 20);
-      } catch(e){
+        const base64 = await getBase64ImageFromUrl(photoUrl).catch(() => null);
+        if (base64) {
+          doc.addImage(base64, "JPEG", patientCardX, y + 5, 12, 12);
+        }
+      } catch (e) {
         console.error("PDF Patient Image error:", e);
       }
     }
-  }
 
-  doc.setTextColor(30, 41, 59);
-  doc.setFontSize(10);
-  doc.text(patient?.name || "N/A", patientCardX + 23, y + 10);
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  const speciesName = typeof patient?.species === 'string' ? patient?.species : patient?.species?.name || "";
-  const breedName = typeof patient?.breed === 'string' ? patient?.breed : patient?.breed?.name || "";
-  doc.text(`${speciesName} • ${breedName}`, patientCardX + 23, y + 15);
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(10);
+    doc.text(patient.name || "N/A", patientCardX + 16, y + 10);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${speciesName} • ${breedName || "Mixed"}`, patientCardX + 16, y + 15);
+    doc.text(`Weight: ${invoiceData.weight_override || patient.weight || "N/A"} kg`, patientCardX + 16, y + 20);
+  }
 
   y += 45;
 
-  // 4. Line Items Table (Clean Light Design)
+  // Line items table
   autoTable(doc, {
     startY: y,
     theme: "striped",
-    styles: {
-      fillColor: [255, 255, 255],
-      textColor: [30, 41, 59],
-      cellPadding: 4,
-      fontSize: 9,
-    },
-    headStyles: {
-      fillColor: [37, 99, 235], // Blue header for branding
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 8,
-    },
+    styles: { fillColor: [255, 255, 255], textColor: [30, 41, 59], cellPadding: 4, fontSize: 9 },
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
     columnStyles: {
-      0: { halign: 'left' }, 
-      1: { halign: 'right', cellWidth: 20 },
-      2: { halign: 'right', cellWidth: 30 },
-      3: { halign: 'right', cellWidth: 35 },
+      0: { halign: "left" },
+      1: { halign: "right", cellWidth: 20 },
+      2: { halign: "right", cellWidth: 30 },
+      3: { halign: "right", cellWidth: 35 },
     },
     head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
-    body: (invoiceData.items || []).filter((item: any) => !item.is_hidden).map((item: any) => [
-      item.name.toUpperCase() + (item.notes ? "\n" + item.notes : ""),
-      item.qty,
-      (parseFloat(item.unit_price) || 0).toFixed(2),
-      (parseFloat(item.amount) || 0).toFixed(2)
-    ]),
+    body: (invoiceData.items || [])
+      .filter((item: any) => !item.is_hidden)
+      .map((item: any) => [
+        (item.name || "Item").toUpperCase() + (item.notes ? "\n" + item.notes : ""),
+        item.qty || 1,
+        Number(item.unit_price || 0).toFixed(2),
+        Number(item.amount || 0).toFixed(2),
+      ]),
   });
 
-  const finalY = (doc as any).lastAutoTable.finalY + 15;
-  y = finalY;
+  y = (doc as any).lastAutoTable.finalY + 15;
 
-  // 5. Totals Section
+  // Totals
   const totalsX = pageW - 14;
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
-  
-  const subtotal = parseFloat(invoiceData.subtotal);
-  const total = parseFloat(invoiceData.total);
-  const tax = total - (subtotal - (parseFloat(invoiceData.discount_value) || 0)); // Simple calc or just use data
 
-  // Subtotal
   doc.text("Subtotal", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
-  doc.text(pdfCurrency(subtotal), totalsX, y, { align: "right" });
-  
-  // Tax
+  doc.text(pdfCurrency(invoiceData.subtotal), totalsX, y, { align: "right" });
+
   y += 6;
-  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(`VAT (${invoiceData.tax_rate}%)`, totalsX - 40, y, { align: "right" });
+  doc.text("VAT (12%)", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
-  doc.text(pdfCurrency(parseFloat(invoiceData.total) - (parseFloat(invoiceData.subtotal) - (parseFloat(invoiceData.discount_value) || 0))), totalsX, y, { align: "right" });
+  doc.text(pdfCurrency(parseFloat(invoiceData.subtotal) * 0.12), totalsX, y, { align: "right" });
 
-  // Total Due
   y += 12;
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 41, 59);
   doc.text("Total Due", totalsX - 45, y, { align: "right" });
-  doc.setTextColor(37, 99, 235); // Blue-600 Highlight
+  doc.setTextColor(37, 99, 235);
   doc.text(pdfCurrency(invoiceData.total), totalsX, y, { align: "right" });
 
-  // 6. Notes Footer
-  if (invoiceData.notes_to_client) {
+  // Notes
+  if (invoiceData.notes_to_client || invoiceData.notes) {
     y += 20;
     doc.setTextColor(100, 116, 139);
     doc.setFontSize(8);
@@ -193,14 +204,14 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(30, 41, 59);
-    const splitNotes = doc.splitTextToSize(invoiceData.notes_to_client, 140);
+    const splitNotes = doc.splitTextToSize(invoiceData.notes_to_client || invoiceData.notes, 140);
     doc.text(splitNotes, 14, y + 6);
   }
 
-  // Final Footer
+  // Footer
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
   doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
 
-  doc.save(`Invoice_${invoiceData.invoice_number || "INV"}.pdf`);
+  doc.save(`${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
