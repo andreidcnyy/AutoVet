@@ -518,11 +518,12 @@ function AppointmentsView() {
 
                       <td className="px-8 py-6">
                         <span className={clsx("px-4 py-1.5 rounded-xl text-[10px] font-black uppercase border",
-                          ['approved','completed'].includes(appt.status?.toLowerCase()) ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          appt.status?.toLowerCase() === 'approved' ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                          appt.status?.toLowerCase() === 'completed' ? "bg-blue-100 text-blue-700 border-blue-200" :
                           appt.status?.toLowerCase() === 'no_show' ? "bg-zinc-100 text-zinc-600 border-zinc-300" :
                           ['declined','cancelled'].includes(appt.status?.toLowerCase()) ? "bg-rose-100 text-rose-700 border-rose-200" :
                           "bg-amber-100 text-amber-700 border-amber-200"
-                        )}>{appt.status?.toLowerCase() === 'no_show' ? 'No Show' : appt.status}</span>
+                        )}>{appt.status?.toLowerCase() === 'no_show' ? 'No Show' : appt.status?.toLowerCase() === 'completed' ? 'Completed' : appt.status}</span>
                         {appt.is_walk_in && <span className="ml-1.5 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-sky-100 text-sky-700 border border-sky-200">Walk-in</span>}
                       </td>
                       <td className="px-8 py-6"><p className="font-black italic">{appt.pet?.name}</p><p className="text-[10px] font-bold text-zinc-400 uppercase">Guardian: {appt.pet?.owner?.name}</p></td>
@@ -740,11 +741,12 @@ function AppointmentsView() {
                   <div><h4 className="text-3xl font-black italic leading-tight">{selectedAppointment?.title}</h4>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className={clsx("inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase shadow-lg",
-                        ['approved','completed'].includes(selectedAppointment?.status?.toLowerCase()) ? "bg-emerald-100 text-emerald-700" :
+                        selectedAppointment?.status?.toLowerCase() === 'approved' ? "bg-emerald-100 text-emerald-700" :
+                        selectedAppointment?.status?.toLowerCase() === 'completed' ? "bg-blue-100 text-blue-700" :
                         selectedAppointment?.status?.toLowerCase() === "no_show" ? "bg-zinc-100 text-zinc-600" :
                         ['declined','cancelled'].includes(selectedAppointment?.status?.toLowerCase()) ? "bg-rose-100 text-rose-700" :
                         "bg-amber-100 text-amber-700"
-                      )}>{selectedAppointment?.status?.toLowerCase() === 'no_show' ? 'No Show' : (selectedAppointment?.status || "pending")}</span>
+                      )}>{selectedAppointment?.status?.toLowerCase() === 'no_show' ? 'No Show' : selectedAppointment?.status?.toLowerCase() === 'completed' ? 'Completed' : (selectedAppointment?.status || "pending")}</span>
                       {selectedAppointment?.is_walk_in && <span className="inline-flex items-center rounded-full px-4 py-2 text-xs font-black uppercase bg-sky-100 text-sky-700">Walk-in</span>}
                     </div>
                   </div>
