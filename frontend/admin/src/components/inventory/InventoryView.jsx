@@ -157,7 +157,7 @@ function InventoryView() {
   const { user } = useAuth();
   const isAdmin = VET_AND_ADMIN.includes(user?.role);
 
-  const INVENTORY_CACHE_KEY = 'inventory_cache';
+  const INVENTORY_CACHE_KEY = 'inventory_cache_v2';
   const CACHE_TTL = 5 * 60 * 1000;
 
   const fetchInventory = useCallback(async (signal = null) => {
@@ -213,6 +213,13 @@ function InventoryView() {
       echo.leave('admin.inventory');
     };
   }, [user?.token, fetchInventory]);
+
+  // Keep viewedProduct in sync when inventoryRows refreshes (e.g. after background fetch)
+  useEffect(() => {
+    if (!viewedProduct) return;
+    const fresh = inventoryRows.find((r) => r.id === viewedProduct.id);
+    if (fresh) setViewedProduct(fresh);
+  }, [inventoryRows]);
 
   const handleSaveNewItem = (newItem) => {
     setInventoryRows((prev) => [newItem, ...prev]);
