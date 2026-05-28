@@ -58,19 +58,13 @@ export default function Appointments() {
   const CACHE_TTL = 5 * 60 * 1000;
 
   const sortAppointments = (data: any[]) => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    // Visit History: latest visit first, oldest last (pure descending by date+time).
     return [...data].sort((a, b) => {
       const normalizedA = a.date.includes('-') ? a.date.replace(/-/g, '/') : a.date;
       const normalizedB = b.date.includes('-') ? b.date.replace(/-/g, '/') : b.date;
-      const dateA = new Date(normalizedA); dateA.setHours(0, 0, 0, 0);
-      const dateB = new Date(normalizedB); dateB.setHours(0, 0, 0, 0);
-      const isA_Past = dateA < now;
-      const isB_Past = dateB < now;
-      if (isA_Past && !isB_Past) return 1;
-      if (!isA_Past && isB_Past) return -1;
-      if (!isA_Past && !isB_Past) return dateA.getTime() - dateB.getTime();
-      return dateB.getTime() - dateA.getTime();
+      const dateA = new Date(`${normalizedA} ${a.time || '00:00'}`).getTime();
+      const dateB = new Date(`${normalizedB} ${b.time || '00:00'}`).getTime();
+      return dateB - dateA;
     });
   };
 

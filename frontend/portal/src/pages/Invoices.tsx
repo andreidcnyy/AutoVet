@@ -38,7 +38,10 @@ export default function Invoices() {
   const fetchInvoices = useCallback(() => {
     return Promise.all([getInvoices(), getPets(), getSettings()])
       .then(([invRes, petsRes, settingsRes]) => {
-        const invData = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
+        const invDataRaw = Array.isArray(invRes.data) ? invRes.data : (invRes.data?.data || []);
+        const invData = [...invDataRaw].sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
         const petsData = Array.isArray(petsRes.data) ? petsRes.data : (petsRes.data?.data || []);
         setInvoices(invData);
         setPets(petsData);

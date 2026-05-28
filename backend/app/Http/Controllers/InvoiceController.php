@@ -384,6 +384,7 @@ class InvoiceController extends Controller
                  'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
                  'status' => $validated['status']
              ]);
+             broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
              return response()->json($invoice->load('pet', 'items'));
         }
 
