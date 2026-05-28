@@ -1874,58 +1874,38 @@ function InvoiceModuleView() {
                   <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Services &amp; Meds</h3>
 
 
-                  {/* Column labels */}
-                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 mb-1 px-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Item / Service</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-center">Qty</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Unit Price</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Amount</p>
-                    <p className="text-[10px]"> </p>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 items-center">
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
                         <input
                           type="text"
-                          placeholder="Type item name..."
+                          placeholder="Type item or service name..."
                           value={serviceInput}
                           onChange={handleServiceChange}
                           onFocus={() => { if (serviceInput) setIsServiceDropdownOpen(true); }}
                           onBlur={() => setTimeout(() => setIsServiceDropdownOpen(false), 150)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              manuallyAddItem();
-                            }
+                            if (e.key === "Enter") { e.preventDefault(); manuallyAddItem(); }
                             if (e.key === "Escape") setIsServiceDropdownOpen(false);
                           }}
                           disabled={status === "Finalized"}
-                          className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-10 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50"
+                          className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-3 pr-8 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50"
                         />
                         {serviceInput && (
-                          <button
-                            onClick={() => { setServiceInput(""); setSelectedService(null); setIsServiceDropdownOpen(false); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"
-                          >
-                            <FiX className="h-4 w-4" />
+                          <button onClick={() => { setServiceInput(""); setSelectedService(null); setIsServiceDropdownOpen(false); }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600">
+                            <FiX className="h-3.5 w-3.5" />
                           </button>
                         )}
                         {isServiceDropdownOpen && serviceInputSuggestions.length > 0 && (
                           <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-xl">
                             {serviceInputSuggestions.map((item) => (
-                              <button
-                                key={`${item.type}-${item.id}`}
-                                type="button"
+                              <button key={`${item.type}-${item.id}`} type="button"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => selectItemFromDropdown(item)}
-                                className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors border-b border-zinc-50 dark:border-dark-border last:border-b-0"
-                              >
+                                className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors border-b border-zinc-50 dark:border-dark-border last:border-b-0">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className={clsx(
-                                    "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase",
-                                    item.type === 'inventory' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                  )}>
+                                  <span className={clsx("shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase",
+                                    item.type === 'inventory' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")}>
                                     {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
                                   </span>
                                   <span className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{item.name}</span>
@@ -1935,17 +1915,13 @@ function InvoiceModuleView() {
                             ))}
                           </div>
                         )}
-                      </div>
-                      <button
-                        type="button"
-                        disabled={status === "Finalized"}
-                        onClick={() => { setItemModalSearch(""); setIsItemModalOpen(true); }}
-                        className="h-11 px-3 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all disabled:opacity-50"
-                        title="Browse services & items"
-                      >
-                        <FiSearch className="h-4 w-4" />
-                      </button>
                     </div>
+                    <button type="button" disabled={status === "Finalized"}
+                      onClick={() => { setItemModalSearch(""); setIsItemModalOpen(true); }}
+                      className="h-11 px-3 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all disabled:opacity-50 shrink-0"
+                      title="Browse services & items">
+                      <FiSearch className="h-4 w-4" />
+                    </button>
 
                     {isItemModalOpen && createPortal(
                       <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -2045,41 +2021,35 @@ function InvoiceModuleView() {
                       </div>,
                       document.body
                     )}
-                    <input
-                      type="number"
-                      min="1"
-                      value={qtyInput}
-                      onChange={(e) => setQtyInput(e.target.value)}
+                    <input type="number" min="1" placeholder="Qty"
+                      value={qtyInput} onChange={(e) => setQtyInput(e.target.value)}
                       disabled={status === "Finalized"}
-                      className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                      className="h-11 w-20 shrink-0 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 disabled:opacity-50"
                     />
-                    <div className="relative w-full">
+                    <div className="relative w-32 shrink-0">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">₱</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={priceInput}
-                        onChange={(e) => setPriceInput(e.target.value)}
+                      <input type="number" min="0" placeholder="Price"
+                        value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
                         disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
-                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-6 pr-2 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 disabled:opacity-50"
                       />
                     </div>
-                    <div className="h-11 flex items-center justify-end px-2 rounded-xl border border-zinc-100 dark:border-dark-border bg-zinc-100/60 dark:bg-dark-surface/50">
-                      <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 tabular-nums">
-                        {priceInput !== "" || qtyInput !== "" ? currency((Number(priceInput) || 0) * (Number(qtyInput) || 1)) : ""}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => manuallyAddItem()}
+                    <button type="button" onClick={() => manuallyAddItem()}
                       disabled={!serviceInput || !selectedService || status === "Finalized"}
-                      className="h-11 rounded-xl bg-zinc-900 px-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 whitespace-nowrap"
+                      className="h-11 shrink-0 rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 whitespace-nowrap"
                     >
                       Add
                     </button>
                   </div>
 
                   <div className="mt-2 rounded-xl border border-zinc-200 dark:border-dark-border overflow-hidden">
+                    <div className="grid grid-cols-[1fr_80px_130px_104px_auto] gap-2 px-3 py-2 bg-zinc-50 dark:bg-dark-surface border-b border-zinc-200 dark:border-dark-border">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Item / Service</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-center">Qty</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Unit Price</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 text-right">Amount</p>
+                      <p className="text-[10px]"> </p>
+                    </div>
                     {items.length > 0 ? items.map((item, idx) => (
                       <div
                         key={item.id}
