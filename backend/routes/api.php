@@ -103,6 +103,14 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // User profile
     // -----------------------------------------------------------------------
     Route::get('/user',     function (Request $request) { return $request->user(); });
+
+    // WebSocket private-channel authorization for the SPAs (Bearer-token auth).
+    // The frontends point Echo at /api/broadcasting/auth; this resolves it under
+    // the Sanctum guard instead of Laravel's default session-based route.
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return \Illuminate\Support\Facades\Broadcast::auth($request);
+    });
+
     Route::get('/vets',     [UserController::class, 'vets']);
     Route::get('/new-counts', [\App\Http\Controllers\NewCountsController::class, 'counts'])->middleware('role:' . implode(',', Roles::adminRoles()));
     Route::post('/change-password', [AuthController::class, 'changePassword']);
