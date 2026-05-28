@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import {
   FiCalendar,
@@ -20,6 +20,7 @@ import {
   FiX,
   FiAlertTriangle,
   FiCheck,
+  FiTrash2,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
@@ -694,6 +695,7 @@ function InvoiceModuleView() {
   const { user } = useAuth();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
   const location = useLocation();
+  const navigate = useNavigate();
   const deepLinkHandled = useRef(false);
 
   const [activeTab, setActiveTab] = useState("new"); // "new", "drafts", "history", or "reports"
@@ -827,6 +829,18 @@ function InvoiceModuleView() {
     } catch (_) {}
     finally { setDraftsLoading(false); }
   }, [user?.token]);
+
+  const handleDeleteDraft = useCallback(async (inv) => {
+    if (!window.confirm(`Delete draft ${inv.invoice_number || '#' + inv.id}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/api/invoices/${inv.id}`);
+      toast.success('Draft deleted. Action logged in System Audit Logs.');
+      setDrafts(prev => prev.filter(d => d.id !== inv.id));
+      navigate('/settings', { state: { tab: 'audit' } });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to delete draft.');
+    }
+  }, [user?.token, toast, navigate]);
 
   // Handle viewing full details (needed because index list is optimized/minimal)
   const handleViewInvoiceDetails = useCallback(async (inv, { resumeEditing = false } = {}) => {
@@ -1345,8 +1359,12 @@ function InvoiceModuleView() {
     }
 
     try {
-      const response = await fetch("/api/invoices", {
-        method: "POST",
+      const isUpdate = !!invoiceId;
+      const url = isUpdate ? `/api/invoices/${invoiceId}` : "/api/invoices";
+      const method = isUpdate ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
@@ -2441,6 +2459,13 @@ function InvoiceModuleView() {
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-all shadow-md shadow-amber-500/20"
                       >
                         <FiFileText className="w-4 h-4" /> Continue Editing
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDraft(inv)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 dark:text-rose-400 text-sm font-bold transition-all border border-rose-200 dark:border-rose-800/40"
+                        title="Delete draft"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </article>

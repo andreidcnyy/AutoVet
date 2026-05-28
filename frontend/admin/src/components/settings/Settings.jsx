@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag, FiStar } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
@@ -38,13 +39,18 @@ const tabs = [
 
 function Settings() {
   const { user } = useAuth();
-  
+  const location = useLocation();
+
   const filteredTabs = useMemo(() => {
     if (!user?.role) return [];
     return tabs.filter(tab => tab.allowedRoles.includes(user.role));
   }, [user]);
 
-  const [activeTab, setActiveTab] = useState(filteredTabs[0]?.id || "data");
+  const initialTab = location.state?.tab && filteredTabs.some(t => t.id === location.state.tab)
+    ? location.state.tab
+    : (filteredTabs[0]?.id || "data");
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">

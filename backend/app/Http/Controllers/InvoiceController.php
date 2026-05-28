@@ -517,9 +517,16 @@ class InvoiceController extends Controller
 
     /**
      * Remove the specified invoice.
+     * Only Draft invoices may be deleted; all others are locked by policy.
      */
     public function destroy(Invoice $invoice)
     {
-        return response()->json(['message' => 'Transactions cannot be deleted as per system policy.'], 403);
+        if ($invoice->status !== 'Draft') {
+            return response()->json(['message' => 'Only Draft invoices can be deleted.'], 403);
+        }
+
+        $invoice->delete();
+
+        return response()->json(['message' => 'Draft deleted successfully.']);
     }
 }
