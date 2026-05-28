@@ -78,6 +78,11 @@ $inventory->each(function ($item) use ($daysRemaining) {
         return response()->json(['batch_numbers' => $batches, 'lot_numbers' => $lots]);
     }
 
+    public function show(Inventory $inventory)
+    {
+        return response()->json($inventory->load('inventoryCategory'));
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
