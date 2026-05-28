@@ -2063,53 +2063,53 @@ function InvoiceModuleView() {
                     </button>
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    {items.length > 0 ? items.map((item) => (
-                      <article key={item.id} className="group relative rounded-2xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card p-4 shadow-sm hover:shadow-md transition-all">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={clsx(
-                                "text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider border",
-                                item.item_type === 'inventory' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                              )}>
-                                {item.item_type === 'inventory' ? 'Inventory Item' : 'Clinical Service'}
-                              </span>
-                              {item.sku && (
-                                <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest bg-zinc-50 dark:bg-dark-surface px-1.5 py-0.5 rounded border border-zinc-100 dark:border-dark-border">
-                                  {item.sku}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-base font-bold text-zinc-900 dark:text-zinc-50 truncate leading-tight">
-                              {item.name}
-                            </p>
-                            <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                              <span className="flex items-center gap-1">Qty: <b className="text-zinc-900 dark:text-zinc-200">{item.qty}</b></span>
-                              <span className="h-1 w-1 rounded-full bg-zinc-300" />
-                              <span>{currency(item.unitPrice)}/ea</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xl font-black text-zinc-900 dark:text-zinc-50">{currency(item.amount)}</p>
-                            {status === "Draft" && (
-                              <button
-                                onClick={() => removeItem(item.id)}
-                                className="mt-2 p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
-                              >
-                                <FiX className="w-4 h-4" />
-                              </button>
+                  <div className="mt-2 rounded-xl border border-zinc-200 dark:border-dark-border overflow-hidden">
+                    {items.length > 0 ? items.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={clsx(
+                          "group grid grid-cols-[1fr_64px_100px_80px_auto] gap-2 items-center px-3 py-2.5",
+                          idx !== items.length - 1 && "border-b border-zinc-100 dark:border-dark-border"
+                        )}
+                      >
+                        {/* Item name + badge */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className={clsx(
+                              "shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider",
+                              item.item_type === 'inventory' ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                            )}>
+                              {item.item_type === 'inventory' ? 'Item' : 'Srvc'}
+                            </span>
+                            {item.sku && (
+                              <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 truncate">{item.sku}</span>
                             )}
                           </div>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{item.name}</p>
+                          {item.warning && (
+                            <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                              <FiAlertTriangle className="h-3 w-3 shrink-0" />{item.warning}
+                            </div>
+                          )}
                         </div>
-
-                        {item.warning ? (
-                          <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700 animate-pulse">
-                            <FiAlertTriangle className="h-3 w-3 shrink-0" />
-                            {item.warning}
-                          </div>
-                        ) : null}
-                      </article>
+                        {/* Qty */}
+                        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 text-center tabular-nums">{item.qty}</p>
+                        {/* Unit Price */}
+                        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 text-right tabular-nums">{currency(item.unitPrice)}</p>
+                        {/* Amount */}
+                        <p className="text-sm font-black text-zinc-900 dark:text-zinc-50 text-right tabular-nums">{currency(item.amount)}</p>
+                        {/* Remove */}
+                        <div className="flex justify-center">
+                          {status === "Draft" ? (
+                            <button
+                              onClick={() => removeItem(item.id)}
+                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <FiX className="w-3.5 h-3.5" />
+                            </button>
+                          ) : <span className="w-7" />}
+                        </div>
+                      </div>
                     )) : (
                       <div className="py-12 flex flex-col items-center justify-center text-center opacity-50">
                         <LuPawPrint className="h-10 w-10 text-zinc-300 mb-2" />
