@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { getPet, getMedicalRecords, getInvoices } from '../api';
+import { useAuth } from '../context/AuthContext';
+import echo from '../utils/echo';
 import {
   FiX,
   FiCalendar,
@@ -44,6 +46,7 @@ interface PetProfileModalProps {
 
 export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileModalProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [pet, setPet] = useState<any>(null);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -52,18 +55,27 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   const [viewingRecord, setViewingRecord] = useState<any>(null);
 
   useEffect(() => {
-    if (isOpen && petId) {
-      const CACHE_KEY = `portal_pet_modal_${petId}_cache`;
-      const cached = readCache<any>(CACHE_KEY);
-      if (cached) {
-        setPet(cached.pet);
-        setMedicalRecords(cached.medicalRecords || []);
-        setInvoices(cached.invoices || []);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
+    if (!isOpen || !petId) {
+      setPet(null);
+      setMedicalRecords([]);
+      setInvoices([]);
+      setActiveTab('summary');
+      setViewingRecord(null);
+      return;
+    }
 
+    const CACHE_KEY = `portal_pet_modal_${petId}_cache`;
+    const cached = readCache<any>(CACHE_KEY);
+    if (cached) {
+      setPet(cached.pet);
+      setMedicalRecords(cached.medicalRecords || []);
+      setInvoices(cached.invoices || []);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    const fetchAll = () =>
       Promise.all([
         getPet(petId),
         getMedicalRecords({ pet_id: petId }),
@@ -73,24 +85,32 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
         const petData = petRes.data.data || petRes.data;
         const medicalData = Array.isArray(medicalRes.data) ? medicalRes.data : medicalRes.data.data || [];
         const invoiceData = Array.isArray(invoiceRes.data) ? invoiceRes.data : invoiceRes.data.data || [];
-
         setPet(petData);
         setMedicalRecords(medicalData);
         setInvoices(invoiceData);
         writeCache(CACHE_KEY, { pet: petData, medicalRecords: medicalData, invoices: invoiceData });
       })
-      .catch(err => {
-        console.error("PetProfileModal Fetch Error:", err);
-      })
+      .catch(err => console.error("PetProfileModal Fetch Error:", err))
       .finally(() => setLoading(false));
-    } else {
-      setPet(null);
-      setMedicalRecords([]);
-      setInvoices([]);
-      setActiveTab('summary');
-      setViewingRecord(null);
+
+    fetchAll();
+
+    const userId = user?.id;
+    if (userId) {
+      echo.private(`client.appointments.${userId}`)
+        .listen('.appointment.status.updated', fetchAll)
+        .listen('.appointment.created', fetchAll);
+      echo.private(`client.invoices.${userId}`)
+        .listen('.invoice.updated', fetchAll);
     }
-  }, [isOpen, petId]);
+
+    return () => {
+      if (userId) {
+        echo.leave(`client.appointments.${userId}`);
+        echo.leave(`client.invoices.${userId}`);
+      }
+    };
+  }, [isOpen, petId, user?.id]);
 
   if (!isOpen) return null;
 
@@ -336,7 +356,6 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                             <div className="min-w-0">
                               <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                               <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight truncate">Invoice Details</h4>
-                              <div className="text-xs text-zinc-500">{formatPortalDate(invoice.created_at)}</div>
                             </div>
                           </div>
                           <div className="text-right flex flex-col items-end gap-1 shrink-0">

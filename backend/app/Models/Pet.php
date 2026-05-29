@@ -178,14 +178,18 @@ class Pet extends Model
     // Accessor for next due
     public function getNextDueAttribute()
     {
+        $activeStatuses = ['pending', 'approved'];
+
         if ($this->relationLoaded('appointments')) {
             return $this->appointments
+                ->whereIn('status', $activeStatuses)
                 ->where('date', '>=', now()->toDateString())
                 ->sortBy('date')
                 ->first()?->date ?? 'None scheduled';
         }
 
         return $this->appointments()
+            ->whereIn('status', $activeStatuses)
             ->where('date', '>=', now()->toDateString())
             ->orderBy('date', 'asc')
             ->value('date') ?? 'None scheduled';
