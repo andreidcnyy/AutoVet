@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -30,7 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// No longer needed â€” doctor requirement is now a per-service flag from the DB
+// No longer needed — doctor requirement is now a per-service flag from the DB
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatTime = (t: string | undefined) => {
@@ -119,7 +119,7 @@ export default function BookAppointment() {
     return svc?.requires_doctor === true;
   });
 
-  // Generate standard clinic slots: 08:00â€“17:00 every 30 min
+  // Generate standard clinic slots: 08:00–17:00 every 30 min
   const generateSlots = (): string[] => {
     const slots: string[] = [];
     for (let h = 8; h < 17; h++) {
@@ -395,7 +395,7 @@ export default function BookAppointment() {
           ))}
         </div>
 
-        {/* Day cells â€” iOS-compact on mobile, spacious on desktop */}
+        {/* Day cells — iOS-compact on mobile, spacious on desktop */}
         <div className="grid grid-cols-7 sm:grid-cols-7 md:divide-x md:divide-y md:divide-zinc-100 dark:md:divide-dark-border/50">
           {calendarDays.map((entry, idx) => {
             const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -467,7 +467,7 @@ export default function BookAppointment() {
         </div>
       </div>
 
-      {/* Booking Modal â€” portal into body to escape overflow scroll container */}
+      {/* Booking Modal — portal into body to escape overflow scroll container */}
       {createPortal(<div className={clsx(
         "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
         isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -642,7 +642,7 @@ export default function BookAppointment() {
                     {errors.pet_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
                   </div>
 
-                  {/* Services â€” multi-select with inline prices */}
+                  {/* Services — multi-select with inline prices */}
                   <div>
                     <div className="flex items-baseline justify-between mb-2">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Service</label>
@@ -689,7 +689,7 @@ export default function BookAppointment() {
                     <input type="hidden" {...register("time")} />
                     {selectedDate ? (
                       isCheckingAvailability ? (
-                        <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availabilityâ€¦</div>
+                        <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availability…</div>
                       ) : (
                         <>
                           {/* 3-col grid on mobile, 4-col on desktop */}
@@ -735,7 +735,7 @@ export default function BookAppointment() {
                     {errors.time && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
                   </div>
 
-                  {/* Doctor â€” only for consultation/lab/surgery/imaging */}
+                  {/* Doctor — only for consultation/lab/surgery/imaging */}
                   {requiresDoctor && (
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Preferred Doctor</label>
@@ -761,7 +761,7 @@ export default function BookAppointment() {
                     type="submit"
                     className="w-full h-14 rounded-2xl bg-brand-500 text-white font-black uppercase tracking-widest text-sm shadow-lg shadow-brand-500/25 hover:bg-brand-600 transition-all active:scale-[0.98] disabled:opacity-50"
                   >
-                    {isSubmitting ? "Bookingâ€¦" : "Confirm Booking"}
+                    {isSubmitting ? "Booking…" : "Confirm Booking"}
                   </button>
                 </form>
               </>
@@ -787,7 +787,7 @@ export default function BookAppointment() {
                   <div>
                     <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Invoice</p>
                     <p className="text-xl font-black text-zinc-800 dark:text-zinc-100">{apptInvoice.invoice_number}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'â€”'}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
                   </div>
                   <button onClick={() => setIsInvoiceModalOpen(false)} className="p-2 rounded-xl bg-zinc-100 dark:bg-dark-surface text-zinc-400 hover:text-zinc-700 transition-all">
                     <FiXCircle className="w-5 h-5" />

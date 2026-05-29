@@ -155,7 +155,7 @@ export default function Invoices() {
         <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
         <div className="relative z-10">
           <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Invoices</p>
-          <h1 className="text-2xl font-black italic uppercase tracking-tight">Invoices ðŸ¾</h1>
+          <h1 className="text-2xl font-black italic uppercase tracking-tight">Invoices 🐾</h1>
           <p className="text-white/80 mt-1 text-sm font-medium">All your invoice history in one place.</p>
           <div className="mt-4">
             <div className="text-xs font-black text-white/70 uppercase tracking-widest mb-0.5">Total Paid</div>

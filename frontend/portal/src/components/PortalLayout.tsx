@@ -1,4 +1,4 @@
-﻿import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, getSystemAnnouncements } from '../api';
@@ -75,9 +75,9 @@ export default function PortalLayout({ children }: LayoutProps) {
         />
       )}
 
-      {/* Sidebar â€” fixed drawer on mobile, sticky panel on desktop */}
+      {/* Sidebar — fixed drawer on mobile, sticky panel on desktop */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-dark-card border-r border-zinc-200 dark:border-dark-border flex flex-col transition-all duration-300 overflow-hidden md:sticky md:top-0 md:h-screen md:z-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        {/* Close button â€” mobile only */}
+        {/* Close button — mobile only */}
         <button
           onClick={() => setIsMobileMenuOpen(false)}
           className="absolute right-3 top-3 z-10 p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden"
@@ -148,7 +148,7 @@ export default function PortalLayout({ children }: LayoutProps) {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="h-16 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-zinc-200 dark:border-dark-border sticky top-0 z-10 px-4 sm:px-8 flex items-center gap-3 transition-colors duration-300">
-          {/* Left: hamburger + logo + full clinic name â€” mobile only */}
+          {/* Left: hamburger + logo + full clinic name — mobile only */}
           <div className="flex items-center gap-2 flex-1 min-w-0 md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -164,7 +164,7 @@ export default function PortalLayout({ children }: LayoutProps) {
           {/* Desktop spacer */}
           <div className="hidden md:flex flex-1" />
 
-          {/* Right controls â€” always visible */}
+          {/* Right controls — always visible */}
           <div className="flex items-center gap-2 sm:gap-4">
             <DarkModeToggle />
             <div className="h-8 w-px bg-zinc-200 dark:bg-dark-border hidden sm:block mx-1"></div>

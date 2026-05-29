@@ -190,7 +190,7 @@ export default function Appointments() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Your visits</p>
-            <h1 className="text-2xl font-black italic uppercase tracking-tight">Visit History ðŸ¾</h1>
+            <h1 className="text-2xl font-black italic uppercase tracking-tight">Visit History 🐾</h1>
             <p className="text-white/80 mt-1 text-sm font-medium">Track all your appointments, past and upcoming.</p>
           </div>
           <Link to="/book" className="shrink-0">
@@ -274,7 +274,7 @@ export default function Appointments() {
         )}
       </div>
 
-      {/* Appointment Details Modal â€” portal into body to escape overflow scroll container */}
+      {/* Appointment Details Modal — portal into body to escape overflow scroll container */}
       {createPortal(
         <div className={clsx(
           "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
@@ -409,7 +409,7 @@ export default function Appointments() {
                         >
                           <div className="text-left">
                             <p className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">{apptInvoice.invoice_number}</p>
-                            <p className="text-[10px] text-zinc-500 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'â€”'}</p>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
                           </div>
                           <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                         </button>
@@ -462,7 +462,7 @@ export default function Appointments() {
                   <div>
                     <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Invoice</p>
                     <p className="text-xl font-black text-zinc-800 dark:text-zinc-100">{apptInvoice.invoice_number}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'â€”'}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
                   </div>
                   <button onClick={() => setIsInvoiceModalOpen(false)} className="p-2 rounded-xl bg-zinc-100 dark:bg-dark-surface text-zinc-400 hover:text-zinc-700 transition-all">
                     <FiXCircle className="w-5 h-5" />

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getNotifications, markNotificationAsRead } from '../api';
 import echo from '../utils/echo';
@@ -198,7 +198,7 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* Notification Detail Modal â€” rendered via portal into document.body to escape any CSS containment */}
+      {/* Notification Detail Modal — rendered via portal into document.body to escape any CSS containment */}
       {isModalOpen && selectedNotification && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
