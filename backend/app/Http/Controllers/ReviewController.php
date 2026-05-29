@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\EntityCreated;
 use App\Models\Invoice;
 use App\Models\Review;
 use Illuminate\Http\Request;
@@ -74,6 +75,8 @@ class ReviewController extends Controller
             'is_approved'    => false,
             'is_featured'    => false,
         ]);
+
+        broadcast(new EntityCreated('review', $review->id))->toOthers();
 
         return response()->json(['message' => 'Thank you for your feedback!', 'review' => $review], 201);
     }
