@@ -19,11 +19,11 @@ function BackupRestoreTab() {
 
   const controllerRef = React.useRef(null);
 
-  const fetchBackups = () => {
+  const fetchBackups = (showLoading = false) => {
     if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     fetch("/api/backups", { headers: authHeader, signal: controller.signal })
       .then((res) => {
         if (!res.ok) {
@@ -46,8 +46,8 @@ function BackupRestoreTab() {
   };
 
   useEffect(() => {
-    fetchBackups();
-    const poll = setInterval(fetchBackups, 10000);
+    fetchBackups(true);
+    const poll = setInterval(() => fetchBackups(false), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchBackups(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -71,7 +71,12 @@ function BackupRestoreTab() {
       .then((data) => {
         toast.success(data.message);
         if (data.backup) {
-          setBackups((prev) => [data.backup, ...prev]);
+          // Prepend instantly; guard against a background poll having already added it
+          setBackups((prev) =>
+            prev.some((b) => b.filename === data.backup.filename)
+              ? prev
+              : [data.backup, ...prev]
+          );
         } else {
           fetchBackups();
         }

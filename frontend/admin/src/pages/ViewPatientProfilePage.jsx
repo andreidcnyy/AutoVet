@@ -42,7 +42,6 @@ function ViewPatientProfilePage() {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      clearInterval(poll);
     };
   }, [id, user?.token]);
 

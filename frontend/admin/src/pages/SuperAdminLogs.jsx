@@ -29,7 +29,7 @@ export default function SuperAdminManagement() {
     fetchAdmins();
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAdmins(); };
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+    return () => { document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   const openModal = () => {
