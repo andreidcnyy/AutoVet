@@ -276,7 +276,6 @@ function PetProfile() {
                       <div>
                          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight">Invoice Details</h4>
-                         <div className="text-xs text-zinc-500">{invoiceDate(invoice).toLocaleDateString()}</div>
                       </div>
                    </div>
                    <div className="flex flex-col gap-1 sm:items-end sm:text-right">
