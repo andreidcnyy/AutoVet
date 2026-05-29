@@ -459,7 +459,7 @@ export default function SuperAdminDashboard() {
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
 
             {/* Fixed header */}
-            <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative shrink-0 rounded-t-3xl overflow-hidden">
+            <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative shrink-0 rounded-t-3xl">
                <div className="absolute -bottom-8 left-8">
                   <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
