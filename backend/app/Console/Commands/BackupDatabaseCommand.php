@@ -12,15 +12,33 @@ class BackupDatabaseCommand extends Command
 
     private const TABLES = [
         'clinics',
-        'users',
-        'patients',
-        'patient_owners',
+        // Accounts (the old `users` table was dropped — auth lives in these two)
+        'admins',
+        'portal_users',
+        // Clients & patients (models default to `owners` / `pets`, not the
+        // legacy `patient_owners` / `patients` tables)
+        'owners',
+        'species',
+        'breeds',
+        'pets',
+        // Scheduling & visits
+        'vet_schedules',
         'appointments',
+        'appointment_services',
+        // Services & billing
         'services',
+        'service_prices',
         'invoices',
         'invoice_items',
         'medical_records',
+        // Inventory
+        'inventories',
+        'inventory_transactions',
+        // Communications & misc
         'notification_templates',
+        'client_notifications',
+        'reviews',
+        'settings',
     ];
 
     public function handle()
