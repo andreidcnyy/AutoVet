@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\EntityCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Admin;
@@ -137,12 +138,18 @@ class ProfileController extends Controller
 
         $table = ($user instanceof Admin) ? 'admins' : 'portal_users';
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
+        $rules = [
+            'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:' . $table . ',email,' . $user->id,
-            // ~2MB base64 cap; must be a valid image data URI
-            'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i']
-        ]);
+            'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i'],
+        ];
+
+        // Allow role changes for Admin users only (not portal users)
+        if ($user instanceof Admin) {
+            $rules['role'] = 'sometimes|string|in:clinic_admin,veterinarian,staff';
+        }
+
+        $validated = $request->validate($rules);
 
         $user->update($validated);
 
@@ -158,6 +165,9 @@ class ProfileController extends Controller
             }
             Cache::forget("portal_overview_{$user->id}");
         }
+
+        // Broadcast so AuditLogTab and UserManagementTab refresh in real-time
+        broadcast(new EntityCreated('admin_profile', $user->id))->toOthers();
 
         // Return the full user object for frontend sync
         return response()->json([

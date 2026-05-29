@@ -107,8 +107,9 @@ function ProfileView({ user, setUser }) {
                     toast.success("Profile saved successfully!");
                     if (response.user && setUser) {
                         setUser(response.user);
-                        // Also update localStorage as AuthContext does on login
                         localStorage.setItem("user", JSON.stringify(response.user));
+                        // Notify UserManagementTab and other listeners of the change
+                        window.dispatchEvent(new CustomEvent("users-updated"));
                     }
                 } else if (!res.ok && response.errors) {
                     toast.error(Object.values(response.errors)[0][0]);
