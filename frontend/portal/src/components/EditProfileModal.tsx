@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getProfile, updateProfile, forgotPassword, deleteAccount, changePassword } from '../api';
+import { getProfile, updateProfile, deleteAccount, changePassword } from '../api';
 import PhoneInput from './PhoneInput';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -116,9 +116,6 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
     }
   };
 
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetMessage, setResetMessage] = useState<string | null>(null);
-
   // Set / change password (Google accounts start with no password)
   const [hasPassword, setHasPassword] = useState(true);
   const [pwCurrent, setPwCurrent] = useState('');
@@ -157,25 +154,6 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
     }
   };
 
-  const handleResetPassword = async () => {
-    const email = watch("email");
-    if (!email) {
-      setError("Email is required for password reset.");
-      return;
-    }
-    
-    setIsResetting(true);
-    setResetMessage(null);
-    setError(null);
-    try {
-      await forgotPassword(email);
-      setResetMessage("A password reset link has been sent to your email.");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to send reset link.");
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   const onProfileSubmit = async (data: ProfileForm) => {
     setError(null);
@@ -338,13 +316,6 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                   </div>
                 </div>
 
-                {resetMessage && (
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 text-sm font-bold animate-in slide-in-from-top-2">
-                    <FiCheckCircle className="w-5 h-5 shrink-0" />
-                    {resetMessage}
-                  </div>
-                )}
-
                 {/* Set / change password — Google accounts start with no password */}
                 <div className="rounded-2xl border-2 border-zinc-100 dark:border-dark-border p-4 space-y-3">
                   <p className="text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300">
@@ -400,16 +371,6 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                     {isSavingPw ? 'Saving...' : (hasPassword ? 'Update Password' : 'Set Password')}
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleResetPassword}
-                  disabled={isResetting}
-                  className="flex items-center gap-3 px-6 py-3 rounded-xl border-2 border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-50 dark:hover:bg-dark-surface transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <FiMail className="w-4 h-4" />
-                  {isResetting ? "Sending Request..." : "Send Password Reset Email"}
-                </button>
               </div>
 
               <div className="pt-4">
