@@ -266,7 +266,7 @@ function PetProfile() {
           <div className="space-y-4">
             {(() => {
               const visibleInvoices = invoices
-                .filter(inv => inv.status !== 'Draft')
+                .filter(inv => inv.status?.toLowerCase() !== 'draft')
                 .sort((a, b) => invoiceDate(b).getTime() - invoiceDate(a).getTime());
               return visibleInvoices.length > 0 ? (
               visibleInvoices.map(invoice => (

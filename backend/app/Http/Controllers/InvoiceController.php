@@ -74,6 +74,9 @@ class InvoiceController extends Controller
         });
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+            // Portal clients must never see Draft invoices (case-insensitive guard).
+            $query->whereRaw('LOWER(status) != ?', ['draft']);
+
             $ownerId = $this->getPortalOwnerId();
             if (!$ownerId) {
                 $query->whereRaw('0 = 1');

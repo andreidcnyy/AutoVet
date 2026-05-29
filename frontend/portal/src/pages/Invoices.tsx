@@ -121,7 +121,7 @@ export default function Invoices() {
   };
 
   const filteredInvoices = invoices.filter(inv => {
-    if (inv.status === 'Draft') return false;
+    if (inv.status?.toLowerCase() === 'draft') return false;
     const matchesPet = selectedPetId === "all" || String(inv.pet_id) === selectedPetId;
     const invoiceNumber = inv.invoice_number?.toLowerCase() || "";
     const petName = inv.pet?.name?.toLowerCase() || "unknown";
