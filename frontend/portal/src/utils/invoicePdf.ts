@@ -74,8 +74,8 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
     y + 18,
     { align: "right" }
   );
-  // Prefer the appointment (service) date over the row creation date.
-  const rawDate = invoiceData.appointment?.date || invoiceData.created_at;
+  // Prefer the stored service (booked appointment) date over the row creation date.
+  const rawDate = invoiceData.service_date || invoiceData.appointment?.date || invoiceData.created_at;
   const docDate = rawDate
     ? new Date(typeof rawDate === 'string' && rawDate.includes('-') && !rawDate.includes('T') ? rawDate.replace(/-/g, '/') : rawDate)
     : new Date();

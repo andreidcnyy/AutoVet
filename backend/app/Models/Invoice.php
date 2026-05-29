@@ -13,7 +13,7 @@ class Invoice extends Model
     use HasSyncFields, HasAuditTrail, HasClinic;
 
     protected $fillable = [
-        'invoice_number', 'pet_id', 'appointment_id', 'report_type', 'status',
+        'invoice_number', 'pet_id', 'appointment_id', 'service_date', 'report_type', 'status',
         'subtotal', 'discount_type', 'discount_value', 'tax_rate', 'total',
         'amount_paid', 'payment_method', 'notes_to_client', 'clinic_id',
     ];

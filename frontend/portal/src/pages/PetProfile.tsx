@@ -23,7 +23,7 @@ import echo from '../utils/echo';
 
 // Use the appointment (service) date when present, else the row creation date.
 const invoiceDate = (inv: any): Date => {
-  const raw = inv?.appointment?.date || inv?.created_at;
+  const raw = inv?.service_date || inv?.appointment?.date || inv?.created_at;
   if (!raw) return new Date(0);
   const normalized = typeof raw === 'string' && raw.includes('-') && !raw.includes('T')
     ? raw.replace(/-/g, '/')

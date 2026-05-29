@@ -32,13 +32,28 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Resolve the booked appointment date for an invoice, bypassing clinic/soft-delete
+     * scopes so the stored service_date is always correct regardless of who saves it.
+     */
+    private function resolveServiceDate($appointmentId): ?string
+    {
+        if (!$appointmentId) return null;
+        $appt = \App\Models\Appointment::withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+            ->withTrashed()
+            ->find($appointmentId);
+        return ($appt && $appt->date)
+            ? \Illuminate\Support\Carbon::parse($appt->date)->format('Y-m-d')
+            : null;
+    }
+
+    /**
      * Display a listing of invoices.
      */
     public function index(Request $request)
     {
         $user = auth()->user();
         $query = Invoice::select([
-            'id', 'invoice_number', 'pet_id', 'appointment_id', 'status', 'report_type', 'total',
+            'id', 'invoice_number', 'pet_id', 'appointment_id', 'service_date', 'status', 'report_type', 'total',
             'amount_paid', 'discount_value', 'created_at', 'updated_at'
         ])
         ->with([
@@ -275,6 +290,7 @@ class InvoiceController extends Controller
                 'invoice_number' => $invoiceNumber,
                 'pet_id' => $validated['pet_id'] ?? null,
                 'appointment_id' => $validated['appointment_id'] ?? null,
+                'service_date' => $this->resolveServiceDate($validated['appointment_id'] ?? null),
                 'report_type' => $validated['report_type'] ?? 'transaction',
                 'status' => $finalStatus,
                 'subtotal' => $calculatedSubtotal,
@@ -394,10 +410,12 @@ class InvoiceController extends Controller
 
         if ($invoice->status === 'Finalized' && in_array($validated['status'], ['Draft', 'Finalized'])) {
              // If already finalized, only allow payment updates
+             $apptId = $validated['appointment_id'] ?? $invoice->appointment_id;
              $invoice->update([
                  'amount_paid' => $validated['amount_paid'],
                  'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
-                 'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
+                 'appointment_id' => $apptId,
+                 'service_date' => $invoice->service_date ?? $this->resolveServiceDate($apptId),
                  'status' => $validated['status']
              ]);
              broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
@@ -486,9 +504,11 @@ class InvoiceController extends Controller
                 }
             }
 
+            $updateApptId = $validated['appointment_id'] ?? $invoice->appointment_id;
             $invoice->update([
                 'status' => $status,
-                'appointment_id' => $validated['appointment_id'] ?? $invoice->appointment_id,
+                'appointment_id' => $updateApptId,
+                'service_date' => $invoice->service_date ?? $this->resolveServiceDate($updateApptId),
                 'subtotal' => $calculatedSubtotal,
                 'discount_type' => $validated['discount_type'],
                 'discount_value' => $validated['discount_value'],

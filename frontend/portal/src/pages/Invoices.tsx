@@ -25,7 +25,7 @@ import { PawPrint } from './Landing';
 // The invoice's meaningful date is the appointment (service) date, not when the
 // invoice row was created. Fall back to created_at for invoices with no appointment.
 const invoiceDate = (inv: any): Date => {
-  const raw = inv?.appointment?.date || inv?.created_at;
+  const raw = inv?.service_date || inv?.appointment?.date || inv?.created_at;
   if (!raw) return new Date(0);
   const normalized = typeof raw === 'string' && raw.includes('-') && !raw.includes('T')
     ? raw.replace(/-/g, '/')
