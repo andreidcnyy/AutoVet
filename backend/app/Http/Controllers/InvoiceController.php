@@ -48,7 +48,9 @@ class InvoiceController extends Controller
             'pet.species:id,name',
             'pet.breed:id,name',
             'pet.owner:id,name',
-            'appointment:id,date'
+            // withTrashed so the service date still resolves even if the
+            // appointment was archived/soft-deleted after invoicing.
+            'appointment' => fn ($q) => $q->withTrashed()->select('id', 'date'),
         ])
         ->withCount('items');
 
@@ -345,7 +347,10 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
-        return response()->json($invoice->load('pet.owner', 'items', 'appointment'));
+        return response()->json($invoice->load([
+            'pet.owner', 'items',
+            'appointment' => fn ($q) => $q->withTrashed(),
+        ]));
     }
 
     /**
