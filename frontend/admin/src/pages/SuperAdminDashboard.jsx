@@ -454,7 +454,8 @@ export default function SuperAdminDashboard() {
 
       {/* Clinic Details Modal */}
       {selectedClinic && !isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-autovet-navy/40 p-4 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-autovet-navy/40 backdrop-blur-sm">
+          <div className="flex min-h-full items-center justify-center p-4">
           <div className="w-full max-w-3xl rounded-3xl bg-white overflow-hidden shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200 my-8">
              <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative">
                 <div className="absolute -bottom-8 left-8">
@@ -603,6 +604,7 @@ export default function SuperAdminDashboard() {
                   <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-4 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
                 </div>
              </div>
+          </div>
           </div>
         </div>
       )}
