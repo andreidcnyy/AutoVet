@@ -48,9 +48,13 @@ class InvoiceController extends Controller
             'pet.species:id,name',
             'pet.breed:id,name',
             'pet.owner:id,name',
-            // withTrashed so the service date still resolves even if the
-            // appointment was archived/soft-deleted after invoicing.
-            'appointment' => fn ($q) => $q->withTrashed()->select('id', 'date'),
+            // Bypass ClinicScope (portal owners have no/mismatched clinic_id, which
+            // would otherwise force this relation to null) and withTrashed so the
+            // service date always resolves. Safe: invoices are already owner-scoped.
+            'appointment' => fn ($q) => $q
+                ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+                ->withTrashed()
+                ->select('id', 'date'),
         ])
         ->withCount('items');
 
@@ -349,7 +353,9 @@ class InvoiceController extends Controller
     {
         return response()->json($invoice->load([
             'pet.owner', 'items',
-            'appointment' => fn ($q) => $q->withTrashed(),
+            'appointment' => fn ($q) => $q
+                ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+                ->withTrashed(),
         ]));
     }
 
