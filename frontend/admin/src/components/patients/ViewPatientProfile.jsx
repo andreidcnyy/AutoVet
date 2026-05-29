@@ -1507,7 +1507,6 @@ function InvoiceTab({ invoices }) {
           <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface">
             <tr className="text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               <th className="px-4 py-3">Invoice #</th>
-              <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Amount Paid</th>
             </tr>
@@ -1521,9 +1520,6 @@ function InvoiceTab({ invoices }) {
               >
                 <td className="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {inv.invoice_number || `INV-${inv.id}`}
-                </td>
-                <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-300">
-                  {formatDate(inv.created_at)}
                 </td>
                 <td className="px-4 py-3">
                   <span className={clsx(
@@ -1574,7 +1570,6 @@ function InvoiceTab({ invoices }) {
           onClose={() => setSelectedInv(null)}
           data={[
             { label: "Invoice Number", value: selectedInv.invoice_number || `INV-${selectedInv.id}` },
-            { label: "Date", value: formatDate(selectedInv.created_at) },
             { label: "Status", value: selectedInv.status },
             { label: "Amount Paid", value: `₱${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
             { label: "Notes", value: selectedInv.notes || "None" }
