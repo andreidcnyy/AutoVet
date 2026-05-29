@@ -489,9 +489,9 @@ function AppointmentsView() {
                       <li key={a.id} className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         <span>{a.pet?.name}</span>
-                        <span className="text-amber-500 font-normal">â€¢</span>
+                        <span className="text-amber-500 font-normal">•</span>
                         <span>{formatDateLocal(a.date, "MMM d")} at {formatTime(a.time)}</span>
-                        <span className="text-amber-500 font-normal">â€¢</span>
+                        <span className="text-amber-500 font-normal">•</span>
                         <span className="text-amber-500">Requested {format(new Date(a.created_at), "MMM d, h:mm a")}</span>
                       </li>
                     ))}
@@ -630,7 +630,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Select Existing Owner <span className="text-rose-500">*</span></label>
                           <select value={selectedOwnerId} onChange={e => setSelectedOwnerId(e.target.value)} className={clsx(qInputBase, walkInErrors.ownerId && "border-rose-400")}>
-                            <option value="">â€” Select Owner â€”</option>
+                            <option value="">— Select Owner —</option>
                             {owners.map(o => <option key={o.id} value={o.id}>{o.name} ({o.phone})</option>)}
                           </select>
                           {walkInErrors.ownerId && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerId}</p>}
@@ -650,7 +650,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Species <span className="text-rose-500">*</span></label>
                           <select value={walkInPet.species_id} onChange={e => setWalkInPet(p => ({...p, species_id: e.target.value, breed_id: ""}))} className={clsx(qInputBase, walkInErrors.petSpecies && "border-rose-400")}>
-                            <option value="">â€” Select â€”</option>
+                            <option value="">— Select —</option>
                             {species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
                           {walkInErrors.petSpecies && <p className="text-xs text-rose-500 mt-1">{walkInErrors.petSpecies}</p>}
@@ -658,7 +658,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Breed</label>
                           <select value={walkInPet.breed_id} onChange={e => setWalkInPet(p => ({...p, breed_id: e.target.value}))} className={qInputBase}>
-                            <option value="">â€” Select â€”</option>
+                            <option value="">— Select —</option>
                             {breeds.filter(b => !walkInPet.species_id || String(b.species_id) === String(walkInPet.species_id)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                           </select>
                         </div>
@@ -773,14 +773,14 @@ function AppointmentsView() {
                 <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8">
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{formatTime(selectedAppointment?.time)}</p></div></div>
-                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name}</p><p className="text-xs font-bold text-zinc-400 mt-0.5">Owner: {selectedAppointment?.pet?.owner?.name || 'â€”'}</p></div></div>
+                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name}</p><p className="text-xs font-bold text-zinc-400 mt-0.5">Owner: {selectedAppointment?.pet?.owner?.name || '—'}</p></div></div>
                   {selectedAppointment?.created_at && (
                     <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-amber-400" /><div><p className="text-[10px] font-black text-zinc-400">REQUESTED ON</p><p className="text-sm font-black text-amber-600 dark:text-amber-400">{format(new Date(selectedAppointment.created_at), "MMMM d, yyyy 'at' h:mm a")}</p></div></div>
                   )}
                   <div className="flex items-center gap-5"><FiList className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">SERVICES</p>
                     {selectedAppointment?.services?.length > 0
                       ? <div className="flex flex-wrap gap-1.5 mt-1">{selectedAppointment.services.map(s => <span key={s.id} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">{s.name}</span>)}</div>
-                      : <p className="text-lg font-black">{selectedAppointment?.service?.name || 'â€”'}</p>
+                      : <p className="text-lg font-black">{selectedAppointment?.service?.name || '—'}</p>
                     }
                   </div></div>
                 </div>

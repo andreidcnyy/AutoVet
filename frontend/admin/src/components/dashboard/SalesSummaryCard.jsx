@@ -9,14 +9,14 @@ const peso = (n) =>
   "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return "â€”";
+  if (!dateStr) return "—";
   try {
     let d = new Date(dateStr);
     if (typeof dateStr === "string" && !dateStr.includes("T") && !dateStr.includes("Z") && !dateStr.includes("+")) {
       d = new Date(dateStr.replace(" ", "T") + "Z");
     }
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  } catch { return "â€”"; }
+  } catch { return "—"; }
 };
 
 
@@ -81,7 +81,7 @@ export default function SalesSummaryCard() {
     return (
       <div className="card-shell flex items-center justify-center gap-3 py-14 text-zinc-400">
         <FiRefreshCw className="h-5 w-5 animate-spin" />
-        <span className="text-sm font-semibold">Loading sales summaryâ€¦</span>
+        <span className="text-sm font-semibold">Loading sales summary…</span>
       </div>
     );
   }
@@ -222,10 +222,10 @@ export default function SalesSummaryCard() {
                       {formatDate(inv.created_at)}
                     </td>
                     <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
-                      {inv.pet?.name || "â€”"}
+                      {inv.pet?.name || "—"}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                      {inv.pet?.owner?.name || "â€”"}
+                      {inv.pet?.owner?.name || "—"}
                     </td>
                     <td className="px-4 py-3 text-right font-black tabular-nums text-zinc-900 dark:text-zinc-50">
                       {peso(inv.total)}

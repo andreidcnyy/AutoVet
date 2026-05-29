@@ -1,4 +1,4 @@
-﻿import clsx from "clsx";
+import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave, FiEye, FiEyeOff } from "react-icons/fi";
@@ -145,7 +145,7 @@ export default function UserManagementTab() {
         throw new Error(data.message || "Failed to save user");
       }
 
-      // Optimistic update â€” reflect change immediately without waiting for refetch
+      // Optimistic update — reflect change immediately without waiting for refetch
       if (isEditing) {
         setUsers((prev) => prev.map((u) => (u.id === data.id ? data : u)));
       } else {

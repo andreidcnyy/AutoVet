@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FiHome, FiPlus, FiActivity, FiCheckCircle, FiAlertCircle,
   FiMail, FiPhone, FiMapPin, FiEdit2, FiUpload, FiImage,
@@ -402,7 +402,7 @@ export default function SuperAdminDashboard() {
                       {resolveLogoUrl(clinic.logo) ? (
                         <img src={resolveLogoUrl(clinic.logo)} className="h-12 w-12 rounded-2xl object-cover shadow-sm bg-white" alt="logo" />
                       ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-lg dark:bg-zinc-800 group-hover:scale-110 transition-transform text-2xl">ðŸ¥</div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-lg dark:bg-zinc-800 group-hover:scale-110 transition-transform text-2xl">🏥</div>
                       )}
                       <div>
                         <p className="font-black text-autovet-navy dark:text-zinc-100 uppercase tracking-tight text-xs">{clinic.clinic_name}</p>
@@ -459,7 +459,7 @@ export default function SuperAdminDashboard() {
              <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative">
                 <div className="absolute -bottom-8 left-8">
                    <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
-                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">ðŸ¥</span>}
+                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
                    </div>
                 </div>
                 <div className="absolute top-6 right-6 flex gap-2">

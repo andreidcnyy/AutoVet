@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FiDatabase, FiDownload, FiRefreshCw, FiTrash2, FiCheckCircle, FiFileText } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -167,7 +167,7 @@ function BackupRestoreTab() {
           <div className="text-sm text-sky-800 dark:text-sky-200">
             <p className="font-bold">CSV Format</p>
             <p className="mt-1 leading-relaxed opacity-80">
-              Each backup is a .tar.gz archive containing one CSV spreadsheet per data table â€” easy to open in Excel or Google Sheets. Download a backup to keep a safe copy of your clinic data.
+              Each backup is a .tar.gz archive containing one CSV spreadsheet per data table — easy to open in Excel or Google Sheets. Download a backup to keep a safe copy of your clinic data.
             </p>
           </div>
         </div>

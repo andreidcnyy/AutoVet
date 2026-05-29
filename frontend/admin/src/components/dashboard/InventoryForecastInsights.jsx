@@ -126,7 +126,7 @@ export default function InventoryForecastInsights() {
           </div>
           <div>
             <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">AI Forecast Update</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">AutoVet AI Model (Linear Regression) â€¢ {forecasts.length > 0 ? `Updated ${forecasts[0].last_forecasted}` : 'Datasets synchronized'}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">AutoVet AI Model (Linear Regression) • {forecasts.length > 0 ? `Updated ${forecasts[0].last_forecasted}` : 'Datasets synchronized'}</p>
           </div>
         </div>
         <button 

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FiStar, FiCheck, FiTrash2, FiRefreshCw, FiEyeOff, FiEye, FiGlobe, FiX, FiCalendar, FiFileText } from "react-icons/fi";
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
@@ -376,7 +376,7 @@ export default function ReviewsTab() {
 
           {pending.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-dark-border p-8 text-center">
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">No reviews waiting â€” all caught up.</p>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">No reviews waiting — all caught up.</p>
             </div>
           ) : (
             <div className="space-y-3">

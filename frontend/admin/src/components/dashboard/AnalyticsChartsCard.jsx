@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -115,7 +115,7 @@ export default function AnalyticsChartsCard() {
     return (
       <div className="card-shell col-span-full flex items-center justify-center gap-3 py-16 text-zinc-400">
         <FiRefreshCw className="h-5 w-5 animate-spin" />
-        <span className="text-sm font-semibold">Loading analyticsâ€¦</span>
+        <span className="text-sm font-semibold">Loading analytics…</span>
       </div>
     );
   }

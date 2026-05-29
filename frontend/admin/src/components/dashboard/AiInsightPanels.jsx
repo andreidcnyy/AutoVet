@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LuSparkles } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 
@@ -132,23 +132,23 @@ export default function AiInsightPanels() {
           <p className="text-xs text-zinc-400 py-6 text-center">Inventory analysis unavailable.</p>
         ) : (
           <>
-            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 mb-3">{inventoryData.item_name ?? 'â€”'}</p>
+            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 mb-3">{inventoryData.item_name ?? '—'}</p>
             
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="rounded-lg bg-zinc-50 dark:bg-dark-surface p-2.5">
                 <p className="text-[10px] text-zinc-400 mb-1">Current stock</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.current_stock ?? 'â€”'}</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.current_stock ?? '—'}</p>
               </div>
               <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-2.5">
                 <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mb-1">Recommended restock</p>
                 <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
-                  {inventoryData.recommended_stock ?? 'â€”'} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">units</span>
+                  {inventoryData.recommended_stock ?? '—'} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">units</span>
                 </p>
               </div>
             </div>
 
             <span className="inline-block rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-              {inventoryData.growth_label ?? 'â€”'}
+              {inventoryData.growth_label ?? '—'}
             </span>
             
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">

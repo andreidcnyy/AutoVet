@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiActivity, FiSearch, FiX, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -8,7 +8,7 @@ import echo from "../../utils/echo";
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
-// Fields that are internal/technical â€” never show to users
+// Fields that are internal/technical — never show to users
 const isHidden = (key) =>
   key.endsWith("_id") ||
   key.endsWith("_token") ||
@@ -111,13 +111,13 @@ const buildSummary = (log) => {
     }
     const count = changed.length;
     return label
-      ? `Updated "${label}" â€” ${count} detail${count !== 1 ? "s" : ""} changed`
-      : `Updated ${model} â€” ${count} detail${count !== 1 ? "s" : ""} changed`;
+      ? `Updated "${label}" — ${count} detail${count !== 1 ? "s" : ""} changed`
+      : `Updated ${model} — ${count} detail${count !== 1 ? "s" : ""} changed`;
   }
   return label ? `${capitalize(log.action)} "${label}"` : `${capitalize(log.action)} a ${model}`;
 };
 
-// User-friendly detail modal â€” no raw field names or JSON shown
+// User-friendly detail modal — no raw field names or JSON shown
 function DetailModal({ log, onClose }) {
   const model = friendlyModel(log.model_type);
   const label = extractLabel(log.action === "deleted" ? log.old_values : log.new_values);
@@ -174,7 +174,7 @@ function DetailModal({ log, onClose }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
 
-          {/* UPDATED: show before â†’ after for each changed field */}
+          {/* UPDATED: show before → after for each changed field */}
           {log.action === "updated" && (
             changedFields.length === 0 ? (
               <p className="text-sm text-zinc-400 text-center py-8">No visible changes recorded.</p>
@@ -191,7 +191,7 @@ function DetailModal({ log, onClose }) {
                       </p>
                       <div className="flex items-start gap-3 text-sm flex-wrap">
                         <span className="line-through text-zinc-400 dark:text-zinc-500 break-all">{before}</span>
-                        <span className="text-zinc-400">â†’</span>
+                        <span className="text-zinc-400">→</span>
                         <span className="font-semibold text-zinc-800 dark:text-zinc-100 break-all">{after}</span>
                       </div>
                     </div>
@@ -351,7 +351,7 @@ function AuditLogTab() {
         compact ? "mb-4" : "mt-2"
       )}>
         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-          {(pagination.current_page - 1) * pagination.per_page + 1}â€“
+          {(pagination.current_page - 1) * pagination.per_page + 1}–
           {Math.min(pagination.current_page * pagination.per_page, pagination.total)}{" "}
           of {pagination.total}
         </span>
@@ -459,7 +459,7 @@ function AuditLogTab() {
       {/* Table */}
       <div className="flex-1 overflow-x-auto p-5">
         {loading ? (
-          <div className="flex h-32 items-center justify-center text-zinc-500">Loading logsâ€¦</div>
+          <div className="flex h-32 items-center justify-center text-zinc-500">Loading logs…</div>
         ) : logs.length === 0 ? (
           <div className="flex h-32 flex-col items-center justify-center text-zinc-500">
             <FiSearch className="mb-2 h-6 w-6 text-zinc-300" />

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LuSparkles } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 
@@ -70,7 +70,7 @@ export default function InventoryAiStatusCard() {
           <div className="mb-6 flex justify-between items-start">
             <div>
                 <p className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Most Critical Item</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.item_name ?? 'â€”'}</p>
+                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{inventoryData.item_name ?? '—'}</p>
             </div>
             {inventoryData.prediction_status && (
               <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
@@ -86,12 +86,12 @@ export default function InventoryAiStatusCard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="rounded-2xl bg-zinc-50 dark:bg-dark-surface p-5 border border-zinc-100 dark:border-dark-border">
               <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Current Stock</p>
-              <p className="text-4xl font-black text-zinc-900 dark:text-zinc-50">{inventoryData.current_stock ?? 'â€”'}</p>
+              <p className="text-4xl font-black text-zinc-900 dark:text-zinc-50">{inventoryData.current_stock ?? '—'}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 p-5 border border-emerald-100 dark:border-emerald-900/30">
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2">Recommended Restock</p>
               <p className="text-4xl font-black text-emerald-700 dark:text-emerald-300">
-                {inventoryData.recommended_stock ?? 'â€”'} <span className="text-lg font-bold text-emerald-600/50">units</span>
+                {inventoryData.recommended_stock ?? '—'} <span className="text-lg font-bold text-emerald-600/50">units</span>
               </p>
             </div>
           </div>

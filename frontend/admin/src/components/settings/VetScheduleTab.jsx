@@ -1,4 +1,4 @@
-﻿import clsx from "clsx";
+import clsx from "clsx";
 
 const formatTime = (t) => {
   if (!t) return '';
@@ -304,11 +304,11 @@ export default function VetScheduleTab() {
                               {schedule.is_available ? 'Working' : 'Off'}
                             </span>
                             <span className="text-zinc-700 font-medium dark:text-zinc-300">
-                              {formatTime(schedule.start_time)} â€“ {formatTime(schedule.end_time)}
+                              {formatTime(schedule.start_time)} – {formatTime(schedule.end_time)}
                             </span>
                             {schedule.break_start && (
                               <span className="text-[11px] text-amber-700 bg-amber-100 px-2 py-1 rounded dark:bg-amber-900/30 dark:text-amber-400">
-                                Break: {formatTime(schedule.break_start)} â€“ {formatTime(schedule.break_end)}
+                                Break: {formatTime(schedule.break_start)} – {formatTime(schedule.break_end)}
                               </span>
                             )}
                             <button onClick={() => handleDeleteSchedule(schedule.id)} className="ml-auto p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
