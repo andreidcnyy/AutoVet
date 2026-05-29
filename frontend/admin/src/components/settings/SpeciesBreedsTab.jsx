@@ -86,12 +86,10 @@ export default function SpeciesBreedsTab() {
     const controller = new AbortController();
     fetchSpecies(controller.signal);
     fetchSizeCategories(controller.signal);
-    const poll = setInterval(() => { fetchSpecies(); fetchSizeCategories(); }, 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') { fetchSpecies(); fetchSizeCategories(); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       controller.abort();
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user]);

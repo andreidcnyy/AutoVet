@@ -3,6 +3,7 @@ import { FiStar, FiCheck, FiTrash2, FiRefreshCw, FiEyeOff, FiEye, FiGlobe, FiX, 
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import echo from "../../utils/echo";
 
 function Stars({ rating, size = "sm" }) {
   const cls = size === "lg" ? "h-5 w-5" : "h-3.5 w-3.5";
@@ -246,12 +247,13 @@ export default function ReviewsTab() {
 
   useEffect(() => {
     fetchReviews();
-    const poll = setInterval(fetchReviews, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchReviews(); };
     document.addEventListener('visibilitychange', onVisible);
+    const ch = echo.private('admin.notifications');
+    ch.listen('.entity.created', fetchReviews);
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      ch.stopListening('.entity.created');
     };
   }, [fetchReviews]);
 

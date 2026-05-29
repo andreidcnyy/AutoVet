@@ -127,10 +127,23 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchData();
-    const poll = setInterval(fetchData, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
+    let apptCh, invCh, notifCh;
+    import("../utils/echo").then(({ default: echo }) => {
+      apptCh = echo.private('admin.appointments');
+      invCh = echo.private('admin.invoices');
+      notifCh = echo.private('admin.notifications');
+      apptCh.listen('.appointment.created', fetchData).listen('.appointment.status.updated', fetchData);
+      invCh.listen('.invoice.updated', fetchData);
+      notifCh.listen('.entity.created', fetchData);
+    });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      if (apptCh) { apptCh.stopListening('.appointment.created'); apptCh.stopListening('.appointment.status.updated'); }
+      if (invCh) invCh.stopListening('.invoice.updated');
+      if (notifCh) notifCh.stopListening('.entity.created');
+    };
   }, []);
 
   const fetchAdmins = async (clinicId, pageNum = 1) => {

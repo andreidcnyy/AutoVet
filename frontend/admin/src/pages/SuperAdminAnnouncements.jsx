@@ -54,7 +54,6 @@ export default function SuperAdminAnnouncements() {
 
   useEffect(() => {
     fetchAnnouncements();
-    const poll = setInterval(fetchAnnouncements, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAnnouncements(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };

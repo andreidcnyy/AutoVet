@@ -1,4 +1,4 @@
-﻿import clsx from "clsx";
+import clsx from "clsx";
 import { useState, useEffect } from "react";
 import { FiTrash2, FiPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -101,12 +101,10 @@ export default function ServiceManagementTab() {
       console.error(err);
     });
 
-    const poll = setInterval(() => fetchServices(), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchServices(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       controller.abort();
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.token]);
@@ -253,7 +251,7 @@ export default function ServiceManagementTab() {
                     {svc.pricing_type?.replace('_', ' ') || 'Fixed'}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">â‚±{Number(svc.base_price || svc.price).toFixed(2)}</td>
+                <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">₱{Number(svc.base_price || svc.price).toFixed(2)}</td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
@@ -335,7 +333,7 @@ export default function ServiceManagementTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (â‚±) *</label>
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
                   <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
                 </div>
               </div>
@@ -350,7 +348,7 @@ export default function ServiceManagementTab() {
                         <div key={size.id} className="flex items-center justify-between gap-4">
                           <span className="text-sm text-zinc-600 dark:text-zinc-400">{size.name}</span>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -tranzinc-y-1/2 text-zinc-400 text-xs text-sm">â‚±</span>
+                            <span className="absolute left-3 top-1/2 -tranzinc-y-1/2 text-zinc-400 text-xs text-sm">₱</span>
                             <input 
                               type="number" 
                               required 
@@ -386,7 +384,7 @@ export default function ServiceManagementTab() {
                         <div key={size.id} className="flex items-center justify-between gap-4">
                           <span className="text-sm text-zinc-600 dark:text-zinc-400">{size.name}</span>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -tranzinc-y-1/2 text-zinc-400 text-xs">â‚±</span>
+                            <span className="absolute left-3 top-1/2 -tranzinc-y-1/2 text-zinc-400 text-xs">₱</span>
                             <input 
                               type="number" 
                               required 

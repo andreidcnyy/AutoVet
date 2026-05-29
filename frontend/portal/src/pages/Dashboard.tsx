@@ -82,7 +82,6 @@ export default function Dashboard() {
     }
     fetchData();
 
-    const poll = setInterval(fetchData, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -96,7 +95,6 @@ export default function Dashboard() {
     }
 
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       if (userId) {
         echo.leave(`client.appointments.${userId}`);

@@ -55,14 +55,12 @@ function NotificationHistoryPage() {
 
   useEffect(() => {
     fetchNotifications();
-    const poll = setInterval(fetchNotifications, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchNotifications(); };
     document.addEventListener('visibilitychange', onVisible);
     echo.private('admin.notifications')
       .listen('.notification.created', fetchNotifications)
       .listen('.entity.created', fetchNotifications);
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       echo.leave('admin.notifications');
     };

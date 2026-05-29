@@ -1,4 +1,4 @@
-﻿import { LuSparkles, LuTriangleAlert, LuCircleCheck, LuActivity, LuRefreshCw } from 'react-icons/lu';
+import { LuSparkles, LuTriangleAlert, LuCircleCheck, LuActivity, LuRefreshCw } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -175,12 +175,12 @@ export default function InventoryForecastInsights() {
                     <div className="inline-flex items-center gap-4">
                       <div className="text-center">
                         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-tighter">Wkly</p>
-                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">â‚±{Number(item.predicted_weekly_sales || 0).toLocaleString()}</p>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">₱{Number(item.predicted_weekly_sales || 0).toLocaleString()}</p>
                       </div>
                       <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
                       <div className="text-center">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-tighter">Mnth</p>
-                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">â‚±{Number(item.predicted_monthly_sales || 0).toLocaleString()}</p>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">₱{Number(item.predicted_monthly_sales || 0).toLocaleString()}</p>
                       </div>
                     </div>
                   </td>

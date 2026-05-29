@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import api from "../api";
+import echo from "../utils/echo";
 
 const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0, invoiceCount: 0 });
 
@@ -43,8 +44,17 @@ export function NewItemsProvider({ children, enabled = true }) {
   useEffect(() => {
     if (!enabled) return;
     fetchCounts();
-    intervalRef.current = setInterval(fetchCounts, 10000);
-    return () => clearInterval(intervalRef.current);
+    const apptCh = echo.private('admin.appointments');
+    const invCh = echo.private('admin.invoices');
+    const notifCh = echo.private('admin.notifications');
+    apptCh.listen('.appointment.created', fetchCounts);
+    invCh.listen('.invoice.updated', fetchCounts);
+    notifCh.listen('.entity.created', fetchCounts);
+    return () => {
+      apptCh.stopListening('.appointment.created');
+      invCh.stopListening('.invoice.updated');
+      notifCh.stopListening('.entity.created');
+    };
   }, [enabled, fetchCounts]);
 
   const markPatientsSeen = useCallback(() => {

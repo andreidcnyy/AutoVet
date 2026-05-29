@@ -39,7 +39,6 @@ function ViewPatientProfilePage() {
 
     const onVisible = () => { if (document.visibilityState === 'visible') fetchPatient(); };
     document.addEventListener('visibilitychange', onVisible);
-    const poll = setInterval(fetchPatient, 5000);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);

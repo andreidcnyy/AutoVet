@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import echo from '../utils/echo';
@@ -50,14 +50,12 @@ export function useNotifications() {
         uchnl.current.listen('.notification.created', handleNewNotification);
       }
 
-      const pollInterval = setInterval(fetchNotifications, 5000);
 
       return () => {
         echo.leave('admin.notifications');
         if (user.id) {
           echo.leave(`notifications.${user.id}`);
         }
-        clearInterval(pollInterval);
       };
     } else {
       setIsLoading(false);

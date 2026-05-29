@@ -1,11 +1,12 @@
-﻿import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/fi";
 import clsx from "clsx";
 import api from "../../api";
+import echo from "../../utils/echo";
 
 const peso = (n) =>
-  "â‚±" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "â€”";
@@ -42,14 +43,15 @@ export default function SalesSummaryCard() {
 
   useEffect(() => {
     load(true);
-    const poll = setInterval(() => load(false), 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') load(false); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('inventory-forecast-refresh', () => load(false));
+    const ch = echo.private('admin.invoices');
+    ch.listen('.invoice.updated', () => load(false));
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('inventory-forecast-refresh', load);
+      ch.stopListening('.invoice.updated');
     };
   }, []);
 

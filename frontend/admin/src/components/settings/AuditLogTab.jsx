@@ -4,6 +4,7 @@ import { FiActivity, FiSearch, FiX, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import api from "../../api";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
@@ -321,13 +322,14 @@ function AuditLogTab() {
 
   useEffect(() => {
     fetchLogs(1);
-    const poll = setInterval(() => fetchLogs(1), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(1); };
     document.addEventListener('visibilitychange', onVisible);
+    const ch = echo.private('admin.notifications');
+    ch.listen('.entity.created', () => fetchLogs(1)).listen('.notification.created', () => fetchLogs(1));
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      ch.stopListening('.entity.created').stopListening('.notification.created');
     };
   }, [filters]);
 

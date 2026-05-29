@@ -2,6 +2,7 @@
 import { format } from 'date-fns';
 import { FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import echo from '../../utils/echo';
 
 export default function ClientNotificationHistory() {
     const [history, setHistory] = useState([]);
@@ -18,12 +19,13 @@ export default function ClientNotificationHistory() {
     useEffect(() => {
         if (!user?.token) return;
         fetchHistory();
-        const poll = setInterval(fetchHistory, 5000);
         const onVisible = () => { if (document.visibilityState === 'visible') fetchHistory(); };
         document.addEventListener('visibilitychange', onVisible);
+        const ch = echo.private('admin.notifications');
+        ch.listen('.notification.created', fetchHistory);
         return () => {
-            clearInterval(poll);
             document.removeEventListener('visibilitychange', onVisible);
+            ch.stopListening('.notification.created');
         };
     }, [page, channel, status, user?.token]);
 

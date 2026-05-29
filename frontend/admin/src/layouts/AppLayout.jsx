@@ -79,8 +79,6 @@ function AppLayoutInner() {
     };
 
     fetchAnnouncements();
-    const interval = setInterval(fetchAnnouncements, 5000); // Re-fetch every 30s
-    return () => clearInterval(interval);
   }, [user, isSuperAdmin]);
 
   // Dynamically change browser tab branding for Super Admin ONLY

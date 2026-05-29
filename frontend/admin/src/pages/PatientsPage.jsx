@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
@@ -102,13 +102,6 @@ function PatientsPage() {
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [user?.token, activeTab, fetchOwners]);
-
-  // Poll every 5 s so portal-linked status dots update without a browser refresh
-  useEffect(() => {
-    if (!user?.token || activeTab !== "owners") return;
-    const poll = setInterval(() => fetchOwners(paginationRef.current.current_page || 1), 5000);
-    return () => clearInterval(poll);
   }, [user?.token, activeTab, fetchOwners]);
 
   // Auto-refresh when portal users create pets or owners
@@ -271,7 +264,7 @@ function PatientsPage() {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Contact Number *</label>
                   <div className="flex gap-2">
                     <div className="flex h-12 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
-                      🇵🇭 +63
+                      ðŸ‡µðŸ‡­ +63
                     </div>
                     <div className="relative flex-1">
                       <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />

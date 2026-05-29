@@ -193,14 +193,12 @@ export default function BookAppointment() {
         })
         .catch(() => {});
     };
-    const poll = setInterval(refetch, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') refetch(); };
     document.addEventListener('visibilitychange', onVisible);
     echo.private(`client.appointments.${userId}`)
       .listen('.appointment.status.updated', refetch)
       .listen('.appointment.created', refetch);
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
       echo.leave(`client.appointments.${userId}`);
     };

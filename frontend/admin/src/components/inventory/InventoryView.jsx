@@ -1,4 +1,4 @@
-﻿import clsx from "clsx";
+import clsx from "clsx";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
@@ -202,13 +202,11 @@ function InventoryView() {
         toast.warning(`Low Stock Alert: ${e.inventoryItem.item_name} is running low!`);
       });
 
-    const pollInterval = setInterval(() => fetchInventory(), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchInventory(); };
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       controller.abort();
-      clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', onVisible);
       echo.leave('admin.inventory');
     };
@@ -456,12 +454,12 @@ function InventoryView() {
                       </td>
                       <td className="px-6 py-5 text-right">
                         <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                          {row.price > 0 ? `â‚±${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">â€”</span>}
+                          {row.price > 0 ? `₱${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">â€”</span>}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-right">
                         <span className={clsx("text-sm font-black", row.selling_price > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-400 dark:text-rose-500")}>
-                          {row.selling_price > 0 ? `â‚±${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
+                          {row.selling_price > 0 ? `₱${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
                         </span>
                       </td>
                       <td className="px-6 py-5">

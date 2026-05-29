@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import ViewPatientModal from "./ViewPatientModal";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 import {
   FiSearch,
   FiFilter,
@@ -56,12 +57,13 @@ function PetsListView() {
 
   useEffect(() => {
     fetchPets();
-    const poll = setInterval(fetchPets, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchPets(); };
     document.addEventListener('visibilitychange', onVisible);
+    const ch = echo.private('admin.notifications');
+    ch.listen('.entity.created', fetchPets);
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      ch.stopListening('.entity.created');
     };
   }, [user?.token]);
 

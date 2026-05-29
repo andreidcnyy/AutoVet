@@ -27,7 +27,6 @@ export default function SuperAdminManagement() {
 
   useEffect(() => {
     fetchAdmins();
-    const poll = setInterval(fetchAdmins, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAdmins(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };

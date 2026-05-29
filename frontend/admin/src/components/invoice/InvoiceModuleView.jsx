@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -282,7 +282,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const fmtPeso = (n) => `â‚±${fmt(n)}`;
+const fmtPeso = (n) => `₱${fmt(n)}`;
 
 const getShortType = (item) => {
   const cat = (item.category || item.inventory_category?.name || "").toLowerCase();
@@ -940,12 +940,7 @@ function InvoiceModuleView() {
     }
   }, [activeTab]);
 
-  // Poll history tab every 30s while it's active; Echo for instant updates
-  useEffect(() => {
-    if (activeTab !== "history") return;
-    const poll = setInterval(() => fetchInvoices(1, searchQuery, null, true), 5000);
-    return () => clearInterval(poll);
-  }, [activeTab, searchQuery]);
+  // Echo handles instant invoice updates; no polling needed
 
   // Echo: refresh history/drafts counts when any invoice changes
   useEffect(() => {
@@ -1094,8 +1089,7 @@ function InvoiceModuleView() {
         .catch(() => {});
     };
     loadDraftsCount();
-    const poll = setInterval(loadDraftsCount, 5000);
-    return () => { cancelled = true; clearInterval(poll); };
+    return () => { cancelled = true; };
   }, [user?.token]);
 
   const handlePatientSelect = (e) => {
@@ -2053,7 +2047,7 @@ function InvoiceModuleView() {
                       className="h-11 w-20 shrink-0 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 disabled:opacity-50"
                     />
                     <div className="relative w-32 shrink-0">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">â‚±</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">₱</span>
                       <input type="number" min="0" placeholder="Price"
                         value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
                         disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
@@ -2419,7 +2413,7 @@ function InvoiceModuleView() {
                             <option value="Bank Transfer">Bank Transfer</option>
                           </select>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">â‚±</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
                             <input
                               type="number"
                               min="0"

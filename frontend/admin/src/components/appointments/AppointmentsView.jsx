@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
@@ -260,9 +260,7 @@ function AppointmentsView() {
         refresh();
       });
 
-    const poll = setInterval(refresh, 5000);
     return () => {
-      clearInterval(poll);
       echo.leave('admin.appointments');
     };
   }, [user?.token, currentDate, fetchAppointments, fetchCalendarSummaries]);
@@ -813,7 +811,7 @@ function AppointmentsView() {
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400">{apptInvoice.invoice_number}</p>
                           <p className="text-[10px] text-zinc-400 mt-0.5">{apptInvoice.status}</p>
                         </div>
-                        <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                       </div>
                     ) : (
                       <p className="text-xs text-zinc-400 italic">No invoice linked to this appointment.</p>

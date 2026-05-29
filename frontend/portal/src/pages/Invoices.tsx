@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getInvoices, getInvoice, getPets, getSettings } from '../api';
 import {
   FiCreditCard,
@@ -78,7 +78,6 @@ export default function Invoices() {
     const onVisible = () => { if (document.visibilityState === 'visible') fetchInvoices(); };
     document.addEventListener('visibilitychange', onVisible);
 
-    const poll = setInterval(fetchInvoices, 5000);
 
     const userId = user?.id;
     if (userId) {
@@ -88,7 +87,6 @@ export default function Invoices() {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      clearInterval(poll);
       if (userId) echo.leave(`client.invoices.${userId}`);
     };
   }, [fetchInvoices, user?.id]);
@@ -161,7 +159,7 @@ export default function Invoices() {
           <p className="text-white/80 mt-1 text-sm font-medium">All your invoice history in one place.</p>
           <div className="mt-4">
             <div className="text-xs font-black text-white/70 uppercase tracking-widest mb-0.5">Total Paid</div>
-            <div className="text-3xl font-black tracking-tight">â‚±{totals.paid.toLocaleString()}</div>
+            <div className="text-3xl font-black tracking-tight">₱{totals.paid.toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -243,7 +241,7 @@ export default function Invoices() {
                   <div className="flex items-center justify-between md:justify-end gap-4 md:gap-8">
                     <div className="text-right">
                       <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Paid</div>
-                      <div className="text-xl font-black text-emerald-600 italic">â‚±{parseFloat(invoice.total).toLocaleString()}</div>
+                      <div className="text-xl font-black text-emerald-600 italic">₱{parseFloat(invoice.total).toLocaleString()}</div>
                     </div>
                     {expandedInvoiceId === invoice.id ? <FiChevronUp className="text-zinc-400 w-6 h-6" /> : <FiChevronDown className="text-zinc-400 w-6 h-6" />}
                   </div>
@@ -258,14 +256,14 @@ export default function Invoices() {
                           <div className="text-zinc-600 dark:text-zinc-400 font-medium">
                             {item.name} <span className="text-zinc-400 text-[10px] ml-2 font-black uppercase">x{item.qty}</span>
                           </div>
-                          <div className="text-zinc-900 dark:text-zinc-100 font-bold">â‚±{parseFloat(item.amount).toLocaleString()}</div>
+                          <div className="text-zinc-900 dark:text-zinc-100 font-bold">₱{parseFloat(item.amount).toLocaleString()}</div>
                         </div>
                       ))}
 
                       <div className="pt-4 mt-4 border-t-2 border-dashed border-zinc-200 dark:border-dark-border space-y-4">
                         <div className="flex justify-between items-center">
                            <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest text-lg">Total Paid</div>
-                           <div className="text-2xl font-black text-emerald-600">â‚±{parseFloat(invoice.total).toLocaleString()}</div>
+                           <div className="text-2xl font-black text-emerald-600">₱{parseFloat(invoice.total).toLocaleString()}</div>
                         </div>
                         <button
                           onClick={() => handleDownload(invoice)}

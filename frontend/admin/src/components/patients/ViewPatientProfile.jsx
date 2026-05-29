@@ -1,7 +1,8 @@
-﻿import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import echo from "../../utils/echo";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
 import {
   FiArrowLeft,
@@ -101,7 +102,7 @@ function formatDate(dateStr) {
 }
 
 function formatCurrency(value) {
-  return `â‚±${Number(value || 0).toLocaleString("en-PH", {
+  return `₱${Number(value || 0).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
   })}`;
 }
@@ -975,18 +976,15 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   useEffect(() => {
     Promise.all([fetchRecords(), fetchAppointments(), fetchVets()]);
 
-    // Poll every 30s so records/appointments added by another admin appear without a refresh
-    const poll = setInterval(() => {
-      fetchRecords();
-      fetchAppointments();
-    }, 5000);
-
     const onVisible = () => { if (document.visibilityState === 'visible') { fetchRecords(); fetchAppointments(); } };
     document.addEventListener('visibilitychange', onVisible);
+    const ch = echo.private('admin.appointments');
+    ch.listen('.appointment.created', () => { fetchRecords(); fetchAppointments(); })
+      .listen('.appointment.status.updated', () => { fetchRecords(); fetchAppointments(); });
 
     return () => {
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
+      ch.stopListening('.appointment.created').stopListening('.appointment.status.updated');
     };
   }, [patient.id]);
 
@@ -1538,7 +1536,7 @@ function InvoiceTab({ invoices }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  â‚±{parseFloat(inv.formatted_amount_paid || inv.amount_paid || 0).toLocaleString()}
+                  ₱{parseFloat(inv.formatted_amount_paid || inv.amount_paid || 0).toLocaleString()}
                 </td>
               </tr>
             ))}
@@ -1578,7 +1576,7 @@ function InvoiceTab({ invoices }) {
             { label: "Invoice Number", value: selectedInv.invoice_number || `INV-${selectedInv.id}` },
             { label: "Date", value: formatDate(selectedInv.created_at) },
             { label: "Status", value: selectedInv.status },
-            { label: "Amount Paid", value: `â‚±${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
+            { label: "Amount Paid", value: `₱${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
             { label: "Notes", value: selectedInv.notes || "None" }
           ]}
         />

@@ -76,12 +76,10 @@ export default function VetScheduleTab() {
 
     const controller = new AbortController();
     fetchData(controller.signal);
-    const poll = setInterval(() => fetchData(), 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       controller.abort();
-      clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.token]);

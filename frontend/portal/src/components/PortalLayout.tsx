@@ -2,6 +2,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, getSystemAnnouncements } from '../api';
+import echo from '../utils/echo';
 import { FiHome, FiCalendar, FiLogOut, FiBell, FiUser, FiPlusCircle, FiClock, FiMail, FiPhone, FiMapPin, FiCreditCard, FiMenu, FiX } from 'react-icons/fi';
 import BroadcastBanner from './BroadcastBanner';
 import DarkModeToggle from './DarkModeToggle';
@@ -45,8 +46,9 @@ export default function PortalLayout({ children }: LayoutProps) {
       };
 
       fetchCount();
-      const interval = setInterval(fetchCount, 5000);
-      return () => clearInterval(interval);
+      const ch = echo.private(`notifications.${user.id}`);
+      ch.listen('.notification.created', fetchCount);
+      return () => ch.stopListening('.notification.created');
     }
   }, [user, location.pathname]);
 

@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
 import { ROLES } from "../../constants/roles";
+import echo from "../../utils/echo";
 
 const isSuperAdmin = (role) => role === ROLES.SUPER_ADMIN;
 
@@ -75,18 +76,18 @@ export default function UserManagementTab() {
     const controller = new AbortController();
     fetchUsers(controller.signal, true);
 
-    const poll = setInterval(() => fetchUsers(undefined, true), 5000);
     const onVisible = () => { if (document.visibilityState === "visible") fetchUsers(undefined, true); };
     const onUsersUpdated = () => fetchUsers(undefined, true);
-
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener(USERS_UPDATED_EVENT, onUsersUpdated);
+    const ch = echo.private('admin.notifications');
+    ch.listen('.entity.created', onUsersUpdated).listen('.portal.status.changed', onUsersUpdated);
 
     return () => {
       controller.abort();
-      clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener(USERS_UPDATED_EVENT, onUsersUpdated);
+      ch.stopListening('.entity.created').stopListening('.portal.status.changed');
     };
   }, [user?.token]);
 
