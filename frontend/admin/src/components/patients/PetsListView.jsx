@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -56,7 +56,7 @@ function PetsListView() {
 
   useEffect(() => {
     fetchPets();
-    const poll = setInterval(fetchPets, 30000);
+    const poll = setInterval(fetchPets, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchPets(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -167,7 +167,7 @@ function PetsListView() {
                                     "absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg text-[10px] shadow-sm",
                                     pet.sex === "Male" ? "bg-blue-100 text-blue-600" : "bg-pink-100 text-pink-600"
                                 )}>
-                                    {pet.sex === "Male" ? "♂" : "♀"}
+                                    {pet.sex === "Male" ? "â™‚" : "â™€"}
                                 </span>
                             </div>
                             <div className="text-right">

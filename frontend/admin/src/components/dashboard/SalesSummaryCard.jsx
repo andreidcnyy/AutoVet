@@ -1,21 +1,21 @@
-import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/fi";
 import clsx from "clsx";
 import api from "../../api";
 
 const peso = (n) =>
-  "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  "â‚±" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return "—";
+  if (!dateStr) return "â€”";
   try {
     let d = new Date(dateStr);
     if (typeof dateStr === "string" && !dateStr.includes("T") && !dateStr.includes("Z") && !dateStr.includes("+")) {
       d = new Date(dateStr.replace(" ", "T") + "Z");
     }
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  } catch { return "—"; }
+  } catch { return "â€”"; }
 };
 
 
@@ -42,7 +42,7 @@ export default function SalesSummaryCard() {
 
   useEffect(() => {
     load(true);
-    const poll = setInterval(() => load(false), 30000);
+    const poll = setInterval(() => load(false), 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') load(false); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('inventory-forecast-refresh', () => load(false));
@@ -79,7 +79,7 @@ export default function SalesSummaryCard() {
     return (
       <div className="card-shell flex items-center justify-center gap-3 py-14 text-zinc-400">
         <FiRefreshCw className="h-5 w-5 animate-spin" />
-        <span className="text-sm font-semibold">Loading sales summary…</span>
+        <span className="text-sm font-semibold">Loading sales summaryâ€¦</span>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function SalesSummaryCard() {
   return (
     <div className="card-shell p-6 space-y-8">
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -105,7 +105,7 @@ export default function SalesSummaryCard() {
         </button>
       </div>
 
-      {/* ── Earnings tiles ── */}
+      {/* â”€â”€ Earnings tiles â”€â”€ */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Earned Today", value: today, note: "from today's invoices", highlight: true },
@@ -135,7 +135,7 @@ export default function SalesSummaryCard() {
         ))}
       </div>
 
-      {/* ── Top Services ── */}
+      {/* â”€â”€ Top Services â”€â”€ */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
@@ -183,7 +183,7 @@ export default function SalesSummaryCard() {
         )}
       </div>
 
-      {/* ── Recent Transactions ── */}
+      {/* â”€â”€ Recent Transactions â”€â”€ */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
@@ -220,10 +220,10 @@ export default function SalesSummaryCard() {
                       {formatDate(inv.created_at)}
                     </td>
                     <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
-                      {inv.pet?.name || "—"}
+                      {inv.pet?.name || "â€”"}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                      {inv.pet?.owner?.name || "—"}
+                      {inv.pet?.owner?.name || "â€”"}
                     </td>
                     <td className="px-4 py-3 text-right font-black tabular-nums text-zinc-900 dark:text-zinc-50">
                       {peso(inv.total)}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '../../context/ToastContext';
 import { FiPlus, FiEdit2, FiTrash2, FiMail, FiMessageSquare } from 'react-icons/fi';
@@ -22,7 +22,7 @@ function eventLabel(key) {
 }
 
 
-/* Clickable smart fields — label is what the user sees, tag is what gets inserted */
+/* Clickable smart fields â€” label is what the user sees, tag is what gets inserted */
 const SMART_FIELDS = [
   { label: "Client's Name",     tag: '{owner_name}' },
   { label: "Pet's Name",        tag: '{pet_name}' },
@@ -46,7 +46,7 @@ export default function NotificationTemplatesManager() {
   useEffect(() => {
     if (!user?.token) return;
     fetchTemplates();
-    const poll = setInterval(() => fetchTemplates(), 60000);
+    const poll = setInterval(() => fetchTemplates(), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchTemplates(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -115,7 +115,7 @@ export default function NotificationTemplatesManager() {
   };
 
   if (loading) return (
-    <div className="p-8 text-center text-zinc-400">Loading message templates…</div>
+    <div className="p-8 text-center text-zinc-400">Loading message templatesâ€¦</div>
   );
 
   return (
@@ -125,7 +125,7 @@ export default function NotificationTemplatesManager() {
         <div>
           <h2 className="text-xl font-black text-zinc-100 uppercase tracking-tight">Message Templates</h2>
           <p className="text-sm text-zinc-400 mt-1">
-            These are pre-written messages sent automatically or manually to clients — by email or SMS.
+            These are pre-written messages sent automatically or manually to clients â€” by email or SMS.
           </p>
         </div>
         <button
@@ -172,7 +172,7 @@ export default function NotificationTemplatesManager() {
                       ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                       : 'bg-zinc-700/50 text-zinc-500 border border-zinc-600/30'
                   }`}>
-                    {t.is_active ? 'Yes — Active' : 'No — Paused'}
+                    {t.is_active ? 'Yes â€” Active' : 'No â€” Paused'}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -270,7 +270,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
             </label>
             <input
               type="text" required
-              placeholder="e.g. Appointment Confirmed — Email"
+              placeholder="e.g. Appointment Confirmed â€” Email"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors placeholder:text-zinc-600"
@@ -288,8 +288,8 @@ function TemplateFormModal({ template, onClose, onSave }) {
                 onChange={e => setFormData({ ...formData, channel: e.target.value })}
                 className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors"
               >
-                <option value="email">📧 Email</option>
-                <option value="sms">💬 SMS (Text Message)</option>
+                <option value="email">ðŸ“§ Email</option>
+                <option value="sms">ðŸ’¬ SMS (Text Message)</option>
               </select>
             </div>
             <div>
@@ -369,7 +369,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
             </div>
             <div>
               <span className="text-sm font-bold text-zinc-200">
-                {formData.is_active ? 'Template is active — will be sent' : 'Template is paused — will not be sent'}
+                {formData.is_active ? 'Template is active â€” will be sent' : 'Template is paused â€” will not be sent'}
               </span>
               <p className="text-xs text-zinc-500">Turn this off if you want to stop sending this message temporarily.</p>
             </div>

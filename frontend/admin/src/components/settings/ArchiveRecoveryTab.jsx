@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import clsx from "clsx";
 import { FiRefreshCcw, FiTrash2, FiAlertTriangle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -63,7 +63,7 @@ export default function ArchiveRecoveryTab() {
   useEffect(() => {
     if (!user?.token) return;
     fetchArchives(activeType, 1);
-    const poll = setInterval(() => fetchArchives(activeType, 1), 30000);
+    const poll = setInterval(() => fetchArchives(activeType, 1), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchArchives(activeType, 1); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

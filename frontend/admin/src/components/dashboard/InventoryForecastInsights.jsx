@@ -1,4 +1,4 @@
-import { LuSparkles, LuTriangleAlert, LuCircleCheck, LuActivity, LuRefreshCw } from 'react-icons/lu';
+﻿import { LuSparkles, LuTriangleAlert, LuCircleCheck, LuActivity, LuRefreshCw } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -70,7 +70,7 @@ export default function InventoryForecastInsights() {
 
     window.addEventListener('inventory-forecast-refresh', handleGlobalRefresh);
     
-    const interval = setInterval(() => fetchForecasts(), 120000);
+    const interval = setInterval(() => fetchForecasts(), 30000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchForecasts(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -126,7 +126,7 @@ export default function InventoryForecastInsights() {
           </div>
           <div>
             <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">AI Forecast Update</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">AutoVet AI Model (Linear Regression) • {forecasts.length > 0 ? `Updated ${forecasts[0].last_forecasted}` : 'Datasets synchronized'}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">AutoVet AI Model (Linear Regression) â€¢ {forecasts.length > 0 ? `Updated ${forecasts[0].last_forecasted}` : 'Datasets synchronized'}</p>
           </div>
         </div>
         <button 
@@ -175,12 +175,12 @@ export default function InventoryForecastInsights() {
                     <div className="inline-flex items-center gap-4">
                       <div className="text-center">
                         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-tighter">Wkly</p>
-                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">₱{Number(item.predicted_weekly_sales || 0).toLocaleString()}</p>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">â‚±{Number(item.predicted_weekly_sales || 0).toLocaleString()}</p>
                       </div>
                       <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
                       <div className="text-center">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-tighter">Mnth</p>
-                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">₱{Number(item.predicted_monthly_sales || 0).toLocaleString()}</p>
+                        <p className="font-bold text-sm text-zinc-800 dark:text-zinc-200">â‚±{Number(item.predicted_monthly_sales || 0).toLocaleString()}</p>
                       </div>
                     </div>
                   </td>

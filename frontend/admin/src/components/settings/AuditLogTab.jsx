@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiActivity, FiSearch, FiX, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -7,7 +7,7 @@ import clsx from "clsx";
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
-// Fields that are internal/technical — never show to users
+// Fields that are internal/technical â€” never show to users
 const isHidden = (key) =>
   key.endsWith("_id") ||
   key.endsWith("_token") ||
@@ -110,13 +110,13 @@ const buildSummary = (log) => {
     }
     const count = changed.length;
     return label
-      ? `Updated "${label}" — ${count} detail${count !== 1 ? "s" : ""} changed`
-      : `Updated ${model} — ${count} detail${count !== 1 ? "s" : ""} changed`;
+      ? `Updated "${label}" â€” ${count} detail${count !== 1 ? "s" : ""} changed`
+      : `Updated ${model} â€” ${count} detail${count !== 1 ? "s" : ""} changed`;
   }
   return label ? `${capitalize(log.action)} "${label}"` : `${capitalize(log.action)} a ${model}`;
 };
 
-// User-friendly detail modal — no raw field names or JSON shown
+// User-friendly detail modal â€” no raw field names or JSON shown
 function DetailModal({ log, onClose }) {
   const model = friendlyModel(log.model_type);
   const label = extractLabel(log.action === "deleted" ? log.old_values : log.new_values);
@@ -153,7 +153,7 @@ function DetailModal({ log, onClose }) {
               {actionMeta.label}
             </p>
             <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100 leading-tight">
-              {model} · {title}
+              {model} Â· {title}
             </h3>
             <p className="text-xs text-zinc-400">
               {new Date(log.created_at).toLocaleString("en-PH", {
@@ -161,7 +161,7 @@ function DetailModal({ log, onClose }) {
                 hour: "2-digit", minute: "2-digit",
               })}
               {log.user?.name && (
-                <> &nbsp;·&nbsp; <span className="font-semibold text-zinc-600 dark:text-zinc-300">by {log.user.name}</span></>
+                <> &nbsp;Â·&nbsp; <span className="font-semibold text-zinc-600 dark:text-zinc-300">by {log.user.name}</span></>
               )}
             </p>
           </div>
@@ -173,7 +173,7 @@ function DetailModal({ log, onClose }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
 
-          {/* UPDATED: show before → after for each changed field */}
+          {/* UPDATED: show before â†’ after for each changed field */}
           {log.action === "updated" && (
             changedFields.length === 0 ? (
               <p className="text-sm text-zinc-400 text-center py-8">No visible changes recorded.</p>
@@ -190,7 +190,7 @@ function DetailModal({ log, onClose }) {
                       </p>
                       <div className="flex items-start gap-3 text-sm flex-wrap">
                         <span className="line-through text-zinc-400 dark:text-zinc-500 break-all">{before}</span>
-                        <span className="text-zinc-400">→</span>
+                        <span className="text-zinc-400">â†’</span>
                         <span className="font-semibold text-zinc-800 dark:text-zinc-100 break-all">{after}</span>
                       </div>
                     </div>
@@ -321,7 +321,7 @@ function AuditLogTab() {
 
   useEffect(() => {
     fetchLogs(1);
-    const poll = setInterval(() => fetchLogs(1), 30000);
+    const poll = setInterval(() => fetchLogs(1), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(1); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -349,7 +349,7 @@ function AuditLogTab() {
         compact ? "mb-4" : "mt-2"
       )}>
         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-          {(pagination.current_page - 1) * pagination.per_page + 1}–
+          {(pagination.current_page - 1) * pagination.per_page + 1}â€“
           {Math.min(pagination.current_page * pagination.per_page, pagination.total)}{" "}
           of {pagination.total}
         </span>
@@ -457,7 +457,7 @@ function AuditLogTab() {
       {/* Table */}
       <div className="flex-1 overflow-x-auto p-5">
         {loading ? (
-          <div className="flex h-32 items-center justify-center text-zinc-500">Loading logs…</div>
+          <div className="flex h-32 items-center justify-center text-zinc-500">Loading logsâ€¦</div>
         ) : logs.length === 0 ? (
           <div className="flex h-32 flex-col items-center justify-center text-zinc-500">
             <FiSearch className="mb-2 h-6 w-6 text-zinc-300" />

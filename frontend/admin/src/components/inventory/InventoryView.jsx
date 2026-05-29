@@ -1,4 +1,4 @@
-import clsx from "clsx";
+﻿import clsx from "clsx";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
@@ -60,7 +60,7 @@ function AiGuideModal({ onClose }) {
 
           {/* Intro */}
           <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-            The AI Forecast system automatically watches your inventory and predicts when items are going to run low — before they actually run out. No manual counting needed.
+            The AI Forecast system automatically watches your inventory and predicts when items are going to run low â€” before they actually run out. No manual counting needed.
           </p>
 
           {/* Steps */}
@@ -82,7 +82,7 @@ function AiGuideModal({ onClose }) {
                 icon: FiAlertTriangle,
                 color: "text-amber-500 bg-amber-50 dark:bg-amber-900/20",
                 title: "It warns you early",
-                desc: "When an item is predicted to run out soon, it gets flagged as Low Stock — giving you time to reorder before patients are affected.",
+                desc: "When an item is predicted to run out soon, it gets flagged as Low Stock â€” giving you time to reorder before patients are affected.",
               },
               {
                 icon: FiCheckCircle,
@@ -110,7 +110,7 @@ function AiGuideModal({ onClose }) {
             </div>
             <div className="divide-y divide-zinc-100 dark:divide-dark-border">
               {[
-                { dot: "bg-emerald-500", label: "In Stock", desc: "Enough supply — no action needed right now." },
+                { dot: "bg-emerald-500", label: "In Stock", desc: "Enough supply â€” no action needed right now." },
                 { dot: "bg-amber-400", label: "Low Stock", desc: "The AI predicts this item will run out soon. Time to reorder." },
                 { dot: "bg-rose-500", label: "Out of Stock", desc: "Zero units left. Immediate reorder required." },
               ].map(({ dot, label, desc }) => (
@@ -202,7 +202,7 @@ function InventoryView() {
         toast.warning(`Low Stock Alert: ${e.inventoryItem.item_name} is running low!`);
       });
 
-    const pollInterval = setInterval(() => fetchInventory(), 60000);
+    const pollInterval = setInterval(() => fetchInventory(), 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchInventory(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -456,12 +456,12 @@ function InventoryView() {
                       </td>
                       <td className="px-6 py-5 text-right">
                         <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                          {row.price > 0 ? `₱${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                          {row.price > 0 ? `â‚±${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">â€”</span>}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-right">
                         <span className={clsx("text-sm font-black", row.selling_price > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-400 dark:text-rose-500")}>
-                          {row.selling_price > 0 ? `₱${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
+                          {row.selling_price > 0 ? `â‚±${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
                         </span>
                       </td>
                       <td className="px-6 py-5">
@@ -489,7 +489,7 @@ function InventoryView() {
                                     {row.stock_level <= 0
                                         ? "Immediate reorder required"
                                         : (row.latest_forecast.days_until_stockout == null
-                                            ? "Stable trend — no stockout predicted"
+                                            ? "Stable trend â€” no stockout predicted"
                                             : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
                                 </span>
                             </div>

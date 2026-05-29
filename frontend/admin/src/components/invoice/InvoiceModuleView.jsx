@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+﻿import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -79,7 +79,7 @@ const formatDate = (dateStr) => {
   }
 };
 
-/* ───────────────────────────────────────── PDF Generation ── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PDF Generation â”€â”€ */
 async function generateInvoicePDF(invoiceData, patient, clinic) {
   if (!invoiceData) return;
   
@@ -118,7 +118,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139); // zinc-50
   doc.text(clinic?.address || "", 34, y + 13);
-  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" • "), 34, y + 17);
+  doc.text([clinic?.phone_number, clinic?.primary_email].filter(Boolean).join(" â€¢ "), 34, y + 17);
 
   // Invoice/Receipt Title (Right Aligned)
   const isPaid = invoiceData.status === 'Paid' || (Number(invoiceData.amount_paid) >= Number(invoiceData.total) && Number(invoiceData.total) > 0);
@@ -188,7 +188,7 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
     doc.text(patient.name || "N/A", patientCardX + 16, y + 10);
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`${patient.species?.name || "N/A"} • ${patient.breed?.name || "Mixed"}`, patientCardX + 16, y + 15);
+    doc.text(`${patient.species?.name || "N/A"} â€¢ ${patient.breed?.name || "Mixed"}`, patientCardX + 16, y + 15);
     doc.text(`Weight: ${invoiceData.weight_override || patient.weight || "N/A"} kg`, patientCardX + 16, y + 20);
   }
 
@@ -277,12 +277,12 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.save(`${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
 }
 
-// ─── Invoice Reports helpers ──────────────────────────────────────────────────
+// â”€â”€â”€ Invoice Reports helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const fmtPeso = (n) => `₱${fmt(n)}`;
+const fmtPeso = (n) => `â‚±${fmt(n)}`;
 
 const getShortType = (item) => {
   const cat = (item.category || item.inventory_category?.name || "").toLowerCase();
@@ -347,7 +347,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
           const grossSales   = sellingPrice * qty;
           rows.push({
             date: inv.created_at,
-            client: inv.pet?.owner?.name || "—",
+            client: inv.pet?.owner?.name || "â€”",
             itemName: item.name,
             itemType: item.item_type,
             service_id: item.service_id,
@@ -396,7 +396,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
     return { totalGross, totalDiscount, totalNet: totalGross - totalDiscount };
   }, [displayRows]);
 
-  // Aggregate displayRows by item name — no client, just item totals
+  // Aggregate displayRows by item name â€” no client, just item totals
   const summaryRows = useMemo(() => {
     const map = {};
     displayRows.forEach((row) => {
@@ -943,7 +943,7 @@ function InvoiceModuleView() {
   // Poll history tab every 30s while it's active; Echo for instant updates
   useEffect(() => {
     if (activeTab !== "history") return;
-    const poll = setInterval(() => fetchInvoices(1, searchQuery, null, true), 30000);
+    const poll = setInterval(() => fetchInvoices(1, searchQuery, null, true), 5000);
     return () => clearInterval(poll);
   }, [activeTab, searchQuery]);
 
@@ -1094,7 +1094,7 @@ function InvoiceModuleView() {
         .catch(() => {});
     };
     loadDraftsCount();
-    const poll = setInterval(loadDraftsCount, 30000);
+    const poll = setInterval(loadDraftsCount, 5000);
     return () => { cancelled = true; clearInterval(poll); };
   }, [user?.token]);
 
@@ -1304,7 +1304,7 @@ function InvoiceModuleView() {
       if (qty > availableStock) {
         toast.warning(`${qty} units of '${itemName}' requested, but only ${availableStock} in stock. Proceeding anyway...`, {
           duration: 5000,
-          icon: '⚠️'
+          icon: 'âš ï¸'
         });
       }
     }
@@ -1768,7 +1768,7 @@ function InvoiceModuleView() {
                         <option value="">Select a pet...</option>
                         {(Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === selectedOwnerId?.toString()).map(p => (
                           <option key={p.id} value={p.id}>
-                            {p.name} — {p.species?.name || "Unknown"}
+                            {p.name} â€” {p.species?.name || "Unknown"}
                           </option>
                         ))}
                       </select>
@@ -1882,7 +1882,7 @@ function InvoiceModuleView() {
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Address:</strong> {
                           [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip].filter(Boolean).join(", ") || "N/A"
                         }</p>
-                        <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
+                        <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `â€¢ ${patientDetails.breed?.name}` : ""}</p>
                         {patientDetails.date_of_birth && (
                           <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Age:</strong> {(() => {
                             const dob = new Date(patientDetails.date_of_birth);
@@ -2053,7 +2053,7 @@ function InvoiceModuleView() {
                       className="h-11 w-20 shrink-0 rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-center text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 disabled:opacity-50"
                     />
                     <div className="relative w-32 shrink-0">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">₱</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 pointer-events-none">â‚±</span>
                       <input type="number" min="0" placeholder="Price"
                         value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
                         disabled={status === "Finalized" || (selectedService && selectedService.pricing_mode !== "manual")}
@@ -2265,7 +2265,7 @@ function InvoiceModuleView() {
                       )}
                       {(clinicSettings?.primary_email || clinicSettings?.phone_number) && (
                         <p className="mb-0.5">
-                          {[clinicSettings.phone_number, clinicSettings.primary_email].filter(Boolean).join(" • ")}
+                          {[clinicSettings.phone_number, clinicSettings.primary_email].filter(Boolean).join(" â€¢ ")}
                         </p>
                       )}
                       {clinicSettings?.clinic_tax_id && <p>Tax ID: {clinicSettings.clinic_tax_id}</p>}
@@ -2309,8 +2309,8 @@ function InvoiceModuleView() {
                         <div>
                           <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{patientDetails.name}</p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {patientDetails?.species?.name || "Unknown"} • {patientDetails?.breed?.name || "Unknown"}
-                            {patientDetails.date_of_birth && ` • ${(() => {
+                            {patientDetails?.species?.name || "Unknown"} â€¢ {patientDetails?.breed?.name || "Unknown"}
+                            {patientDetails.date_of_birth && ` â€¢ ${(() => {
                               const dob = new Date(patientDetails.date_of_birth);
                               const diff = Date.now() - dob.getTime();
                               const ageDate = new Date(diff);
@@ -2419,7 +2419,7 @@ function InvoiceModuleView() {
                             <option value="Bank Transfer">Bank Transfer</option>
                           </select>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">₱</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-sm">â‚±</span>
                             <input
                               type="number"
                               min="0"
@@ -2486,7 +2486,7 @@ function InvoiceModuleView() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Drafts</h2>
-                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Invoices saved as draft — click Continue to resume editing.</p>
+                <p className="text-zinc-500 dark:text-zinc-400 mt-1">Invoices saved as draft â€” click Continue to resume editing.</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative w-64">
@@ -2854,9 +2854,9 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <div>
             <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Add Medical Record</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">Optional — you can skip this and add it later from the patient profile.</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Optional â€” you can skip this and add it later from the patient profile.</p>
           </div>
-          <button type="button" onClick={onDismiss} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
+          <button type="button" onClick={onDismiss} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">âœ•</button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-6">
           <form id="post-invoice-med-form" onSubmit={handleSubmit} className="space-y-4">
@@ -2883,7 +2883,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
                   <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400 mr-2" />
                   <span className="truncate text-zinc-600 dark:text-zinc-300">
                     {linkedAppt
-                      ? `${linkedAppt.date ? new Date(linkedAppt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} — ${linkedAppt.service?.name || linkedAppt.title || "General Visit"}`
+                      ? `${linkedAppt.date ? new Date(linkedAppt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} â€” ${linkedAppt.service?.name || linkedAppt.title || "General Visit"}`
                       : `Appointment #${appointmentId}`}
                   </span>
                 </div>

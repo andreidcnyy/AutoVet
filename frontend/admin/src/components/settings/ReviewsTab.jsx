@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { FiStar, FiCheck, FiTrash2, FiRefreshCw, FiEyeOff, FiEye, FiGlobe, FiX, FiCalendar, FiFileText } from "react-icons/fi";
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
@@ -17,7 +17,7 @@ function Stars({ rating, size = "sm" }) {
 
 const RATING_LABELS = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"];
 
-/* ── Detail Modal ── */
+/* â”€â”€ Detail Modal â”€â”€ */
 function ReviewDetailModal({ review, busy, onClose, onApprove, onFeature, onDelete }) {
   if (!review) return null;
   return (
@@ -121,7 +121,7 @@ function ReviewDetailModal({ review, busy, onClose, onApprove, onFeature, onDele
   );
 }
 
-/* ── Live card mimicking landing page style ── */
+/* â”€â”€ Live card mimicking landing page style â”€â”€ */
 function LandingCard({ review, busy, onClick, onRemove, onFeature }) {
   return (
     <div
@@ -179,7 +179,7 @@ function LandingCard({ review, busy, onClick, onRemove, onFeature }) {
   );
 }
 
-/* ── Pending review row ── */
+/* â”€â”€ Pending review row â”€â”€ */
 function ReviewRow({ review, busy, onClick, onApprove, onDelete }) {
   return (
     <div
@@ -191,7 +191,7 @@ function ReviewRow({ review, busy, onClick, onApprove, onDelete }) {
           <span className="font-bold text-zinc-800 dark:text-zinc-100 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
             {review.reviewer_name}
           </span>
-          {review.pet_name && <span className="text-xs text-zinc-400 dark:text-zinc-500">· {review.pet_name}</span>}
+          {review.pet_name && <span className="text-xs text-zinc-400 dark:text-zinc-500">Â· {review.pet_name}</span>}
           {review.pet_species && (
             <span className="inline-block px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wide">
               {review.pet_species}
@@ -246,7 +246,7 @@ export default function ReviewsTab() {
 
   useEffect(() => {
     fetchReviews();
-    const poll = setInterval(fetchReviews, 30000);
+    const poll = setInterval(fetchReviews, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchReviews(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -330,7 +330,7 @@ export default function ReviewsTab() {
           </button>
         </div>
 
-        {/* ── Live on Landing Page ── */}
+        {/* â”€â”€ Live on Landing Page â”€â”€ */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <FiGlobe className="h-4 w-4 text-emerald-500" />
@@ -362,7 +362,7 @@ export default function ReviewsTab() {
           )}
         </section>
 
-        {/* ── Reviews ── */}
+        {/* â”€â”€ Reviews â”€â”€ */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <FiCheck className="h-4 w-4 text-zinc-400" />
@@ -374,7 +374,7 @@ export default function ReviewsTab() {
 
           {pending.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-dark-border p-8 text-center">
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">No reviews waiting — all caught up.</p>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">No reviews waiting â€” all caught up.</p>
             </div>
           ) : (
             <div className="space-y-3">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getPortalOverview, cancelAppointment, getPendingReview } from '../api';
 import { readCache, writeCache, clearCache } from '../utils/swrCache';
@@ -82,7 +82,7 @@ export default function Dashboard() {
     }
     fetchData();
 
-    const poll = setInterval(fetchData, 30000);
+    const poll = setInterval(fetchData, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -190,7 +190,7 @@ export default function Dashboard() {
           <div>
             <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Pet Wellness Portal</p>
             <h1 className="text-3xl font-black italic uppercase tracking-tight leading-tight">
-              Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} 🐾
+              Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} ðŸ¾
             </h1>
             <p className="text-white/80 mt-2 text-sm font-medium">
               {pets.length > 0
@@ -579,9 +579,9 @@ export default function Dashboard() {
                         </p>
                         <p className="text-[10px] text-zinc-400 mt-0.5">
                           {appt.date ? formatPortalDateLocal(appt.date) : ''}
-                          {appt.date && appt.time ? ' · ' : ''}
+                          {appt.date && appt.time ? ' Â· ' : ''}
                           {appt.time ? formatTime(appt.time) : ''}
-                          {appt.vet ? ` · Dr. ${appt.vet.name}` : ''}
+                          {appt.vet ? ` Â· Dr. ${appt.vet.name}` : ''}
                         </p>
                       </>
                     ) : (

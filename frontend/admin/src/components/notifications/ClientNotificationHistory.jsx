@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -18,7 +18,7 @@ export default function ClientNotificationHistory() {
     useEffect(() => {
         if (!user?.token) return;
         fetchHistory();
-        const poll = setInterval(fetchHistory, 30000);
+        const poll = setInterval(fetchHistory, 5000);
         const onVisible = () => { if (document.visibilityState === 'visible') fetchHistory(); };
         document.addEventListener('visibilitychange', onVisible);
         return () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ViewPatientProfile from "../components/patients/ViewPatientProfile";
 import { useAuth } from "../context/AuthContext";
@@ -39,7 +39,7 @@ function ViewPatientProfilePage() {
 
     const onVisible = () => { if (document.visibilityState === 'visible') fetchPatient(); };
     document.addEventListener('visibilitychange', onVisible);
-    const poll = setInterval(fetchPatient, 30000);
+    const poll = setInterval(fetchPatient, 5000);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);

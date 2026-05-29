@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import echo from "../utils/echo";
 import { 
   FiBell, FiCheck, FiFilter, FiArrowLeft, FiTrash2, 
@@ -55,7 +55,7 @@ function NotificationHistoryPage() {
 
   useEffect(() => {
     fetchNotifications();
-    const poll = setInterval(fetchNotifications, 30000);
+    const poll = setInterval(fetchNotifications, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchNotifications(); };
     document.addEventListener('visibilitychange', onVisible);
     echo.private('admin.notifications')

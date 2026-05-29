@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { FiVolume2, FiPlus, FiTrash2, FiEdit2, FiClock, FiMonitor, FiGlobe, FiX, FiCheckCircle, FiAlertCircle, FiInfo, FiAlertTriangle } from 'react-icons/fi';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
@@ -54,7 +54,7 @@ export default function SuperAdminAnnouncements() {
 
   useEffect(() => {
     fetchAnnouncements();
-    const poll = setInterval(fetchAnnouncements, 30000);
+    const poll = setInterval(fetchAnnouncements, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAnnouncements(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };
@@ -117,7 +117,7 @@ export default function SuperAdminAnnouncements() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">System Broadcasts</h1>
@@ -131,7 +131,7 @@ export default function SuperAdminAnnouncements() {
         </button>
       </div>
 
-      {/* ── Table ── */}
+      {/* â”€â”€ Table â”€â”€ */}
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
 
         {/* Table header */}
@@ -231,7 +231,7 @@ export default function SuperAdminAnnouncements() {
         )}
       </div>
 
-      {/* ── Modal ── */}
+      {/* â”€â”€ Modal â”€â”€ */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={closeModal}>
           <div

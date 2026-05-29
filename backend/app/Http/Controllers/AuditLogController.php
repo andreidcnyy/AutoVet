@@ -30,10 +30,12 @@ class AuditLogController extends Controller
                 $query->where('clinic_id', $user->clinic_id);
             }
 
-            // Only include logs from clinic staff — exclude portal owners and super_admin
-            $staffRoles = [Roles::CLINIC_ADMIN->value, Roles::VETERINARIAN->value, Roles::STAFF->value];
-            $query->whereHas('user', function ($q) use ($staffRoles) {
-                $q->withoutGlobalScopes()->whereIn('role', $staffRoles);
+            // Include logs from any admin actor (clinic staff + super admin) or system-generated (null user).
+            // Portal user actions are excluded naturally because audit_logs.user_id references the admins table.
+            $query->where(function ($q) {
+                $q->whereHas('user', function ($uq) {
+                    $uq->withoutGlobalScopes()->whereNotNull('role');
+                })->orWhereNull('user_id');
             });
 
             if ($request->filled('user_id')) {

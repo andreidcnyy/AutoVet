@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+﻿import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
@@ -260,7 +260,7 @@ function AppointmentsView() {
         refresh();
       });
 
-    const poll = setInterval(refresh, 30000);
+    const poll = setInterval(refresh, 5000);
     return () => {
       clearInterval(poll);
       echo.leave('admin.appointments');
@@ -491,9 +491,9 @@ function AppointmentsView() {
                       <li key={a.id} className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         <span>{a.pet?.name}</span>
-                        <span className="text-amber-500 font-normal">•</span>
+                        <span className="text-amber-500 font-normal">â€¢</span>
                         <span>{formatDateLocal(a.date, "MMM d")} at {formatTime(a.time)}</span>
-                        <span className="text-amber-500 font-normal">•</span>
+                        <span className="text-amber-500 font-normal">â€¢</span>
                         <span className="text-amber-500">Requested {format(new Date(a.created_at), "MMM d, h:mm a")}</span>
                       </li>
                     ))}
@@ -586,7 +586,7 @@ function AppointmentsView() {
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-8">
                 {isWalkIn ? (
-                  /* ── Walk-in Registration Form ── */
+                  /* â”€â”€ Walk-in Registration Form â”€â”€ */
                   <div className="space-y-6">
                     {/* Emergency toggle */}
                     <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-600/30 dark:bg-rose-600/10 px-4 py-3">
@@ -632,7 +632,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Select Existing Owner <span className="text-rose-500">*</span></label>
                           <select value={selectedOwnerId} onChange={e => setSelectedOwnerId(e.target.value)} className={clsx(qInputBase, walkInErrors.ownerId && "border-rose-400")}>
-                            <option value="">— Select Owner —</option>
+                            <option value="">â€” Select Owner â€”</option>
                             {owners.map(o => <option key={o.id} value={o.id}>{o.name} ({o.phone})</option>)}
                           </select>
                           {walkInErrors.ownerId && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerId}</p>}
@@ -652,7 +652,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Species <span className="text-rose-500">*</span></label>
                           <select value={walkInPet.species_id} onChange={e => setWalkInPet(p => ({...p, species_id: e.target.value, breed_id: ""}))} className={clsx(qInputBase, walkInErrors.petSpecies && "border-rose-400")}>
-                            <option value="">— Select —</option>
+                            <option value="">â€” Select â€”</option>
                             {species.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
                           {walkInErrors.petSpecies && <p className="text-xs text-rose-500 mt-1">{walkInErrors.petSpecies}</p>}
@@ -660,7 +660,7 @@ function AppointmentsView() {
                         <div>
                           <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Breed</label>
                           <select value={walkInPet.breed_id} onChange={e => setWalkInPet(p => ({...p, breed_id: e.target.value}))} className={qInputBase}>
-                            <option value="">— Select —</option>
+                            <option value="">â€” Select â€”</option>
                             {breeds.filter(b => !walkInPet.species_id || String(b.species_id) === String(walkInPet.species_id)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                           </select>
                         </div>
@@ -710,7 +710,7 @@ function AppointmentsView() {
                     </button>
                   </div>
                 ) : (
-                  /* ── Regular Scheduling Form ── */
+                  /* â”€â”€ Regular Scheduling Form â”€â”€ */
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
                       <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
@@ -775,14 +775,14 @@ function AppointmentsView() {
                 <div className="grid gap-6 rounded-[2.5rem] border-2 border-zinc-100 bg-zinc-50/20 p-8">
                   <div className="flex items-center gap-5"><FiCalendar className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">DATE</p><p className="text-lg font-black">{formatDateLocal(selectedAppointment?.date)}</p></div></div>
                   <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">TIME</p><p className="text-lg font-black italic">{formatTime(selectedAppointment?.time)}</p></div></div>
-                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name}</p><p className="text-xs font-bold text-zinc-400 mt-0.5">Owner: {selectedAppointment?.pet?.owner?.name || '—'}</p></div></div>
+                  <div className="flex items-center gap-5"><FiUser className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">PATIENT</p><p className="text-lg font-black">{selectedAppointment?.pet?.name}</p><p className="text-xs font-bold text-zinc-400 mt-0.5">Owner: {selectedAppointment?.pet?.owner?.name || 'â€”'}</p></div></div>
                   {selectedAppointment?.created_at && (
                     <div className="flex items-center gap-5"><FiClock className="h-6 w-6 text-amber-400" /><div><p className="text-[10px] font-black text-zinc-400">REQUESTED ON</p><p className="text-sm font-black text-amber-600 dark:text-amber-400">{format(new Date(selectedAppointment.created_at), "MMMM d, yyyy 'at' h:mm a")}</p></div></div>
                   )}
                   <div className="flex items-center gap-5"><FiList className="h-6 w-6 text-emerald-500" /><div><p className="text-[10px] font-black text-zinc-400">SERVICES</p>
                     {selectedAppointment?.services?.length > 0
                       ? <div className="flex flex-wrap gap-1.5 mt-1">{selectedAppointment.services.map(s => <span key={s.id} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">{s.name}</span>)}</div>
-                      : <p className="text-lg font-black">{selectedAppointment?.service?.name || '—'}</p>
+                      : <p className="text-lg font-black">{selectedAppointment?.service?.name || 'â€”'}</p>
                     }
                   </div></div>
                 </div>
@@ -813,7 +813,7 @@ function AppointmentsView() {
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400">{apptInvoice.invoice_number}</p>
                           <p className="text-[10px] text-zinc-400 mt-0.5">{apptInvoice.status}</p>
                         </div>
-                        <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                       </div>
                     ) : (
                       <p className="text-xs text-zinc-400 italic">No invoice linked to this appointment.</p>

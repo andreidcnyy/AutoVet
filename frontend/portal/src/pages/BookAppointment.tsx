@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -30,7 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// No longer needed — doctor requirement is now a per-service flag from the DB
+// No longer needed â€” doctor requirement is now a per-service flag from the DB
 
 // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
 const formatTime = (t: string | undefined) => {
@@ -119,7 +119,7 @@ export default function BookAppointment() {
     return svc?.requires_doctor === true;
   });
 
-  // Generate standard clinic slots: 08:00–17:00 every 30 min
+  // Generate standard clinic slots: 08:00â€“17:00 every 30 min
   const generateSlots = (): string[] => {
     const slots: string[] = [];
     for (let h = 8; h < 17; h++) {
@@ -134,7 +134,7 @@ export default function BookAppointment() {
     if (selectedDate && !isViewMode) {
       const controller = new AbortController();
       setIsCheckingAvailability(true);
-      api.get('/appointments/availability', { params: { date: selectedDate, vet_id: selectedVetId }, signal: controller.signal, timeout: 30000 })
+      api.get('/appointments/availability', { params: { date: selectedDate, vet_id: selectedVetId }, signal: controller.signal, timeout: 5000 })
         .then(res => setAvailability(res.data))
         .catch(err => { if (err.name !== 'CanceledError') console.error(err); })
         .finally(() => setIsCheckingAvailability(false));
@@ -162,7 +162,7 @@ export default function BookAppointment() {
     } catch (_) {}
 
     setLoading(true);
-    api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, signal: controller.signal, timeout: 30000 })
+    api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, signal: controller.signal, timeout: 5000 })
       .then(res => {
         const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
         setAppointments(appointmentsArray);
@@ -193,7 +193,7 @@ export default function BookAppointment() {
         })
         .catch(() => {});
     };
-    const poll = setInterval(refetch, 30000);
+    const poll = setInterval(refetch, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') refetch(); };
     document.addEventListener('visibilitychange', onVisible);
     echo.private(`client.appointments.${userId}`)
@@ -316,7 +316,7 @@ export default function BookAppointment() {
       // Background re-fetch for correctness
       const dateFrom = format(startOfMonth(currentDate), 'yyyy-MM-dd');
       const dateTo = format(endOfMonth(currentDate), 'yyyy-MM-dd');
-      api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, timeout: 30000 })
+      api.get('/appointments', { params: { date_from: dateFrom, date_to: dateTo, per_page: 100 }, timeout: 5000 })
         .then(res => {
           const appointmentsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
           setAppointments(appointmentsArray);
@@ -397,7 +397,7 @@ export default function BookAppointment() {
           ))}
         </div>
 
-        {/* Day cells — iOS-compact on mobile, spacious on desktop */}
+        {/* Day cells â€” iOS-compact on mobile, spacious on desktop */}
         <div className="grid grid-cols-7 sm:grid-cols-7 md:divide-x md:divide-y md:divide-zinc-100 dark:md:divide-dark-border/50">
           {calendarDays.map((entry, idx) => {
             const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -469,7 +469,7 @@ export default function BookAppointment() {
         </div>
       </div>
 
-      {/* Booking Modal — portal into body to escape overflow scroll container */}
+      {/* Booking Modal â€” portal into body to escape overflow scroll container */}
       {createPortal(<div className={clsx(
         "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
         isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -565,7 +565,7 @@ export default function BookAppointment() {
                         <div className="text-left">
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">{apptInvoice.invoice_number}</p>
                         </div>
-                        <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                        <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                       </button>
                     ) : (
                       <p className="text-xs text-zinc-400 italic">No invoice found for this visit.</p>
@@ -644,7 +644,7 @@ export default function BookAppointment() {
                     {errors.pet_id && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.pet_id.message}</p>}
                   </div>
 
-                  {/* Services — multi-select with inline prices */}
+                  {/* Services â€” multi-select with inline prices */}
                   <div>
                     <div className="flex items-baseline justify-between mb-2">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Service</label>
@@ -656,8 +656,8 @@ export default function BookAppointment() {
                         const rules = s.pricingRules ?? s.sizePrices ?? [];
                         const minTier = rules.length > 0 ? Math.min(...rules.map((r: any) => Number(r.price))) : 0;
                         const priceLabel = Number(s.price) > 0
-                          ? `₱${Number(s.price).toLocaleString()}`
-                          : minTier > 0 ? `From ₱${minTier.toLocaleString()}` : '';
+                          ? `â‚±${Number(s.price).toLocaleString()}`
+                          : minTier > 0 ? `From â‚±${minTier.toLocaleString()}` : '';
                         return (
                           <button
                             key={s.id}
@@ -691,7 +691,7 @@ export default function BookAppointment() {
                     <input type="hidden" {...register("time")} />
                     {selectedDate ? (
                       isCheckingAvailability ? (
-                        <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availability…</div>
+                        <div className="text-[10px] text-zinc-400 animate-pulse py-4 text-center">Checking availabilityâ€¦</div>
                       ) : (
                         <>
                           {/* 3-col grid on mobile, 4-col on desktop */}
@@ -737,7 +737,7 @@ export default function BookAppointment() {
                     {errors.time && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase">{errors.time.message}</p>}
                   </div>
 
-                  {/* Doctor — only for consultation/lab/surgery/imaging */}
+                  {/* Doctor â€” only for consultation/lab/surgery/imaging */}
                   {requiresDoctor && (
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Preferred Doctor</label>
@@ -763,7 +763,7 @@ export default function BookAppointment() {
                     type="submit"
                     className="w-full h-14 rounded-2xl bg-brand-500 text-white font-black uppercase tracking-widest text-sm shadow-lg shadow-brand-500/25 hover:bg-brand-600 transition-all active:scale-[0.98] disabled:opacity-50"
                   >
-                    {isSubmitting ? "Booking…" : "Confirm Booking"}
+                    {isSubmitting ? "Bookingâ€¦" : "Confirm Booking"}
                   </button>
                 </form>
               </>
@@ -789,7 +789,7 @@ export default function BookAppointment() {
                   <div>
                     <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Invoice</p>
                     <p className="text-xl font-black text-zinc-800 dark:text-zinc-100">{apptInvoice.invoice_number}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'â€”'}</p>
                   </div>
                   <button onClick={() => setIsInvoiceModalOpen(false)} className="p-2 rounded-xl bg-zinc-100 dark:bg-dark-surface text-zinc-400 hover:text-zinc-700 transition-all">
                     <FiXCircle className="w-5 h-5" />
@@ -802,7 +802,7 @@ export default function BookAppointment() {
                         <p className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">{item.name}</p>
                         <p className="text-[10px] text-zinc-400">Qty: {item.qty}</p>
                       </div>
-                      <p className="font-bold text-zinc-700 dark:text-zinc-300 shrink-0">₱{Number(item.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-zinc-700 dark:text-zinc-300 shrink-0">â‚±{Number(item.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                     </div>
                   ))}
                 </div>
@@ -813,7 +813,7 @@ export default function BookAppointment() {
                   </div>
                   <div className="flex justify-between text-base font-black text-zinc-900 dark:text-zinc-100">
                     <span>Total</span>
-                    <span className="text-blue-600">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-blue-600">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </>

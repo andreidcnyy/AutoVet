@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { Outlet, useMatches, useNavigate, useLocation } from "react-router-dom";
 import { NewItemsProvider, useNewItems } from "../context/NewItemsContext";
 import Sidebar from "../components/layout/Sidebar";
@@ -53,7 +53,7 @@ function AppLayoutInner() {
 
     const interval = setInterval(() => {
       triggerSync().catch(() => {});
-    }, 60000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [user, isSuperAdmin]);
@@ -79,7 +79,7 @@ function AppLayoutInner() {
     };
 
     fetchAnnouncements();
-    const interval = setInterval(fetchAnnouncements, 30000); // Re-fetch every 30s
+    const interval = setInterval(fetchAnnouncements, 5000); // Re-fetch every 30s
     return () => clearInterval(interval);
   }, [user, isSuperAdmin]);
 

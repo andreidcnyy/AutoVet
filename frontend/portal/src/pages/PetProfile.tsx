@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PawPrint } from './Landing';
 import { getPet, getMedicalRecords, getInvoices } from '../api';
@@ -73,7 +73,7 @@ function PetProfile() {
       .finally(() => setLoading(false));
 
     fetchAll();
-    const poll = setInterval(fetchAll, 30000);
+    const poll = setInterval(fetchAll, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -283,7 +283,7 @@ function PetProfile() {
                    </div>
                    <div className="flex flex-col gap-1 sm:items-end sm:text-right">
                       <div className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                        ₱{parseFloat(invoice.total).toLocaleString()}
+                        â‚±{parseFloat(invoice.total).toLocaleString()}
                       </div>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full w-fit ${
                         ['paid', 'finalized'].includes(invoice.status?.toLowerCase()) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'

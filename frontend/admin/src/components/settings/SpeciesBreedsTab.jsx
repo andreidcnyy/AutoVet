@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -86,7 +86,7 @@ export default function SpeciesBreedsTab() {
     const controller = new AbortController();
     fetchSpecies(controller.signal);
     fetchSizeCategories(controller.signal);
-    const poll = setInterval(() => { fetchSpecies(); fetchSizeCategories(); }, 60000);
+    const poll = setInterval(() => { fetchSpecies(); fetchSizeCategories(); }, 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') { fetchSpecies(); fetchSizeCategories(); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
 import { FiShield, FiUserPlus, FiX, FiEye, FiEyeOff, FiTrash2 } from 'react-icons/fi';
@@ -27,7 +27,7 @@ export default function SuperAdminManagement() {
 
   useEffect(() => {
     fetchAdmins();
-    const poll = setInterval(fetchAdmins, 30000);
+    const poll = setInterval(fetchAdmins, 5000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAdmins(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(poll); document.removeEventListener('visibilitychange', onVisible); };

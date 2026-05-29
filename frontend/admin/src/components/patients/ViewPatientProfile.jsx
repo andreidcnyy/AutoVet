@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+﻿import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -85,14 +85,14 @@ const formatTime = (t) => {
 };
 
 function formatDate(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "â€”";
   // Fix for YYYY-MM-DD timezone shift: use slashes instead of dashes to force local time parsing
-  // Only apply to plain date strings (no 'T'), not ISO datetimes — replacing dashes in ISO strings breaks parsing
+  // Only apply to plain date strings (no 'T'), not ISO datetimes â€” replacing dashes in ISO strings breaks parsing
   const normalizedDate = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
     ? dateStr.replace(/-/g, '/')
     : dateStr;
   const d = new Date(normalizedDate);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "â€”";
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -101,13 +101,13 @@ function formatDate(dateStr) {
 }
 
 function formatCurrency(value) {
-  return `₱${Number(value || 0).toLocaleString("en-PH", {
+  return `â‚±${Number(value || 0).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
   })}`;
 }
 
 function formatAgeGroup(group) {
-  if (!group) return "—";
+  if (!group) return "â€”";
   if (group === "Puppy/Kitten") return "Baby";
   if (group === "Junior") return "Young";
   return group;
@@ -127,7 +127,7 @@ function calculateAge(dob) {
   return `${months}m`;
 }
 
-/* ───────────────────────────────────────── PDF Generation ── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PDF Generation â”€â”€ */
 async function generatePatientPDF(patient) {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
@@ -169,12 +169,12 @@ async function generatePatientPDF(patient) {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
     head: [["Field", "Details"]],
     body: [
-      ["Breed", patient.breed?.name || "—"],
-      ["Sex", patient.sex || "—"],
-      ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
-      ["Color", patient.color || "—"],
-      ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit || 'kg'}` : "—"],
-      ["Status", patient.status || "—"],
+      ["Breed", patient.breed?.name || "â€”"],
+      ["Sex", patient.sex || "â€”"],
+      ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "â€”"],
+      ["Color", patient.color || "â€”"],
+      ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit || 'kg'}` : "â€”"],
+      ["Status", patient.status || "â€”"],
     ],
     margin: { left: 14, right: 14 },
   });
@@ -214,14 +214,14 @@ async function generatePatientPDF(patient) {
   y += 6;
 
   const ownerBody = [
-    ["Name", patient.owner?.name || "—"],
-    ["Phone", patient.owner?.phone || "—"],
-    ["Email", patient.owner?.email || "—"],
+    ["Name", patient.owner?.name || "â€”"],
+    ["Phone", patient.owner?.phone || "â€”"],
+    ["Email", patient.owner?.email || "â€”"],
     [
       "Address",
       [patient.owner?.address, patient.owner?.city, patient.owner?.province, patient.owner?.zip]
         .filter(Boolean)
-        .join(", ") || "—",
+        .join(", ") || "â€”",
     ],
   ];
 
@@ -276,9 +276,9 @@ async function generateMedicalRecordPDF(record, patient) {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 30 } },
     body: [
       ["Name", patient.name],
-      ["Species", patient.species?.name || "—"],
-      ["Breed", patient.breed?.name || "—"],
-      ["Sex/Age", `${patient.sex || "—"} / ${calculateAge(patient.date_of_birth) || "—"}`],
+      ["Species", patient.species?.name || "â€”"],
+      ["Breed", patient.breed?.name || "â€”"],
+      ["Sex/Age", `${patient.sex || "â€”"} / ${calculateAge(patient.date_of_birth) || "â€”"}`],
     ],
     margin: { left: 14 },
   });
@@ -292,10 +292,10 @@ async function generateMedicalRecordPDF(record, patient) {
   y += 8;
 
   const clinicalData = [
-    ["Chief Complaint", record.chief_complaint || "—"],
-    ["Clinical Findings", record.findings || "—"],
-    ["Diagnosis", record.diagnosis || "—"],
-    ["Treatment Plan", record.treatment_plan || "—"],
+    ["Chief Complaint", record.chief_complaint || "â€”"],
+    ["Clinical Findings", record.findings || "â€”"],
+    ["Diagnosis", record.diagnosis || "â€”"],
+    ["Treatment Plan", record.treatment_plan || "â€”"],
   ];
 
   autoTable(doc, {
@@ -372,10 +372,10 @@ async function generateAllMedicalRecordsPDF(records, patient) {
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 30 } },
       body: [
-        ["Vet", record.vet ? (record.vet.role === 'veterinarian' ? `Dr. ${record.vet.name}` : record.vet.name) : "—"],
-        ["Complaint", record.chief_complaint || "—"],
-        ["Diagnosis", record.diagnosis || "—"],
-        ["Treatment", record.treatment_plan || "—"]
+        ["Vet", record.vet ? (record.vet.role === 'veterinarian' ? `Dr. ${record.vet.name}` : record.vet.name) : "â€”"],
+        ["Complaint", record.chief_complaint || "â€”"],
+        ["Diagnosis", record.diagnosis || "â€”"],
+        ["Treatment", record.treatment_plan || "â€”"]
       ],
     });
 
@@ -386,7 +386,7 @@ async function generateAllMedicalRecordsPDF(records, patient) {
 }
 
 
-/* ───────────────────────────────────────── Component ── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Component â”€â”€ */
 
 function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   const navigate = useNavigate();
@@ -496,7 +496,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
               {patient.name}
             </h2>
             <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
-              {patient.breed?.name || "N/A"} • {patient.sex || "N/A"} • ID #{patient.id}
+              {patient.breed?.name || "N/A"} â€¢ {patient.sex || "N/A"} â€¢ ID #{patient.id}
             </p>
           </div>
         </div>
@@ -603,7 +603,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   );
 }
 
-/* ──────────────── Overview Tab ──────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Overview Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onChangePhoto, onRemovePhoto, onPhotoFileChange }) {
   const owner = patient.owner;
@@ -616,7 +616,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md text-2xl shadow-inner">
-               👤
+               ðŸ‘¤
              </div>
              <div>
                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100 opacity-80">Registered Owner / Client</p>
@@ -644,7 +644,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
 
       {/* Top grid: Photo + Quick stats */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
-        {/* Pet photo — click to change, × to remove */}
+        {/* Pet photo â€” click to change, Ã— to remove */}
         <div className="relative group h-40 w-40 shrink-0">
           <img
             src={patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name)}
@@ -759,7 +759,7 @@ function InfoCard({ icon: Icon, iconColor, title, value }) {
   );
 }
 
-/* ──────────────── Appointments Tab ──────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Appointments Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function AppointmentsTab({ appointments }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -806,7 +806,7 @@ function AppointmentsTab({ appointments }) {
                   {formatDate(apt.date)}
                 </td>
                 <td className="px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200">
-                  {apt.time || "—"}
+                  {apt.time || "â€”"}
                 </td>
                 <td className="px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {apt.title}
@@ -866,7 +866,7 @@ function DetailViewModal({ title, onClose, data }) {
       <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border overflow-hidden">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border">
           <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">{title}</h3>
-          <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">✕</button>
+          <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">âœ•</button>
         </div>
         <div className="p-0 max-h-[60vh] overflow-y-auto">
           <table className="w-full text-left border-collapse">
@@ -877,7 +877,7 @@ function DetailViewModal({ title, onClose, data }) {
                     {item.label}
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap">
-                    {item.value || "—"}
+                    {item.value || "â€”"}
                   </td>
                 </tr>
               ))}
@@ -894,7 +894,7 @@ function DetailViewModal({ title, onClose, data }) {
   );
 }
 
-/* ──────────────── Medical Records Tab ──────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Medical Records Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const toast = useToast();
@@ -979,7 +979,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     const poll = setInterval(() => {
       fetchRecords();
       fetchAppointments();
-    }, 30000);
+    }, 5000);
 
     const onVisible = () => { if (document.visibilityState === 'visible') { fetchRecords(); fetchAppointments(); } };
     document.addEventListener('visibilitychange', onVisible);
@@ -1127,7 +1127,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                       {record.appointment?.date ? formatDate(record.appointment.date) : formatDate(record.created_at)}
                       {record.appointment?.time && (
                         <>
-                          <span className="text-[10px] text-zinc-300">•</span>
+                          <span className="text-[10px] text-zinc-300">â€¢</span>
                           <span className="flex items-center gap-1"><FiClock className="w-3 h-3" /> {formatTime(record.appointment.time)}</span>
                         </>
                       )}
@@ -1294,7 +1294,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
             {isViewOnlyMode ? "View Medical Record" : isViewOnly ? "Medical Record Details" : isEdit ? "Edit Record" : "Add Medical Record"}
           </h2>
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">âœ•</button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-6">
           <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
@@ -1477,7 +1477,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   );
 }
 
-/* ──────────────── Invoices Tab ──────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Invoices Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function InvoiceTab({ invoices }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -1538,7 +1538,7 @@ function InvoiceTab({ invoices }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  ₱{parseFloat(inv.formatted_amount_paid || inv.amount_paid || 0).toLocaleString()}
+                  â‚±{parseFloat(inv.formatted_amount_paid || inv.amount_paid || 0).toLocaleString()}
                 </td>
               </tr>
             ))}
@@ -1578,7 +1578,7 @@ function InvoiceTab({ invoices }) {
             { label: "Invoice Number", value: selectedInv.invoice_number || `INV-${selectedInv.id}` },
             { label: "Date", value: formatDate(selectedInv.created_at) },
             { label: "Status", value: selectedInv.status },
-            { label: "Amount Paid", value: `₱${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
+            { label: "Amount Paid", value: `â‚±${parseFloat(selectedInv.formatted_amount_paid || selectedInv.amount_paid || 0).toLocaleString()}` },
             { label: "Notes", value: selectedInv.notes || "None" }
           ]}
         />
