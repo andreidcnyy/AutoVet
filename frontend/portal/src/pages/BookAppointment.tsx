@@ -565,7 +565,7 @@ export default function BookAppointment() {
                         <div className="text-left">
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">{apptInvoice.invoice_number}</p>
                         </div>
-                        <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                        <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                       </button>
                     ) : (
                       <p className="text-xs text-zinc-400 italic">No invoice found for this visit.</p>
@@ -656,8 +656,8 @@ export default function BookAppointment() {
                         const rules = s.pricingRules ?? s.sizePrices ?? [];
                         const minTier = rules.length > 0 ? Math.min(...rules.map((r: any) => Number(r.price))) : 0;
                         const priceLabel = Number(s.price) > 0
-                          ? `â‚±${Number(s.price).toLocaleString()}`
-                          : minTier > 0 ? `From â‚±${minTier.toLocaleString()}` : '';
+                          ? `₱${Number(s.price).toLocaleString()}`
+                          : minTier > 0 ? `From ₱${minTier.toLocaleString()}` : '';
                         return (
                           <button
                             key={s.id}
@@ -802,7 +802,7 @@ export default function BookAppointment() {
                         <p className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">{item.name}</p>
                         <p className="text-[10px] text-zinc-400">Qty: {item.qty}</p>
                       </div>
-                      <p className="font-bold text-zinc-700 dark:text-zinc-300 shrink-0">â‚±{Number(item.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-zinc-700 dark:text-zinc-300 shrink-0">₱{Number(item.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                     </div>
                   ))}
                 </div>
@@ -813,7 +813,7 @@ export default function BookAppointment() {
                   </div>
                   <div className="flex justify-between text-base font-black text-zinc-900 dark:text-zinc-100">
                     <span>Total</span>
-                    <span className="text-blue-600">â‚±{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-blue-600">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </>
