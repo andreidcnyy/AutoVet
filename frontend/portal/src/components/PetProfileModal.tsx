@@ -356,6 +356,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                             <div className="min-w-0">
                               <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">#{invoice.invoice_number}</div>
                               <h4 className="font-bold text-zinc-800 dark:text-zinc-100 italic uppercase tracking-tight truncate">Invoice Details</h4>
+                              {(invoice.appointment?.date) && (
+                                <div className="text-xs text-zinc-500">{formatPortalDate(invoice.appointment.date)}</div>
+                              )}
                             </div>
                           </div>
                           <div className="text-right flex flex-col items-end gap-1 shrink-0">
