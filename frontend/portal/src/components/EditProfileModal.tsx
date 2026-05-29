@@ -142,7 +142,14 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
       });
       setPwMessage(res.data?.message || 'Password saved.');
       setPwCurrent(''); setPwNew(''); setPwConfirm('');
-      setHasPassword(true);
+      // Re-fetch the profile so the UI reflects the actual persisted DB state
+      // (form flips to "Change Password") without needing a page refresh.
+      try {
+        const prof = await getProfile();
+        setHasPassword(!!prof.data?.has_password);
+      } catch {
+        setHasPassword(true);
+      }
     } catch (err: any) {
       setPwError(err.response?.data?.message || 'Failed to save password.');
     } finally {
