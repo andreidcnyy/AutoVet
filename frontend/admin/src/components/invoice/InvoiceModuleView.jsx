@@ -747,6 +747,9 @@ function InvoiceModuleView() {
 
   const [inventory, setInventory] = useState([]);
   const [weightRanges, setWeightRanges] = useState([]);
+  const [vets, setVets] = useState([]);
+  const [showMedRecordModal, setShowMedRecordModal] = useState(false);
+  const [pendingMedRecordCtx, setPendingMedRecordCtx] = useState(null);
 
   const INVOICES_CACHE_KEY = 'invoices_history_cache';
   const FORM_DATA_CACHE_KEY = 'invoices_form_data_minimal_cache';
@@ -1024,13 +1027,15 @@ function InvoiceModuleView() {
       api.get('/api/settings', { signal: controller.signal }).catch(() => ({})),
       api.get('/api/services', { signal: controller.signal }).catch(() => []),
       api.get('/api/inventory', { signal: controller.signal }).catch(() => []),
+      api.get('/api/vets', { signal: controller.signal }).catch(() => []),
     ])
-      .then(([ownersData, petsData, settingsData, servicesData, inventoryData]) => {
+      .then(([ownersData, petsData, settingsData, servicesData, inventoryData, vetsData]) => {
         // Handle paginated responses for owners and pets
         const owners = Array.isArray(ownersData) ? ownersData : (ownersData?.data || []);
         const pets = Array.isArray(petsData) ? petsData : (petsData?.data || []);
         const services = Array.isArray(servicesData) ? servicesData : (servicesData?.data || servicesData || []);
         const inventory = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.data || inventoryData || []);
+        const vetsList = Array.isArray(vetsData) ? vetsData : (vetsData?.data || []);
 
         if (!Array.isArray(owners) || owners.length === 0) console.error("Unexpected or empty owners API response:", ownersData);
         if (!Array.isArray(pets) || pets.length === 0) console.error("Unexpected or empty pets API response:", petsData);
@@ -1041,6 +1046,7 @@ function InvoiceModuleView() {
         setNotes(settingsData?.invoice_notes_template || "");
         setServices(services);
         setInventory(inventory);
+        setVets(vetsList);
 
         try {
           localStorage.setItem(FORM_DATA_CACHE_KEY, JSON.stringify({ owners, pets, services, inventory, settings: settingsData, ts: Date.now() }));
@@ -1461,15 +1467,15 @@ function InvoiceModuleView() {
         localStorage.removeItem('dashboard_stats_cache');
         localStorage.removeItem(INVOICES_CACHE_KEY);
 
-        // Reset form and immediately refresh history list
-        resetForm();
-        fetchInvoices(1, '', null, true);
-
         // Visibility sequence for AI workflow defense
         setTimeout(() => toast.info("Analyzing AI Inventory Impact...", 3000), 1000);
 
         // Broadcast event for dashboard listeners
         window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
+
+        // Offer optional medical record creation before resetting form
+        setPendingMedRecordCtx({ petId: selectedPatientId, appointmentId: selectedAppointmentId });
+        setShowMedRecordModal(true);
       } else {
         localStorage.removeItem(INVOICES_CACHE_KEY);
         resetForm();
@@ -2772,7 +2778,167 @@ function InvoiceModuleView() {
         }}
         relatedType="App\Models\Invoice"
       />
+
+      {showMedRecordModal && pendingMedRecordCtx && (
+        <PostInvoiceMedRecordModal
+          petId={pendingMedRecordCtx.petId}
+          appointmentId={pendingMedRecordCtx.appointmentId}
+          appointments={appointments}
+          vets={vets}
+          token={user?.token}
+          onDismiss={() => {
+            setShowMedRecordModal(false);
+            setPendingMedRecordCtx(null);
+            resetForm();
+            fetchInvoices(1, '', null, true);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, token, onDismiss }) {
+  const toast = useToast();
+  const { setLaravelErrors, clearErrors, getError } = useFormErrors();
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedVetId, setSelectedVetId] = useState(() => {
+    const vet = vets.find(v => v.role === 'veterinarian');
+    return vet ? vet.id.toString() : "";
+  });
+
+  const safeAppointments = Array.isArray(appointments) ? appointments : [];
+  const linkedAppt = safeAppointments.find(a => a.id?.toString() === appointmentId?.toString());
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    clearErrors();
+    const fd = new FormData(e.target);
+    const data = Object.fromEntries(fd.entries());
+    data.pet_id = petId;
+    data.appointment_id = appointmentId;
+    data.vet_id = selectedVetId || undefined;
+
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/medical-records", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 422) {
+          setLaravelErrors(errData);
+          toast.error("Validation error. Please check the fields.");
+          return;
+        }
+        throw new Error(errData.message || "Failed to save medical record");
+      }
+      toast.success("Medical record saved successfully.");
+      onDismiss();
+    } catch (err) {
+      toast.error(err.message || "Failed to save medical record");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
+        <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Add Medical Record</h2>
+            <p className="text-xs text-zinc-400 mt-0.5">Optional — you can skip this and add it later from the patient profile.</p>
+          </div>
+          <button type="button" onClick={onDismiss} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+          <form id="post-invoice-med-form" onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Attending Veterinarian</label>
+                <select
+                  value={selectedVetId}
+                  onChange={(e) => setSelectedVetId(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400"
+                >
+                  <option value="">Select veterinarian...</option>
+                  {vets.map(vet => (
+                    <option key={vet.id} value={vet.id}>
+                      {vet.role === 'veterinarian' ? `Dr. ${vet.name}` : vet.name}
+                    </option>
+                  ))}
+                </select>
+                {getError("vet_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("vet_id")}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Linked Appointment</label>
+                <div className="flex h-11 items-center rounded-xl border border-zinc-200 dark:border-dark-border px-4 text-sm bg-zinc-50 dark:bg-dark-surface dark:text-zinc-300">
+                  <FiCalendar className="h-4 w-4 shrink-0 text-zinc-400 mr-2" />
+                  <span className="truncate text-zinc-600 dark:text-zinc-300">
+                    {linkedAppt
+                      ? `${linkedAppt.date ? new Date(linkedAppt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} — ${linkedAppt.service?.name || linkedAppt.title || "General Visit"}`
+                      : `Appointment #${appointmentId}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Chief Complaint</label>
+              <input
+                name="chief_complaint"
+                className={clsx(
+                  "w-full rounded-xl border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400",
+                  getError("chief_complaint") ? "border-rose-500" : "border-zinc-200 dark:border-dark-border"
+                )}
+              />
+              {getError("chief_complaint") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("chief_complaint")}</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Findings</label>
+              <textarea name="findings" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Diagnosis</label>
+              <textarea name="diagnosis" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Treatment Plan</label>
+              <textarea name="treatment_plan" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Date</label>
+                <input type="date" name="follow_up_date" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Time</label>
+                <input type="time" name="follow_up_time" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Private Notes</label>
+              <textarea name="notes" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+            </div>
+          </form>
+        </div>
+        <div className="border-t bg-zinc-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-between items-center shrink-0">
+          <button type="button" onClick={onDismiss} className="text-sm font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-dark-card transition-colors">
+            Skip for now
+          </button>
+          <button type="submit" form="post-invoice-med-form" disabled={isSaving} className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+            {isSaving ? "Saving..." : "Save Record"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
