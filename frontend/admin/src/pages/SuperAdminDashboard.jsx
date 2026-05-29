@@ -454,157 +454,144 @@ export default function SuperAdminDashboard() {
 
       {/* Clinic Details Modal */}
       {selectedClinic && !isModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-autovet-navy/40 backdrop-blur-sm">
-          <div className="flex min-h-full items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white overflow-hidden shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200 my-8">
-             <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative">
-                <div className="absolute -bottom-8 left-8">
-                   <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
-                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
-                   </div>
-                </div>
-                <div className="absolute top-6 right-6 flex gap-2">
-                   <button onClick={handleImpersonate} className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white shadow-lg transition-all"><FiLogOut className="h-3 w-3" /> Login As Ghost</button>
-                   <button onClick={() => openEditModal(selectedClinic)} className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-xs font-black uppercase text-white backdrop-blur-md hover:bg-white/30 transition-all"><FiEdit2 className="h-3 w-3" /> Edit Details</button>
-                </div>
-             </div>
-             <div className="p-8 pt-12">
-                <div className="flex justify-between items-start">
-                   <div>
-                      <h3 className="text-3xl font-black text-autovet-navy dark:text-zinc-50 uppercase tracking-tight">{selectedClinic.clinic_name}</h3>
-                      <p className="text-sm font-black text-autovet-teal uppercase tracking-widest mt-1">Clinic ID: #{selectedClinic.id}</p>
-                   </div>
-                   <span className={clsx("rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest", selectedClinic.status === 'active' ? "bg-autovet-teal/10 text-autovet-teal border border-autovet-teal/20" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400")}>{selectedClinic.status}</span>
-                </div>
-                
-                <div className="mt-8 flex gap-6 border-b border-zinc-200 dark:border-dark-border">
-                   <button onClick={() => setActiveTab('overview')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'overview' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Overview</button>
-                   <button onClick={() => setActiveTab('subscription')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'subscription' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Subscription</button>
-                   <button onClick={() => setActiveTab('admins')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'admins' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Staff / Users</button>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-autovet-navy/40 backdrop-blur-sm">
+          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
 
-                <div className="mt-6 min-h-[300px]">
-                   {activeTab === 'overview' && (
-                     <div className="space-y-8 animate-in fade-in duration-300">
-                        <div className="grid grid-cols-2 gap-8">
-                           <div className="space-y-6">
-                              <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Clinic Owner</p><p className="font-black text-zinc-800 dark:text-zinc-200 uppercase text-sm">{selectedClinic.owner_name || 'Not Specified'}</p></div>
-                              <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Email Address</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm tracking-tight">{selectedClinic.email}</p></div>
-                           </div>
-                           <div className="space-y-6">
-                              <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Contact Numbers</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm">{selectedClinic.contact_number || 'N/A'}{selectedClinic.contact_number_2 ? ` / ${selectedClinic.contact_number_2}` : ''}</p></div>
-                              <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Registration Date</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm">{new Date(selectedClinic.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p></div>
-                           </div>
-                        </div>
-                        <div>
-                           <p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Clinic Address</p>
-                           <p className="font-bold text-zinc-800 dark:text-zinc-200 leading-relaxed mb-4 uppercase text-xs">{selectedClinic.address || 'No address recorded.'}</p>
-                           {selectedClinic.address && <MapPreview address={selectedClinic.address} />}
-                        </div>
-                     </div>
-                   )}
+            {/* Fixed header */}
+            <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative shrink-0 rounded-t-3xl overflow-hidden">
+               <div className="absolute -bottom-8 left-8">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
+                    {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
+                  </div>
+               </div>
+               <div className="absolute top-6 right-6 flex gap-2">
+                  <button onClick={handleImpersonate} className="flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-4 py-2 text-xs font-black uppercase text-white shadow-lg transition-all"><FiLogOut className="h-3 w-3" /> Login As Ghost</button>
+                  <button onClick={() => openEditModal(selectedClinic)} className="flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-xs font-black uppercase text-white backdrop-blur-md hover:bg-white/30 transition-all"><FiEdit2 className="h-3 w-3" /> Edit Details</button>
+               </div>
+            </div>
 
-                   {activeTab === 'subscription' && (
-                     <div className="space-y-6 animate-in fade-in duration-300">
-                        <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
-                           <div className="h-16 w-16 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl shadow-sm"><FiStar /></div>
-                           <div>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Current Plan</p>
-                              <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">{selectedClinic.subscription_tier || 'Free Trial'}</p>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
-                           <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-sm"><FiCalendar /></div>
-                           <div>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Expiration Date</p>
-                              <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">
-                                 {selectedClinic.subscription_expires_at ? new Date(selectedClinic.subscription_expires_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Never'}
-                              </p>
-                           </div>
-                        </div>
-                     </div>
-                   )}
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto p-8 pt-12">
+               <div className="flex justify-between items-start">
+                  <div>
+                     <h3 className="text-3xl font-black text-autovet-navy dark:text-zinc-50 uppercase tracking-tight">{selectedClinic.clinic_name}</h3>
+                     <p className="text-sm font-black text-autovet-teal uppercase tracking-widest mt-1">Clinic ID: #{selectedClinic.id}</p>
+                  </div>
+                  <span className={clsx("rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest", selectedClinic.status === 'active' ? "bg-autovet-teal/10 text-autovet-teal border border-autovet-teal/20" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400")}>{selectedClinic.status}</span>
+               </div>
 
-                   {activeTab === 'admins' && (
-                     <div className="animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between mb-4">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Clinic Staff & Users</p>
-                          <button
-                            onClick={() => { setAddUserForm({ name: '', email: '', password: '', role: 'staff' }); setAddUserModalOpen(true); }}
-                            className="inline-flex items-center gap-2 rounded-xl bg-autovet-teal px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:opacity-90 shadow-md transition-all"
-                          >
-                            <FiUserPlus className="h-3.5 w-3.5" /> Add User
-                          </button>
-                        </div>
-                        {loadingAdmins ? (
-                           <p className="text-sm font-black uppercase tracking-widest text-zinc-500 py-12 text-center animate-pulse">Synchronizing Staff Data...</p>
-                        ) : (!clinicAdminsData.data || clinicAdminsData.data.length === 0) ? (
-                           <div className="text-center py-12 bg-zinc-50 dark:bg-dark-surface rounded-2xl border border-zinc-100 dark:border-dark-border">
-                              <FiUsers className="mx-auto h-8 w-8 text-zinc-300 mb-3" />
-                              <p className="text-sm font-black uppercase tracking-widest text-zinc-400">No staff found.</p>
-                           </div>
-                        ) : (
-                           <div className="space-y-4">
-                              {clinicAdminsData.data.map(admin => (
-                                 <div key={admin.id} className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm">
-                                    <div className="flex items-center gap-4">
-                                       <div className="h-10 w-10 rounded-full bg-autovet-navy text-white flex items-center justify-center font-black">
-                                          {admin.name.charAt(0).toUpperCase()}
-                                       </div>
-                                       <div>
-                                          <p className="font-black text-zinc-900 dark:text-white uppercase text-xs">{admin.name}</p>
-                                          <p className="text-[10px] font-bold text-zinc-500 tracking-tight">{admin.email} <span className={clsx("ml-2 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-autovet-teal text-[9px]", admin.role === 'veterinarian' ? "text-amber-600" : "text-autovet-teal")}>{admin.role.toUpperCase()}</span></p>
-                                       </div>
-                                    </div>
-                                    <button 
-                                       onClick={() => handleResetPassword(admin.id)}
-                                       className="flex items-center gap-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-2 text-[10px] font-black uppercase text-zinc-700 dark:text-zinc-300 transition-colors tracking-widest border border-zinc-200 dark:border-zinc-700"
-                                    >
-                                       <FiLock className="h-3 w-3 text-autovet-teal" /> Reset
-                                    </button>
-                                 </div>
-                              ))}
+               <div className="mt-8 flex gap-6 border-b border-zinc-200 dark:border-dark-border">
+                  <button onClick={() => setActiveTab('overview')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'overview' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Overview</button>
+                  <button onClick={() => setActiveTab('subscription')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'subscription' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Subscription</button>
+                  <button onClick={() => setActiveTab('admins')} className={clsx("pb-3 text-sm font-black uppercase tracking-widest transition-colors border-b-2", activeTab === 'admins' ? "border-autovet-navy text-autovet-navy dark:border-autovet-teal dark:text-autovet-teal" : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300")}>Staff / Users</button>
+               </div>
 
-                              {/* Pagination for Admins */}
-                              {clinicAdminsData.last_page > 1 && (
-                                <div className="flex items-center justify-center gap-4 mt-6">
-                                   <button 
-                                     disabled={adminsPage === 1 || loadingAdmins}
-                                     onClick={() => setAdminsPage(p => p - 1)}
-                                     className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30"
+               <div className="mt-6">
+                  {activeTab === 'overview' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                       <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-6">
+                             <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Clinic Owner</p><p className="font-black text-zinc-800 dark:text-zinc-200 uppercase text-sm">{selectedClinic.owner_name || 'Not Specified'}</p></div>
+                             <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Email Address</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm tracking-tight">{selectedClinic.email}</p></div>
+                          </div>
+                          <div className="space-y-6">
+                             <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Contact Numbers</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm">{selectedClinic.contact_number || 'N/A'}{selectedClinic.contact_number_2 ? ` / ${selectedClinic.contact_number_2}` : ''}</p></div>
+                             <div><p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Registration Date</p><p className="font-black text-zinc-800 dark:text-zinc-200 text-sm">{new Date(selectedClinic.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p></div>
+                          </div>
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black uppercase text-autovet-teal mb-2 tracking-widest">Clinic Address</p>
+                          <p className="font-bold text-zinc-800 dark:text-zinc-200 leading-relaxed mb-4 uppercase text-xs">{selectedClinic.address || 'No address recorded.'}</p>
+                          {selectedClinic.address && <MapPreview address={selectedClinic.address} />}
+                       </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'subscription' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                       <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
+                          <div className="h-16 w-16 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl shadow-sm"><FiStar /></div>
+                          <div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Current Plan</p>
+                             <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">{selectedClinic.subscription_tier || 'Free Trial'}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
+                          <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-sm"><FiCalendar /></div>
+                          <div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Expiration Date</p>
+                             <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">
+                                {selectedClinic.subscription_expires_at ? new Date(selectedClinic.subscription_expires_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Never'}
+                             </p>
+                          </div>
+                       </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'admins' && (
+                    <div className="animate-in fade-in duration-300">
+                       <div className="flex items-center justify-between mb-4">
+                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Clinic Staff & Users</p>
+                         <button
+                           onClick={() => { setAddUserForm({ name: '', email: '', password: '', role: 'staff' }); setAddUserModalOpen(true); }}
+                           className="inline-flex items-center gap-2 rounded-xl bg-autovet-teal px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:opacity-90 shadow-md transition-all"
+                         >
+                           <FiUserPlus className="h-3.5 w-3.5" /> Add User
+                         </button>
+                       </div>
+                       {loadingAdmins ? (
+                          <p className="text-sm font-black uppercase tracking-widest text-zinc-500 py-12 text-center animate-pulse">Synchronizing Staff Data...</p>
+                       ) : (!clinicAdminsData.data || clinicAdminsData.data.length === 0) ? (
+                          <div className="text-center py-12 bg-zinc-50 dark:bg-dark-surface rounded-2xl border border-zinc-100 dark:border-dark-border">
+                             <FiUsers className="mx-auto h-8 w-8 text-zinc-300 mb-3" />
+                             <p className="text-sm font-black uppercase tracking-widest text-zinc-400">No staff found.</p>
+                          </div>
+                       ) : (
+                          <div className="space-y-4">
+                             {clinicAdminsData.data.map(admin => (
+                                <div key={admin.id} className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm">
+                                   <div className="flex items-center gap-4">
+                                      <div className="h-10 w-10 rounded-full bg-autovet-navy text-white flex items-center justify-center font-black">
+                                         {admin.name.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div>
+                                         <p className="font-black text-zinc-900 dark:text-white uppercase text-xs">{admin.name}</p>
+                                         <p className="text-[10px] font-bold text-zinc-500 tracking-tight">{admin.email} <span className={clsx("ml-2 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-autovet-teal text-[9px]", admin.role === 'veterinarian' ? "text-amber-600" : "text-autovet-teal")}>{admin.role.toUpperCase()}</span></p>
+                                      </div>
+                                   </div>
+                                   <button
+                                      onClick={() => handleResetPassword(admin.id)}
+                                      className="flex items-center gap-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-2 text-[10px] font-black uppercase text-zinc-700 dark:text-zinc-300 transition-colors tracking-widest border border-zinc-200 dark:border-zinc-700"
                                    >
-                                      <FiChevronLeft />
-                                   </button>
-                                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Page {adminsPage} of {clinicAdminsData.last_page}</span>
-                                   <button 
-                                     disabled={adminsPage === clinicAdminsData.last_page || loadingAdmins}
-                                     onClick={() => setAdminsPage(p => p + 1)}
-                                     className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30"
-                                   >
-                                      <FiChevronRight />
+                                      <FiLock className="h-3 w-3 text-autovet-teal" /> Reset
                                    </button>
                                 </div>
-                              )}
-                           </div>
-                        )}
-                     </div>
-                   )}
-                </div>
+                             ))}
+                             {clinicAdminsData.last_page > 1 && (
+                               <div className="flex items-center justify-center gap-4 mt-6">
+                                  <button disabled={adminsPage === 1 || loadingAdmins} onClick={() => setAdminsPage(p => p - 1)} className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30"><FiChevronLeft /></button>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Page {adminsPage} of {clinicAdminsData.last_page}</span>
+                                  <button disabled={adminsPage === clinicAdminsData.last_page || loadingAdmins} onClick={() => setAdminsPage(p => p + 1)} className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30"><FiChevronRight /></button>
+                               </div>
+                             )}
+                          </div>
+                       )}
+                    </div>
+                  )}
+               </div>
+            </div>
 
-                <div className="mt-10 flex gap-3 pt-6 border-t border-zinc-100 dark:border-dark-border">
-                  <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-4 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
-                    {selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}
-                  </button>
-                  <button 
-                    onClick={handleDeleteClinic}
-                    className="flex-1 rounded-2xl bg-rose-600 py-4 font-black uppercase text-xs tracking-widest text-white hover:bg-rose-700 transition-all shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <FiTrash2 className="h-4 w-4" /> Permanent Delete
-                  </button>
-                  <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-4 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
-                </div>
-             </div>
-          </div>
+            {/* Fixed footer */}
+            <div className="shrink-0 flex gap-3 px-8 py-5 border-t border-zinc-100 dark:border-dark-border rounded-b-3xl bg-white dark:bg-dark-card">
+              <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-3.5 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
+                {selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}
+              </button>
+              <button onClick={handleDeleteClinic} className="flex-1 rounded-2xl bg-rose-600 py-3.5 font-black uppercase text-xs tracking-widest text-white hover:bg-rose-700 transition-all shadow-lg flex items-center justify-center gap-2">
+                <FiTrash2 className="h-4 w-4" /> Permanent Delete
+              </button>
+              <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-3.5 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
+            </div>
+
           </div>
         </div>
       )}
