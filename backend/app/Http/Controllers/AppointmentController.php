@@ -193,16 +193,18 @@ class AppointmentController extends Controller
             }
         }
 
-        // Max 2 active appointments per pet per day (declined/cancelled do not count)
-        $MAX_PER_DAY = 2;
-        $activeCount = Appointment::where('pet_id', $validated['pet_id'])
-            ->where('date', $validated['date'])
-            ->whereNotIn('status', ['declined', 'cancelled', 'Declined', 'Cancelled'])
-            ->count();
-        if ($activeCount >= $MAX_PER_DAY) {
-            return response()->json([
-                'message' => "This pet already has {$MAX_PER_DAY} appointment(s) booked for this day. Please choose a different date."
-            ], 422);
+        // Max 2 active appointments per pet per day — portal users only
+        if ($this->getPortalOwnerId()) {
+            $MAX_PER_DAY = 2;
+            $activeCount = Appointment::where('pet_id', $validated['pet_id'])
+                ->where('date', $validated['date'])
+                ->whereNotIn('status', ['declined', 'cancelled', 'Declined', 'Cancelled'])
+                ->count();
+            if ($activeCount >= $MAX_PER_DAY) {
+                return response()->json([
+                    'message' => "This pet already has {$MAX_PER_DAY} appointment(s) booked for this day. Please choose a different date."
+                ], 422);
+            }
         }
 
         $service = \App\Models\Service::find($validated['service_id']);
