@@ -41,6 +41,31 @@ class BackupDatabaseCommand extends Command
         'settings',
     ];
 
+    /**
+     * Internal / technical / sensitive columns to leave out of the CSVs so the
+     * spreadsheets only show meaningful, human-readable data.
+     */
+    private const EXCLUDE_COLUMNS = [
+        'password',
+        'remember_token',
+        'must_change_password',
+        'email_verified_at',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
+        'google_id',
+        'fcm_token',
+        'avatar',                    // base64 blob — unreadable in a spreadsheet
+        'uuid',
+        'sync_status',
+        'synced_at',
+        'last_synced_at',
+        'last_modified_locally_at',
+        'clinic_id',
+        'updated_at',
+        'deleted_at',
+    ];
+
     public function handle()
     {
         $backupPath = storage_path('app/backups');
@@ -61,20 +86,24 @@ class BackupDatabaseCommand extends Command
                 try {
                     $rows = DB::table($table)->get();
 
-                    if ($rows->isEmpty()) {
-                        $columns = DB::connection()->getSchemaBuilder()->getColumnListing($table);
-                        $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
-                    } else {
-                        $columns = array_keys((array) $rows->first());
-                        $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
-                        foreach ($rows as $row) {
-                            $values = array_map(function ($v) {
-                                if ($v === null) return '';
-                                $v = str_replace('"', '""', (string) $v);
-                                return '"' . $v . '"';
-                            }, (array) $row);
-                            $csv .= implode(',', $values) . "\n";
-                        }
+                    // Determine which columns to keep (drop internal/technical ones)
+                    $allColumns = $rows->isEmpty()
+                        ? DB::connection()->getSchemaBuilder()->getColumnListing($table)
+                        : array_keys((array) $rows->first());
+                    $columns = array_values(array_filter(
+                        $allColumns,
+                        fn($c) => !in_array(strtolower($c), self::EXCLUDE_COLUMNS, true)
+                    ));
+
+                    $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
+                    foreach ($rows as $row) {
+                        $row = (array) $row;
+                        $values = array_map(function ($c) use ($row) {
+                            $v = $row[$c] ?? null;
+                            if ($v === null) return '';
+                            return '"' . str_replace('"', '""', (string) $v) . '"';
+                        }, $columns);
+                        $csv .= implode(',', $values) . "\n";
                     }
 
                     $phar->addFromString("{$table}.csv", $csv);
