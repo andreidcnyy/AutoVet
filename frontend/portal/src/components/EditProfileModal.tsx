@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getProfile, updateProfile, forgotPassword, deleteAccount } from '../api';
+import { getProfile, updateProfile, forgotPassword, deleteAccount, changePassword } from '../api';
 import PhoneInput from './PhoneInput';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -73,6 +73,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
       getProfile()
         .then(res => {
           const data = res.data;
+          setHasPassword(!!data.has_password);
           reset({
             name: data.name || "",
             email: data.email || "",
@@ -117,6 +118,37 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
 
   const [isResetting, setIsResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  // Set / change password (Google accounts start with no password)
+  const [hasPassword, setHasPassword] = useState(true);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwMessage, setPwMessage] = useState<string | null>(null);
+  const [isSavingPw, setIsSavingPw] = useState(false);
+
+  const handleSetPassword = async () => {
+    setPwError(null);
+    setPwMessage(null);
+    if (pwNew.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+    if (pwNew !== pwConfirm) { setPwError('Passwords do not match.'); return; }
+    setIsSavingPw(true);
+    try {
+      const res = await changePassword({
+        current_password: pwCurrent,
+        password: pwNew,
+        password_confirmation: pwConfirm,
+      });
+      setPwMessage(res.data?.message || 'Password saved.');
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+      setHasPassword(true);
+    } catch (err: any) {
+      setPwError(err.response?.data?.message || 'Failed to save password.');
+    } finally {
+      setIsSavingPw(false);
+    }
+  };
 
   const handleResetPassword = async () => {
     const email = watch("email");
@@ -305,6 +337,62 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                     {resetMessage}
                   </div>
                 )}
+
+                {/* Set / change password — Google accounts start with no password */}
+                <div className="rounded-2xl border-2 border-zinc-100 dark:border-dark-border p-4 space-y-3">
+                  <p className="text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300">
+                    {hasPassword ? 'Change Password' : 'Set a Password'}
+                  </p>
+                  {!hasPassword && (
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Your account uses Google Sign-In. Set a password to also log in with your email.
+                    </p>
+                  )}
+
+                  {pwMessage && (
+                    <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                      <FiCheckCircle className="w-4 h-4 shrink-0" /> {pwMessage}
+                    </div>
+                  )}
+                  {pwError && (
+                    <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold">
+                      <FiAlertCircle className="w-4 h-4 shrink-0" /> {pwError}
+                    </div>
+                  )}
+
+                  {hasPassword && (
+                    <input
+                      type="password"
+                      placeholder="Current password"
+                      value={pwCurrent}
+                      onChange={(e) => setPwCurrent(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                    />
+                  )}
+                  <input
+                    type="password"
+                    placeholder="New password (min 8 characters)"
+                    value={pwNew}
+                    onChange={(e) => setPwNew(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={pwConfirm}
+                    onChange={(e) => setPwConfirm(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSetPassword}
+                    disabled={isSavingPw}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 text-white font-bold text-xs hover:bg-brand-600 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <FiLock className="w-4 h-4" />
+                    {isSavingPw ? 'Saving...' : (hasPassword ? 'Update Password' : 'Set Password')}
+                  </button>
+                </div>
 
                 <button
                   type="button"

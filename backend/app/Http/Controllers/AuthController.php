@@ -269,6 +269,15 @@ class AuthController extends Controller
             }
         }
 
+        // Google sign-up accounts have no password set — guide them instead of a
+        // confusing "Invalid credentials".
+        if (!$is_admin && empty($user->password)) {
+            \Log::info('Login attempt on passwordless (Google) account', ['email' => $request->email]);
+            return response()->json([
+                'error' => 'This account was created with Google. Continue with Google, or open Profile → Security to set a password for email login.',
+            ], 403);
+        }
+
         if (!Hash::check($request->password, $user->password)) {
             \Log::warning('Login failed: Password mismatch', ['email' => $request->email]);
             return response()->json([
@@ -314,14 +323,17 @@ class AuthController extends Controller
 
     public function changePassword(Request $request)
     {
+        $user = $request->user();
+        $hasPassword = !empty($user->password);
+
+        // Google sign-up accounts have no password yet — they may SET one without a
+        // current password. Accounts that already have one must confirm the current.
         $request->validate([
-            'current_password' => 'required|string',
+            'current_password' => ($hasPassword ? 'required' : 'nullable') . '|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = $request->user();
-
-        if (!Hash::check($request->current_password, $user->password)) {
+        if ($hasPassword && !Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'The current password is incorrect.'], 422);
         }
 
@@ -330,7 +342,11 @@ class AuthController extends Controller
             'must_change_password' => false,
         ]);
 
-        return response()->json(['message' => 'Password changed successfully']);
+        return response()->json([
+            'message' => $hasPassword
+                ? 'Password changed successfully'
+                : 'Password set successfully. You can now log in with your email and password.',
+        ]);
     }
 
     public function logout(Request $request)

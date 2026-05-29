@@ -62,6 +62,7 @@ export const register = (data: any) => api.post('/register', data);
 export const logout = () => api.post('/logout');
 export const forgotPassword = (email: string) => api.post('/password/forgot', { email });
 export const resetPassword = (data: any) => api.post('/password/reset', data);
+export const changePassword = (data: any) => api.post('/change-password', data);
 
 // Dashboard
 export const getPortalOverview = () => api.get('/portal/overview');

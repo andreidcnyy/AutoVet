@@ -16,7 +16,11 @@ class ProfileController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
-        return response()->json($user);
+        // Expose whether a password is set so the portal can show "Set" vs "Change"
+        // password (Google sign-up accounts start with no password).
+        $data = $user->toArray();
+        $data['has_password'] = !empty($user->password);
+        return response()->json($data);
     }
 
     public function devices(Request $request)
