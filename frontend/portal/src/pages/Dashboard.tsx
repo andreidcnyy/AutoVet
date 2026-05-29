@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getPortalOverview, cancelAppointment, getPendingReview } from '../api';
 import { readCache, writeCache, clearCache } from '../utils/swrCache';
@@ -188,7 +188,7 @@ export default function Dashboard() {
           <div>
             <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Pet Wellness Portal</p>
             <h1 className="text-3xl font-black italic uppercase tracking-tight leading-tight">
-              Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} ðŸ¾
+              Welcome back,<br />{user?.name?.split(' ')[0] || 'Friend'} 🐾
             </h1>
             <p className="text-white/80 mt-2 text-sm font-medium">
               {pets.length > 0
@@ -327,63 +327,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
-                <FiClock className="text-brand-500" />
-                Upcoming
-              </h2>
-              <Link to="/appointments" className="text-xs font-bold text-brand-600 hover:underline">
-                View All
-              </Link>
-            </div>
-            
-            <div className="card-shell bg-white dark:bg-dark-card overflow-hidden">
-              {appointments.length > 0 ? (
-                <div className="divide-y divide-zinc-100 dark:divide-dark-border">
-                  {appointments.filter(a => a.status !== 'cancelled').slice(0, 5).map(appt => (
-                    <div 
-                      key={appt.id} 
-                      onClick={() => handleDetailsClick(appt)}
-                      className="p-4 hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition-colors cursor-pointer group"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                             <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest truncate">{appt.service?.name}</span>
-                             <span className={clsx(
-                               "text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md",
-                               appt.status === 'pending' && 'bg-zinc-100 text-zinc-600',
-                               appt.status === 'approved' && 'bg-emerald-50 text-emerald-700',
-                               (appt.status === 'cancelled' || appt.status === 'declined') && 'bg-rose-50 text-rose-700',
-                               appt.status === 'completed' && 'bg-blue-50 text-blue-700'
-                             )}>
-                               {appt.status}
-                             </span>
-                          </div>
-                          <h4 className="font-bold text-zinc-800 dark:text-zinc-100 truncate mt-0.5 group-hover:text-brand-500 transition-colors">{appt.pet?.name}</h4>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-[10px] font-black text-zinc-900 dark:text-zinc-50 flex items-center justify-end gap-1">
-                            <FiCalendar className="w-3 h-3 text-zinc-400" />
-                            {formatPortalDateLocal(appt.date)}
-                          </div>
-                          <div className="text-[10px] font-bold text-zinc-400 mt-0.5 flex items-center justify-end gap-1 uppercase tracking-tighter">
-                            <FiClock className="w-3 h-3" />
-                            {formatTime(appt.time) || '12:00 AM'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-zinc-400 text-sm">
-                  No upcoming appointments.
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
