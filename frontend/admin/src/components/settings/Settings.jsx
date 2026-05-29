@@ -34,7 +34,8 @@ const tabs = [
   { id: "backup", label: "Backup & Restore", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
   { id: "archive", label: "Archive & Recovery", icon: FiArchive, allowedRoles: VET_AND_ADMIN },
   // { id: "import", label: "Data Import", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
-  { id: "client_notifications", label: "Notification Templates", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
+  // Hidden until needed — Notification Templates not in use yet.
+  // { id: "client_notifications", label: "Notification Templates", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
 ];
 
 function Settings() {
@@ -94,7 +95,7 @@ function Settings() {
         { activeTab === "backup" && <BackupRestoreTab /> }
         { activeTab === "archive" && <ArchiveRecoveryTab /> }
         { /* activeTab === "import" && <DataImportTab /> */ }
-        { activeTab === "client_notifications" && <NotificationTemplatesManager /> }
+        { /* activeTab === "client_notifications" && <NotificationTemplatesManager /> */ }
       </main>
     </div>
   );
