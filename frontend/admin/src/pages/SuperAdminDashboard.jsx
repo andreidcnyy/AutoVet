@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FiHome, FiPlus, FiActivity, FiCheckCircle, FiAlertCircle,
   FiMail, FiPhone, FiMapPin, FiEdit2, FiUpload, FiImage,
@@ -453,8 +454,8 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Clinic Details Modal */}
-      {selectedClinic && !isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-autovet-navy/40 backdrop-blur-sm">
+      {selectedClinic && !isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-autovet-navy/40 backdrop-blur-sm">
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
 
             {/* Fixed header */}
@@ -594,10 +595,10 @@ export default function SuperAdminDashboard() {
 
           </div>
         </div>
-      )}
+      , document.body)}
 
-      {addUserModalOpen && selectedClinic && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-autovet-navy/50 p-4 backdrop-blur-sm">
+      {addUserModalOpen && selectedClinic && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-autovet-navy/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -636,10 +637,10 @@ export default function SuperAdminDashboard() {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-autovet-navy/40 p-4 backdrop-blur-sm overflow-y-auto">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-autovet-navy/40 p-4 backdrop-blur-sm overflow-y-auto">
           <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200 my-8">
             <h3 className="text-2xl font-black text-autovet-navy dark:text-zinc-50 mb-6 uppercase tracking-tight">{editMode ? 'Edit Clinic Details' : 'Register New Clinic'}</h3>
             <form onSubmit={handleSubmitClinic} className="space-y-6">
@@ -713,7 +714,7 @@ export default function SuperAdminDashboard() {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
