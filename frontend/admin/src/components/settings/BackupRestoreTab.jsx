@@ -18,6 +18,11 @@ function BackupRestoreTab() {
   };
 
   const controllerRef = React.useRef(null);
+  // Track "busy" in a ref too, so the polling interval can skip a refresh
+  // while the user is creating/deleting/downloading (avoids races that make
+  // items flicker or disappear).
+  const processingRef = React.useRef(false);
+  const setBusy = (v) => { processingRef.current = v; setProcessing(v); };
 
   const fetchBackups = (showLoading = false) => {
     if (controllerRef.current) controllerRef.current.abort();
@@ -47,7 +52,7 @@ function BackupRestoreTab() {
 
   useEffect(() => {
     fetchBackups(true);
-    const poll = setInterval(() => fetchBackups(false), 10000);
+    const poll = setInterval(() => { if (!processingRef.current) fetchBackups(false); }, 10000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchBackups(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -58,7 +63,7 @@ function BackupRestoreTab() {
   }, []);
 
   const createBackup = () => {
-    setProcessing(true);
+    setBusy(true);
     fetch("/api/backups", {
       method: "POST",
       headers: authHeader
@@ -82,14 +87,17 @@ function BackupRestoreTab() {
         }
       })
       .catch((err) => toast.error(err.message))
-      .finally(() => setProcessing(false));
+      .finally(() => setBusy(false));
   };
 
   const deleteBackup = (filename) => {
     if (!confirm(`Are you sure you want to delete backup: ${filename}?`)) return;
-    
-    setProcessing(true);
-    fetch(`/api/backups/${filename}`, { 
+
+    setBusy(true);
+    // Remove from the list immediately so it disappears without a refresh.
+    const previous = backups;
+    setBackups((prev) => prev.filter((b) => b.filename !== filename));
+    fetch(`/api/backups/${filename}`, {
       method: "DELETE",
       headers: authHeader
     })
@@ -100,14 +108,17 @@ function BackupRestoreTab() {
       })
       .then((data) => {
         toast.success(data.message);
-        fetchBackups();
       })
-      .catch((err) => toast.error(err.message))
-      .finally(() => setProcessing(false));
+      .catch((err) => {
+        // Restore the item if the delete failed on the server.
+        toast.error(err.message);
+        setBackups(previous);
+      })
+      .finally(() => setBusy(false));
   };
 
   const downloadBackup = (filename) => {
-    setProcessing(true);
+    setBusy(true);
     fetch(`/api/backups/download/${filename}`, {
       headers: authHeader
     })
@@ -130,7 +141,7 @@ function BackupRestoreTab() {
         toast.success("Download started");
       })
       .catch((err) => toast.error(err.message))
-      .finally(() => setProcessing(false));
+      .finally(() => setBusy(false));
   };
 
   const formatSize = (bytes) => {
