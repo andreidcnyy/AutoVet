@@ -45,6 +45,12 @@ return [
         'key' => env('ANTHROPIC_API_KEY', ''),
     ],
 
+    'ai' => [
+        // Inventory forecasting Python service. Read via config() so it survives
+        // config:cache (env() would return null once config is cached).
+        'url' => env('AI_API_URL'),
+    ],
+
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

@@ -278,7 +278,7 @@ class InventoryForecastService
                 }
             }
 
-            $apiUrl = env('AI_API_URL');
+            $apiUrl = config('services.ai.url');
             if ($apiUrl) {
                 try {
                     $csvData = file_get_contents($csvPath);
@@ -359,7 +359,7 @@ class InventoryForecastService
         $this->updateBatchProgress($batchId, 0, $totalItems, 'Preparing inventory data...');
 
         try {
-            if (env('AI_API_URL')) {
+            if (config('services.ai.url')) {
                 $this->runBatchViaApi($inventoryIds, $historyDays, $triggerSource, $batchId, $totalItems);
             } else {
                 $this->runBatchViaPython($inventoryIds, $historyDays, $triggerSource, $batchId, $totalItems);
