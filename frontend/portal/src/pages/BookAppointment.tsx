@@ -564,7 +564,6 @@ export default function BookAppointment() {
                       >
                         <div className="text-left">
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">{apptInvoice.invoice_number}</p>
-                          <p className="text-[10px] text-zinc-500 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
                         </div>
                         <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                       </button>

@@ -811,7 +811,7 @@ function AppointmentsView() {
                       <div className="flex items-center justify-between bg-white dark:bg-dark-card rounded-xl px-4 py-3 border border-blue-200 dark:border-blue-700">
                         <div>
                           <p className="text-sm font-black text-blue-700 dark:text-blue-400">{apptInvoice.invoice_number}</p>
-                          <p className="text-[10px] text-zinc-400 mt-0.5">{apptInvoice.created_at ? new Date(apptInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'} · {apptInvoice.status}</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">{apptInvoice.status}</p>
                         </div>
                         <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">₱{Number(apptInvoice.total || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                       </div>
