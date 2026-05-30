@@ -23,7 +23,7 @@ export const primaryNavigation = [
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "patients", label: "Patients", path: "/patients", icon: LuPawPrint, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: CLINIC_STAFF_ROLES },
-  { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: VET_AND_ADMIN },
+  { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES },
   { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: CLINIC_STAFF_ROLES },
 { id: "ai-clinical", label: "AI Clinical Support", path: "/ai-clinical", icon: LuSparkles, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES, aiOnly: true },
 ];

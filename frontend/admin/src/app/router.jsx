@@ -137,7 +137,7 @@ export const router = createBrowserRouter([
       {
         path: "inventory",
         element: (
-          <ProtectedRoute allowedRoles={VET_AND_ADMIN}>
+          <ProtectedRoute allowedRoles={CLINIC_STAFF_ROLES}>
             <InventoryPage />
           </ProtectedRoute>
         ),
