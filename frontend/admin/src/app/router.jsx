@@ -25,6 +25,7 @@ import {
   VET_AND_ADMIN,
   SUPER_ADMIN_ONLY,
   CLINIC_ADMIN_GROUP,
+  CLINIC_STAFF_ROLES,
 } from "../constants/roles";
 
 import RouterErrorElement from "../components/RouterErrorElement";
@@ -136,7 +137,7 @@ export const router = createBrowserRouter([
       {
         path: "inventory",
         element: (
-          <ProtectedRoute allowedRoles={ALL_ROLES}>
+          <ProtectedRoute allowedRoles={VET_AND_ADMIN}>
             <InventoryPage />
           </ProtectedRoute>
         ),
@@ -190,7 +191,7 @@ export const router = createBrowserRouter([
       {
         path: "invoices",
         element: (
-          <ProtectedRoute allowedRoles={CLINIC_ADMIN_GROUP}>
+          <ProtectedRoute allowedRoles={CLINIC_STAFF_ROLES}>
             <InvoicePage />
           </ProtectedRoute>
         ),
