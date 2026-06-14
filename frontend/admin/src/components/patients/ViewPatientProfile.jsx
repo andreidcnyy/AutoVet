@@ -620,7 +620,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
                👤
              </div>
              <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100 opacity-80">Registered Owner / Client</p>
+               <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100 opacity-80">Registered Owner</p>
                <h3 className="text-2xl font-black truncate max-w-[300px]" title={hasOwner ? owner.name : "Unassigned"}>
                  {hasOwner ? owner.name : "No Owner Assigned"}
                </h3>
@@ -631,16 +631,15 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
                  </div>
                )}
              </div>
-          </div>
-          {hasOwner && (
-            <button
+             </div>
+             {hasOwner && (
+             <button
               onClick={() => onOpenOwner(owner.id)}
               className="rounded-xl bg-white px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-sm transition-all hover:bg-emerald-50 active:scale-95"
-            >
-              View Client Profile
-            </button>
-          )}
-        </div>
+             >
+              View Owner Profile
+             </button>
+             )}        </div>
       </div>
 
       {/* Top grid: Photo + Quick stats */}

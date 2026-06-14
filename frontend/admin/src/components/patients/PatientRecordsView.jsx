@@ -329,7 +329,7 @@ function PatientRecordsView({
                {/* Owner Info */}
                <div className="p-6 pt-10">
                   <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{selectedOwner.name}</h3>
-                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">Client ID: #{selectedOwner.id}</p>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">Owner ID: #{selectedOwner.id}</p>
                   
                   <div className="mt-8 space-y-4">
                      <div className="flex items-center gap-4 group">
