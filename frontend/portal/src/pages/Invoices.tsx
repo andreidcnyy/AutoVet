@@ -128,14 +128,6 @@ export default function Invoices() {
     return matchesPet && matchesSearch;
   });
 
-  const totals = filteredInvoices.reduce((acc, inv) => {
-    if (inv.status !== 'Cancelled') {
-      const amt = parseFloat(inv.total);
-      acc.paid += isNaN(amt) ? 0 : amt;
-    }
-    return acc;
-  }, { paid: 0 });
-
   if (loading) return <div className="p-8 text-center text-zinc-500 font-bold">Loading invoices...</div>;
 
   return (
@@ -157,10 +149,6 @@ export default function Invoices() {
           <p className="text-white/70 text-xs font-black uppercase tracking-[0.2em] mb-1">Invoices</p>
           <h1 className="text-2xl font-black italic uppercase tracking-tight">Invoices 🐾</h1>
           <p className="text-white/80 mt-1 text-sm font-medium">All your invoice history in one place.</p>
-          <div className="mt-4">
-            <div className="text-xs font-black text-white/70 uppercase tracking-widest mb-0.5">Total Paid</div>
-            <div className="text-3xl font-black tracking-tight">₱{totals.paid.toLocaleString()}</div>
-          </div>
         </div>
       </div>
 
@@ -240,7 +228,7 @@ export default function Invoices() {
 
                   <div className="flex items-center justify-between md:justify-end gap-4 md:gap-8">
                     <div className="text-right">
-                      <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Paid</div>
+                      <div className="text-[10px] font-black text-zinc-400 uppercase mb-1">Total</div>
                       <div className="text-xl font-black text-emerald-600 italic">₱{parseFloat(invoice.total).toLocaleString()}</div>
                     </div>
                     {expandedInvoiceId === invoice.id ? <FiChevronUp className="text-zinc-400 w-6 h-6" /> : <FiChevronDown className="text-zinc-400 w-6 h-6" />}
@@ -262,7 +250,7 @@ export default function Invoices() {
 
                       <div className="pt-4 mt-4 border-t-2 border-dashed border-zinc-200 dark:border-dark-border space-y-4">
                         <div className="flex justify-between items-center">
-                           <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest text-lg">Total Paid</div>
+                           <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest text-lg">Total</div>
                            <div className="text-2xl font-black text-emerald-600">₱{parseFloat(invoice.total).toLocaleString()}</div>
                         </div>
                         <button
