@@ -42,7 +42,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <h3 className="text-xl font-bold flex items-center gap-2 text-zinc-800 dark:text-zinc-50">
             <FiUser className="h-5 w-5 text-emerald-500" />
-            Client Profile
+            Owner Profile
           </h3>
           <button
             onClick={onClose}
@@ -95,7 +95,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
                   </div>
                 ) : (
                   <p className="text-sm text-zinc-500 bg-zinc-50 border border-zinc-200 border-dashed rounded-xl p-6 text-center dark:bg-dark-surface dark:border-dark-border dark:text-zinc-400">
-                    No active pets recorded for this client.
+                    No active pets recorded for this owner.
                   </p>
                 )}
               </div>
