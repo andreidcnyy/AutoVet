@@ -105,13 +105,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user?.id) return;
-    const dismissKey = `dismissed_reviews_${user.id}`;
     const sessionKey = `review_popup_shown_${user.id}`;
-    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
     getPendingReview()
       .then((res: any) => {
-        const all: any[] = res.data?.invoices ?? [];
-        const pending = all.filter((inv: any) => !dismissed.includes(inv.id));
+        const pending: any[] = res.data?.invoices ?? [];
         setPendingReviews(pending);
         if (pending.length > 0 && !sessionStorage.getItem(sessionKey)) {
           sessionStorage.setItem(sessionKey, '1');
@@ -122,23 +119,22 @@ export default function Dashboard() {
   }, [user?.id]);
 
   const dismissReview = (invoiceId: number) => {
-    if (!user?.id) return;
-    const dismissKey = `dismissed_reviews_${user.id}`;
-    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
-    localStorage.setItem(dismissKey, JSON.stringify([...dismissed, invoiceId]));
+    // Just remove from current view state; it will reappear on next load/refresh
     setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId));
+    // If it was the last one, close the panel
+    if (pendingReviews.length <= 1) {
+      setIsReviewPanelOpen(false);
+    }
   };
 
   const completeReview = (invoiceId: number) => {
     setReviewTarget(null);
     // Re-fetch from server so the list reflects the actual saved state
     if (!user?.id) return;
-    const dismissKey = `dismissed_reviews_${user.id}`;
-    const dismissed: number[] = JSON.parse(localStorage.getItem(dismissKey) || '[]');
     getPendingReview()
       .then((res: any) => {
         const all: any[] = res.data?.invoices ?? [];
-        setPendingReviews(all.filter((inv: any) => !dismissed.includes(inv.id)));
+        setPendingReviews(all);
       })
       .catch(() => setPendingReviews(prev => prev.filter(inv => inv.id !== invoiceId)));
   };
