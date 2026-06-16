@@ -188,6 +188,18 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const dobValue = watch("date_of_birth");
 
     useEffect(() => {
+        if (breedIdValue && speciesList.length > 0) {
+            const selectedBreed = speciesList.flatMap(s => s.breeds || []).find(b => b.id.toString() === breedIdValue.toString());
+            if (selectedBreed) {
+                const species = speciesList.find(s => s.breeds?.some(b => b.id.toString() === selectedBreed.id.toString()));
+                if (species) {
+                    setValue("species_id", species.id.toString(), { shouldValidate: true });
+                }
+            }
+        }
+    }, [breedIdValue, speciesList, setValue]);
+
+    useEffect(() => {
         if (breedIdValue && speciesIdValue) {
             const selectedBreed = availableBreeds.find(b => b.id.toString() === breedIdValue.toString());
             if (selectedBreed?.default_size_category_id) {
@@ -383,6 +395,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Date of Birth</label>
                                     <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
                                 </div>
+                                <input type="hidden" {...register("species_id")} />
                                 
                                 <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-3">
                                     <div>
@@ -435,7 +448,13 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
                                     </select>
                                 </div>
-                                <input type="hidden" {...register("age_group")} />
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Age Group</label>
+                                    <div className="flex h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700 dark:bg-dark-surface dark:text-zinc-200 dark:border-dark-border transition-colors">
+                                        {watch("age_group")}
+                                    </div>
+                                    <input type="hidden" {...register("age_group")} />
+                                </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Color</label>
                                     <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />

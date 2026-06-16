@@ -187,32 +187,17 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const breedIdValue = watch("breed_id");
 
   useEffect(() => {
-    if (breedIdValue && speciesIdValue) {
-      const selectedBreed = availableBreeds.find(b => b.id.toString() === breedIdValue.toString());
-      if (selectedBreed?.default_size_category_id) {
-        setBreedSuggestedSizeId(selectedBreed.default_size_category_id);
-        if (!weightValue) setValue("size_category_id", selectedBreed.default_size_category_id.toString());
-      } else {
-        setBreedSuggestedSizeId(null);
+    if (breedIdValue && speciesList.length > 0) {
+      const selectedBreed = speciesList.flatMap(s => s.breeds || []).find(b => b.id.toString() === breedIdValue.toString());
+      if (selectedBreed) {
+        // Find which species this breed belongs to
+        const species = speciesList.find(s => s.breeds?.some(b => b.id.toString() === selectedBreed.id.toString()));
+        if (species) {
+          setValue("species_id", species.id.toString(), { shouldValidate: true });
+        }
       }
     }
-  }, [breedIdValue, speciesIdValue, availableBreeds, setValue, weightValue]);
-
-  const calculatedSizeId = (() => {
-    if (!weightValue || !speciesIdValue) return null;
-    const w = parseFloat(weightValue);
-    const ranges = weightRanges.filter(r => r.species_id?.toString() === speciesIdValue.toString() && r.status === "Active");
-    const match = ranges.find(r => w >= (r.min_weight || 0) && w <= (r.max_weight || Infinity));
-    return match ? match.size_category_id : null;
-  })();
-
-  const calculatedSizeName = sizeCategories.find(c => c.id.toString() === calculatedSizeId?.toString())?.name || (weightValue && speciesIdValue ? "Unclassified" : "N/A");
-
-  useEffect(() => {
-    if (weightValue && speciesIdValue && calculatedSizeId) {
-      setValue("size_category_id", calculatedSizeId.toString());
-    }
-  }, [calculatedSizeId, weightValue, speciesIdValue, setValue]);
+  }, [breedIdValue, speciesList, setValue]);
 
   useEffect(() => {
     if (speciesIdValue && dobValue) {
@@ -324,6 +309,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                <input type="hidden" {...register("species_id")} />
                 <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Sex</label><select {...register("sex")} className={getSelectClass(errors.sex)}><option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option></select></div>
                 <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Date of Birth</label><input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} /></div>
               </div>

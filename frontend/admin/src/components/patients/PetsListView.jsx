@@ -167,9 +167,9 @@ function PetsListView() {
                                 />
                                 <span className={clsx(
                                     "absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg text-[10px] shadow-sm",
-                                    pet.sex === "Male" ? "bg-blue-100 text-blue-600" : "bg-pink-100 text-pink-600"
+                                    pet.sex?.startsWith("Male") ? "bg-blue-100 text-blue-600" : "bg-pink-100 text-pink-600"
                                 )}>
-                                    {pet.sex === "Male" ? "â™‚" : "â™€"}
+                                    {pet.sex?.startsWith("Male") ? "♂" : "♀"}
                                 </span>
                             </div>
                             <div className="text-right">
