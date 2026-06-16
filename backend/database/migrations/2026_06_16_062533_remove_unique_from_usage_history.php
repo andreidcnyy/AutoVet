@@ -18,10 +18,21 @@ return new class extends Migration
             });
 
             if ($hasUnique) {
+                // 1. Drop the foreign key first (required by MySQL before index swap)
+                $table->dropForeign(['invoice_item_id']);
+                
+                // 2. Drop the restrictive unique index
                 $table->dropUnique(['invoice_item_id']);
+                
+                // 3. Re-add the foreign key constraint (creates a non-unique index)
+                $table->foreign('invoice_item_id')
+                      ->references('id')
+                      ->on('invoice_items')
+                      ->cascadeOnDelete();
+            } else {
+                // Ensure there's a non-unique index if unique is gone but FK is missing or manually changed
+                $table->index('invoice_item_id');
             }
-            
-            $table->index('invoice_item_id');
         });
     }
 
