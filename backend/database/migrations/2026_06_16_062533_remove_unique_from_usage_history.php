@@ -12,7 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inventory_usage_history', function (Blueprint $table) {
-            $table->dropUnique(['invoice_item_id']);
+            $indexes = Schema::getIndexes('inventory_usage_history');
+            $hasUnique = collect($indexes)->contains(function ($index) {
+                return $index['name'] === 'inventory_usage_history_invoice_item_id_unique';
+            });
+
+            if ($hasUnique) {
+                $table->dropUnique(['invoice_item_id']);
+            }
+            
             $table->index('invoice_item_id');
         });
     }
