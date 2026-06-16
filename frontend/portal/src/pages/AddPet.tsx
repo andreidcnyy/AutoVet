@@ -37,6 +37,8 @@ const petSchema = z.object({
 export default function AddPet() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [registerAnother, setRegisterAnother] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [speciesList, setSpeciesList] = useState<any[]>([]);
@@ -48,13 +50,14 @@ export default function AddPet() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(petSchema),
     defaultValues: {
       name: "", species_id: "", breed_id: "", date_of_birth: "",
       sex: "Male", age_group: "Adult", color: "", weight: 0, weight_unit: "kg",
-      photo: ""
+      photo: "", allergies: "", medication: "", notes: ""
     }
   });
 
@@ -150,10 +153,22 @@ export default function AddPet() {
 
   const onSubmit = async (data: any) => {
     setError(null);
+    setSuccess(false);
     try {
       await createPet(data);
       clearAllPortalCache();
-      navigate('/');
+      
+      if (registerAnother) {
+        setSuccess(true);
+        reset({
+          name: "", species_id: "", breed_id: "", date_of_birth: "",
+          sex: "Male", age_group: "Adult", color: "", weight: 0, weight_unit: "kg",
+          photo: "", allergies: "", medication: "", notes: ""
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || "Failed to register pet.");
@@ -177,6 +192,13 @@ export default function AddPet() {
           <div className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 dark:bg-rose-900/10 dark:border-rose-900/20 dark:text-rose-400">
             <FiAlertCircle className="shrink-0" />
             <span className="text-sm font-medium">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 dark:bg-emerald-900/10 dark:border-emerald-900/20 dark:text-emerald-400 animate-in fade-in slide-in-from-top-2">
+            <FiCheckCircle className="shrink-0" />
+            <span className="text-sm font-medium">Pet registered successfully! You can now add another one.</span>
           </div>
         )}
 
@@ -271,6 +293,17 @@ export default function AddPet() {
 
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Allergies</label>
+              <input {...register("allergies")} className="input-field font-medium" placeholder="Pollen, Penicillin, etc." />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Current Medication</label>
+              <input {...register("medication")} className="input-field font-medium" placeholder="Daily vitamins, etc." />
+            </div>
+          </div>
+
           <div>
             <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Medical Notes</label>
             <textarea 
@@ -280,7 +313,20 @@ export default function AddPet() {
             />
           </div>
 
-          <div className="pt-6 border-t border-zinc-100 dark:border-dark-border">
+          <div className="pt-6 border-t border-zinc-100 dark:border-dark-border space-y-4">
+            <div className="flex items-center gap-3 px-1">
+              <input 
+                type="checkbox" 
+                id="registerAnother"
+                checked={registerAnother}
+                onChange={(e) => setRegisterAnother(e.target.checked)}
+                className="w-5 h-5 rounded border-zinc-300 text-brand-500 focus:ring-brand-500"
+              />
+              <label htmlFor="registerAnother" className="text-sm font-bold text-zinc-600 dark:text-zinc-400 cursor-pointer">
+                Register another pet after this one
+              </label>
+            </div>
+
             <button 
               type="submit"
               disabled={isSubmitting}
