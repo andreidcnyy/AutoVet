@@ -405,6 +405,7 @@ function InventoryView() {
             <thead>
               <tr className="text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 bg-zinc-50/50 dark:bg-dark-surface/30 border-b border-zinc-100 dark:border-dark-border">
                 <th className="px-6 py-4">Item Details</th>
+                <th className="px-6 py-4">Batch #</th>
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4 text-center">Stock</th>
                 <th className="px-6 py-4 text-right">Buy Price</th>
@@ -415,9 +416,9 @@ function InventoryView() {
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {isLoading ? (
-                <tr><td colSpan="7" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
+                <tr><td colSpan="8" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Loading Clinical Inventory...</td></tr>
               ) : currentItems.length === 0 ? (
-                <tr><td colSpan="7" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
+                <tr><td colSpan="8" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
                 currentItems.map((row) => {
                   const isExpired = row.expiration_date && new Date(row.expiration_date) < new Date();
@@ -425,12 +426,24 @@ function InventoryView() {
                     <tr key={row.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">{row.item_name}</span>
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-0.5">{row.code || row.sku}</span>
-                            {row.expiration_date && (
-                                <span className={clsx("text-[9px] font-black uppercase tracking-tighter mt-1 px-1.5 py-0.5 rounded-sm w-fit", isExpired ? "bg-rose-100 text-rose-600" : "text-zinc-400")}>
-                                    EXP: {new Date(row.expiration_date).toLocaleDateString()}
-                                </span>
+                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight leading-tight">{row.item_name}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{row.code || row.sku}</span>
+                                {row.expiration_date && (
+                                    <span className={clsx("text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm", isExpired ? "bg-rose-100 text-rose-600" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800")}>
+                                        EXP: {new Date(row.expiration_date).toLocaleDateString()}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-widest">
+                                {row.batch_number || "No Batch"}
+                            </span>
+                            {row.lot_number && (
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase mt-0.5">Lot: {row.lot_number}</span>
                             )}
                         </div>
                       </td>

@@ -43,101 +43,126 @@ class InvoiceFinalizationService
             // Loop through items
             foreach ($invoice->items as $item) {
                 if ($item->inventory_id) {
-                    $inventoryItem = Inventory::where('id', $item->inventory_id)->lockForUpdate()->first();
+                    $originalItem = Inventory::where('id', $item->inventory_id)->lockForUpdate()->first();
 
-                    if (!$inventoryItem) {
+                    if (!$originalItem) {
                         throw new Exception("Inventory item not found for ID: {$item->inventory_id}");
                     }
 
                     // For inventory type items, we only deduct if the flag is set
-                    if ($item->item_type === 'inventory' && !$inventoryItem->deduct_on_finalize) {
+                    if ($item->item_type === 'inventory' && !$originalItem->deduct_on_finalize) {
                         continue;
                     }
 
+                    // FIFO Logic: Find all batches with the same item code
+                    // If no code, we fall back to just the original item
+                    $itemCode = $originalItem->code;
+                    $batches = [];
+                    
+                    if ($itemCode) {
+                        $batches = Inventory::where('code', $itemCode)
+                            ->where('stock_level', '>', 0)
+                            ->orderBy('id', 'asc') // FIFO by ID
+                            ->lockForUpdate()
+                            ->get();
+                    }
+
+                    // If for some reason we found no batches with stock (even the original one)
+                    // we still want to proceed with shortage handling logic using the original item's info
+                    if (empty($batches) || $batches->count() === 0) {
+                        $batches = collect([$originalItem]);
+                    }
+
+                    // Check total available across all batches
+                    $totalAvailable = $batches->sum('stock_level');
+                    $qtyToDeduct = $item->qty;
+
                     // Stock shortage handling depends on item type.
-                    //   Retail product (item_type === 'inventory'): block. You
-                    //     cannot sell what you do not have on hand.
-                    //   Service consumable (item_type === 'service'): allow,
-                    //     because the procedure has already been performed and
-                    //     the client must still be billable. Log the shortage,
-                    //     skip the deduction, and continue.
-                    if ($inventoryItem->stock_level < $item->qty) {
+                    if ($totalAvailable < $qtyToDeduct) {
                         if ($item->item_type === 'service') {
                             \Illuminate\Support\Facades\Log::warning(
                                 "[INVOICE-SERVICE-CONSUMABLE-SHORTAGE] Skipping deduction for invoice #{$invoice->invoice_number}",
                                 [
-                                    'inventory_id' => $inventoryItem->id,
-                                    'item_name'    => $inventoryItem->item_name,
-                                    'required'     => $item->qty,
-                                    'available'    => $inventoryItem->stock_level,
+                                    'inventory_id' => $originalItem->id,
+                                    'item_name'    => $originalItem->item_name,
+                                    'required'     => $qtyToDeduct,
+                                    'available'    => $totalAvailable,
                                 ]
                             );
 
                             $this->createInternalNotification(
                                 'StockShortage',
                                 'Service Consumable Shortage',
-                                "Invoice #{$invoice->invoice_number} finalized but service consumable '{$inventoryItem->item_name}' could not be deducted (required {$item->qty}, available {$inventoryItem->stock_level}). Reorder needed.",
-                                ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
+                                "Invoice #{$invoice->invoice_number} finalized but service consumable '{$originalItem->item_name}' could not be deducted (required {$qtyToDeduct}, available {$totalAvailable}). Reorder needed.",
+                                ['inventory_id' => $originalItem->id, 'invoice_id' => $invoice->id]
                             );
 
-                            if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
-                                event(new LowStockDetected($inventoryItem));
+                            if ($totalAvailable <= $originalItem->min_stock_level) {
+                                event(new LowStockDetected($originalItem));
                             }
 
                             continue;
                         }
 
-                        if ($inventoryItem->stock_level <= 0) {
-                            throw new Exception("Cannot bill retail item '{$inventoryItem->item_name}'. Item is currently OUT OF STOCK.");
+                        if ($totalAvailable <= 0) {
+                            throw new Exception("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
                         }
 
-                        throw new Exception("Insufficient stock for retail item '{$inventoryItem->item_name}'. Required: {$item->qty}, Available: {$inventoryItem->stock_level}. Remove or restock before finalizing.");
+                        throw new Exception("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
                     }
 
-                    $oldStock = $inventoryItem->stock_level;
-                    $inventoryItem->stock_level -= $item->qty;
-                    $inventoryItem->save();
+                    // Perform FIFO Deduction
+                    foreach ($batches as $batchItem) {
+                        if ($qtyToDeduct <= 0) break;
 
-                    // Broadcast inventory update
-                    event(new \App\Events\InventoryUpdated($inventoryItem));
+                        $deductFromThisBatch = min($batchItem->stock_level, $qtyToDeduct);
+                        if ($deductFromThisBatch <= 0) continue;
 
-                    // Log the transaction
-                    InventoryTransaction::create([
-                        'inventory_id' => $inventoryItem->id,
-                        'transaction_type' => $item->item_type === 'service' ? 'Service Consumable' : 'Retail Sale',
-                        'quantity' => -$item->qty,
-                        'previous_stock' => $oldStock,
-                        'new_stock' => $inventoryItem->stock_level,
-                        'remarks' => "Deducted from Invoice #{$invoice->invoice_number} (" . ucfirst($item->item_type) . " item)",
-                        'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
-                    ]);
+                        $oldStock = $batchItem->stock_level;
+                        $batchItem->stock_level -= $deductFromThisBatch;
+                        $batchItem->save();
+                        
+                        $qtyToDeduct -= $deductFromThisBatch;
 
-                    // Record clean sale-based usage history (skip if already inserted for this invoice item)
-                    InventoryUsageHistory::firstOrCreate(
-                        ['invoice_item_id' => $item->id],
-                        [
-                            'inventory_id' => $inventoryItem->id,
+                        // Broadcast inventory update
+                        event(new \App\Events\InventoryUpdated($batchItem));
+
+                        // Log the transaction
+                        InventoryTransaction::create([
+                            'inventory_id' => $batchItem->id,
+                            'transaction_type' => $item->item_type === 'service' ? 'Service Consumable' : 'Retail Sale',
+                            'quantity' => -$deductFromThisBatch,
+                            'previous_stock' => $oldStock,
+                            'new_stock' => $batchItem->stock_level,
+                            'remarks' => "Deducted (FIFO) from Invoice #{$invoice->invoice_number} (" . ucfirst($item->item_type) . " item)",
+                            'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
+                        ]);
+
+                        // Record clean sale-based usage history
+                        InventoryUsageHistory::create([
+                            'invoice_item_id' => $item->id,
+                            'inventory_id' => $batchItem->id,
                             'invoice_id'   => $invoice->id,
-                            'quantity_used' => $item->qty,
+                            'quantity_used' => $deductFromThisBatch,
                             'usage_date'   => $usageDate,
                             'source_type'  => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
-                            'unit_price'   => $item->unit_price ?? $inventoryItem->selling_price,
-                        ]
-                    );
+                            'unit_price'   => $item->unit_price ?? $batchItem->selling_price,
+                        ]);
 
-                    $affectedInventoryIds[] = $inventoryItem->id;
+                        $affectedInventoryIds[] = $batchItem->id;
 
-                    // Internal admin notification for stock deduction
-                    $this->createInternalNotification(
-                        'StockAdjustment',
-                        'Inventory Subtracted',
-                        "{$item->qty} units of '{$inventoryItem->item_name}' were deducted due to Invoice #{$invoice->invoice_number}.",
-                        ['inventory_id' => $inventoryItem->id, 'invoice_id' => $invoice->id]
-                    );
+                        // Internal admin notification for stock deduction
+                        $this->createInternalNotification(
+                            'StockAdjustment',
+                            'Inventory Subtracted',
+                            "{$deductFromThisBatch} units of '{$batchItem->item_name}' (Batch: {$batchItem->batch_number}) were deducted due to Invoice #{$invoice->invoice_number}.",
+                            ['inventory_id' => $batchItem->id, 'invoice_id' => $invoice->id]
+                        );
 
-                    // Trigger low stock event if necessary
-                    if ($inventoryItem->stock_level <= $inventoryItem->min_stock_level) {
-                        event(new LowStockDetected($inventoryItem));
+                        // Trigger low stock event if necessary
+                        if ($batchItem->stock_level <= $batchItem->min_stock_level) {
+                            event(new LowStockDetected($batchItem));
+                        }
                     }
                 }
             }

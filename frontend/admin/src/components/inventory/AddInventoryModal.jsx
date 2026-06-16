@@ -265,21 +265,33 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #</label>
-                  <select {...register("lot_number")} className={getInputClass(errors.lot_number)}>
-                    <option value="">— None —</option>
+                  <input 
+                    type="text" 
+                    list="lot-options"
+                    {...register("lot_number")} 
+                    className={getInputClass(errors.lot_number)} 
+                    placeholder="e.g. LOT-123"
+                  />
+                  <datalist id="lot-options">
                     {lotOptions.map((lot) => (
-                      <option key={lot} value={lot}>{lot}</option>
+                      <option key={lot} value={lot} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch #</label>
-                  <select {...register("batch_number")} className={getInputClass(errors.batch_number)}>
-                    <option value="">— None —</option>
+                  <input 
+                    type="text" 
+                    list="batch-options"
+                    {...register("batch_number")} 
+                    className={getInputClass(errors.batch_number)} 
+                    placeholder="e.g. BATCH-001"
+                  />
+                  <datalist id="batch-options">
                     {batchOptions.map((batch) => (
-                      <option key={batch} value={batch}>{batch}</option>
+                      <option key={batch} value={batch} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
               </div>
             </div>
