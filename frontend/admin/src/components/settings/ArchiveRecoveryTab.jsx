@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
 import clsx from "clsx";
-import { FiRefreshCcw, FiTrash2, FiAlertTriangle } from "react-icons/fi";
+import { FiRefreshCcw, FiAlertTriangle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -98,28 +98,6 @@ export default function ArchiveRecoveryTab() {
     }
   };
 
-  const handleForceDelete = async (id, name) => {
-    if (!window.confirm(`PERMANENT DELETE: Cannot be undone.\nAre you absolutely sure you want to purge "${name}" forever?`)) return;
-
-    try {
-      const res = await fetch(`/api/archives/${activeType}/${id}/force`, {
-        method: "DELETE",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user?.token}`,
-        },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to permanently delete.");
-
-      toast.success(data.message || "Item permanently purged.");
-      // Refresh current page
-      fetchArchives(activeType, pagination.current_page);
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
   const handleCancelDeletion = async (id, name) => {
     if (!window.confirm(`Recover account for "${name}"? Their deletion request will be cancelled.`)) return;
     try {
@@ -208,7 +186,7 @@ export default function ArchiveRecoveryTab() {
       <div>
         <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Archive & Recovery</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Restore soft-deleted records or permanently purge them from the database.
+          Restore soft-deleted records. Data is automatically and permanently purged by the system after a 60-day retention period.
         </p>
       </div>
 
@@ -349,13 +327,6 @@ export default function ArchiveRecoveryTab() {
                           >
                             <FiRefreshCcw className="h-3.5 w-3.5" />
                             Restore
-                          </button>
-                          <button
-                            onClick={() => handleForceDelete(item.id, name)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50"
-                          >
-                            <FiTrash2 className="h-3.5 w-3.5" />
-                            Purge
                           </button>
                         </div>
                       </td>

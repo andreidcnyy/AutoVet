@@ -11,7 +11,7 @@ trait Archivable
         static::deleting(function ($model) {
             if (!$model->isForceDeleting() && in_array('deleted_by', $model->getFillable()) && auth()->check()) {
                 $model->deleted_by = Auth::id();
-                $model->restore_until = now()->addDays(30);
+                $model->restore_until = now()->addDays(60);
                 $model->saveQuietly(); // save without triggering other events just to persist these fields
             }
         });
