@@ -388,7 +388,7 @@ function PatientsPage() {
           )}
         >
           <LuPawPrint className="h-4 w-4" />
-          Patient Directory
+          Pet Directory
         </button>
       </div>
 
