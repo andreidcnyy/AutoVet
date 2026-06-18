@@ -44,7 +44,7 @@ const petSchema = z.object({
   treatment_plan: z.string().optional().or(z.literal("")),
 });
 
-const petSchema = z.object({
+const formSchema = z.object({
   owner_id: z.coerce.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string().optional().or(z.literal("")),
