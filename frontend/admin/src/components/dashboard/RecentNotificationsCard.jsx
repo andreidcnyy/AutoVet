@@ -11,7 +11,7 @@ const iconToneStyles = {
   neutral: "bg-zinc-100 text-zinc-600 dark:bg-dark-surface dark:text-zinc-400",
 };
 
-function RecentNotificationsCard({ items, onMarkAllRead, onClearAll, onDismiss }) {
+function RecentNotificationsCard({ items, loading, onMarkAllRead, onClearAll, onDismiss }) {
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -43,7 +43,12 @@ function RecentNotificationsCard({ items, onMarkAllRead, onClearAll, onDismiss }
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-[150px] slim-scroll">
-        {(!items || items.length === 0) ? (
+        {loading ? (
+          <div className="flex h-full min-h-[250px] flex-col items-center justify-center p-6 space-y-4">
+             <div className="h-8 w-8 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
+             <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Updating alerts...</p>
+          </div>
+        ) : (!items || items.length === 0) ? (
           <div className="flex h-full min-h-[250px] flex-col items-center justify-center p-6 text-center">
             <div className="mb-3 rounded-full bg-zinc-100 p-4 dark:bg-dark-surface">
               <FiBell className="h-8 w-8 text-zinc-300 dark:text-zinc-600" />

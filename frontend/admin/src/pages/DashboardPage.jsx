@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import MetricCard from "../components/dashboard/MetricCard";
 import AnalyticsChartsCard from "../components/dashboard/AnalyticsChartsCard";
 import SalesSummaryCard from "../components/dashboard/SalesSummaryCard";
+import AppointmentsScheduleCard from "../components/dashboard/AppointmentsScheduleCard";
+import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
 import { LuSparkles } from "react-icons/lu";
@@ -52,7 +54,8 @@ function DashboardPage() {
   };
 
   const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { enabled, cacheKey: 'dashboard_stats_cache' });
-  const { data: notifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
+  const { data: notifications, isLoading: loadingNotifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
+  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today', { enabled });
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
@@ -62,7 +65,7 @@ function DashboardPage() {
     let echoInstance = null;
     import("../utils/echo").then(module => {
         echoInstance = module.default;
-        const refresh = () => { refetchStats(); refetchNotifications(); setLastUpdate(Date.now()); };
+        const refresh = () => { refetchStats(); refetchNotifications(); refetchAppts(); setLastUpdate(Date.now()); };
         echoInstance.private('admin.appointments')
             .listen('.appointment.created', refresh)
             .listen('.appointment.status.updated', refresh)
@@ -70,7 +73,7 @@ function DashboardPage() {
     });
 
     return () => { if (echoInstance) echoInstance.leave('admin.appointments'); };
-  }, [enabled, refetchStats, refetchNotifications]);
+  }, [enabled, refetchStats, refetchNotifications, refetchAppts]);
 
   // Real-time Modal Refresh
   useEffect(() => {
@@ -83,10 +86,10 @@ function DashboardPage() {
   }, [lastUpdate]);
 
   useEffect(() => {
-    const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); };
+    const handleRefresh = () => { refetchStats?.(); refetchNotifications?.(); refetchAppts?.(); };
     window.addEventListener('inventory-forecast-refresh', handleRefresh);
     return () => window.removeEventListener('inventory-forecast-refresh', handleRefresh);
-  }, [refetchStats, refetchNotifications]);
+  }, [refetchStats, refetchNotifications, refetchAppts]);
 
   const mappedMetrics = (Array.isArray(stats) ? stats : [])
     .map(stat => {
@@ -153,15 +156,24 @@ function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-6">
-        <AnalyticsChartsCard />
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2 space-y-6">
+          <AnalyticsChartsCard />
+          {!isStaff && <SalesSummaryCard />}
+        </div>
+        <div className="space-y-6">
+          <AppointmentsScheduleCard 
+            appointments={todayAppts?.appointments || []} 
+            loading={loadingAppts} 
+          />
+          <RecentNotificationsCard 
+            items={mappedNotifications}
+            onMarkAllRead={handleMarkAllRead}
+            onClearAll={handleClearAll}
+            onDismiss={handleDismiss}
+          />
+        </div>
       </section>
-
-      {!isStaff && (
-        <section className="grid grid-cols-1 gap-6">
-          <SalesSummaryCard />
-        </section>
-      )}
 
       {modal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" onClick={closeModal}>
