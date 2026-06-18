@@ -29,6 +29,7 @@ function DashboardPage() {
   const toast = useToast();
   const isStaff = user?.role === ROLES.STAFF;
   const enabled = !!user?.token;
+  const [isExporting, setIsExporting] = useState(false);
 
   // Unified Modal State
   const [modal, setModal] = useState({ open: false, type: null, title: "", data: null, loading: false, error: null, pagination: null });
