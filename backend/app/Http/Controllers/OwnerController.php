@@ -15,7 +15,17 @@ class OwnerController extends Controller
     public function index(Request $request)
     {
         if ($request->boolean('minimal')) {
-            return response()->json(Owner::select('id', 'name', 'phone', 'email')->orderBy('name')->get());
+            $query = Owner::select('id', 'name', 'phone', 'email')->orderBy('name');
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhereHas('pets', fn ($p) => $p->where('name', 'like', "%{$search}%"));
+                });
+            }
+            return response()->json($query->get());
         }
 
         $query = Owner::with(['pets', 'user'])->orderBy('id', 'desc');

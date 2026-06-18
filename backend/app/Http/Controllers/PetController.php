@@ -58,6 +58,8 @@ class PetController extends Controller
                 $ownerId = $this->getPortalOwnerId();
                 if (!$ownerId) return response()->json([]);
                 $query->where('owner_id', $ownerId);
+            } elseif ($request->has('owner_id')) {
+                $query->where('owner_id', $request->owner_id);
             }
             return response()->json($query->orderBy('name')->get());
         }

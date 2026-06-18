@@ -122,7 +122,7 @@ function AppointmentsView() {
   const [species, setSpecies] = useState([]);
   const [breeds, setBreeds] = useState([]);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, setValue, getValues, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(quickAddSchema),
     defaultValues: { date: "", time: "", pet_id: preSelectedPetId || "", service_id: "", vet_id: "", notes: "" }
   });
@@ -232,6 +232,69 @@ function AppointmentsView() {
     });
   }, [formDataLoaded, user?.token]);
 
+  // Live client/owner server-side search synchronization
+  useEffect(() => {
+    if (!bookingOwnerSearch.trim() || !user?.token) return;
+
+    // If bookingOwnerSearch exactly matches a selected owner's name, don't trigger search
+    const currentOwner = owners.find(o => String(o.id) === String(selectedOwnerId));
+    if (currentOwner && currentOwner.name === bookingOwnerSearch) return;
+
+    const timer = setTimeout(() => {
+      api.get('/api/owners', { params: { minimal: true, search: bookingOwnerSearch } })
+        .then(res => {
+          const fetchedOwners = res?.data || res || [];
+          const list = Array.isArray(fetchedOwners) ? fetchedOwners : [];
+          if (list.length > 0) {
+            setOwners(prev => {
+              const existingIds = new Set(prev.map(o => o.id));
+              const newOwners = list.filter(o => !existingIds.has(o.id));
+              if (newOwners.length === 0) return prev;
+              return [...prev, ...newOwners];
+            });
+          }
+        })
+        .catch(err => console.error("Live owner search failed:", err));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [bookingOwnerSearch, user?.token, selectedOwnerId]); // removed 'owners' from dependency array to prevent effect re-running on owners change
+
+  // Live pet fetching when an owner is selected to ensure all their pets are loaded
+  useEffect(() => {
+    if (!selectedOwnerId || !user?.token) return;
+
+    api.get('/api/pets', { params: { minimal: true, owner_id: selectedOwnerId } })
+      .then(res => {
+        const fetchedPets = res?.data || res || [];
+        const list = Array.isArray(fetchedPets) ? fetchedPets : [];
+        if (list.length > 0) {
+          setPets(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPets = list.filter(p => !existingIds.has(p.id));
+            if (newPets.length === 0) return prev;
+            return [...prev, ...newPets];
+          });
+
+          // Auto-select first pet for regular scheduling form if empty
+          const currentPetId = getValues("pet_id");
+          if (!currentPetId) {
+            setValue("pet_id", String(list[0].id));
+          }
+
+          // Auto-fill walk-in pet if empty
+          if (!walkInPet.name.trim()) {
+            setWalkInPet({
+              name: list[0].name || "",
+              species_id: list[0].species_id || "",
+              breed_id: list[0].breed_id || ""
+            });
+          }
+        }
+      })
+      .catch(err => console.error("Live pet fetching failed:", err));
+  }, [selectedOwnerId, user?.token]);
+
   useEffect(() => {
     if (!user?.token) return;
     api.get('/api/dashboard/appointment-forecast', { cache: true }).then(data => setAiForecast(data));
@@ -304,6 +367,8 @@ function AppointmentsView() {
     setWalkInIsEmergency(false);
     setWalkInErrors({});
     setWalkInDupeWarning(null);
+    setSelectedOwnerId("");
+    setBookingOwnerSearch("");
   };
 
   const [walkInSubmitting, setWalkInSubmitting] = useState(false);
@@ -658,9 +723,7 @@ function AppointmentsView() {
                               onChange={(e) => {
                                 setBookingOwnerSearch(e.target.value);
                                 setIsBookingOwnerDropdownOpen(true);
-                                if (!e.target.value) {
-                                  setSelectedOwnerId("");
-                                }
+                                setSelectedOwnerId(""); // Clear selection on change
                               }}
                               onFocus={() => setIsBookingOwnerDropdownOpen(true)}
                               className={clsx(qInputBase, walkInErrors.ownerId && "border-rose-400")}
@@ -678,16 +741,27 @@ function AppointmentsView() {
                                 <FiX className="h-4 w-4" />
                               </button>
                             )}
-                          </div>
-                          {walkInErrors.ownerId && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerId}</p>}
+                            </div>
+                            {walkInErrors.ownerId && <p className="text-xs text-rose-500 mt-1">{walkInErrors.ownerId}</p>}
 
-                          {isBookingOwnerDropdownOpen && (
+                            {isBookingOwnerDropdownOpen && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setIsBookingOwnerDropdownOpen(false)} />
                               <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-dark-border dark:bg-dark-card z-50 divide-y divide-zinc-100">
-                                {owners
-                                  .filter(o => o.name?.toLowerCase().includes(bookingOwnerSearch.toLowerCase()) || o.phone?.includes(bookingOwnerSearch))
-                                  .map(o => (
+                                {(() => {
+                                  const filtered = owners.filter(o => {
+                                    if (!bookingOwnerSearch) return true;
+                                    const sLower = bookingOwnerSearch.toLowerCase();
+                                    return o.name?.toLowerCase().includes(sLower) || 
+                                           o.phone?.includes(bookingOwnerSearch) || 
+                                           o.email?.toLowerCase().includes(sLower) ||
+                                           o.pets?.some(p => p.name?.toLowerCase().includes(sLower)) ||
+                                           pets.some(p => String(p.owner_id) === String(o.id) && p.name?.toLowerCase().includes(sLower));
+                                  });
+                                  if (filtered.length === 0) {
+                                    return <div className="px-4 py-3 text-xs text-zinc-400 italic">No owners found</div>;
+                                  }
+                                  return filtered.map(o => (
                                     <button
                                       key={o.id}
                                       type="button"
@@ -712,10 +786,8 @@ function AppointmentsView() {
                                       <p>{o.name}</p>
                                       {o.phone && <p className="text-[10px] text-zinc-400 mt-0.5">{o.phone}</p>}
                                     </button>
-                                  ))}
-                                {owners.filter(o => o.name?.toLowerCase().includes(bookingOwnerSearch.toLowerCase()) || o.phone?.includes(bookingOwnerSearch)).length === 0 && (
-                                  <div className="px-4 py-3 text-xs text-zinc-400 italic">No owners found</div>
-                                )}
+                                  ));
+                                })()}
                               </div>
                             </>
                           )}
@@ -806,10 +878,8 @@ function AppointmentsView() {
                             onChange={(e) => {
                               setBookingOwnerSearch(e.target.value);
                               setIsBookingOwnerDropdownOpen(true);
-                              if (!e.target.value) {
-                                setSelectedOwnerId("");
-                                setValue("pet_id", "");
-                              }
+                              setSelectedOwnerId(""); // Clear selection on change
+                              setValue("pet_id", "");  // Clear pet selection
                             }}
                             onFocus={() => setIsBookingOwnerDropdownOpen(true)}
                             className={qInputBase}
@@ -834,16 +904,28 @@ function AppointmentsView() {
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsBookingOwnerDropdownOpen(false)} />
                             <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-dark-border dark:bg-dark-card z-50 divide-y divide-zinc-100">
-                              {owners
-                                .filter(o => o.name?.toLowerCase().includes(bookingOwnerSearch.toLowerCase()) || o.phone?.includes(bookingOwnerSearch))
-                                .map(o => (
+                              {(() => {
+                                const filtered = owners.filter(o => {
+                                  if (!bookingOwnerSearch) return true;
+                                  const sLower = bookingOwnerSearch.toLowerCase();
+                                  return o.name?.toLowerCase().includes(sLower) || 
+                                         o.phone?.includes(bookingOwnerSearch) || 
+                                         o.email?.toLowerCase().includes(sLower) ||
+                                         o.pets?.some(p => p.name?.toLowerCase().includes(sLower)) ||
+                                         pets.some(p => String(p.owner_id) === String(o.id) && p.name?.toLowerCase().includes(sLower));
+                                });
+                                if (filtered.length === 0) {
+                                  return <div className="px-4 py-3 text-xs text-zinc-400 italic">No owners found</div>;
+                                  }
+                                return filtered.map(o => (
                                   <button
                                     key={o.id}
                                     type="button"
                                     onClick={() => {
                                       setBookingOwnerSearch(o.name);
                                       setSelectedOwnerId(o.id);
-                                      setValue("pet_id", "");
+                                      const firstPet = pets.find(p => String(p.owner_id) === String(o.id));
+                                      setValue("pet_id", firstPet ? String(firstPet.id) : "");
                                       setIsBookingOwnerDropdownOpen(false);
                                     }}
                                     className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-zinc-700 dark:text-zinc-300 block"
@@ -851,43 +933,50 @@ function AppointmentsView() {
                                     <p>{o.name}</p>
                                     {o.phone && <p className="text-[10px] text-zinc-400 mt-0.5">{o.phone}</p>}
                                   </button>
-                                ))}
-                              {owners.filter(o => o.name?.toLowerCase().includes(bookingOwnerSearch.toLowerCase()) || o.phone?.includes(bookingOwnerSearch)).length === 0 && (
-                                <div className="px-4 py-3 text-xs text-zinc-400 italic">No owners found</div>
-                              )}
+                                ));
+                              })()}
                             </div>
                           </>
                         )}
                       </div>
-                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
-                        <select {...register("pet_id")} className={qInputBase}><option value="">Select Pet</option>{Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                      <div><label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Pet</label>
+                        <select {...register("pet_id")} className={clsx(qInputBase, errors.pet_id && "border-rose-500")}>
+                          <option value="">Select Pet</option>
+                          {Array.isArray(pets) && pets.filter(p => String(p.owner_id) === String(selectedOwnerId)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                        {errors.pet_id && <p className="text-xs text-rose-500 mt-1">{errors.pet_id.message}</p>}
                       </div>
                       <div>
-                        <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
-                        <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        <label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Services (select one or more)</label>
+                        <div className={clsx("grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1 p-1 rounded-xl", errors.service_id && "ring-1 ring-rose-500")}>
                           {Array.isArray(services) && services.map(s => {
                             const checked = selectedServiceIds.includes(String(s.id));
                             return (
                               <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
-                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
+                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                                  const nextIds = checked ? selectedServiceIds.filter(id => id !== String(s.id)) : [...selectedServiceIds, String(s.id)];
+                                  setSelectedServiceIds(nextIds);
+                                  setValue("service_id", nextIds[0] || "");
+                                }} />
                                 <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
                                 {s.name}
                               </label>
                             );
                           })}
                         </div>
+                        {errors.service_id && <p className="text-xs text-rose-500 mt-1">{errors.service_id.message}</p>}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={qInputBase} /></div>
-                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={qInputBase} /></div>
+                      <div><label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Date</label><input type="date" {...register("date")} className={clsx(qInputBase, errors.date && "border-rose-500")} /></div>
+                      <div><label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Time</label><input type="time" {...register("time")} className={clsx(qInputBase, errors.time && "border-rose-500")} /></div>
                     </div>
                     {adminBookingRequiresDoctor && (
-                      <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
+                      <div><label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Preferred Doctor</label>
                         <select {...register("vet_id")} className={qInputBase}><option value="">Any Available Doctor</option>{Array.isArray(vets) && vets.map(v => <option key={v.id} value={v.id}>Dr. {v.name}</option>)}</select>
                       </div>
                     )}
-                    <div><label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
+                    <div><label className="mb-1 block text-[10px] font-black uppercase text-zinc-400">Notes</label><textarea {...register("notes")} className={clsx(qInputBase, "min-h-[120px] py-4")} placeholder="Describe the reason for visit..." rows={3}></textarea></div>
                     <button type="submit" disabled={isSubmitting} className="h-16 w-full rounded-2xl text-sm font-black uppercase text-white shadow-2xl transition-all bg-emerald-600 hover:bg-emerald-700">{isSubmitting ? "Syncing..." : "Finalize"}</button>
                   </form>
                 )}

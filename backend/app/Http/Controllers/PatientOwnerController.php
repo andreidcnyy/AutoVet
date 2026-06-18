@@ -18,6 +18,26 @@ class PatientOwnerController extends Controller
     {
         $user = auth()->user();
 
+        if ($request->boolean('minimal')) {
+            $query = Owner::select('id', 'name', 'phone', 'email')
+                ->where('email', '!=', 'dataset.seeder@autovet.ai');
+            if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
+                $ownerId = $this->getPortalOwnerId();
+                if (!$ownerId) return response()->json([]);
+                $query->where('id', $ownerId);
+            }
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhereHas('pets', fn($p) => $p->where('name', 'like', "%{$search}%"));
+                });
+            }
+            return response()->json($query->orderBy('name')->get());
+        }
+
         // Optimized query with required relationships and total paid sum calculation
         $query = Owner::with(['pets', 'user'])
             ->addSelect([
