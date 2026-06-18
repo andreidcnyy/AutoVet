@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from "recharts";
-import { FiUsers, FiPackage, FiRefreshCw } from "react-icons/fi";
+import { FiUsers, FiPackage, FiRefreshCw, FiActivity } from "react-icons/fi";
 import api from "../../api";
 import clsx from "clsx";
 import echo from "../../utils/echo";
