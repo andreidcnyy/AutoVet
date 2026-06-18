@@ -208,8 +208,8 @@ function AppointmentsView() {
   useEffect(() => {
     if (!user?.token || formDataLoaded) return;
     Promise.allSettled([
-      api.get('/api/owners', { cache: true }),
-      api.get('/api/pets', { cache: true }),
+      api.get('/api/owners', { params: { minimal: true }, cache: true }),
+      api.get('/api/pets', { params: { minimal: true }, cache: true }),
       api.get('/api/services', { cache: true }),
       api.get('/api/vets', { cache: true }),
       api.get('/api/species', { cache: true }),

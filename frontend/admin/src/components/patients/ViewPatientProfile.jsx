@@ -1058,14 +1058,13 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const currentRecords = records.slice(indexOfFirstRecord, indexOfLastRecord);
   const totalPages = Math.ceil(records.length / recordsPerPage);
 
-  const handleRowClick = (record, mode = 'edit') => {
+  const handleRowClick = (record) => {
     setEditingRecord(record);
     setSelectedAppointmentId(record.appointment_id || "");
     setSelectedVetId(record.vet_id || "");
     fetchAppointments(); // Refresh list to ensure real-time appointment data
     setIsModalOpen(true);
-    // You might want to add a state for view mode if not already there
-    setIsViewOnlyMode(mode === 'view');
+    setIsViewOnlyMode(true);
   };
 
   return (
@@ -1084,14 +1083,6 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
              </button>
            )}
          </div>
-         {isVet && (
-           <button 
-             onClick={() => { setEditingRecord(null); setSelectedAppointmentId(""); setSelectedVetId(""); setIsModalOpen(true); }}
-             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
-           >
-             Add Record
-           </button>
-         )}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-dark-border">
@@ -1145,7 +1136,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleRowClick(record, 'view'); }}
+                      onClick={(e) => { e.stopPropagation(); handleRowClick(record); }}
                       className="p-2 rounded-lg text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                       title="View Record Details"
                     >
@@ -1165,15 +1156,6 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                     >
                       <FiBell className="h-4 w-4" />
                     </button>
-                    {isVet && (
-                      <button 
-                        onClick={(e) => deleteRecord(e, record.id)} 
-                        className="p-2 rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                        title="Delete Record"
-                      >
-                        <FiTrash2 className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
