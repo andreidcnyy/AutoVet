@@ -102,16 +102,22 @@ export default function AnalyticsPage() {
 
     setIsExporting(true);
     try {
+      element.classList.add("pdf-export");
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        ignoreElements: (node) => {
-           return false;
+        windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector(".pdf-export");
+          if (clonedElement) clonedElement.style.padding = "40px";
         }
       });
+
+      element.classList.remove("pdf-export");
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
@@ -138,6 +144,7 @@ export default function AnalyticsPage() {
       
       pdf.save(`AutoVet_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
+      element.classList.remove("pdf-export");
       console.error("PDF Export failed:", err);
     } finally {
       setIsExporting(false);

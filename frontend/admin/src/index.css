@@ -167,3 +167,38 @@ label[for] {
   }
 }
 
+/* PDF Export Polish - Specifically for html2canvas */
+.pdf-export {
+  background: white !important;
+  color: #18181b !important; /* zinc-900 */
+  padding: 40px !important;
+  width: 1200px !important;
+}
+
+.pdf-export .card-shell {
+  box-shadow: none !important;
+  border: 1px solid #e4e4e7 !important; /* zinc-200 */
+  background: white !important;
+}
+
+.pdf-export .text-zinc-400,
+.pdf-export .text-zinc-500 {
+  color: #71717a !important; /* zinc-500 for better contrast on paper */
+}
+
+.pdf-export .bg-zinc-50,
+.pdf-export .bg-zinc-100 {
+  background-color: #f4f4f5 !important; /* zinc-100 */
+}
+
+.pdf-export button,
+.pdf-export .no-print {
+  display: none !important;
+}
+
+.pdf-export .recharts-responsive-container {
+  height: 350px !important;
+}
+
+/* End PDF Export Polish */
+
