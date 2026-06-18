@@ -370,6 +370,14 @@ function AppointmentsView() {
         .finally(() => setInvoiceLoading(false));
     }
   };
+
+  const handleAddAppointment = () => {
+    setSelectedAppointment(null);
+    setSelectedServiceIds([]);
+    setIsWalkIn(false);
+    setActivePanel("booking");
+    setIsDrawerOpen(true);
+  };
   
   const handleStatusAction = async (action) => {
     if (action === 'decline') { setDeclineModal({ open: true, reason: "", error: "", submitting: false }); return; }
@@ -521,6 +529,14 @@ function AppointmentsView() {
                   <button onClick={() => { setSearchTerm(""); handleParamChange({ date: "", status: "all" }); }} className="h-10 px-4 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all flex items-center justify-center" title="Clear Filters"><FiRefreshCcw className={clsx(isLoading && "animate-spin")} /></button>
                 </div>
               </div>
+              
+              <button 
+                onClick={handleAddAppointment}
+                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 text-white px-6 py-4 text-sm font-black uppercase tracking-widest hover:bg-emerald-700 hover:scale-105 transition-all shadow-xl shadow-emerald-600/20"
+              >
+                <FiPlusCircle className="h-5 w-5" />
+                Add Appointment
+              </button>
             </div>
 
             <div className="overflow-x-auto">
