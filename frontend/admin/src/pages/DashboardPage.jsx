@@ -30,10 +30,77 @@ function DashboardPage() {
   const toast = useToast();
   const isStaff = user?.role === ROLES.STAFF;
   const enabled = !!user?.token;
+  const [isExporting, setIsExporting] = useState(false);
 
   // Unified Modal State
   const [modal, setModal] = useState({ open: false, type: null, title: "", data: null, loading: false, error: null, pagination: null });
   const closeModal = () => setModal(prev => ({ ...prev, open: false }));
+
+  const downloadPDF = async () => {
+    const element = document.querySelector(".printable-dashboard");
+    if (!element) return;
+
+    setIsExporting(true);
+    try {
+      // 1. Capture Dashboard View
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 1200
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+      // 2. Fetch Detailed Data for Tables
+      const [petsRes, clientsRes] = await Promise.all([
+        api.get("/api/dashboard/pets?per_page=100"),
+        api.get("/api/dashboard/clients?per_page=100")
+      ]);
+
+      // 3. Add Pets Table
+      pdf.addPage();
+      pdf.setFontSize(16);
+      pdf.text("Detailed Patient Records", 14, 20);
+      pdf.autoTable({
+        startY: 25,
+        head: [['Pet Name', 'Species', 'Breed', 'Owner']],
+        body: (petsRes.data?.pets || petsRes.pets || []).map(p => [p.name, p.species, p.breed, p.owner_name]),
+        theme: 'grid',
+        headStyles: { fillColor: [99, 102, 241] }
+      });
+
+      // 4. Add Clients Table
+      pdf.addPage();
+      pdf.setFontSize(16);
+      pdf.text("Registered Clients", 14, 20);
+      pdf.autoTable({
+        startY: 25,
+        head: [['Name', 'Email', 'Pets']],
+        body: (clientsRes.data?.clients || clientsRes.clients || []).map(c => [c.name, c.email, c.pet_count]),
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] }
+      });
+
+      pdf.save(`AutoVet_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error("PDF Export failed:", err);
+      toast.error("Failed to generate PDF report.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const openModal = async (type, title, page = 1) => {
     const endpoints = {
