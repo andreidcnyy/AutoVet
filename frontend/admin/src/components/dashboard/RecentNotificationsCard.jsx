@@ -42,56 +42,58 @@ function RecentNotificationsCard({ items, loading, onMarkAllRead, onClearAll, on
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-[150px] slim-scroll">
+      <div className="flex-1 overflow-y-auto slim-scroll max-h-[450px]">
         {loading ? (
-          <div className="flex h-full min-h-[250px] flex-col items-center justify-center p-6 space-y-4">
+          <div className="flex h-full min-h-[300px] flex-col items-center justify-center p-6 space-y-4">
              <div className="h-8 w-8 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
              <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Updating alerts...</p>
           </div>
         ) : (!items || items.length === 0) ? (
-          <div className="flex h-full min-h-[250px] flex-col items-center justify-center p-6 text-center">
+          <div className="flex h-full min-h-[300px] flex-col items-center justify-center p-6 text-center">
             <div className="mb-3 rounded-full bg-zinc-100 p-4 dark:bg-dark-surface">
               <FiBell className="h-8 w-8 text-zinc-300 dark:text-zinc-600" />
             </div>
-            <p className="text-lg font-medium text-zinc-400 dark:text-zinc-500">You're all caught up!</p>
-            <p className="text-sm text-zinc-400 dark:text-zinc-600">No new notifications to show.</p>
+            <p className="text-lg font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">You're all caught up!</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">No new notifications to show.</p>
           </div>
         ) : (
-          items.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.id} className="group relative flex gap-4 border-b border-zinc-100 px-6 py-5 dark:border-dark-border last:border-0 hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30 transition-colors">
-                <span
-                  className={clsx(
-                    "mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                    iconToneStyles[item.tone] || iconToneStyles.neutral
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div className="flex-1 min-w-0 pr-6">
-                  <h4 className="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-50 truncate">{item.title}</h4>
-                  <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400 line-clamp-2">{item.message}</p>
-                  <p className="mt-3 text-sm font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{item.time}</p>
-                </div>
-                
-                <button
-                  onClick={() => onDismiss && onDismiss(item.id)}
-                  className="absolute right-4 top-5 p-2 text-zinc-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all dark:text-zinc-600 dark:hover:text-rose-400"
-                  title="Dismiss"
-                >
-                  <FiX className="h-4 w-4" />
-                </button>
-              </article>
-            );
-          })
+          <div className="divide-y divide-zinc-100 dark:divide-dark-border">
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article key={item.id} className="group relative flex gap-3 px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30 transition-colors">
+                  <span
+                    className={clsx(
+                      "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                      iconToneStyles[item.tone] || iconToneStyles.neutral
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight truncate leading-tight">{item.title}</h4>
+                    <p className="mt-0.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-snug">{item.message}</p>
+                    <p className="mt-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{item.time}</p>
+                  </div>
+                  
+                  <button
+                    onClick={() => onDismiss && onDismiss(item.id)}
+                    className="absolute right-3 top-4 p-1.5 text-zinc-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all dark:text-zinc-600 dark:hover:text-rose-400"
+                    title="Dismiss"
+                  >
+                    <FiX className="h-3.5 w-3.5" />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
         )}
       </div>
 
       <button
         type="button"
         onClick={() => navigate("/notifications")}
-        className="w-full border-t border-zinc-200 dark:border-dark-border px-6 py-4 text-center text-lg font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-dark-surface transition-colors"
+        className="w-full border-t border-zinc-100 dark:border-dark-border px-6 py-3 text-center text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-dark-surface transition-colors"
       >
         View all history
       </button>
