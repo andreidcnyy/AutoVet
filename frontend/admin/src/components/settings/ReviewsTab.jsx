@@ -83,7 +83,7 @@ function ReviewDetailModal({ review, busy, onClose, onApprove, onFeature, onDele
               disabled={busy[review.id]}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all active:scale-95"
             >
-              <FiEyeOff className="h-4 w-4" /> Remove from page
+              <FiEyeOff className="h-4 w-4" /> Hide Testimonial
             </button>
           ) : (
             <button
@@ -91,7 +91,7 @@ function ReviewDetailModal({ review, busy, onClose, onApprove, onFeature, onDele
               disabled={busy[review.id]}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all active:scale-95"
             >
-              <FiEye className="h-4 w-4" /> Show on page
+              <FiEye className="h-4 w-4" /> Publish Testimonial
             </button>
           )}
           {review.is_approved && (
@@ -173,7 +173,7 @@ function LandingCard({ review, busy, onClick, onRemove, onFeature }) {
           disabled={busy[review.id]}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-all active:scale-95 ml-auto"
         >
-          <FiEyeOff className="h-3.5 w-3.5" /> Remove from page
+          <FiEyeOff className="h-3.5 w-3.5" /> Hide Testimonial
         </button>
       </div>
     </div>
@@ -212,7 +212,7 @@ function ReviewRow({ review, busy, onClick, onApprove, onDelete }) {
           disabled={busy[review.id]}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all active:scale-95"
         >
-          <FiEye className="h-3.5 w-3.5" /> Show on page
+          <FiEye className="h-3.5 w-3.5" /> Publish Testimonial
         </button>
         <button
           onClick={() => onDelete(review.id)}
