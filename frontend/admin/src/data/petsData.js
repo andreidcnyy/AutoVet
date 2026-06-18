@@ -1,4 +1,4 @@
-export const pets = [
+export const patients = [
   {
     id: "AV-4831",
     name: "Milo",

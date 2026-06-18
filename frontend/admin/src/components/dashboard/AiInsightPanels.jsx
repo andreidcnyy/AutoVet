@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function AiInsightPanels() {
   const [apptData, setApptData] = useState(null);
-  const [petData, setPetData] = useState(null);
+  const [patientData, setPatientData] = useState(null);
   const [inventoryData, setInventoryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -18,14 +18,14 @@ export default function AiInsightPanels() {
         'Accept': 'application/json'
       };
 
-      const [apptResult, petResult, invResult] = await Promise.allSettled([
+      const [apptResult, patientResult, invResult] = await Promise.allSettled([
         fetch('/api/dashboard/appointment-forecast', { headers }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
-        fetch('/api/dashboard/pet-visit-predictions', { headers }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+        fetch('/api/dashboard/patient-visit-predictions', { headers }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
         fetch('/api/dashboard/inventory-forecast', { headers }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
       ]);
 
       setApptData(apptResult.status === 'fulfilled' ? apptResult.value : null);
-      setPetData(petResult.status === 'fulfilled' ? petResult.value : null);
+      setPatientData(patientResult.status === 'fulfilled' ? patientResult.value : null);
       setInventoryData(invResult.status === 'fulfilled' ? invResult.value : null);
       setLoading(false);
     };
@@ -158,28 +158,28 @@ export default function AiInsightPanels() {
         )}
       </article>
 
-      {/* CARD 3: Pet Visit Prediction */}
+      {/* CARD 3: Patient Visit Prediction */}
       <article className="card-shell p-5">
         <div className="flex items-center gap-2 mb-1">
           <LuSparkles className="h-4 w-4 text-emerald-500" />
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Pet Visit Prediction</h3>
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Patient Visit Prediction</h3>
         </div>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Follow-up dates from medical records</p>
 
-        {!petData ? (
-          <p className="text-xs text-zinc-400 py-6 text-center">Pet visit data unavailable.</p>
+        {!patientData ? (
+          <p className="text-xs text-zinc-400 py-6 text-center">Patient visit data unavailable.</p>
         ) : (
           <>
             <div className="flex gap-2 mb-3">
               <span className="rounded-full bg-rose-100 dark:bg-rose-900/30 px-2.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:text-rose-400">
-                {petData.total_overdue ?? 0} overdue
+                {patientData.total_overdue ?? 0} overdue
               </span>
               <span className="rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-400">
-                {petData.total_upcoming ?? 0} upcoming
+                {patientData.total_upcoming ?? 0} upcoming
               </span>
             </div>
 
-            {(!petData.pets || petData.pets.length === 0) ? (
+            {(!patientData.patients || patientData.patients.length === 0) ? (
               <p className="text-xs text-zinc-400 dark:text-zinc-600 py-4 text-center">No overdue or upcoming follow-ups found.</p>
             ) : (
               <table className="w-full text-xs">
@@ -191,7 +191,7 @@ export default function AiInsightPanels() {
                   </tr>
                 </thead>
                 <tbody>
-                  {petData.pets.slice(0, 6).map((p, i) => (
+                  {patientData.patients.slice(0, 6).map((p, i) => (
                     <tr key={i} className="border-t border-zinc-100 dark:border-dark-border">
                       <td className="py-2 font-medium text-zinc-800 dark:text-zinc-200">{p.pet}</td>
                       <td className="py-2 text-zinc-500 dark:text-zinc-400">{p.owner}</td>
@@ -211,7 +211,7 @@ export default function AiInsightPanels() {
               </table>
             )}
 
-            <p className="mt-3 text-[10px] text-zinc-400 dark:text-zinc-600 leading-tight">{petData.summary ?? ''}</p>
+            <p className="mt-3 text-[10px] text-zinc-400 dark:text-zinc-600 leading-tight">{patientData.summary ?? ''}</p>
             <p className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-600">Sourced from medical records Â· follow_up_date field</p>
           </>
         )}

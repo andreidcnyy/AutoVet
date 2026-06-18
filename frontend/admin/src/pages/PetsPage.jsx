@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import AddPetFormView from "../components/pets/AddPetFormView";
-import PetRecordsView from "../components/pets/PetRecordsView";
-import PetsListView from "../components/pets/PetsListView";
-import EditOwnerModal from "../components/pets/EditOwnerModal";
+import AddPatientFormView from "../components/patients/AddPatientFormView";
+import PatientRecordsView from "../components/patients/PatientRecordsView";
+import PetsListView from "../components/patients/PetsListView";
+import EditOwnerModal from "../components/patients/EditOwnerModal";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useNewItems } from "../context/NewItemsContext";
@@ -12,7 +12,7 @@ import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-i
 import { LuPawPrint } from "react-icons/lu";
 import clsx from "clsx";
 
-function PetsPage() {
+function PatientsPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [view, setView] = useState("records");
@@ -350,7 +350,7 @@ function PetsPage() {
   if (view === "add-pet") {
     return (
       <div className="p-6">
-        <AddPetFormView
+        <AddPatientFormView
           ownerId={selectedOwnerId}
           onCancel={() => setView("records")}
           onSave={(newPet) => {
@@ -379,22 +379,22 @@ function PetsPage() {
           Owner Records
         </button>
         <button
-          onClick={() => setActiveTab("pets")}
+          onClick={() => setActiveTab("patients")}
           className={clsx(
             "flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all",
-            activeTab === "pets" 
+            activeTab === "patients" 
               ? "bg-white text-emerald-600 shadow-md dark:bg-dark-card dark:text-emerald-400" 
               : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
           )}
         >
           <LuPawPrint className="h-4 w-4" />
-          Pet Directory
+          Patient Directory
         </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
       {activeTab === "owners" ? (
-        <PetRecordsView
+        <PatientRecordsView
           owners={owners}
           pagination={pagination}
           isLoading={isLoading}
@@ -403,7 +403,7 @@ function PetsPage() {
           onFilter={(f) => { setFilterValue(f); fetchOwners(1, searchQuery, f); }}
           selectedOwnerId={selectedOwnerId}
           onSelectOwner={setSelectedOwnerId}
-          onOpenAddPet={() => {
+          onOpenAddPatient={() => {
             setPhoneValue("");
             setProvince("");
             setCity("");
@@ -438,4 +438,4 @@ function PetsPage() {
   );
 }
 
-export default PetsPage;
+export default PatientsPage;

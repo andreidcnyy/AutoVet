@@ -23,7 +23,7 @@ export const primaryNavigation = [
   // Clinic Level (Clinic Staff Only)
   { id: "dashboard", label: "Dashboard", path: "/", icon: FiGrid, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "analytics", label: "Analytics", path: "/analytics", icon: FiTrendingUp, allowedRoles: CLINIC_STAFF_ROLES },
-  { id: "pets", label: "Pets", path: "/pets", icon: LuPawPrint, allowedRoles: CLINIC_STAFF_ROLES },
+  { id: "patients", label: "Patients", path: "/patients", icon: LuPawPrint, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES },
   { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: CLINIC_STAFF_ROLES },

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
-import ViewPetModal from "./ViewPetModal";
+import ViewPatientModal from "./ViewPatientModal";
 import clsx from "clsx";
 import echo from "../../utils/echo";
 import {
@@ -49,7 +49,7 @@ function PetsListView() {
       }
     } catch (error) {
       console.error("Failed to fetch pets:", error);
-      toast.error("Failed to load pet records.");
+      toast.error("Failed to load patient records.");
     } finally {
       setIsLoading(false);
     }
@@ -111,9 +111,9 @@ function PetsListView() {
       {/* Header */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Pet Directory</h2>
+          <h2 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">Patient Directory</h2>
           <p className="mt-1 text-base font-bold text-emerald-600 uppercase tracking-tight">
-            Total of {totalCount} pet records across all clients.
+            Total of {totalCount} patient records across all clients.
           </p>
         </div>
       </div>
@@ -219,7 +219,7 @@ function PetsListView() {
                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-50 dark:bg-dark-surface">
                     <LuPawPrint className="h-10 w-10 text-zinc-200" />
                 </div>
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No pets found</h3>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">No patients found</h3>
                 <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
             </div>
         )}
@@ -265,10 +265,10 @@ function PetsListView() {
       </div>{/* end scrollable area */}
 
       {/* Detail Modal */}
-      <ViewPetModal
+      <ViewPatientModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        petId={selectedPetId}
+        patientId={selectedPetId}
         onRefresh={fetchPets}
       />
     </div>

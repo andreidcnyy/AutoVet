@@ -19,7 +19,7 @@ const selectBase =
 const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 
-const petSchema = z.object({
+const patientSchema = z.object({
     name: z.string().min(1, "Pet name is required").max(255),
     species_id: z.string().min(1, "Species is required"),
     breed_id: z.string().optional().or(z.literal("")),
@@ -51,7 +51,7 @@ const petSchema = z.object({
     vet_id: z.coerce.string().optional().or(z.literal("")),
 });
 
-function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
+function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     const toast = useToast();
     const { user } = useAuth();
     const [error, setError] = useState(null);
@@ -104,7 +104,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
         reset,
         formState: { errors, isSubmitting }
     } = useForm({
-        resolver: zodResolver(petSchema),
+        resolver: zodResolver(patientSchema),
         defaultValues: {
             name: "", species_id: "", breed_id: "", date_of_birth: "",
             sex: "Male", age_group: "Adult", color: "", weight: "", weight_unit: "kg",
@@ -115,33 +115,33 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
     });
 
     useEffect(() => {
-        if (pet && isOpen) {
+        if (patient && isOpen) {
             reset({
-                name: pet.name || "",
-                species_id: pet.species_id ? pet.species_id.toString() : "",
-                breed_id: pet.breed_id ? pet.breed_id.toString() : "",
-                date_of_birth: pet.date_of_birth ? pet.date_of_birth.substring(0, 10) : "",
-                sex: pet.sex || "Male",
-                age_group: pet.age_group === "Puppy/Kitten" ? "Baby" : (pet.age_group === "Junior" ? "Young" : (pet.age_group || "Adult")),
-                color: pet.color || "",
-                weight: pet.weight || "",
-                weight_unit: pet.weight_unit || "kg",
-                size_category_id: pet.size_category_id ? pet.size_category_id.toString() : "",
-                owner_name: pet.owner?.name || pet.ownerName || "",
-                owner_phone: pet.owner?.phone || pet.ownerPhone || "",
-                owner_email: pet.owner?.email || pet.ownerEmail || "",
-                owner_address: pet.owner?.address || pet.owner_address || "",
-                owner_city: pet.owner?.city || pet.owner_city || "",
-                owner_province: pet.owner?.province || pet.owner_province || "",
-                owner_zip: pet.owner?.zip || pet.owner_zip || "",
-                allergies: pet.allergies || "",
-                medication: pet.medication || "",
-                notes: pet.notes || "",
-                photo: pet.photo || pet.avatar || "",
+                name: patient.name || "",
+                species_id: patient.species_id ? patient.species_id.toString() : "",
+                breed_id: patient.breed_id ? patient.breed_id.toString() : "",
+                date_of_birth: patient.date_of_birth ? patient.date_of_birth.substring(0, 10) : "",
+                sex: patient.sex || "Male",
+                age_group: patient.age_group === "Puppy/Kitten" ? "Baby" : (patient.age_group === "Junior" ? "Young" : (patient.age_group || "Adult")),
+                color: patient.color || "",
+                weight: patient.weight || "",
+                weight_unit: patient.weight_unit || "kg",
+                size_category_id: patient.size_category_id ? patient.size_category_id.toString() : "",
+                owner_name: patient.owner?.name || patient.ownerName || "",
+                owner_phone: patient.owner?.phone || patient.ownerPhone || "",
+                owner_email: patient.owner?.email || patient.ownerEmail || "",
+                owner_address: patient.owner?.address || patient.owner_address || "",
+                owner_city: patient.owner?.city || patient.owner_city || "",
+                owner_province: patient.owner?.province || patient.owner_province || "",
+                owner_zip: patient.owner?.zip || patient.owner_zip || "",
+                allergies: patient.allergies || "",
+                medication: patient.medication || "",
+                notes: patient.notes || "",
+                photo: patient.photo || patient.avatar || "",
             });
             setError(null);
         }
-    }, [pet, isOpen, reset]);
+    }, [patient, isOpen, reset]);
 
     const photoValue = watch("photo");
     const speciesIdValue = watch("species_id");
@@ -259,8 +259,8 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
         setError(null);
         try {
             // Only clinic admins can update owner records
-            if (pet.owner_id && isClinicAdmin) {
-                const ownerRes = await fetch(`/api/owners/${pet.owner_id}`, {
+            if (patient.owner_id && isClinicAdmin) {
+                const ownerRes = await fetch(`/api/owners/${patient.owner_id}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -282,7 +282,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
 
             // Next update the pet itself
             const petPayload = {
-                owner_id: pet.owner_id,
+                owner_id: patient.owner_id,
                 name: data.name,
                 species_id: data.species_id || null,
                 breed_id: data.breed_id || null,
@@ -305,7 +305,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
                 treatment_plan: data.treatment_plan,
             };
 
-            const petRes = await fetch(`/api/pets/${pet.id}`, {
+            const petRes = await fetch(`/api/pets/${patient.id}`, {
                 method: "PUT",
                 headers: { 
                     "Content-Type": "application/json", 
@@ -329,7 +329,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
         }
     };
 
-    if (!isOpen || !pet) return null;
+    if (!isOpen || !patient) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -349,7 +349,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
                         </div>
                     )}
 
-                    <form id="edit-pet-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form id="edit-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <section>
                             <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Pet Details</h3>
                             <div className="flex items-center gap-4 mb-4">
@@ -611,7 +611,7 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
                     <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
                         Cancel
                     </button>
-                    <button type="submit" form="edit-pet-form" disabled={isSubmitting} className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+                    <button type="submit" form="edit-patient-form" disabled={isSubmitting} className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
                         {isSubmitting ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
@@ -620,4 +620,4 @@ function EditPetModal({ isOpen, onClose, pet, onSaveSuccess }) {
     );
 }
 
-export default EditPetModal;
+export default EditPatientModal;

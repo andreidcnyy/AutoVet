@@ -25,7 +25,7 @@ function AiClinicalSupportPage() {
     if (query.length < 2) { setPetResults([]); return; }
     setSearching(true);
     try {
-      const data = await api.get(`/api/pets?search=${encodeURIComponent(query)}&per_page=8`);
+      const data = await api.get(`/api/patients?search=${encodeURIComponent(query)}&per_page=8`);
       setPetResults(data.data || data || []);
     } catch {
       setPetResults([]);
@@ -94,14 +94,14 @@ function AiClinicalSupportPage() {
       <form onSubmit={handleSubmit} className="card-shell p-6 space-y-5">
         {/* Pet Search */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">Pet</label>
+          <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">Patient</label>
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <input
               type="text"
               value={petSearch}
               onChange={(e) => { setPetSearch(e.target.value); searchPets(e.target.value); }}
-              placeholder="Search pet by name..."
+              placeholder="Search patient by name..."
               className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {selectedPet && (

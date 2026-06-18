@@ -80,7 +80,7 @@ const formatDate = (dateStr) => {
 };
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PDF Generation â”€â”€ */
-async function generateInvoicePDF(invoiceData, pet, clinic) {
+async function generateInvoicePDF(invoiceData, patient, clinic) {
   if (!invoiceData) return;
   
   const doc = new jsPDF();
@@ -152,44 +152,44 @@ async function generateInvoicePDF(invoiceData, pet, clinic) {
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(12);
-  doc.text(pet?.owner?.name || "Guest Client", 14, y + 7);
+  doc.text(patient?.owner?.name || "Guest Client", 14, y + 7);
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(pet?.owner?.address || "No address", 14, y + 13);
-  doc.text(pet?.owner?.email || "", 14, y + 18);
-  doc.text(pet?.owner?.phone || "", 14, y + 23);
+  doc.text(patient?.owner?.address || "No address", 14, y + 13);
+  doc.text(patient?.owner?.email || "", 14, y + 18);
+  doc.text(patient?.owner?.phone || "", 14, y + 23);
 
-  // Pet Card (Subtle Gray Box)
-  const petCardX = 110;
+  // Patient Card (Subtle Gray Box)
+  const patientCardX = 110;
   doc.setFillColor(248, 250, 252); // zinc-50
-  doc.roundedRect(petCardX - 4, y - 4, 90, 36, 4, 4, "F");
+  doc.roundedRect(patientCardX - 4, y - 4, 90, 36, 4, 4, "F");
 
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
-  doc.text("PATIENT", petCardX, y + 2);
+  doc.text("PATIENT", patientCardX, y + 2);
 
-  if (pet) {
-    const photoUrl = pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name);
+  if (patient) {
+    const photoUrl = patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name);
     if (photoUrl && !photoUrl.endsWith(".svg")) {
       try {
         const base64 = await getBase64ImageFromUrl(photoUrl).catch(() => null);
         if (base64) {
-          doc.addImage(base64, 'JPEG', petCardX, y + 5, 12, 12);
+          doc.addImage(base64, 'JPEG', patientCardX, y + 5, 12, 12);
         }
       } catch (e) {
-        console.error("PDF Pet Image error:", e);
+        console.error("PDF Patient Image error:", e);
       }
     }
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(10);
-    doc.text(pet.name || "N/A", petCardX + 16, y + 10);
+    doc.text(patient.name || "N/A", patientCardX + 16, y + 10);
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`${pet.species?.name || "N/A"} • ${pet.breed?.name || "Mixed"}`, petCardX + 16, y + 15);
-    doc.text(`Weight: ${invoiceData.weight_override || pet.weight || "N/A"} kg`, petCardX + 16, y + 20);
+    doc.text(`${patient.species?.name || "N/A"} • ${patient.breed?.name || "Mixed"}`, patientCardX + 16, y + 15);
+    doc.text(`Weight: ${invoiceData.weight_override || patient.weight || "N/A"} kg`, patientCardX + 16, y + 20);
   }
 
   y += 45;
@@ -725,12 +725,12 @@ function InvoiceModuleView() {
   const [ownerSearchText, setOwnerSearchText] = useState("");
   const [isOwnerDropdownOpen, setIsOwnerDropdownOpen] = useState(false);
 
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPatientId, setSelectedPatientId] = useState("");
 
   // New state for appointments and selected appointment
   const [appointments, setAppointments] = useState([]);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
-  const [petDetails, setPetDetails] = useState(null);
+  const [patientDetails, setPatientDetails] = useState(null);
   const [clinicSettings, setClinicSettings] = useState(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Draft");
@@ -888,18 +888,18 @@ function InvoiceModuleView() {
         indicator: i.item_type === 'inventory' ? "bg-amber-400" : "bg-emerald-400"
       }));
 
-      // Fetch full pet details (includes owner address, species, breed) same as normal pet select
+      // Fetch full pet details (includes owner address, species, breed) same as normal patient select
       let fullPet = fullInv.pet;
       if (fullInv.pet_id) {
         try { fullPet = await api.get(`/api/pets/${fullInv.pet_id}`); } catch (_) {}
       }
 
       setItems(mappedItems);
-      setSelectedPetId(fullInv.pet_id.toString());
+      setSelectedPatientId(fullInv.pet_id.toString());
       setSelectedOwnerId(fullPet?.owner_id?.toString() || fullInv.pet?.owner_id?.toString() || "");
       setOwnerSearchText(fullPet?.owner?.name || fullInv.pet?.owner?.name || "");
       setSelectedAppointmentId(fullInv.appointment_id?.toString() || "");
-      setPetDetails(fullPet);
+      setPatientDetails(fullPet);
       fetchApprovedAppointments(fullInv.pet_id);
       setNotes(fullInv.notes_to_client || "");
       setStatus(fullInv.status);
@@ -1092,34 +1092,34 @@ function InvoiceModuleView() {
     return () => { cancelled = true; };
   }, [user?.token]);
 
-  const handlePetSelect = (e) => {
+  const handlePatientSelect = (e) => {
     const pId = e.target.value;
-    setSelectedPetId(pId);
+    setSelectedPatientId(pId);
     setSelectedAppointmentId(""); // reset appointment selection
     if (!pId) {
-      setPetDetails(null);
+      setPatientDetails(null);
       setAppointments([]);
       return;
     }
 
-    // Fetch full pet details to ensure owner and breed/species relations are loaded
+    // Fetch full patient details to ensure owner and breed/species relations are loaded
     api.get(`/api/pets/${pId}`)
-      .then(fullPet => {
-        setPetDetails(fullPet);
-        setCurrentWeight(fullPet?.weight || "");
+      .then(fullPatient => {
+        setPatientDetails(fullPatient);
+        setCurrentWeight(fullPatient?.weight || "");
 
         // Auto replace placeholders in the notes if clinic template is present
         if (clinicSettings && clinicSettings.invoice_notes_template) {
           let template = clinicSettings.invoice_notes_template;
           template = template.replace(/{clinic_name}/g, clinicSettings.clinic_name || "");
-          template = template.replace(/{pet_name}/g, fullPet.name || "");
-          template = template.replace(/{owner_name}/g, fullPet.owner?.name || "");
+          template = template.replace(/{pet_name}/g, fullPatient.name || "");
+          template = template.replace(/{owner_name}/g, fullPatient.owner?.name || "");
           setNotes(template);
         }
       })
       .catch(err => {
-        console.error("Failed to fetch full pet details:", err);
-        toast.error("Failed to load pet records.");
+        console.error("Failed to fetch full patient details:", err);
+        toast.error("Failed to load patient records.");
       });
 
     fetchApprovedAppointments(pId);
@@ -1191,14 +1191,14 @@ function InvoiceModuleView() {
   }, [services, inventory, itemModalSearch]);
 
   const calculateDynamicPrice = (service) => {
-    if (service.pricing_type === "size_based" && petDetails?.size_category_id) {
-      const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === petDetails.size_category_id);
+    if (service.pricing_type === "size_based" && patientDetails?.size_category_id) {
+      const rule = service.pricing_rules?.find(r => r.basis_type === 'size' && r.reference_id === patientDetails.size_category_id);
       if (rule) return Number(rule.price);
     }
 
     if (service.pricing_type === "weight_based" && currentWeight !== "") {
       const petWeight = Number(currentWeight);
-      const petSpeciesId = petDetails?.species_id;
+      const petSpeciesId = patientDetails?.species_id;
 
       const range = weightRanges.find(r =>
         (Number(r.species_id) === Number(petSpeciesId)) &&
@@ -1303,8 +1303,8 @@ function InvoiceModuleView() {
       }
     }
 
-    if (itemType === 'service' && selectedService?.pricing_type === "size_based" && petDetails?.size_category_id) {
-      itemName = `${serviceInput} (${petDetails.size_category?.name || 'Selected Size'})`;
+    if (itemType === 'service' && selectedService?.pricing_type === "size_based" && patientDetails?.size_category_id) {
+      itemName = `${serviceInput} (${patientDetails.size_category?.name || 'Selected Size'})`;
     } else if (itemType === 'service' && selectedService?.pricing_type === "weight_based" && currentWeight !== "") {
       itemName = `${serviceInput} (${currentWeight}kg)`;
     }
@@ -1356,9 +1356,9 @@ function InvoiceModuleView() {
     setNotes(clinicSettings ? clinicSettings.invoice_notes_template || "" : "");
     setSelectedOwnerId("");
     setOwnerSearchText("");
-    setSelectedPetId("");
+    setSelectedPatientId("");
     setSelectedAppointmentId("");
-    setPetDetails(null);
+    setPatientDetails(null);
     setStatus("Draft");
     setAmountPaid(0);
     setPaymentMethod("");
@@ -1370,8 +1370,8 @@ function InvoiceModuleView() {
       toast.error("Cannot save an invoice without items.");
       return;
     }
-    if (!selectedPetId) {
-      toast.error("Please select a pet.");
+    if (!selectedPatientId) {
+      toast.error("Please select a patient.");
       return;
     }
 
@@ -1386,7 +1386,7 @@ function InvoiceModuleView() {
     }
 
     const payload = {
-      pet_id: selectedPetId,
+      pet_id: selectedPatientId,
       appointment_id: selectedAppointmentId || null,
       pet_weight: currentWeight || null,
       status: actualStatus,
@@ -1468,7 +1468,7 @@ function InvoiceModuleView() {
         window.dispatchEvent(new CustomEvent('inventory-forecast-refresh'));
 
         // Offer optional medical record creation before resetting form
-        setPendingMedRecordCtx({ petId: selectedPetId, appointmentId: selectedAppointmentId });
+        setPendingMedRecordCtx({ petId: selectedPatientId, appointmentId: selectedAppointmentId });
         setShowMedRecordModal(true);
       } else {
         localStorage.removeItem(INVOICES_CACHE_KEY);
@@ -1682,7 +1682,7 @@ function InvoiceModuleView() {
 
               <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
                 <section>
-                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Pet Details</h3>
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Patient Details</h3>
                   <div className="space-y-3">
                     <div className="relative">
                       <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
@@ -1696,8 +1696,8 @@ function InvoiceModuleView() {
                           setIsOwnerDropdownOpen(true);
                           if (!e.target.value) {
                             setSelectedOwnerId("");
-                            setSelectedPetId("");
-                            setPetDetails(null);
+                            setSelectedPatientId("");
+                            setPatientDetails(null);
                           }
                         }}
                         onFocus={() => setIsOwnerDropdownOpen(true)}
@@ -1707,7 +1707,7 @@ function InvoiceModuleView() {
                       {ownerSearchText && (
                         <button
                           type="button"
-                          onClick={() => { setOwnerSearchText(""); setSelectedOwnerId(""); setSelectedPetId(""); setPetDetails(null); }}
+                          onClick={() => { setOwnerSearchText(""); setSelectedOwnerId(""); setSelectedPatientId(""); setPatientDetails(null); }}
                           className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-zinc-400 hover:text-zinc-600"
                         >
                           <FiX className="h-3.5 w-3.5" />
@@ -1726,12 +1726,12 @@ function InvoiceModuleView() {
                                   setOwnerSearchText(o.name);
                                   setSelectedOwnerId(o.id.toString());
                                   setIsOwnerDropdownOpen(false);
-                                  setSelectedPetId("");
-                                  setPetDetails(null);
+                                  setSelectedPatientId("");
+                                  setPatientDetails(null);
                                   setAppointments([]);
                                   const ownerPets = (Array.isArray(pets) ? pets : []).filter(p => p.owner_id?.toString() === o.id.toString());
                                   if (ownerPets.length === 1) {
-                                    handlePetSelect({ target: { value: ownerPets[0].id.toString() } });
+                                    handlePatientSelect({ target: { value: ownerPets[0].id.toString() } });
                                   }
                                 }}
                                 className={clsx(
@@ -1751,8 +1751,8 @@ function InvoiceModuleView() {
 
                     <div className="relative">
                       <select
-                        value={selectedPetId}
-                        onChange={handlePetSelect}
+                        value={selectedPatientId}
+                        onChange={handlePatientSelect}
                         disabled={!selectedOwnerId || status === "Finalized"}
                         className={clsx(
                           "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
@@ -1776,7 +1776,7 @@ function InvoiceModuleView() {
                         <button
                           type="button"
                           onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
-                          disabled={!selectedPetId || status === "Finalized"}
+                          disabled={!selectedPatientId || status === "Finalized"}
                           className={clsx(
                             "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
                             isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
@@ -1853,7 +1853,7 @@ function InvoiceModuleView() {
                       {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
                     </div>
 
-                    {petDetails && (
+                    {patientDetails && (
                       <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-3 text-sm">
                         <div className="mb-3 flex items-center justify-between">
                           <strong className="text-zinc-700 dark:text-zinc-300">Weight Override (kg)</strong>
@@ -1870,16 +1870,16 @@ function InvoiceModuleView() {
                             className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
                           />
                         </div>
-                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {petDetails.owner?.name}</p>
-                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Contact:</strong> {petDetails.owner?.phone || "N/A"}</p>
-                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Email:</strong> {petDetails.owner?.email || "N/A"}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Contact:</strong> {patientDetails.owner?.phone || "N/A"}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Email:</strong> {patientDetails.owner?.email || "N/A"}</p>
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Address:</strong> {
-                          [petDetails.owner?.address, petDetails.owner?.city, petDetails.owner?.province, petDetails.owner?.zip].filter(Boolean).join(", ") || "N/A"
+                          [patientDetails.owner?.address, patientDetails.owner?.city, patientDetails.owner?.province, patientDetails.owner?.zip].filter(Boolean).join(", ") || "N/A"
                         }</p>
-                        <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {petDetails.species?.name} {petDetails.breed?.name ? `• ${petDetails.breed?.name}` : ""}</p>
-                        {petDetails.date_of_birth && (
+                        <p className="mt-2 text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Species/Breed:</strong> {patientDetails.species?.name} {patientDetails.breed?.name ? `• ${patientDetails.breed?.name}` : ""}</p>
+                        {patientDetails.date_of_birth && (
                           <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Age:</strong> {(() => {
-                            const dob = new Date(petDetails.date_of_birth);
+                            const dob = new Date(patientDetails.date_of_birth);
                             const diff = Date.now() - dob.getTime();
                             const ageDate = new Date(diff);
                             return Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -2200,7 +2200,7 @@ function InvoiceModuleView() {
                       notes_to_client: notes,
                       items: items
                     };
-                    generateInvoicePDF(invoiceData, petDetails, clinicSettings);
+                    generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
                   }}
                   className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
                 >
@@ -2223,7 +2223,7 @@ function InvoiceModuleView() {
                     };
 
                     if (status === "Paid" || status === "Finalized" || status === "Partially Paid") {
-                      generateInvoicePDF(invoiceData, petDetails, clinicSettings);
+                      generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
                     } else {
                       submitInvoice("Finalized");
                     }
@@ -2277,35 +2277,35 @@ function InvoiceModuleView() {
                 <section className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-[1.2fr_0.8fr]">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Bill To</p>
-                    {petDetails ? (
+                    {patientDetails ? (
                       <>
-                        <p className="mt-2 text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50">{petDetails?.owner?.name || "Guest Client"}</p>
+                        <p className="mt-2 text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50">{patientDetails?.owner?.name || "Guest Client"}</p>
                         <div className="mt-2 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-                          <p>{petDetails?.owner?.address || "No address provided"}</p>
-                          <p>{petDetails?.owner?.email}</p>
-                          <p>{petDetails?.owner?.phone}</p>
+                          <p>{patientDetails?.owner?.address || "No address provided"}</p>
+                          <p>{patientDetails?.owner?.email}</p>
+                          <p>{patientDetails?.owner?.phone}</p>
                         </div>
                       </>
                     ) : (
-                      <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500 italic">No pet selected</p>
+                      <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500 italic">No patient selected</p>
                     )}
                   </div>
 
                   <div className="rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Pet</p>
-                    {petDetails ? (
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Patient</p>
+                    {patientDetails ? (
                       <div className="mt-2 flex items-center gap-3">
                         <img
-                          src={petDetails.photo ? getActualPetImageUrl(petDetails.photo) : getPetImageUrl(petDetails.species?.name, petDetails.breed?.name)}
-                          alt={petDetails.name}
+                          src={patientDetails.photo ? getActualPetImageUrl(patientDetails.photo) : getPetImageUrl(patientDetails.species?.name, patientDetails.breed?.name)}
+                          alt={patientDetails.name}
                           className="h-10 w-10 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
                         />
                         <div>
-                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{petDetails.name}</p>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{patientDetails.name}</p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {petDetails?.species?.name || "Unknown"} • {petDetails?.breed?.name || "Unknown"}
-                            {petDetails.date_of_birth && ` • ${(() => {
-                              const dob = new Date(petDetails.date_of_birth);
+                            {patientDetails?.species?.name || "Unknown"} • {patientDetails?.breed?.name || "Unknown"}
+                            {patientDetails.date_of_birth && ` • ${(() => {
+                              const dob = new Date(patientDetails.date_of_birth);
                               const diff = Date.now() - dob.getTime();
                               const ageDate = new Date(diff);
                               return Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -2487,7 +2487,7 @@ function InvoiceModuleView() {
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Search pet or owner..."
+                    placeholder="Search patient or owner..."
                     value={draftsSearch}
                     onChange={(e) => setDraftsSearch(e.target.value)}
                     className="w-full pl-10 pr-8 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
@@ -2542,7 +2542,7 @@ function InvoiceModuleView() {
                           <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Draft</span>
                         </div>
                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
-                          Pet: {inv.pet?.name || "N/A"}
+                          Patient: {inv.pet?.name || "N/A"}
                         </h3>
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-zinc-500 font-medium">
                           <span className="flex items-center gap-1.5"><FiCalendar className="w-3.5 h-3.5" /> Last saved {formatDate(inv.updated_at)}</span>
@@ -2620,7 +2620,7 @@ function InvoiceModuleView() {
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="Search invoice, pet, owner..."
+                    placeholder="Search invoice, patient, owner..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -2685,7 +2685,7 @@ function InvoiceModuleView() {
                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 truncate">
-                          Pet: {inv.pet?.name || "N/A"}
+                          Patient: {inv.pet?.name || "N/A"}
                         </h3>
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-zinc-500 font-medium">
                           <span className="flex items-center gap-1.5"><FiCalendar className="w-3.5 h-3.5" /> {formatDate(inv.created_at)}</span>
@@ -2764,7 +2764,7 @@ function InvoiceModuleView() {
       <ManualSendModal
         isOpen={isSendModalOpen}
         onClose={() => setIsSendModalOpen(false)}
-        owner={petDetails?.owner}
+        owner={patientDetails?.owner}
         relatedObject={{
           id: selectedAppointmentId, // We might need the actual invoice ID if saved
           invoice_number: "INV-" + new Date().getFullYear(), // placeholder if not yet saved
@@ -2848,7 +2848,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <div>
             <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Add Medical Record</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">Optional — you can skip this and add it later from the pet profile.</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Optional — you can skip this and add it later from the patient profile.</p>
           </div>
           <button type="button" onClick={onDismiss} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
         </div>

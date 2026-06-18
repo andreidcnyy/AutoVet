@@ -82,7 +82,7 @@ function AiGuideModal({ onClose }) {
                 icon: FiAlertTriangle,
                 color: "text-amber-500 bg-amber-50 dark:bg-amber-900/20",
                 title: "It warns you early",
-                desc: "When an item is predicted to run out soon, it gets flagged as Low Stock — giving you time to reorder before pets are affected.",
+                desc: "When an item is predicted to run out soon, it gets flagged as Low Stock — giving you time to reorder before patients are affected.",
               },
               {
                 icon: FiCheckCircle,

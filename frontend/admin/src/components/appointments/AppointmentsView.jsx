@@ -69,7 +69,7 @@ function AppointmentsView() {
   const toast = useToast();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const preSelectedPetId = queryParams.get("petId") || queryParams.get("petId");
+  const preSelectedPetId = queryParams.get("petId") || queryParams.get("patientId");
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]); 
@@ -510,7 +510,7 @@ function AppointmentsView() {
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <div className="relative flex-1 max-w-sm">
                     <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input type="text" placeholder="Search pet/owner..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-10 pl-10 pr-9 rounded-xl border border-zinc-200 bg-white focus:border-emerald-500 dark:bg-dark-surface text-xs font-bold" />
+                    <input type="text" placeholder="Search patient/owner..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-10 pl-10 pr-9 rounded-xl border border-zinc-200 bg-white focus:border-emerald-500 dark:bg-dark-surface text-xs font-bold" />
                     {searchTerm && (
                       <button onClick={() => setSearchTerm("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                         <FiX className="h-3.5 w-3.5" />
@@ -527,7 +527,7 @@ function AppointmentsView() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-50">
-                    <th className="px-8 py-5">Status</th><th className="px-8 py-5">Pet & Guardian</th><th className="px-8 py-5">Clinical Service</th><th className="px-8 py-5">Schedule</th><th className="px-8 py-5 text-right">Actions</th>
+                    <th className="px-8 py-5">Status</th><th className="px-8 py-5">Patient & Guardian</th><th className="px-8 py-5">Clinical Service</th><th className="px-8 py-5">Schedule</th><th className="px-8 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className={clsx("divide-y divide-zinc-50 dark:divide-dark-border transition-opacity duration-200", isLoading && (params.date ? appointments : monthAppointments).length > 0 && "opacity-50 pointer-events-none")}>

@@ -250,7 +250,7 @@ function CalendarView() {
                         )}
                         {event.pet_name && (
                           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                            <span className="font-medium">Pet:</span> {event.pet_name}
+                            <span className="font-medium">Patient:</span> {event.pet_name}
                           </p>
                         )}
                         {event.notes && (

@@ -344,7 +344,7 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDeleteClinic = async () => {
-    if (!window.confirm(`PERMANENT ACTION: Are you sure you want to delete ${selectedClinic.clinic_name}? This will permanently remove all pets, records, and data associated with this clinic.`)) return;
+    if (!window.confirm(`PERMANENT ACTION: Are you sure you want to delete ${selectedClinic.clinic_name}? This will permanently remove all patients, records, and data associated with this clinic.`)) return;
     
     setIsSubmitting(true);
     try {

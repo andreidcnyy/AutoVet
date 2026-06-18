@@ -17,7 +17,7 @@ import autovetLogo from "../assets/autovet-logo.png";
 function AppLayoutInner() {
   const { user, loading, login: setUser } = useAuth();
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
-  const { petCount, appointmentCount, invoiceCount, markPetsSeen, markAppointmentsSeen } = useNewItems();
+  const { patientCount, appointmentCount, invoiceCount, markPatientsSeen, markAppointmentsSeen } = useNewItems();
   const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -39,7 +39,7 @@ function AppLayoutInner() {
 
   // Mark pages as seen when navigating to them (clears badge + stamps timestamp)
   React.useEffect(() => {
-    if (location.pathname.startsWith("/pets"))     markPetsSeen();
+    if (location.pathname.startsWith("/patients"))     markPatientsSeen();
     if (location.pathname.startsWith("/appointments")) markAppointmentsSeen();
   }, [location.pathname]);
 
@@ -165,7 +165,7 @@ function AppLayoutInner() {
 
   const filteredPrimaryNav = useMemo(() => {
     if (!user || !user.role) return [];
-    const onPets     = location.pathname.startsWith("/pets");
+    const onPatients     = location.pathname.startsWith("/patients");
     const onAppointments = location.pathname.startsWith("/appointments");
     return primaryNavigation
       .filter((item) => {
@@ -174,15 +174,15 @@ function AppLayoutInner() {
         return true;
       })
       .map((item) => {
-        if (item.id === "pets"     && petCount     > 0 && !onPets)
-          return { ...item, newCount: petCount };
+        if (item.id === "patients"     && patientCount     > 0 && !onPatients)
+          return { ...item, newCount: patientCount };
         if (item.id === "appointments" && appointmentCount > 0 && !onAppointments)
           return { ...item, newCount: appointmentCount };
         if (item.id === "invoices" && invoiceCount > 0)
           return { ...item, newCount: invoiceCount };
         return item;
       });
-  }, [user, petCount, appointmentCount, invoiceCount, location.pathname]);
+  }, [user, patientCount, appointmentCount, invoiceCount, location.pathname]);
 
   const filteredBottomNav = useMemo(() => {
     if (!user || !user.role) return [];
