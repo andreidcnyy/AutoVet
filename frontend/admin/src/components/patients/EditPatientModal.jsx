@@ -377,10 +377,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Pet Name</label>
-                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
-                                    </div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Pet Name</label>
                                     <input 
                                         {...register("name")} 
                                         readOnly 
@@ -388,10 +385,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     />
                                 </div>
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Breed</label>
-                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
-                                    </div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Breed</label>
                                     <div className="relative">
                                         <select 
                                             {...register("breed_id")} 
@@ -407,10 +401,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Date of Birth</label>
-                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
-                                    </div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Date of Birth</label>
                                     <input 
                                         type="date" 
                                         {...register("date_of_birth")} 
@@ -466,10 +457,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
 
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Sex</label>
-                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
-                                    </div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Sex</label>
                                     <div className="relative">
                                         <select 
                                             {...register("sex")} 
@@ -489,10 +477,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     <input type="hidden" {...register("age_group")} />
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Color</label>
-                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
-                                    </div>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Color</label>
                                     <input 
                                         {...register("color")} 
                                         readOnly 
