@@ -103,6 +103,17 @@ label[for] {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body * {
     visibility: hidden;
   }
@@ -122,10 +133,33 @@ label[for] {
     border: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Grid layouts usually need help in print */
+  .grid {
+    display: block !important;
+  }
+  
+  .grid > * {
+    margin-bottom: 1rem;
+    page-break-inside: avoid;
+  }
+
+  .card-shell {
+    border: 1px solid #e4e4e7 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
   }
 
   .no-print {
     display: none !important;
+  }
+
+  /* Ensure charts take up full width on print */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 300px !important;
   }
 
   ::-webkit-scrollbar {

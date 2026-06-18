@@ -151,14 +151,26 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6 printable-dashboard">
+      {/* Print Header */}
+      <div className="hidden print:flex items-center justify-between border-b-2 border-zinc-900 pb-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-black uppercase tracking-tight text-zinc-900">Clinic Dashboard Summary</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">AutoVet System Intelligence Report</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-black text-zinc-900 uppercase">{new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Digital Copy - {user?.name || 'Authorized Personnel'}</p>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between no-print">
          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Quick Metrics</h2>
          <div className="flex items-center gap-4">
             <button 
               onClick={() => window.print()} 
-              className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm"
             >
-              <Icons.FiPrinter className="h-3 w-3" /> Print Dashboard
+              <Icons.FiPrinter className="h-3.5 w-3.5" /> Print / Save as PDF
             </button>
             <Link to="/analytics" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-600 hover:text-purple-700 transition-colors">
                View Detailed Analytics <LuChevronRight className="h-3 w-3" />
