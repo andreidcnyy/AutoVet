@@ -95,7 +95,7 @@ function PatientRecordsView({
       {/* Header */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Pet Owners</h2>
+          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Owners</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
             Manage your clients and their pets efficiently.
           </p>
