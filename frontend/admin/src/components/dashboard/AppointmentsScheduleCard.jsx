@@ -35,7 +35,7 @@ function AppointmentsScheduleCard({ appointments, loading }) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto slim-scroll max-h-[400px]">
+      <div className="flex-1 overflow-y-auto slim-scroll max-h-[450px]">
         {loading ? (
           <div className="flex h-full min-h-[300px] flex-col items-center justify-center p-6 space-y-4">
             <div className="h-8 w-8 border-4 border-autovet-teal/20 border-t-autovet-teal rounded-full animate-spin" />

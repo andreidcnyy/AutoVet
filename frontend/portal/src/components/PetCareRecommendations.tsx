@@ -49,7 +49,7 @@ export default function PetCareRecommendations() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {recommendations.map((item) => (
-          <div key={item.id} className="card-shell p-5 flex gap-4 items-start hover:shadow-md transition-shadow">
+          <div key={item.id} className="card-shell p-5 flex gap-4 items-start h-full hover:shadow-md transition-shadow">
             <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", item.bg, item.color)}>
               <item.icon className="w-6 h-6" />
             </div>

@@ -247,7 +247,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
               <div className="px-4 sm:px-8 space-y-4 sm:space-y-6">
                 {activeTab === 'summary' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-3 sm:space-y-4">
+                    <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-3 sm:space-y-4 h-full">
                       <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                         <FiInfo className="text-brand-500" /> Vitals & Traits
                       </h3>
@@ -285,7 +285,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                       </div>
                     </div>
 
-                    <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-3 sm:space-y-4">
+                    <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-3 sm:space-y-4 h-full">
                       <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                         <FiAlertCircle className="text-rose-500" /> Allergies & Notes
                       </h3>
@@ -301,9 +301,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                       </div>
                     </div>
 
-                    <div className="col-span-full space-y-4">
-                       <h2 className="text-lg font-black italic uppercase tracking-tight text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
-                         <span className="text-brand-500">/</span> Health Summary
+                    <div className="col-span-full space-y-6">
+                       <h2 className="text-xl font-black italic uppercase tracking-tight text-zinc-800 dark:text-zinc-100 flex items-center gap-3">
+                         <span className="text-brand-500 mr-1">/</span> Health Summary
                        </h2>
                        <MedicalSummaryCard records={medicalRecords} petName={pet.name} />
                     </div>
