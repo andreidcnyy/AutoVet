@@ -29,7 +29,6 @@ const tabs = [
   { id: "users", label: "Users / Roles", icon: FiUsers, allowedRoles: VET_AND_ADMIN },
   { id: "schedule", label: "Vet Schedule", icon: FiBriefcase, allowedRoles: VET_AND_ADMIN },
   { id: "system", label: "System & AI Preferences", icon: FiSettings, allowedRoles: VET_AND_ADMIN },
-  { id: "reviews", label: "Reviews & Feedback", icon: FiStar, allowedRoles: VET_AND_ADMIN },
   { id: "audit", label: "System Audit Logs", icon: FiActivity, allowedRoles: VET_AND_ADMIN },
   { id: "backup", label: "Backup & Restore", icon: FiDatabase, allowedRoles: VET_AND_ADMIN },
   { id: "archive", label: "Archive & Recovery", icon: FiArchive, allowedRoles: VET_AND_ADMIN },
@@ -100,7 +99,6 @@ function Settings() {
         { activeTab === "schedule" && <VetScheduleTab /> }
         { activeTab === "system" && <SystemPreferencesTab /> }
         { activeTab === "audit" && <AuditLogTab /> }
-        { activeTab === "reviews" && <ReviewsTab /> }
         { activeTab === "backup" && <BackupRestoreTab /> }
         { activeTab === "archive" && <ArchiveRecoveryTab /> }
         { /* activeTab === "import" && <DataImportTab /> */ }
