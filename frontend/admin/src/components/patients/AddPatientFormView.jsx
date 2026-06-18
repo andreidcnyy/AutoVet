@@ -44,11 +44,7 @@ const petSchema = z.object({
   treatment_plan: z.string().optional().or(z.literal("")),
 });
 
-<<<<<<< HEAD
-const formSchema = z.object({
-=======
 const patientSchema = z.object({
->>>>>>> parent of 7181f280 (Admin: Refactor all interior references from 'Patient' to 'Pet' across components)
   owner_id: z.coerce.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string().optional().or(z.literal("")),
