@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import MetricCard from "../components/dashboard/MetricCard";
 import AnalyticsChartsCard from "../components/dashboard/AnalyticsChartsCard";
 import SalesSummaryCard from "../components/dashboard/SalesSummaryCard";
@@ -7,7 +8,7 @@ import AppointmentsScheduleCard from "../components/dashboard/AppointmentsSchedu
 import RecentNotificationsCard from "../components/dashboard/RecentNotificationsCard";
 import * as Icons from "react-icons/fi";
 import * as LuIcons from "react-icons/lu";
-import { LuSparkles } from "react-icons/lu";
+import { LuSparkles, LuChevronRight } from "react-icons/lu";
 import { useAuth } from "../context/AuthContext";
 import { ROLES } from "../constants/roles";
 import { useApi } from "../hooks/useApi";
@@ -150,6 +151,13 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+         <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Quick Metrics</h2>
+         <Link to="/analytics" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-600 hover:text-purple-700 transition-colors">
+            View Detailed Analytics <LuChevronRight className="h-3 w-3" />
+         </Link>
+      </div>
+
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">
         {mappedMetrics.map((card) => (
           <MetricCard key={card.id || card.title} card={card} />

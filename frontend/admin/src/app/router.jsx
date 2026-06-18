@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import AppointmentsPage from "../pages/AppointmentsPage";
+import AnalyticsPage from "../pages/AnalyticsPage";
 import DashboardPage from "../pages/DashboardPage";
 import InventoryPage from "../pages/InventoryPage";
 import PatientsPage from "../pages/PatientsPage";
@@ -70,6 +71,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Dashboard Overview" },
+      },
+      {
+        path: "analytics",
+        element: (
+          <ProtectedRoute allowedRoles={CLINIC_STAFF_ROLES}>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        ),
+        handle: { title: "Data Analytics" },
       },
       {
         path: "super-admin",

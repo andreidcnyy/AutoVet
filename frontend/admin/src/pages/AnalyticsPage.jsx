@@ -1,0 +1,317 @@
+import { useState, useEffect } from "react";
+import {
+  AreaChart, Area,
+  BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell,
+  LineChart, Line, Legend
+} from "recharts";
+import { 
+  FiTrendingUp, FiPackage, FiActivity, 
+  FiDollarSign, FiShoppingBag, FiArrowUp, 
+  FiArrowDown, FiMinus, FiRefreshCw 
+} from "react-icons/fi";
+import api from "../api";
+import clsx from "clsx";
+
+const COLORS = [
+  "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
+  "#ec4899", "#8b5cf6", "#14b8a6", "#f97316",
+];
+
+const peso = (n) =>
+  "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+function ChartTooltip({ active, payload, label, prefix = "" }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-xl dark:border-dark-border dark:bg-dark-card">
+      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} className="text-sm font-bold" style={{ color: p.color ?? p.fill }}>
+          <span className="opacity-70 mr-1">{p.name}:</span>
+          {prefix}{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function StatBox({ title, value, icon: Icon, trend, color, prefix = "" }) {
+  return (
+    <div className="card-shell p-6 flex items-center justify-between">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{title}</p>
+        <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{prefix}{value}</p>
+        {trend && (
+          <div className={clsx("flex items-center gap-1 mt-1 text-[10px] font-bold uppercase", 
+            trend > 0 ? "text-emerald-500" : trend < 0 ? "text-rose-500" : "text-zinc-400"
+          )}>
+            {trend > 0 ? <FiArrowUp /> : trend < 0 ? <FiArrowDown /> : <FiMinus />}
+            {Math.abs(trend)}% from last period
+          </div>
+        )}
+      </div>
+      <div className={clsx("h-12 w-12 rounded-2xl flex items-center justify-center text-xl shadow-sm", color)}>
+        <Icon />
+      </div>
+    </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  const [loading, setLoading] = useState(true);
+  const [trends, setTrends] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [consumption, setConsumption] = useState([]);
+  const [stock, setStock] = useState(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [trendsRes, statsRes, consRes, stockRes] = await Promise.all([
+        api.get("/api/reports/analytics/transaction-trends?months=12"),
+        api.get("/api/reports/analytics/transaction-stats?days=30"),
+        api.get("/api/reports/analytics/inventory-consumption?months=6"),
+        api.get("/api/reports/analytics/inventory-stock"),
+      ]);
+      setTrends(trendsRes);
+      setStats(statsRes);
+      setConsumption(consRes);
+      setStock(stockRes);
+    } catch (err) {
+      console.error("Failed to load analytics:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 py-20">
+        <div className="h-12 w-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
+        <p className="text-sm font-black text-zinc-400 uppercase tracking-widest">Generating detailed reports...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 uppercase">Data Analytics</h1>
+          <p className="text-sm font-bold text-zinc-500 uppercase tracking-tight">Business intelligence and operational insights</p>
+        </div>
+        <button 
+          onClick={fetchData}
+          className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-5 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm text-sm uppercase tracking-widest"
+        >
+          <FiRefreshCw className={clsx(loading && "animate-spin")} /> Refresh Data
+        </button>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <StatBox 
+          title="Total Revenue (12m)" 
+          value={trends?.summary?.total_revenue?.toLocaleString() || "0"} 
+          prefix="₱"
+          icon={FiDollarSign} 
+          color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+        />
+        <StatBox 
+          title="Avg. Ticket Size" 
+          value={trends?.summary?.avg_per_invoice?.toLocaleString() || "0"} 
+          prefix="₱"
+          icon={FiActivity} 
+          color="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
+        />
+        <StatBox 
+          title="Total Invoices (12m)" 
+          value={trends?.summary?.total_invoices || "0"} 
+          icon={FiTrendingUp} 
+          color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+        />
+        <StatBox 
+          title="Low Stock Alerts" 
+          value={stock?.summary?.low_stock + stock?.summary?.out_of_stock || "0"} 
+          icon={FiPackage} 
+          color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        
+        {/* Revenue Trend & Forecast */}
+        <div className="card-shell p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+              <FiDollarSign className="text-emerald-500" /> Revenue Trend & Forecast
+            </h3>
+            <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-widest">Linear Regression Model</span>
+          </div>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trends?.series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${v/1000}k`} />
+                <Tooltip content={<ChartTooltip prefix="₱" />} />
+                <Area name="Actual Revenue" type="monotone" dataKey="actual_revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                <Line name="Trend Line" type="monotone" dataKey="trend_revenue" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Invoice Count Trend */}
+        <div className="card-shell p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+              <FiTrendingUp className="text-indigo-500" /> Transaction Volume
+            </h3>
+          </div>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trends?.series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar name="Actual Count" dataKey="actual_count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Line name="Trend" type="monotone" dataKey="trend_count" stroke="#f59e0b" strokeWidth={2} dot={false} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Inventory Consumption Trend */}
+        <div className="card-shell p-6 lg:col-span-2">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+              <FiPackage className="text-amber-500" /> Inventory Usage Trends (6 Months)
+            </h3>
+          </div>
+          <div className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={consumption[0]?.series?.map((_, i) => {
+                const row = { month: consumption[0].series[i].month };
+                consumption.forEach(cat => {
+                  row[cat.category] = cat.series[i].actual;
+                });
+                return row;
+              })}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                {consumption.map((cat, idx) => (
+                  <Line 
+                    key={cat.category}
+                    name={cat.category}
+                    type="monotone" 
+                    dataKey={cat.category} 
+                    stroke={COLORS[idx % COLORS.length]} 
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Items & Services */}
+        <div className="card-shell p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+              <FiShoppingBag className="text-purple-500" /> Top Performing Items (Last 30 Days)
+            </h3>
+          </div>
+          <div className="space-y-4">
+            {stats?.top_items?.slice(0, 6).map((item, idx) => (
+              <div key={item.name} className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-400 shrink-0">
+                  #{idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 truncate">{item.name}</p>
+                    <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{item.total_qty} units</p>
+                  </div>
+                  <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-purple-500 rounded-full" 
+                      style={{ width: `${(item.total_qty / stats.top_items[0].total_qty) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stock Status Breakdown */}
+        <div className="card-shell p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+              <FiPackage className="text-zinc-500" /> Inventory Health Summary
+            </h3>
+          </div>
+          <div className="flex flex-col h-full justify-between">
+             <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="text-center">
+                   <p className="text-2xl font-black text-emerald-500">{stock?.summary?.in_stock}</p>
+                   <p className="text-[10px] font-black uppercase text-zinc-400">In Stock</p>
+                </div>
+                <div className="text-center border-x border-zinc-100 dark:border-zinc-800">
+                   <p className="text-2xl font-black text-amber-500">{stock?.summary?.low_stock}</p>
+                   <p className="text-[10px] font-black uppercase text-zinc-400">Low Stock</p>
+                </div>
+                <div className="text-center">
+                   <p className="text-2xl font-black text-rose-500">{stock?.summary?.out_of_stock}</p>
+                   <p className="text-[10px] font-black uppercase text-zinc-400">Out of Stock</p>
+                </div>
+             </div>
+             
+             <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Critical Action Items</p>
+                {stock?.alert_items?.slice(0, 3).map(item => (
+                   <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border">
+                      <div>
+                         <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{item.name}</p>
+                         <p className="text-[10px] font-bold text-rose-500 uppercase">Stock: {item.stock} / Min: {item.min_stock}</p>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[10px] font-black uppercase text-zinc-400">Deficit</p>
+                         <p className="text-sm font-black text-rose-600">+{item.deficit}</p>
+                      </div>
+                   </div>
+                ))}
+                {stock?.alert_items?.length === 0 && (
+                   <div className="text-center py-8">
+                      <p className="text-xs font-bold text-emerald-500">All items optimally stocked!</p>
+                   </div>
+                )}
+             </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
