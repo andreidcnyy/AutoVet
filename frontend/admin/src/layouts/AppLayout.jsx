@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState, useEffect } from "react";
 import { Outlet, useMatches, useNavigate, useLocation } from "react-router-dom";
 import { NewItemsProvider, useNewItems } from "../context/NewItemsContext";
 import Sidebar from "../components/layout/Sidebar";
