@@ -25,6 +25,7 @@
     "date-fns": "^4.1.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.8",
     "laravel-echo": "^2.3.4",
     "lucide-react": "^1.8.0",
     "pusher-js": "^8.5.0",
