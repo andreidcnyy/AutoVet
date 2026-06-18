@@ -9,6 +9,7 @@ import {
   FiTrendingUp,
   FiVolume2,
   FiCreditCard,
+  FiStar,
 } from "react-icons/fi";
 import { LuPawPrint, LuSparkles } from "react-icons/lu";
 import { ROLES, CLINIC_STAFF_ROLES, CLINIC_ADMIN_GROUP, VET_AND_ADMIN, SUPER_ADMIN_ONLY } from "../constants/roles";
@@ -27,7 +28,8 @@ export const primaryNavigation = [
   { id: "appointments", label: "Appointments", path: "/appointments", icon: FiClipboard, allowedRoles: CLINIC_STAFF_ROLES },
   { id: "inventory", label: "Inventory", path: "/inventory", icon: FiPackage, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES },
   { id: "invoices", label: "Invoices", path: "/invoices", icon: FiCreditCard, allowedRoles: CLINIC_STAFF_ROLES },
-{ id: "ai-clinical", label: "AI Clinical Support", path: "/ai-clinical", icon: LuSparkles, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES, aiOnly: true },
+  { id: "reviews", label: "Reviews & Feedback", path: "/settings?tab=reviews", icon: FiStar, allowedRoles: VET_AND_ADMIN },
+  { id: "ai-clinical", label: "AI Clinical Support", path: "/ai-clinical", icon: LuSparkles, badge: "AI", allowedRoles: CLINIC_STAFF_ROLES, aiOnly: true },
 ];
 
 export const bottomNavigation = [

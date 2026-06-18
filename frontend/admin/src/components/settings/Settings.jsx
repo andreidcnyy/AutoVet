@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { FiHome, FiSettings, FiUsers, FiBriefcase, FiArchive, FiActivity, FiDatabase, FiTag, FiStar } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
@@ -52,6 +52,15 @@ function Settings() {
     : (filteredTabs[0]?.id || "data");
 
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync tab with URL search parameter if provided (e.g. ?tab=reviews)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && filteredTabs.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search, filteredTabs]);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
