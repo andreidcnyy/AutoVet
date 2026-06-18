@@ -17,7 +17,6 @@ import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 
 const StatusBadge = ({ status }) => {
@@ -67,36 +66,6 @@ function DashboardPage() {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-
-      // 2. Fetch Detailed Data for Tables
-      const [petsRes, clientsRes] = await Promise.all([
-        api.get("/api/dashboard/pets?per_page=100"),
-        api.get("/api/dashboard/clients?per_page=100")
-      ]);
-
-      // 3. Add Pets Table
-      pdf.addPage();
-      pdf.setFontSize(16);
-      pdf.text("Detailed Patient Records", 14, 20);
-      autoTable(pdf, {
-        startY: 25,
-        head: [['Pet Name', 'Species', 'Breed', 'Owner']],
-        body: (petsRes.data?.pets || petsRes.pets || []).map(p => [p.name, p.species, p.breed, p.owner_name]),
-        theme: 'grid',
-        headStyles: { fillColor: [99, 102, 241] }
-      });
-
-      // 4. Add Clients Table
-      pdf.addPage();
-      pdf.setFontSize(16);
-      pdf.text("Registered Clients", 14, 20);
-      autoTable(pdf, {
-        startY: 25,
-        head: [['Name', 'Email', 'Pets']],
-        body: (clientsRes.data?.clients || clientsRes.clients || []).map(c => [c.name, c.email, c.pet_count]),
-        theme: 'grid',
-        headStyles: { fillColor: [16, 185, 129] }
-      });
 
       pdf.save(`AutoVet_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
