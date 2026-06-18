@@ -17,7 +17,7 @@ import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 
 const StatusBadge = ({ status }) => {
