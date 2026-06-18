@@ -83,22 +83,22 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
         </div>
 
         {/* Clinical Statistics */}
-        <div className="lg:col-span-4 card-shell p-8 bg-zinc-900 text-white flex flex-col justify-between relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
-              <FiActivity className="w-32 h-32" />
+        <div className="lg:col-span-4 card-shell p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 text-white flex flex-col justify-between relative overflow-hidden group shadow-lg">
+           <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700">
+              <FiActivity className="w-32 h-32 text-white" />
            </div>
            
            <div className="relative z-10">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-8">Medical Stats</h3>
+              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/80 mb-8">Medical Stats</h3>
               <div className="space-y-8">
                  <div>
-                    <div className="text-[10px] font-black text-brand-400 uppercase tracking-[0.2em] mb-2">Total Visits</div>
-                    <div className="text-6xl font-black italic tracking-tighter">{records.length}</div>
+                    <div className="text-[10px] font-black text-white/90 uppercase tracking-[0.2em] mb-2">Total Visits</div>
+                    <div className="text-6xl font-black italic tracking-tighter text-white">{records.length}</div>
                  </div>
-                 <div className="h-px bg-white/10 w-full" />
+                 <div className="h-px bg-white/20 w-full" />
                  <div>
-                    <div className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2">Last Condition</div>
-                    <div className="text-xl font-bold uppercase tracking-tight text-zinc-200">
+                    <div className="text-[10px] font-black text-white/90 uppercase tracking-[0.2em] mb-2">Last Condition</div>
+                    <div className="text-xl font-bold uppercase tracking-tight text-white drop-shadow-md">
                       {records.filter(r => r.diagnosis).length > 0 
                         ? records.find(r => r.diagnosis)?.diagnosis 
                         : 'N/A'}
@@ -107,7 +107,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
               </div>
            </div>
            <div className="mt-12 relative z-10">
-              <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em] leading-relaxed">
+              <p className="text-[9px] text-white/70 font-black uppercase tracking-[0.3em] leading-relaxed">
                  Consolidated Clinical<br />Summary Report
               </p>
            </div>
