@@ -15,6 +15,9 @@ import { useApi } from "../hooks/useApi";
 import api from "../api";
 import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 
 const StatusBadge = ({ status }) => {

@@ -15,6 +15,8 @@ import {
 import api from "../api";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const COLORS = [
   "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
@@ -68,6 +70,7 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState(null);
   const [consumption, setConsumption] = useState([]);
   const [stock, setStock] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -92,6 +95,38 @@ export default function AnalyticsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const downloadPDF = async () => {
+    const element = document.querySelector(".printable-dashboard");
+    if (!element) return;
+
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`AutoVet_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error("PDF Export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -125,10 +160,12 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex items-center gap-4 no-print">
           <button 
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-5 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm text-sm uppercase tracking-widest"
+            onClick={downloadPDF}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-sm text-sm uppercase tracking-widest disabled:opacity-50"
           >
-            <FiPrinter className="h-4 w-4" /> Print / Save as PDF
+            {isExporting ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiPrinter className="h-4 w-4" />}
+            {isExporting ? "Exporting..." : "Download PDF"}
           </button>
           <button 
             onClick={fetchData}
