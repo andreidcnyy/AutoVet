@@ -47,7 +47,10 @@ function DashboardPage() {
         allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1200,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         ignoreElements: (node) => {
            // Skip any element that might cause a taint/CORS error if it's not crucial
            return false; 
