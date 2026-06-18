@@ -7,6 +7,7 @@ import { FiPlus, FiCalendar, FiHeart, FiClock, FiEdit2, FiBell, FiChevronRight, 
 import ReviewModal from '../components/ReviewModal';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
+import PetCareRecommendations from '../components/PetCareRecommendations';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import { useAuth } from '../context/AuthContext';
@@ -188,8 +189,8 @@ export default function Dashboard() {
             </h1>
             <p className="text-white/80 mt-2 text-sm font-medium">
               {pets.length > 0
-                ? `You have ${pets.length} pet${pets.length > 1 ? 's' : ''} registered. Keep their health on track!`
-                : "Register your first pet to get started."}
+                ? `Ensuring ${pets.length} of your furry friend${pets.length > 1 ? 's are' : ' is'} happy and healthy.`
+                : "Your partner in comprehensive pet healthcare and wellness."}
             </p>
           </div>
           <Link to="/book" className="shrink-0">
@@ -242,21 +243,19 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
-                
-                {/* Secondary Register Button inside the grid */}
-                <Link to="/add-pet" className="group">
-                  <div className="h-full border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 flex items-center justify-center gap-3 text-zinc-400 group-hover:border-brand-400 group-hover:text-brand-600 transition-all cursor-pointer bg-zinc-50/30 dark:bg-dark-surface/10">
-                    <FiPlusCircle className="w-6 h-6" />
-                    <span className="text-xs font-black uppercase tracking-widest">Register New Pet</span>
-                  </div>
-                </Link>
               </>
             ) : (
-              <div className="col-span-full py-8 text-center">
-                <p className="text-zinc-400 text-sm">No pets registered yet.</p>
+              <div className="col-span-full py-8 text-center bg-zinc-50/50 dark:bg-dark-surface/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                <p className="text-zinc-400 text-sm font-bold uppercase tracking-widest">No pets registered yet.</p>
+                <Link to="/add-pet" className="mt-4 inline-flex items-center gap-2 text-brand-600 font-black text-xs uppercase tracking-widest hover:underline">
+                  <FiPlusCircle className="w-4 h-4" /> Register your first pet
+                </Link>
               </div>
             )}
           </div>
+
+          {/* Recommendations Section */}
+          <PetCareRecommendations />
         </div>
 
         {/* Appointments Section */}
