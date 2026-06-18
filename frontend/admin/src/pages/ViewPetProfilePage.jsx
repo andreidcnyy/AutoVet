@@ -1,15 +1,15 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import ViewPatientProfile from "../components/patients/ViewPatientProfile";
+import ViewPetProfile from "../components/pets/ViewPetProfile";
 import { useAuth } from "../context/AuthContext";
 
-function ViewPatientProfilePage() {
+function ViewPetProfilePage() {
   const { id } = useParams();
   const { user } = useAuth();
-  const [patient, setPatient] = useState(null);
+  const [pet, setPet] = useState(null);
   const [error, setError] = useState(null);
 
-  const fetchPatient = () => {
+  const fetchPet = () => {
     if (!user?.token || !id) return;
 
     fetch(`/api/pets/${id}`, {
@@ -21,23 +21,23 @@ function ViewPatientProfilePage() {
       .then((res) => {
         if (!res.ok) {
           console.error("Pet fetch failed with status:", res.status);
-          throw new Error("Failed to load patient. Error code: " + res.status);
+          throw new Error("Failed to load pet. Error code: " + res.status);
         }
         return res.json();
       })
       .then((data) => {
-        setPatient(data);
+        setPet(data);
       })
       .catch((err) => {
-        console.error("Error loading patient:", err);
+        console.error("Error loading pet:", err);
         setError(err.message);
       });
   };
 
   useEffect(() => {
-    fetchPatient();
+    fetchPet();
 
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchPatient(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchPet(); };
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
@@ -53,7 +53,7 @@ function ViewPatientProfilePage() {
     );
   }
 
-  return <ViewPatientProfile patient={patient} onRefresh={fetchPatient} />;
+  return <ViewPetProfile pet={pet} onRefresh={fetchPet} />;
 }
 
-export default ViewPatientProfilePage;
+export default ViewPetProfilePage;

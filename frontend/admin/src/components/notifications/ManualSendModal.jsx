@@ -42,7 +42,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                 } else {
                     // Pre-fill for appointments if no template found
                     setTitle('Appointment Reminder - Pet Wellness');
-                    setCustomMessage('Hello This is from Pet Wellness Animal Clinic and We would like to reminde you on our scheduled booking {date_scheduled}, {arrival_time}, {patient}.');
+                    setCustomMessage('Hello This is from Pet Wellness Animal Clinic and We would like to reminde you on our scheduled booking {date_scheduled}, {arrival_time}, {pet}.');
                 }
             } else if (relatedType === 'App\\Models\\MedicalRecord') {
                 const medicalTemplate = data.find(t => t.event_key === 'medical_record_update' && t.channel === channel);
@@ -50,7 +50,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                     setSelectedTemplate(medicalTemplate.id);
                 } else {
                     setTitle('Medical Record Update - Pet Wellness');
-                    setCustomMessage('Hello {owner_name}, a new medical record has been added for your pet {patient}. Findings: {findings}');
+                    setCustomMessage('Hello {owner_name}, a new medical record has been added for your pet {pet}. Findings: {findings}');
                 }
             } else if (relatedType === 'App\\Models\\Invoice') {
                 setTitle(`Invoice #${relatedObject?.invoice_number || 'INV'} - Pet Wellness`);
@@ -248,7 +248,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                             <div>
                                 <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1 text-left">Message Content</label>
                                 <div className="mb-2 text-[9px] text-zinc-500 font-bold uppercase italic tracking-tighter">
-                                    Available: {'{owner_name}, {pet_name}, {date}, {time}, {date_scheduled}, {arrival_time}, {patient}'}
+                                    Available: {'{owner_name}, {pet_name}, {date}, {time}, {date_scheduled}, {arrival_time}, {pet}'}
                                 </div>
                                 <textarea 
                                     value={customMessage} 

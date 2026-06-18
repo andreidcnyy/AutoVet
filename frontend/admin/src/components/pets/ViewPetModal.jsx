@@ -1,27 +1,27 @@
 import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import ViewPatientProfile from "./ViewPatientProfile";
+import ViewPetProfile from "./ViewPetProfile";
 import { useAuth } from "../../context/AuthContext";
 
-function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
+function ViewPetModal({ isOpen, onClose, petId, onRefresh }) {
   const { user } = useAuth();
-  const [patient, setPatient] = useState(null);
+  const [pet, setPet] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchPatient = async () => {
-    if (!user?.token || !patientId) return;
+  const fetchPet = async () => {
+    if (!user?.token || !petId) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/pets/${patientId}`, {
+      const response = await fetch(`/api/pets/${petId}`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${user.token}`
         }
       });
-      if (!response.ok) throw new Error("Failed to load patient.");
+      if (!response.ok) throw new Error("Failed to load pet.");
       const data = await response.json();
-      setPatient(data);
+      setPet(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -30,13 +30,13 @@ function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
   };
 
   useEffect(() => {
-    if (isOpen && patientId) {
-      fetchPatient();
+    if (isOpen && petId) {
+      fetchPet();
     } else {
-      setPatient(null);
+      setPet(null);
       setError(null);
     }
-  }, [isOpen, patientId, user?.token]);
+  }, [isOpen, petId, user?.token]);
 
   if (!isOpen) return null;
 
@@ -80,15 +80,15 @@ function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
             </div>
           ) : (
             <div className="p-0">
-               {/* Pass a modified version of ViewPatientProfile that doesn't include the 'Back' button if needed, 
+               {/* Pass a modified version of ViewPetProfile that doesn't include the 'Back' button if needed, 
                    or just use it as is if it's compatible. */}
-               <ViewPatientProfile 
-                 patient={patient} 
+               <ViewPetProfile 
+                 pet={pet} 
                  onRefresh={() => {
-                   fetchPatient();
+                   fetchPet();
                    if (onRefresh) onRefresh();
                  }}
-                 isModal={true} // We can use this prop inside ViewPatientProfile to hide redundant UI
+                 isModal={true} // We can use this prop inside ViewPetProfile to hide redundant UI
                />
             </div>
           )}
@@ -98,4 +98,4 @@ function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
   );
 }
 
-export default ViewPatientModal;
+export default ViewPetModal;

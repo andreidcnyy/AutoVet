@@ -4,8 +4,8 @@ import AppointmentsPage from "../pages/AppointmentsPage";
 import AnalyticsPage from "../pages/AnalyticsPage";
 import DashboardPage from "../pages/DashboardPage";
 import InventoryPage from "../pages/InventoryPage";
-import PatientsPage from "../pages/PatientsPage";
-import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
+import PetsPage from "../pages/PetsPage";
+import ViewPetProfilePage from "../pages/ViewPetProfilePage";
 import ProfilePage from "../pages/ProfilePage";
 import SettingsPage from "../pages/SettingsPage";
 import SuperAdminDashboard from "../pages/SuperAdminDashboard";
@@ -109,22 +109,22 @@ export const router = createBrowserRouter([
         handle: { title: "System Broadcasts" },
       },
       {
-        path: "patients",
+        path: "pets",
         element: (
           <ProtectedRoute allowedRoles={ALL_ROLES}>
-            <PatientsPage />
+            <PetsPage />
           </ProtectedRoute>
         ),
-        handle: { title: "Patient Records" },
+        handle: { title: "Pet Records" },
       },
       {
-        path: "patients/:id",
+        path: "pets/:id",
         element: (
           <ProtectedRoute allowedRoles={ALL_ROLES}>
-            <ViewPatientProfilePage />
+            <ViewPetProfilePage />
           </ProtectedRoute>
         ),
-        handle: { title: "Patient Profile" },
+        handle: { title: "Pet Profile" },
       },
       {
         path: "appointments",

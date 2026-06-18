@@ -54,8 +54,8 @@ export const metricCards = [
     accentBorder: "border-r-4 border-r-rose-500",
   },
   {
-    id: "active-patients",
-    title: "Active Patients",
+    id: "active-pets",
+    title: "Active Pets",
     value: "962",
     detail: "24 new records this month",
     icon: FiUsers,
@@ -94,7 +94,7 @@ export const notifications = [
   {
     id: "notif-3",
     title: "New lab panel uploaded",
-    message: "Bloodwork for Nala is ready to review in patient chart.",
+    message: "Bloodwork for Nala is ready to review in pet chart.",
     time: "2 hours ago",
     tone: "success",
     icon: FiCheckCircle,
@@ -111,7 +111,7 @@ export const notifications = [
 
 export const dashboardActions = [
   { id: "new-appointment", label: "New Appointment", icon: FiCalendar },
-  { id: "register-patient", label: "Register Patient", icon: FiUserPlus },
+  { id: "register-pet", label: "Register Pet", icon: FiUserPlus },
   { id: "order-stock", label: "Order Stock", icon: FiShoppingCart },
   { id: "export-summary", label: "Export Summary", icon: FiFileText },
   { id: "manage-inventory", label: "Manage Inventory", icon: FiPackage },

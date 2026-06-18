@@ -77,7 +77,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
                     {owner.pets.map((pet) => (
                       <Link 
                         key={pet.id}
-                        to={`/patients/${pet.id}`}
+                        to={`/pets/${pet.id}`}
                         onClick={onClose}
                         className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition dark:border-dark-border dark:bg-dark-card dark:hover:border-emerald-500/50"
                       >

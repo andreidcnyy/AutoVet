@@ -2,9 +2,9 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import api from "../api";
 import echo from "../utils/echo";
 
-const NewItemsContext = createContext({ patientCount: 0, appointmentCount: 0, invoiceCount: 0 });
+const NewItemsContext = createContext({ petCount: 0, appointmentCount: 0, invoiceCount: 0 });
 
-const KEYS = { patients: "lv_patients", appointments: "lv_appointments" };
+const KEYS = { pets: "lv_pets", appointments: "lv_appointments" };
 const setStamp = (key) => localStorage.setItem(key, new Date().toISOString());
 // Return existing stamp, or initialize to NOW so pre-existing records never count as new
 const getOrInitStamp = (key) => {
@@ -14,7 +14,7 @@ const getOrInitStamp = (key) => {
 };
 
 export function NewItemsProvider({ children, enabled = true }) {
-  const [patientCount,     setPatientCount]     = useState(0);
+  const [petCount,     setPetCount]     = useState(0);
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [invoiceCount,     setInvoiceCount]     = useState(0);
   const intervalRef = useRef(null);
@@ -22,20 +22,20 @@ export function NewItemsProvider({ children, enabled = true }) {
   const fetchCounts = useCallback(async () => {
     if (!enabled) return;
     const path = window.location.pathname;
-    const onPatients     = path.startsWith("/patients");
+    const onPets     = path.startsWith("/pets");
     const onAppointments = path.startsWith("/appointments");
 
-    if (onPatients)     { setPatientCount(0);     setStamp(KEYS.patients); }
+    if (onPets)     { setPetCount(0);     setStamp(KEYS.pets); }
     if (onAppointments) { setAppointmentCount(0); setStamp(KEYS.appointments); }
 
     const params = {
-      since_patients:     getOrInitStamp(KEYS.patients),
+      since_pets:     getOrInitStamp(KEYS.pets),
       since_appointments: getOrInitStamp(KEYS.appointments),
     };
 
     try {
       const data = await api.get("/api/new-counts", { params });
-      if (!onPatients     && typeof data?.new_patients     === "number") setPatientCount(data.new_patients);
+      if (!onPets     && typeof data?.new_pets     === "number") setPetCount(data.new_pets);
       if (!onAppointments && typeof data?.new_appointments === "number") setAppointmentCount(data.new_appointments);
       if (typeof data?.draft_invoices === "number") setInvoiceCount(data.draft_invoices);
     } catch (_) {}
@@ -57,9 +57,9 @@ export function NewItemsProvider({ children, enabled = true }) {
     };
   }, [enabled, fetchCounts]);
 
-  const markPatientsSeen = useCallback(() => {
-    setStamp(KEYS.patients);
-    setPatientCount(0);
+  const markPetsSeen = useCallback(() => {
+    setStamp(KEYS.pets);
+    setPetCount(0);
   }, []);
 
   const markAppointmentsSeen = useCallback(() => {
@@ -68,7 +68,7 @@ export function NewItemsProvider({ children, enabled = true }) {
   }, []);
 
   return (
-    <NewItemsContext.Provider value={{ patientCount, appointmentCount, invoiceCount, markPatientsSeen, markAppointmentsSeen, refreshCounts: fetchCounts }}>
+    <NewItemsContext.Provider value={{ petCount, appointmentCount, invoiceCount, markPetsSeen, markAppointmentsSeen, refreshCounts: fetchCounts }}>
       {children}
     </NewItemsContext.Provider>
   );

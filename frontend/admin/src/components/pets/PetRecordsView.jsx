@@ -31,7 +31,7 @@ const PORTAL_STATUS_STYLE = {
   deactivated: "bg-rose-100 text-rose-700 border-rose-200",
 };
 
-function PatientRecordsView({ 
+function PetRecordsView({ 
   owners, 
   pagination, 
   isLoading,
@@ -40,7 +40,7 @@ function PatientRecordsView({
   onSearch,
   onFilter,
   onPageChange,
-  onOpenAddPatient, 
+  onOpenAddPet, 
   onDeleteOwner, 
   onEditOwner, 
   onOwnerEdited,
@@ -95,14 +95,14 @@ function PatientRecordsView({
       {/* Header */}
       <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Patient Owners</h2>
+          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Pet Owners</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">
             Manage your clients and their pets efficiently.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={onOpenAddPatient}
+            onClick={onOpenAddPet}
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
           >
             <FiPlus className="h-4 w-4" />
@@ -381,7 +381,7 @@ function PatientRecordsView({
                         {selectedOwner.pets?.length > 0 ? selectedOwner.pets.map(pet => (
                           <div 
                             key={pet.id} 
-                            onClick={() => navigate(`/patients/${pet.id}`)}
+                            onClick={() => navigate(`/pets/${pet.id}`)}
                             className="flex items-center gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/30 p-4 hover:border-emerald-500/30 hover:bg-white hover:shadow-xl hover:shadow-emerald-500/5 transition-all cursor-pointer dark:border-dark-border dark:bg-dark-surface/30 dark:hover:border-emerald-500/40"
                           >
                              <img 
@@ -519,4 +519,4 @@ function PatientRecordsView({
   );
 }
 
-export default PatientRecordsView;
+export default PetRecordsView;

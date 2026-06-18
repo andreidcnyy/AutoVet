@@ -44,7 +44,7 @@ const petSchema = z.object({
   treatment_plan: z.string().optional().or(z.literal("")),
 });
 
-const patientSchema = z.object({
+const petSchema = z.object({
   owner_id: z.coerce.string().optional(),
   owner_name: z.string().optional(),
   owner_phone: z.string().optional().or(z.literal("")),
@@ -83,7 +83,7 @@ const emptyPet = {
   vet_id: "", chief_complaint: "", findings: "", diagnosis: "", treatment_plan: ""
 };
 
-function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
+function AddPetFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const [error, setError] = useState(null);
   const [speciesList, setSpeciesList] = useState([]);
   const [ownersList, setOwnersList] = useState([]);
@@ -94,7 +94,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   const { refreshCounts } = useNewItems();
 
   const { register, handleSubmit, setValue, watch, control, formState: { errors, isSubmitting } } = useForm({
-    resolver: zodResolver(patientSchema),
+    resolver: zodResolver(petSchema),
     defaultValues: {
       owner_id: initialOwnerId || "", owner_name: "", owner_phone: "", owner_email: "",
       owner_address: "", owner_city: "", owner_province: "", owner_zip: "",
@@ -253,12 +253,12 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
     <div className="space-y-5 pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{initialOwnerId ? "Register Pet" : "Add Patient Owner & Pets"}</h2>
+          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{initialOwnerId ? "Register Pet" : "Add Pet Owner & Pets"}</h2>
           <p className="mt-1 text-base text-zinc-500 dark:text-zinc-400">Complete the details below to register.</p>
         </div>
         <div className="flex items-center gap-3">
           <button type="button" onClick={onCancel} className="rounded-xl border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-700 dark:bg-dark-card dark:text-zinc-200">Cancel</button>
-          <button type="submit" form="add-patient-form" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+          <button type="submit" form="add-pet-form" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
             <FiCheckCircle className="h-4 w-4" /> {isSubmitting ? "Saving..." : "Save Record"}
           </button>
         </div>
@@ -272,7 +272,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
           </div>
         )}
 
-        <form id="add-patient-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
+        <form id="add-pet-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
           
           {!initialOwnerId && (
             <>
@@ -362,7 +362,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                   )}
                   <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-2">
                     <span className="bg-emerald-100 text-emerald-700 rounded-full w-6 h-6 flex items-center justify-center dark:bg-emerald-900/30 dark:text-emerald-400">{index + 1}</span>
-                    Patient Profile
+                    Pet Profile
                   </h4>
                   
                   <div className="flex items-center gap-5 pb-2">
@@ -495,4 +495,4 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
   );
 }
 
-export default AddPatientFormView;
+export default AddPetFormView;
