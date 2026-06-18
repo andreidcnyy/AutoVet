@@ -432,17 +432,17 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
                   {VET_AND_ADMIN.includes(user?.role) && (
                     <div className="pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-800">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-emerald-600 mb-4 flex items-center gap-2">
-                          <LuFilePlus2 className="h-4 w-4" /> Medical History (Optional)
+                      <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-2">
+                          <LuFilePlus2 className="h-4 w-4" /> Medical History (Read-Only)
                       </h4>
                       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Allergies</label><input {...register(`pets.${index}.allergies`)} className={getInputClass(errors.pets?.[index]?.allergies)} placeholder="None recorded" /></div>
-                        <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Current Medication</label><input {...register(`pets.${index}.medication`)} className={getInputClass(errors.pets?.[index]?.medication)} placeholder="None recorded" /></div>
+                        <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Allergies</label><input {...register(`pets.${index}.allergies`)} readOnly className={clsx(getInputClass(errors.pets?.[index]?.allergies), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} placeholder="None" /></div>
+                        <div><label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Current Medication</label><input {...register(`pets.${index}.medication`)} readOnly className={clsx(getInputClass(errors.pets?.[index]?.medication), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} placeholder="None" /></div>
                         
                         <div>
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Attending Veterinarian</label>
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Attending Veterinarian</label>
                           <div className="relative">
-                            <select {...register(`pets.${index}.vet_id`)} className={getSelectClass(errors.pets?.[index]?.vet_id)}>
+                            <select {...register(`pets.${index}.vet_id`)} disabled className={clsx(getSelectClass(errors.pets?.[index]?.vet_id), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")}>
                               <option value="">Select veterinarian...</option>
                               {vetsList.map(v => (
                                 <option key={v.id} value={v.id}>
@@ -455,28 +455,28 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                         </div>
                         
                         <div>
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Chief Complaint</label>
-                          <input {...register(`pets.${index}.chief_complaint`)} className={getInputClass(errors.pets?.[index]?.chief_complaint)} placeholder="Reason for visit" />
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Chief Complaint</label>
+                          <input {...register(`pets.${index}.chief_complaint`)} readOnly className={clsx(getInputClass(errors.pets?.[index]?.chief_complaint), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} placeholder="None" />
                         </div>
                         
                         <div>
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Clinical Findings</label>
-                          <textarea {...register(`pets.${index}.findings`)} rows="2" className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm focus:outline-none dark:bg-dark-card dark:border-dark-border dark:text-zinc-200" placeholder="Observations..."></textarea>
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Clinical Findings</label>
+                          <textarea {...register(`pets.${index}.findings`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div>
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Diagnosis</label>
-                          <textarea {...register(`pets.${index}.diagnosis`)} rows="2" className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm focus:outline-none dark:bg-dark-card dark:border-dark-border dark:text-zinc-200" placeholder="Initial diagnosis..."></textarea>
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Diagnosis</label>
+                          <textarea {...register(`pets.${index}.diagnosis`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div className="lg:col-span-2">
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Treatment Plan</label>
-                          <textarea {...register(`pets.${index}.treatment_plan`)} rows="2" className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm focus:outline-none dark:bg-dark-card dark:border-dark-border dark:text-zinc-200" placeholder="Prescriptions, procedures, etc."></textarea>
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Treatment Plan</label>
+                          <textarea {...register(`pets.${index}.treatment_plan`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div className="lg:col-span-2">
-                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Notes</label>
-                          <textarea {...register(`pets.${index}.notes`)} rows="3" className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm focus:outline-none dark:bg-dark-card dark:border-dark-border dark:text-zinc-200" placeholder="Additional notes..."></textarea>
+                          <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Notes</label>
+                          <textarea {...register(`pets.${index}.notes`)} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
                       </div>
                     </div>

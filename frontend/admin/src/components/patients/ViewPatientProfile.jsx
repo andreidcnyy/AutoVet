@@ -1232,7 +1232,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   setSelectedVetId
   }) {
   const isEdit = !!record;
-  const isViewOnly = isStaff || isViewOnlyMode;
+  const isViewOnly = true;
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
 
   const [isApptDropdownOpen, setIsApptDropdownOpen] = useState(false);
@@ -1270,8 +1270,8 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
     <div className="fixed inset-0 z-[10100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-            {isViewOnlyMode ? "View Medical Record" : isViewOnly ? "Medical Record Details" : isEdit ? "Edit Record" : "Add Medical Record"}
+          <h2 className="text-xl font-bold text-zinc-400 dark:text-zinc-500">
+             Medical Record Details (Read-Only)
           </h2>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface">✕</button>
         </div>
@@ -1279,14 +1279,14 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
           <form id="med-record-form" onSubmit={handleSubmit} className="space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
-                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Attending Veterinarian</label>
+                 <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Attending Veterinarian</label>
                  <select 
                    disabled={isViewOnly}
                    value={selectedVetId}
                    onChange={(e) => setSelectedVetId(e.target.value)}
                    className={clsx(
                      "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-none focus:border-emerald-400 dark:text-zinc-200",
-                     isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white",
+                     isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white",
                      getError("vet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
                    )}
                  >
@@ -1301,7 +1301,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                </div>
 
                <div>
-                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Link to Appointment (Required)</label>
+                 <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Link to Appointment</label>
                  <div className="relative">
                     <button
                       type="button"
@@ -1309,7 +1309,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                       onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
                       className={clsx(
                         "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
-                        isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
+                        isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
                       )}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -1317,91 +1317,35 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                         <span className={clsx("truncate", !selectedAppointmentId && "text-zinc-400")}>
                           {selectedApt 
                             ? `${formatDate(selectedApt.date)} - ${selectedApt.service?.name || selectedApt.title || "General Visit"}`
-                            : "Select an appointment..."
+                            : "No appointment linked"
                           }
                         </span>
                       </div>
                       {!isViewOnly && <FiChevronDown className={clsx("h-4 w-4 text-zinc-400 transition-transform", isApptDropdownOpen && "rotate-180")} />}
                     </button>
-
-                    {isApptDropdownOpen && !isViewOnly && (
-                      <div className="absolute left-0 top-full z-[70] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
-                        <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
-                          <div className="relative">
-                            <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                            <input 
-                              type="text"
-                              placeholder="Search date or service..."
-                              value={apptSearch}
-                              onChange={(e) => setApptSearch(e.target.value)}
-                              autoFocus
-                              className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
-                            />
-                            {apptSearch && (
-                              <button
-                                type="button"
-                                onClick={() => setApptSearch("")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                              >
-                                <FiX className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="max-h-48 overflow-y-auto divide-y divide-zinc-50 dark:divide-dark-surface">
-                          {filteredAppointments.length > 0 ? filteredAppointments.map(apt => (
-                            <button
-                              key={apt.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedAppointmentId(apt.id.toString());
-                                setIsApptDropdownOpen(false);
-                                setApptSearch("");
-                              }}
-                              className={clsx(
-                                "w-full px-4 py-2.5 text-left text-xs transition-colors hover:bg-zinc-50 dark:hover:bg-dark-surface",
-                                selectedAppointmentId?.toString() === apt.id.toString() ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
-                              )}
-                            >
-                              <div className="flex justify-between items-center">
-                                <span>{formatDate(apt.date)}</span>
-                                <span className="opacity-60">{formatTime(apt.time)}</span>
-                              </div>
-                              <div className="truncate opacity-80">{apt.service?.name || apt.title || "General Visit"}</div>
-                            </button>
-                          )) : (
-                            <div className="px-4 py-8 text-center text-[10px] text-zinc-400 uppercase font-bold tracking-widest">
-                              No appointments found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                  </div>
-                 {getError("appointment_id") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("appointment_id")}</p>}
                </div>
              </div>
 
              <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Chief Complaint</label>
+               <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Chief Complaint</label>
                <input 
                  name="chief_complaint" 
                  readOnly={isViewOnly}
                  defaultValue={record?.chief_complaint || ""} 
                  className={clsx(
                    "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400",
-                   isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white",
+                   isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white",
                    getError("chief_complaint") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
                  )} 
                />
-               {getError("chief_complaint") && <p className="mt-1 text-xs font-medium text-rose-500">{getError("chief_complaint")}</p>}
              </div>
              <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Findings</label>
-               <textarea name="findings" rows={2} readOnly={isViewOnly} defaultValue={record?.findings || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-50 cursor-not-allowed" : "bg-white")}></textarea>
+               <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Findings</label>
+               <textarea name="findings" rows={2} readOnly={isViewOnly} defaultValue={record?.findings || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
              </div>
              <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Diagnosis (Vets Only)</label>
+               <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Diagnosis</label>
                <textarea 
                  name="diagnosis" 
                  rows={2} 
@@ -1409,12 +1353,12 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                  defaultValue={record?.diagnosis || ""} 
                  className={clsx(
                    "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
-                   isViewOnly ? "bg-zinc-50 cursor-not-allowed italic" : "bg-white"
+                   isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none italic" : "bg-white"
                  )}
                ></textarea>
              </div>
              <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Treatment Plan</label>
+               <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Treatment Plan</label>
                <textarea 
                  name="treatment_plan" 
                  rows={2} 
@@ -1422,33 +1366,30 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                  defaultValue={record?.treatment_plan || ""} 
                  className={clsx(
                    "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
-                   isViewOnly ? "bg-zinc-50 cursor-not-allowed italic" : "bg-white"
+                   isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none italic" : "bg-white"
                  )}
                ></textarea>
              </div>
              <div className="grid grid-cols-2 gap-4">
                <div>
-                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Date</label>
-                 <input type="date" name="follow_up_date" readOnly={isViewOnly} defaultValue={record?.follow_up_date?.split('T')[0] || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-50" : "bg-white")} />
+                 <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Follow-up Date</label>
+                 <input type="date" name="follow_up_date" readOnly={isViewOnly} defaultValue={record?.follow_up_date?.split('T')[0] || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
                </div>
                <div>
-                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Time</label>
-                 <input type="time" name="follow_up_time" readOnly={isViewOnly} defaultValue={record?.follow_up_time || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-50" : "bg-white")} />
+                 <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Follow-up Time</label>
+                 <input type="time" name="follow_up_time" readOnly={isViewOnly} defaultValue={record?.follow_up_time || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
                </div>
              </div>
              <div>
-               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Private Notes</label>
-               <textarea name="notes" rows={2} readOnly={isViewOnly} defaultValue={record?.notes || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-50" : "bg-white")}></textarea>
+               <label className="mb-1 block text-sm font-semibold text-zinc-400 dark:text-zinc-500">Private Notes</label>
+               <textarea name="notes" rows={2} readOnly={isViewOnly} defaultValue={record?.notes || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
              </div>
           </form>
         </div>
         <div className="border-t bg-zinc-50 px-6 py-4 dark:border-dark-border dark:bg-dark-surface/50 rounded-b-2xl flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="rounded-xl border border-zinc-300 bg-white px-5 py-2 text-sm font-semibold text-zinc-700 hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200">
-            {isViewOnly ? "Close" : "Cancel"}
+             Close
           </button>
-          {!isViewOnly && (
-            <button type="submit" form="med-record-form" className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Save Record</button>
-          )}
         </div>
       </div>
     </div>,

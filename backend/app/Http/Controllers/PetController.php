@@ -46,7 +46,7 @@ class PetController extends Controller
         $user = auth()->user();
 
         if ($request->boolean('minimal')) {
-            $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'weight')
+            $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'weight')
                 ->with(['owner:id,name', 'species:id,name']);
             
             // Always hide AI Training Records for minimal lists too

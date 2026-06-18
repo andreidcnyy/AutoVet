@@ -550,27 +550,27 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <div className="h-px bg-zinc-200 dark:bg-dark-border" />
 
                                 <section>
-                                    <h3 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-100">Medical History</h3>
+                                    <h3 className="mb-4 text-lg font-semibold text-zinc-400 dark:text-zinc-500">Medical History (Read-Only)</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Allergies</label>
-                                            <input {...register("allergies")} className={getInputClass(errors.allergies)} />
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-400 dark:text-zinc-500">Allergies</label>
+                                            <input {...register("allergies")} readOnly className={clsx(getInputClass(errors.allergies), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Current Medication</label>
-                                            <input {...register("medication")} className={getInputClass(errors.medication)} />
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-400 dark:text-zinc-500">Current Medication</label>
+                                            <input {...register("medication")} readOnly className={clsx(getInputClass(errors.medication), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} />
                                         </div>
 
                                         <div className="sm:col-span-2 pt-4 border-t border-zinc-100 dark:border-dark-border mt-2">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-4 flex items-center gap-2">
-                                            Create New Clinical Record Entry (Optional)
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-4 flex items-center gap-2">
+                                            Create New Clinical Record Entry (Disabled)
                                             </h4>
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Attending Veterinarian</label>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Attending Veterinarian</label>
                                             <div className="relative">
-                                                <select {...register("vet_id")} className={getSelectClass(errors.vet_id)}>
+                                                <select {...register("vet_id")} disabled className={clsx(getSelectClass(errors.vet_id), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")}>
                                                     <option value="">Select veterinarian...</option>
                                                     {vetsList.map(v => (
                                                         <option key={v.id} value={v.id}>
@@ -583,28 +583,28 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Chief Complaint</label>
-                                            <input {...register("chief_complaint")} className={getInputClass(errors.chief_complaint)} placeholder="Reason for this update/visit..." />
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Chief Complaint</label>
+                                            <input {...register("chief_complaint")} readOnly className={clsx(getInputClass(errors.chief_complaint), "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-400 cursor-not-allowed pointer-events-none select-none")} placeholder="None" />
                                         </div>
 
                                         <div>
-                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Clinical Findings</label>
-                                            <textarea {...register("findings")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Observations..."></textarea>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Clinical Findings</label>
+                                            <textarea {...register("findings")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div>
-                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Diagnosis</label>
-                                            <textarea {...register("diagnosis")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Clinical diagnosis..."></textarea>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Diagnosis</label>
+                                            <textarea {...register("diagnosis")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Treatment Plan</label>
-                                            <textarea {...register("treatment_plan")} rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-zinc-200" placeholder="Next steps, medications prescribed..."></textarea>
+                                            <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Treatment Plan</label>
+                                            <textarea {...register("treatment_plan")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Additional Notes / Status</label>
-                                            <textarea {...register("notes")} rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500"></textarea>
+                                            <label className="mb-1 block text-xs font-semibold text-zinc-400 dark:text-zinc-500">Additional Notes / Status</label>
+                                            <textarea {...register("notes")} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm text-zinc-400 focus:outline-none dark:border-dark-border dark:bg-zinc-800 dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none"></textarea>
                                         </div>
                                     </div>
                                 </section>
