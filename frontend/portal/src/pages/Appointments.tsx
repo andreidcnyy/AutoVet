@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { getAppointments, getAppointment, cancelAppointment, getInvoices } from '../api';
+import { getAppointments, getAppointment, cancelAppointment, getInvoices, getPets } from '../api';
 import echo from '../utils/echo';
 import {
   FiCalendar,
@@ -11,7 +11,8 @@ import {
   FiArrowLeft,
   FiHeart,
   FiUser,
-  FiFileText
+  FiFileText,
+  FiFilter
 } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
 import PetProfileModal from '../components/PetProfileModal';
@@ -39,6 +40,8 @@ const formatPortalDateLocal = (dateStr: string, long = false) => {
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [pets, setPets] = useState<any[]>([]);
+  const [filterPetId, setFilterPetId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -90,8 +93,18 @@ export default function Appointments() {
       .finally(() => setLoading(false));
   };
 
+  const fetchPets = () => {
+    getPets()
+      .then(res => {
+        const petsArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setPets(petsArray);
+      })
+      .catch(console.error);
+  };
+
   useEffect(() => {
     fetchAppointments();
+    fetchPets();
 
     const handleAppointmentUpdate = (e: any) => {
       localStorage.removeItem(CACHE_KEY);
@@ -125,6 +138,11 @@ export default function Appointments() {
       if (u.id) echo.leave(`client.appointments.${u.id}`);
     };
   }, []);
+
+  const filteredAppointments = useMemo(() => {
+    if (filterPetId === 'all') return appointments;
+    return appointments.filter(appt => appt.pet_id === parseInt(filterPetId));
+  }, [appointments, filterPetId]);
 
   useEffect(() => {
     selectedAppointmentRef.current = selectedAppointment;
@@ -202,10 +220,31 @@ export default function Appointments() {
       </div>
 
       <div className="space-y-4">
+        {/* Filter Section */}
+        {pets.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-dark-card p-4 rounded-2xl border border-zinc-100 dark:border-dark-border shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-500 flex items-center justify-center dark:bg-brand-900/20">
+                <FiFilter className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-black uppercase tracking-widest text-zinc-400">Filter by Pet</span>
+            </div>
+            <select
+              value={filterPetId}
+              onChange={(e) => setFilterPetId(e.target.value)}
+              className="px-4 py-2 rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-200 dark:border-dark-border text-sm font-bold text-zinc-700 dark:text-zinc-200 outline-none focus:border-brand-500 transition-all min-w-[200px]"
+            >
+              <option value="all">All Pets</option>
+              {pets.map(pet => (
+                <option key={pet.id} value={pet.id}>{pet.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        {appointments.length > 0 ? (
+        {filteredAppointments.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {appointments.map(appt => (
+            {filteredAppointments.map(appt => (
               <div key={appt.id} className="card-shell card-shell-hover p-4 sm:p-6 bg-white dark:bg-dark-card group relative overflow-hidden">
                 <div className={clsx(
                   "absolute left-0 top-0 bottom-0 w-1.5",
@@ -269,7 +308,9 @@ export default function Appointments() {
           </div>
         ) : (
           <div className="card-shell p-12 text-center text-zinc-400 bg-zinc-50/50 border-dashed">
-            You don't have any appointments yet.
+            {filterPetId === 'all' 
+              ? "You don't have any appointments yet." 
+              : `No appointments found for ${pets.find(p => p.id === parseInt(filterPetId))?.name || 'this pet'}.`}
           </div>
         )}
       </div>
