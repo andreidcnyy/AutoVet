@@ -29,7 +29,6 @@ function DashboardPage() {
   const toast = useToast();
   const isStaff = user?.role === ROLES.STAFF;
   const enabled = !!user?.token;
-  const [isExporting, setIsExporting] = useState(false);
 
   // Unified Modal State
   const [modal, setModal] = useState({ open: false, type: null, title: "", data: null, loading: false, error: null, pagination: null });
@@ -86,7 +85,6 @@ function DashboardPage() {
       setIsExporting(false);
     }
   };
-
   const openModal = async (type, title, page = 1) => {
     const endpoints = {
       today: '/api/dashboard/appointments/today',
