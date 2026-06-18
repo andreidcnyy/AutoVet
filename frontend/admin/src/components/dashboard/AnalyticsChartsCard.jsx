@@ -45,6 +45,7 @@ function SectionHeader({ icon: Icon, title, color }) {
 export default function AnalyticsChartsCard() {
   const [clients, setClients] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -56,11 +57,13 @@ export default function AnalyticsChartsCard() {
     Promise.all([
       api.get("/dashboard/analytics/monthly-clients"),
       api.get("/dashboard/analytics/items-by-category"),
+      api.get("/dashboard/analytics/services-by-category"),
     ])
-      .then(([clientRes, catRes]) => {
+      .then(([clientRes, catRes, svcRes]) => {
         if (cancelled) return;
         setClients(Array.isArray(clientRes) ? clientRes : []);
         setCategories(Array.isArray(catRes) ? catRes : []);
+        setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -78,15 +81,23 @@ export default function AnalyticsChartsCard() {
       Promise.all([
         api.get("/dashboard/analytics/monthly-clients"),
         api.get("/dashboard/analytics/items-by-category"),
-      ]).then(([clientRes, catRes]) => {
+        api.get("/dashboard/analytics/services-by-category"),
+      ]).then(([clientRes, catRes, svcRes]) => {
         setClients(Array.isArray(clientRes) ? clientRes : []);
         setCategories(Array.isArray(catRes) ? catRes : []);
+        setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
       }).catch(() => {});
     };
 
     const refreshCategories = () => {
-      api.get("/dashboard/analytics/items-by-category")
-        .then((res) => { setCategories(Array.isArray(res) ? res : []); })
+      Promise.all([
+        api.get("/dashboard/analytics/items-by-category"),
+        api.get("/dashboard/analytics/services-by-category"),
+      ])
+        .then(([catRes, svcRes]) => { 
+          setCategories(Array.isArray(catRes) ? catRes : []); 
+          setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
+        })
         .catch(() => {});
     };
 
@@ -130,9 +141,10 @@ export default function AnalyticsChartsCard() {
 
   const noClientData = clients.length === 0 || clients.every((d) => d.total === 0);
   const noCategoryData = categories.length === 0;
+  const noSvcCategoryData = serviceCategories.length === 0;
 
   return (
-    <div className="col-span-full grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div className="col-span-full grid grid-cols-1 gap-6 2xl:grid-cols-3">
 
       {/* Monthly New Clients */}
       <div className="card-shell p-6">
@@ -183,16 +195,16 @@ export default function AnalyticsChartsCard() {
         )}
       </div>
 
-      {/* Items Sold per Category */}
+      {/* Product categories */}
       <div className="card-shell p-6">
         <SectionHeader
           icon={FiPackage}
-          title="Items Sold per Category"
+          title="Products Sold per Category"
           color="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
         />
         {noCategoryData ? (
           <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
-            No sales data available
+            No product data available
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
@@ -218,6 +230,48 @@ export default function AnalyticsChartsCard() {
               <Bar dataKey="total_qty" radius={[6, 6, 0, 0]}>
                 {categories.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Service categories */}
+      <div className="card-shell p-6">
+        <SectionHeader
+          icon={FiActivity}
+          title="Services Rendered per Category"
+          color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+        />
+        {noSvcCategoryData ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
+            No service data available
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={serviceCategories}
+              margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+              barCategoryGap="30%"
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis
+                dataKey="category"
+                tick={{ fontSize: 10, fontWeight: 700 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 10, fontWeight: 700 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'transparent' }} />
+              <Bar dataKey="total_qty" radius={[6, 6, 0, 0]}>
+                {serviceCategories.map((_, i) => (
+                  <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>

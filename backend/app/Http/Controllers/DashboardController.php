@@ -1222,4 +1222,25 @@ class DashboardController extends Controller
 
         return response()->json($fallback);
     }
+
+    /**
+     * Total services used per service category.
+     */
+    public function getServicesByCategory(): JsonResponse
+    {
+        $data = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->join('services', 'invoice_items.service_id', '=', 'services.id')
+            ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])
+            ->whereNotNull('invoice_items.service_id')
+            ->select(
+                DB::raw('services.category as category'),
+                DB::raw('SUM(invoice_items.qty) as total_qty')
+            )
+            ->groupBy('services.category')
+            ->orderByDesc('total_qty')
+            ->get();
+
+        return response()->json($data);
+    }
 }

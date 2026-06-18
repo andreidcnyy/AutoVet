@@ -157,6 +157,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
         Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
         Route::get('/dashboard/analytics/monthly-clients',   [DashboardController::class, 'getMonthlyClients']);
         Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
+        Route::get('/dashboard/analytics/services-by-category', [DashboardController::class, 'getServicesByCategory']);
     });
     Route::post('/ai/clinical-support', [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions']);
 

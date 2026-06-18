@@ -150,12 +150,20 @@ function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 printable-dashboard">
+      <div className="flex items-center justify-between no-print">
          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Quick Metrics</h2>
-         <Link to="/analytics" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-600 hover:text-purple-700 transition-colors">
-            View Detailed Analytics <LuChevronRight className="h-3 w-3" />
-         </Link>
+         <div className="flex items-center gap-4">
+            <button 
+              onClick={() => window.print()} 
+              className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700 transition-colors"
+            >
+              <Icons.FiPrinter className="h-3 w-3" /> Print Dashboard
+            </button>
+            <Link to="/analytics" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-600 hover:text-purple-700 transition-colors">
+               View Detailed Analytics <LuChevronRight className="h-3 w-3" />
+            </Link>
+         </div>
       </div>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">

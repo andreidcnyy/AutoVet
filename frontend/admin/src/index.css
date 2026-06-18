@@ -107,11 +107,13 @@ label[for] {
     visibility: hidden;
   }
 
-  .printable-invoice, .printable-invoice * {
+  .printable-invoice, .printable-invoice *,
+  .printable-dashboard, .printable-dashboard * {
     visibility: visible;
   }
 
-  .printable-invoice {
+  .printable-invoice,
+  .printable-dashboard {
     position: absolute;
     left: 0;
     top: 0;
@@ -120,6 +122,10 @@ label[for] {
     border: none !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
   }
 
   ::-webkit-scrollbar {
