@@ -378,36 +378,24 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Pet Name</label>
-                                    <input 
-                                        {...register("name")} 
-                                        readOnly 
-                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
-                                    />
+                                    <div className="flex h-11 items-center rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400">
+                                        {patient.name}
+                                    </div>
+                                    <input type="hidden" {...register("name")} />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Breed</label>
-                                    <div className="relative">
-                                        <select 
-                                            {...register("breed_id")} 
-                                            disabled 
-                                            className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400 appearance-none pr-10"
-                                        >
-                                            <option value="">Select Breed...</option>
-                                            {speciesList.flatMap(s => s.breeds || []).map((b) => (
-                                                <option key={b.id} value={b.id}>{b.name}</option>
-                                            ))}
-                                        </select>
-                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-40" />
+                                    <div className="flex h-11 items-center rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400">
+                                        {patient.breed?.name || patient.breedName || "N/A"}
                                     </div>
+                                    <input type="hidden" {...register("breed_id")} />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Date of Birth</label>
-                                    <input 
-                                        type="date" 
-                                        {...register("date_of_birth")} 
-                                        readOnly 
-                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
-                                    />
+                                    <div className="flex h-11 items-center rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400">
+                                        {patient.date_of_birth ? new Date(patient.date_of_birth.replace(/-/g, '/')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : "N/A"}
+                                    </div>
+                                    <input type="hidden" {...register("date_of_birth")} />
                                 </div>
                                 <input type="hidden" {...register("species_id")} />
                                 
@@ -458,32 +446,24 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Sex</label>
-                                    <div className="relative">
-                                        <select 
-                                            {...register("sex")} 
-                                            disabled 
-                                            className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400 appearance-none pr-10"
-                                        >
-                                            <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
-                                        </select>
-                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-40" />
+                                    <div className="flex h-11 items-center rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400">
+                                        {patient.sex}
                                     </div>
+                                    <input type="hidden" {...register("sex")} />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Age Group</label>
-                                    <div className="flex h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-sm font-bold text-zinc-400 dark:bg-zinc-800 dark:border-dark-border transition-colors">
+                                    <div className="flex h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700 dark:bg-dark-surface dark:text-zinc-200 dark:border-dark-border transition-colors">
                                         {watch("age_group")}
                                     </div>
                                     <input type="hidden" {...register("age_group")} />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Color</label>
-                                    <input 
-                                        {...register("color")} 
-                                        readOnly 
-                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
-                                        placeholder="e.g. Brindle, Merle, Black" 
-                                    />
+                                    <div className="flex h-11 items-center rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400">
+                                        {patient.color || "N/A"}
+                                    </div>
+                                    <input type="hidden" {...register("color")} />
                                 </div>
                             </div>
                         </section>
