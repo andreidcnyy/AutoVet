@@ -47,15 +47,24 @@ function DashboardPage() {
         allowTaint: false,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1200, // Lock layout width for consistency
-        height: element.scrollHeight, // Capture full scrollable height
+        windowWidth: 1400, // Slightly wider to preserve layout spacing nicely
+        height: element.scrollHeight + 100, // Add padding margin for complete capture
         scrollY: 0, // Prevent scroll cutoff
+        imageTimeout: 0, // Disable image load timeout
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.querySelector(".printable-dashboard");
           if (clonedElement) {
             clonedElement.classList.add("pdf-export");
             clonedElement.style.padding = "40px";
+            clonedElement.style.height = "auto";
+            clonedElement.style.overflow = "visible";
           }
+
+          // Force full visibility on charts and tables
+          clonedDoc.querySelectorAll(".card-shell").forEach(shell => {
+            shell.style.overflow = "visible";
+            shell.style.height = "auto";
+          });
 
           // Fix Recharts ResponsiveContainer collapsing to 0 width/height in the clone iframe
           const liveCharts = element.querySelectorAll(".recharts-responsive-container");
@@ -64,6 +73,7 @@ function DashboardPage() {
             if (clonedCharts[idx]) {
               clonedCharts[idx].style.width = (chart.offsetWidth || 500) + "px";
               clonedCharts[idx].style.height = (chart.offsetHeight || 250) + "px";
+              clonedCharts[idx].style.overflow = "visible";
             }
           });
         }
