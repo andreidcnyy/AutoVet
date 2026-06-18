@@ -72,7 +72,7 @@ function DashboardPage() {
       // 3. Add Pets Table
       pdf.addPage();
       pdf.setFontSize(16);
-      pdf.text("Detailed Patient Records", 14, 20);
+      pdf.text("Detailed Pet Records", 14, 20);
       pdf.autoTable({
         startY: 25,
         head: [['Pet Name', 'Species', 'Breed', 'Owner']],
