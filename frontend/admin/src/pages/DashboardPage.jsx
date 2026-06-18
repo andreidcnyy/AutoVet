@@ -170,10 +170,16 @@ function DashboardPage() {
          <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Quick Metrics</h2>
          <div className="flex items-center gap-4">
             <button 
-              onClick={() => window.print()} 
-              className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm"
+              onClick={downloadPDF}
+              disabled={isExporting}
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-sm text-sm uppercase tracking-widest disabled:opacity-50"
             >
-              <Icons.FiPrinter className="h-3.5 w-3.5" /> Print / Save as PDF
+              {isExporting ? (
+                <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Icons.FiPrinter className="h-4 w-4" />
+              )}
+              {isExporting ? "Exporting..." : "Download PDF"}
             </button>
             <Link to="/analytics" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-purple-600 hover:text-purple-700 transition-colors">
                View Detailed Analytics <LuChevronRight className="h-3 w-3" />
