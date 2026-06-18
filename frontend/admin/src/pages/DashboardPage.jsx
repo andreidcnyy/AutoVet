@@ -46,9 +46,14 @@ function DashboardPage() {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1200
+        windowWidth: 1200,
+        ignoreElements: (node) => {
+           // Skip any element that might cause a taint/CORS error if it's not crucial
+           return false; 
+        }
       });
 
       const imgData = canvas.toDataURL("image/png");

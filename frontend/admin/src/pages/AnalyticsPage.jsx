@@ -105,8 +105,12 @@ export default function AnalyticsPage() {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
+        ignoreElements: (node) => {
+           return false;
+        }
       });
 
       const imgData = canvas.toDataURL("image/png");
