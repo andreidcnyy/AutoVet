@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   FiTrendingUp, FiPackage, FiActivity, 
-  FiDollarSign, FiShoppingBag, FiArrowUp, 
+  FiShoppingBag, FiArrowUp, 
   FiArrowDown, FiMinus, FiRefreshCw,
   FiPrinter
 } from "react-icons/fi";
@@ -216,7 +216,7 @@ export default function AnalyticsPage() {
           title="Total Revenue (12m)" 
           value={trends?.summary?.total_revenue?.toLocaleString() || "0"} 
           prefix="₱"
-          icon={FiDollarSign} 
+          icon={FiTrendingUp} 
           color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
         />
         <StatBox 
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
         <div className="card-shell p-6">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-              <FiDollarSign className="text-emerald-500" /> Revenue Trend & Forecast
+              <FiTrendingUp className="text-emerald-500" /> Revenue Trend & Forecast
             </h3>
             <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-widest">Linear Regression Model</span>
           </div>
