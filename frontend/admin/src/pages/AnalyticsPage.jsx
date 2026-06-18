@@ -109,6 +109,7 @@ export default function AnalyticsPage() {
         logging: false,
         backgroundColor: "#ffffff",
         windowWidth: 1200, // Lock layout width for consistency
+        height: element.scrollHeight, // Capture full scrollable height
         scrollY: 0, // Prevent scroll cutoff
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.querySelector(".printable-dashboard");
@@ -116,6 +117,16 @@ export default function AnalyticsPage() {
             clonedElement.classList.add("pdf-export");
             clonedElement.style.padding = "40px";
           }
+
+          // Fix Recharts ResponsiveContainer collapsing to 0 width/height in the clone iframe
+          const liveCharts = element.querySelectorAll(".recharts-responsive-container");
+          const clonedCharts = clonedDoc.querySelectorAll(".recharts-responsive-container");
+          liveCharts.forEach((chart, idx) => {
+            if (clonedCharts[idx]) {
+              clonedCharts[idx].style.width = (chart.offsetWidth || 500) + "px";
+              clonedCharts[idx].style.height = (chart.offsetHeight || 250) + "px";
+            }
+          });
         }
       });
 
