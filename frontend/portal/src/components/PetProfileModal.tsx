@@ -19,6 +19,7 @@ import { LuPawPrint } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
+import MedicalSummaryCard from './MedicalSummaryCard';
 import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
 
@@ -298,6 +299,13 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                           <p className="text-sm text-zinc-600 dark:text-zinc-400">{pet.notes || 'No special notes.'}</p>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="col-span-full space-y-4">
+                       <h2 className="text-lg font-black italic uppercase tracking-tight text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
+                         <span className="text-brand-500">/</span> Health Summary
+                       </h2>
+                       <MedicalSummaryCard records={medicalRecords} petName={pet.name} />
                     </div>
                   </div>
                 )}

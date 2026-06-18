@@ -19,6 +19,7 @@ import clsx from 'clsx';
 import { readCache, writeCache } from '../utils/swrCache';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { useAuth } from '../context/AuthContext';
+import MedicalSummaryCard from '../components/MedicalSummaryCard';
 import echo from '../utils/echo';
 
 // Use the appointment (service) date when present, else the row creation date.
@@ -180,43 +181,52 @@ function PetProfile() {
       {/* Content */}
       <div className="space-y-6">
         {activeTab === 'summary' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
-               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                 <FiInfo className="text-brand-500" /> Vitals & Traits
-               </h3>
-               <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div>
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase">Weight</div>
-                    <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.weight} {pet.weight_unit}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
-                    <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
-                  </div>
-                  {pet.size_category?.name && (
-                  <div className="col-span-2">
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
-                    <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category.name}</div>
-                  </div>
-                  )}
-               </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
+                 <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                   <FiInfo className="text-brand-500" /> Vitals & Traits
+                 </h3>
+                 <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase">Weight</div>
+                      <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.weight} {pet.weight_unit}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase">Color</div>
+                      <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.color || 'N/A'}</div>
+                    </div>
+                    {pet.size_category?.name && (
+                    <div className="col-span-2">
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase">Size Category</div>
+                      <div className="font-bold text-zinc-800 dark:text-zinc-200">{pet.size_category.name}</div>
+                    </div>
+                    )}
+                 </div>
+              </div>
+
+              <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
+                 <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                   <FiAlertCircle className="text-rose-500" /> Allergies & Notes
+                 </h3>
+                 <div className="space-y-4 pt-2">
+                    <div>
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Known Allergies</div>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">{pet.allergies || 'None recorded.'}</p>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Owner Notes</div>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">{pet.notes || 'No special notes.'}</p>
+                    </div>
+                 </div>
+              </div>
             </div>
 
-            <div className="card-shell p-4 sm:p-6 bg-white dark:bg-dark-card space-y-4">
-               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                 <FiAlertCircle className="text-rose-500" /> Allergies & Notes
-               </h3>
-               <div className="space-y-4 pt-2">
-                  <div>
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Known Allergies</div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">{pet.allergies || 'None recorded.'}</p>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Owner Notes</div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">{pet.notes || 'No special notes.'}</p>
-                  </div>
-               </div>
+            <div className="space-y-4">
+               <h2 className="text-xl font-black italic uppercase tracking-tight text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
+                 <span className="text-brand-500">/</span> Health Summary
+               </h2>
+               <MedicalSummaryCard records={medicalRecords} petName={pet.name} />
             </div>
           </div>
         )}
