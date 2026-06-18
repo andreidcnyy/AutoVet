@@ -137,14 +137,14 @@ export default function SalesSummaryCard() {
         ))}
       </div>
 
-      {/* â”€â”€ Top Services â”€â”€ */}
+      {/* ── Top Services ── */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
             <FiShoppingBag className="h-3.5 w-3.5" />
           </div>
           <p className="text-[11px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-            Best-Selling Services &amp; Products
+            Top Revenue Sources
           </p>
         </div>
 
