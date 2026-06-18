@@ -7,6 +7,23 @@ interface MedicalSummaryCardProps {
   petName: string;
 }
 
+const formatDate = (dateStr: string | undefined | null, format: 'short' | 'long' = 'short') => {
+  if (!dateStr) return "N/A";
+  
+  // Replace dashes with slashes to avoid Safari/timezone bugs, and strip time portions if it's just a date string.
+  const cleanDate = typeof dateStr === 'string' && dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  const normalizedDate = typeof cleanDate === 'string' && cleanDate.includes('-') ? cleanDate.replace(/-/g, '/') : cleanDate;
+  
+  const d = new Date(normalizedDate);
+  if (isNaN(d.getTime())) return "N/A";
+
+  const options: Intl.DateTimeFormatOptions = format === 'long' 
+    ? { month: 'long', day: 'numeric', year: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' };
+
+  return d.toLocaleDateString('en-US', options);
+};
+
 export default function MedicalSummaryCard({ records, petName }: MedicalSummaryCardProps) {
   if (!records || records.length === 0) {
     return (
@@ -67,7 +84,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
                 </div>
                 <div>
                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Visit Date</p>
-                   <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">{new Date(latestRecord.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                   <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">{formatDate(latestRecord.appointment?.date || latestRecord.created_at, 'long')}</p>
                 </div>
              </div>
              <div className="flex items-center gap-2 border-l border-zinc-100 dark:border-dark-border pl-6">
@@ -129,7 +146,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
                  )} />
                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                       <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-1">{new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-1">{formatDate(record.appointment?.date || record.created_at, 'short')}</p>
                        <h4 className="text-lg font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-tight italic">{record.diagnosis || 'Standard Visit'}</h4>
                     </div>
                     <div className="flex items-center gap-3 bg-zinc-50 dark:bg-dark-surface/30 px-4 py-2 rounded-2xl border border-zinc-100 dark:border-dark-border">
