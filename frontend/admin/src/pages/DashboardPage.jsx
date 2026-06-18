@@ -41,25 +41,22 @@ function DashboardPage() {
 
     setIsExporting(true);
     try {
-      // Add specialized export class
-      element.classList.add("pdf-export");
-
       const canvas = await html2canvas(element, {
         scale: 2, // Sharp text
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: false,
         backgroundColor: "#ffffff",
         windowWidth: 1200, // Lock layout width for consistency
+        scrollY: 0, // Prevent scroll cutoff
         onclone: (clonedDoc) => {
-          // Additional cleanup on the cloned DOM if needed
-          const clonedElement = clonedDoc.querySelector(".pdf-export");
-          if (clonedElement) clonedElement.style.padding = "40px";
+          const clonedElement = clonedDoc.querySelector(".printable-dashboard");
+          if (clonedElement) {
+            clonedElement.classList.add("pdf-export");
+            clonedElement.style.padding = "40px";
+          }
         }
       });
-
-      // Remove export class immediately after capture
-      element.classList.remove("pdf-export");
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
@@ -86,7 +83,6 @@ function DashboardPage() {
 
       pdf.save(`AutoVet_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
-      element.classList.remove("pdf-export");
       console.error("PDF Export failed:", err);
       toast.error("Failed to generate PDF report.");
     } finally {
