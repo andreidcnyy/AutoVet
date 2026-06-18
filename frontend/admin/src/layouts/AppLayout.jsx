@@ -32,6 +32,13 @@ function AppLayoutInner() {
     }
     return clinicInfo;
   });
+
+  // Keep clinic info updated if it changes (e.g. from an API response later)
+  useEffect(() => {
+     if (user?.role !== ROLES.SUPER_ADMIN) {
+        setClinic(clinicInfo);
+     }
+  }, [user]);
   
   const matches = useMatches();
   const navigate = useNavigate();
