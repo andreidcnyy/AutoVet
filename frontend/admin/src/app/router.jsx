@@ -19,6 +19,7 @@ import NotificationHistoryPage from "../pages/NotificationHistoryPage";
 import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
 import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
 import InvoicePage from "../pages/InvoicePage";
+import ReviewsPage from "../pages/ReviewsPage";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
@@ -206,6 +207,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         handle: { title: "Invoices" },
+      },
+      {
+        path: "reviews",
+        element: (
+          <ProtectedRoute allowedRoles={VET_AND_ADMIN}>
+            <ReviewsPage />
+          </ProtectedRoute>
+        ),
+        handle: { title: "Reviews & Feedback" },
       }
     ],
   },
