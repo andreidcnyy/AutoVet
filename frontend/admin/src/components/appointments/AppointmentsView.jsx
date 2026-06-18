@@ -84,11 +84,15 @@ function AppointmentsView() {
     date: format(new Date(), "yyyy-MM-dd"), // Default to today
     vet_id: "",
     service_id: "",
+    owner_id: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
   const [isLoading, setIsLoading] = useState(false);
+
+  const [ownerSearchFilter, setOwnerSearchFilter] = useState("");
+  const [isOwnerFilterOpen, setIsOwnerFilterOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
@@ -166,7 +170,8 @@ function AppointmentsView() {
       per_page: params.date ? 15 : 100,
       search: debouncedSearch,
       status: params.status,
-      date: params.date
+      date: params.date,
+      owner_id: params.owner_id
     };
 
     if (!params.date) {
@@ -201,7 +206,7 @@ function AppointmentsView() {
 
   const [formDataLoaded, setFormDataLoaded] = useState(false);
   useEffect(() => {
-    if (!isDrawerOpen || formDataLoaded || !user?.token) return;
+    if (!user?.token || formDataLoaded) return;
     Promise.allSettled([
       api.get('/api/owners', { cache: true }),
       api.get('/api/pets', { cache: true }),
@@ -227,7 +232,7 @@ function AppointmentsView() {
 
       setFormDataLoaded(true);
     });
-  }, [isDrawerOpen, formDataLoaded, user?.token]);
+  }, [formDataLoaded, user?.token]);
 
   useEffect(() => {
     if (!user?.token) return;
@@ -525,8 +530,67 @@ function AppointmentsView() {
                       </button>
                     )}
                   </div>
+
+                  {/* Searchable Owner Dropdown Filter */}
+                  <div className="relative flex-1 max-w-xs z-30">
+                    <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Filter by owner..."
+                      value={ownerSearchFilter}
+                      onChange={(e) => {
+                        setOwnerSearchFilter(e.target.value);
+                        setIsOwnerFilterOpen(true);
+                        if (!e.target.value) {
+                          handleParamChange({ owner_id: "" });
+                        }
+                      }}
+                      onFocus={() => setIsOwnerFilterOpen(true)}
+                      className="w-full h-10 pl-10 pr-9 rounded-xl border border-zinc-200 bg-white focus:border-emerald-500 dark:bg-dark-surface text-xs font-bold"
+                    />
+                    {(ownerSearchFilter || params.owner_id) && (
+                      <button
+                        onClick={() => {
+                          setOwnerSearchFilter("");
+                          handleParamChange({ owner_id: "" });
+                          setIsOwnerFilterOpen(false);
+                        }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                      >
+                        <FiX className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {isOwnerFilterOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsOwnerFilterOpen(false)} />
+                        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-100 bg-white shadow-xl dark:border-dark-border dark:bg-dark-card z-50 divide-y divide-zinc-50 dark:divide-dark-border/50">
+                          {owners
+                            .filter(o => o.name?.toLowerCase().includes(ownerSearchFilter.toLowerCase()) || o.phone?.includes(ownerSearchFilter))
+                            .map(o => (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onClick={() => {
+                                  setOwnerSearchFilter(o.name);
+                                  handleParamChange({ owner_id: o.id });
+                                  setIsOwnerFilterOpen(false);
+                                }}
+                                className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-zinc-700 dark:text-zinc-300 block transition-colors"
+                              >
+                                <p>{o.name}</p>
+                                {o.phone && <p className="text-[10px] text-zinc-400 mt-0.5">{o.phone}</p>}
+                              </button>
+                            ))}
+                          {owners.filter(o => o.name?.toLowerCase().includes(ownerSearchFilter.toLowerCase()) || o.phone?.includes(ownerSearchFilter)).length === 0 && (
+                            <div className="px-4 py-3 text-xs text-zinc-400 italic">No owners found</div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   <input type="date" value={params.date} onChange={(e) => handleParamChange({ date: e.target.value })} className="h-10 px-3 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface text-xs font-bold" />
-                  <button onClick={() => { setSearchTerm(""); handleParamChange({ date: "", status: "all" }); }} className="h-10 px-4 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all flex items-center justify-center" title="Clear Filters"><FiRefreshCcw className={clsx(isLoading && "animate-spin")} /></button>
+                  <button onClick={() => { setSearchTerm(""); setOwnerSearchFilter(""); handleParamChange({ date: "", status: "all", owner_id: "" }); }} className="h-10 px-4 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all flex items-center justify-center" title="Clear Filters"><FiRefreshCcw className={clsx(isLoading && "animate-spin")} /></button>
                 </div>
               </div>
               

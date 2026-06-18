@@ -59,6 +59,13 @@ class AppointmentController extends Controller
             $query->where('pet_id', $request->pet_id);
         }
 
+        // Filtering by Owner
+        if ($request->filled('owner_id')) {
+            $query->whereHas('pet', function ($q) use ($request) {
+                $q->where('owner_id', $request->owner_id);
+            });
+        }
+
         // Filtering by Veterinarian
         if ($request->filled('vet_id')) {
             $query->where('vet_id', $request->vet_id);
