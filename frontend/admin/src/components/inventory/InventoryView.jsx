@@ -320,7 +320,7 @@ function InventoryView() {
         </div>
         {isAdmin && (
           <button onClick={() => setIsAddModalOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-6 py-3 text-sm font-black uppercase tracking-widest hover:bg-emerald-700 hover:scale-105 transition-all shadow-xl shadow-emerald-600/20">
-            <FiPlus className="h-5 w-5" /> Add New Item
+            <FiPlus className="h-5 w-5" /> Add New Product
           </button>
         )}
       </header>
