@@ -281,15 +281,17 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
             }
 
             // Next update the pet itself
+            // Core identity fields are preserved from the original record as they are now non-editable
             const petPayload = {
                 owner_id: patient.owner_id,
-                name: data.name,
-                species_id: data.species_id || null,
-                breed_id: data.breed_id || null,
-                date_of_birth: data.date_of_birth,
-                sex: data.sex,
+                name: patient.name,
+                species_id: patient.species_id || null,
+                breed_id: patient.breed_id || null,
+                date_of_birth: patient.date_of_birth ? patient.date_of_birth.substring(0, 10) : null,
+                sex: patient.sex,
+                color: patient.color,
+                // Editable fields
                 age_group: data.age_group,
-                color: data.color,
                 weight: data.weight,
                 weight_unit: data.weight_unit,
                 size_category_id: data.size_category_id || null,
@@ -375,25 +377,46 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Pet Name *</label>
-                                    <input {...register("name")} className={getInputClass(errors.name)} />
-                                    {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Pet Name</label>
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
+                                    </div>
+                                    <input 
+                                        {...register("name")} 
+                                        readOnly 
+                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Breed</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Breed</label>
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
+                                    </div>
                                     <div className="relative">
-                                        <select {...register("breed_id")} className={getSelectClass(errors.breed_id)}>
+                                        <select 
+                                            {...register("breed_id")} 
+                                            disabled 
+                                            className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400 appearance-none pr-10"
+                                        >
                                             <option value="">Select Breed...</option>
                                             {speciesList.flatMap(s => s.breeds || []).map((b) => (
                                                 <option key={b.id} value={b.id}>{b.name}</option>
                                             ))}
                                         </select>
-                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-40" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Date of Birth</label>
-                                    <input type="date" {...register("date_of_birth")} className={getInputClass(errors.date_of_birth)} />
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Date of Birth</label>
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
+                                    </div>
+                                    <input 
+                                        type="date" 
+                                        {...register("date_of_birth")} 
+                                        readOnly 
+                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
+                                    />
                                 </div>
                                 <input type="hidden" {...register("species_id")} />
                                 
@@ -443,21 +466,39 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Sex</label>
-                                    <select {...register("sex")} className={getSelectClass(errors.sex)}>
-                                        <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
-                                    </select>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Sex</label>
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
+                                    </div>
+                                    <div className="relative">
+                                        <select 
+                                            {...register("sex")} 
+                                            disabled 
+                                            className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400 appearance-none pr-10"
+                                        >
+                                            <option>Male</option><option>Female</option><option>Male (Neutered)</option><option>Female (Spayed)</option>
+                                        </select>
+                                        <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-40" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Age Group</label>
-                                    <div className="flex h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-bold text-zinc-700 dark:bg-dark-surface dark:text-zinc-200 dark:border-dark-border transition-colors">
+                                    <div className="flex h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-sm font-bold text-zinc-400 dark:bg-zinc-800 dark:border-dark-border transition-colors">
                                         {watch("age_group")}
                                     </div>
                                     <input type="hidden" {...register("age_group")} />
                                 </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Color</label>
-                                    <input {...register("color")} className={getInputClass(errors.color)} placeholder="e.g. Brindle, Merle, Black" />
+                                <div className="sm:col-span-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Color</label>
+                                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">Permanent</span>
+                                    </div>
+                                    <input 
+                                        {...register("color")} 
+                                        readOnly 
+                                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-100/50 px-3 text-sm font-bold text-zinc-500 cursor-not-allowed dark:border-dark-border dark:bg-zinc-800/50 dark:text-zinc-400" 
+                                        placeholder="e.g. Brindle, Merle, Black" 
+                                    />
                                 </div>
                             </div>
                         </section>
