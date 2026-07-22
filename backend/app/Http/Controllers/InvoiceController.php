@@ -318,6 +318,7 @@ class InvoiceController extends Controller
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
+                throw ValidationException::withMessages(['items' => $e->getMessage()]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
@@ -538,6 +539,7 @@ class InvoiceController extends Controller
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
+                throw ValidationException::withMessages(['items' => $e->getMessage()]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {

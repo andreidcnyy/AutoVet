@@ -1436,7 +1436,8 @@ function InvoiceModuleView() {
         const errorData = await response.json().catch(() => ({}));
         if (response.status === 422) {
           setLaravelErrors(errorData);
-          toast.error("Validation error. Please check specified fields.");
+          const msg = errorData.errors?.items?.[0] || errorData.message || "Validation error. Please check specified fields.";
+          toast.error(msg);
         } else {
           const detail = errorData.error || errorData.message || "Failed to save invoice";
           throw new Error(detail);
@@ -1515,7 +1516,8 @@ function InvoiceModuleView() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to record payment");
+        const detail = errorData.errors?.items?.[0] || errorData.message || "Failed to record payment";
+        throw new Error(detail);
       }
 
       const updated = await response.json();
