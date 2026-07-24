@@ -42,12 +42,6 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
 
 # Render injects $PORT. Migrate on boot (matches the old Railway start command),
 # then serve. config:clear avoids a stale cached config from the build layer.
-#
-# TEMP (one-time seed): the `db:seed` below populates the fresh TiDB database.
-# It runs in the background so the port binds immediately (no deploy timeout),
-# and is tolerant of failure so the site stays up. REMOVE the seed line once
-# seeding has completed (seeders are not idempotent — re-running duplicates data).
 CMD php artisan config:clear \
     && php artisan migrate --force \
-    && ( php artisan db:seed --force || true & ) \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}"

@@ -146,7 +146,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
         Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
         Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
         Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
-        Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecasts']);
+        Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecast']);
         Route::post('/dashboard/run-forecast',         [DashboardController::class, 'runForecastSync']);
         Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
         Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
