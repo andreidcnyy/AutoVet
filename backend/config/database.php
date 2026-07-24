@@ -29,7 +29,10 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
+            // Non-strict by default: matches the permissive MySQL this app was
+            // built/seeded on. TiDB enforces strict mode, which rejects seeder
+            // inserts that omit NOT-NULL columns without defaults (e.g. clinic_id).
+            'strict' => env('DB_STRICT', false),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
