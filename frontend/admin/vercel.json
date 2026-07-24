@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/sanctum/:path*",
-      "destination": "https://vibrant-abundance-production-4543.up.railway.app/sanctum/:path*"
+      "destination": "https://autovet.onrender.com/sanctum/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://vibrant-abundance-production-4543.up.railway.app/api/:path*"
+      "destination": "https://autovet.onrender.com/api/:path*"
     },
     {
       "source": "/storage/:path*",
-      "destination": "https://vibrant-abundance-production-4543.up.railway.app/storage/:path*"
+      "destination": "https://autovet.onrender.com/storage/:path*"
     },
     {
       "source": "/(.*)",
