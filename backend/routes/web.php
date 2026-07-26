@@ -6,28 +6,15 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// TEMP diagnostic — remove after verifying image storage.
-Route::get('/__debug/storage', function () {
-    return response()->json([
-        'db'    => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
-        'count' => \App\Models\StoredFile::count(),
-        'paths' => \App\Models\StoredFile::orderBy('id')->pluck('path'),
-    ]);
-});
-
-
 /*
- * Public storage proxy.
+ * Image/file serving from the database (TiDB).
  *
- * In dev (Laragon), the public/storage symlink serves files directly via the
- * web server, so this route is rarely hit. In production on Railway with
- * Cloudflare R2 (FILESYSTEM_PUBLIC=s3), the local symlink has nothing in it
- * and any /storage/... request lands here — we redirect to the actual R2
- * public URL so the frontend's existing <img src="/storage/..." /> just works
- * without any frontend changes.
+ * Files are stored as bytes in the stored_files table (see App\Models\StoredFile)
+ * and served here. We use the /media prefix — NOT /storage — because
+ * `php artisan serve` intercepts /storage/* for Laravel's storage symlink and
+ * never passes those requests to the router.
  */
-$serveStored = function (string $path) {
-    // Primary store: files saved as bytes in the database (TiDB).
+Route::get('/media/{path}', function (string $path) {
     $file = \App\Models\StoredFile::where('path', $path)->first();
     if ($file) {
         return response($file->contents, 200)
@@ -41,10 +28,4 @@ $serveStored = function (string $path) {
         return $disk->response($path);
     }
     abort(404);
-};
-
-// /media is the real serving path (avoids php artisan serve intercepting /storage).
-Route::get('/media/{path}', $serveStored)->where('path', '.+');
-Route::get('/storage/{path}', $serveStored)->where('path', '.+');
-
-
+})->where('path', '.+');

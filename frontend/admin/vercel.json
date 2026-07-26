@@ -9,8 +9,8 @@
       "destination": "https://autovet.onrender.com/api/:path*"
     },
     {
-      "source": "/storage/:path*",
-      "destination": "https://autovet.onrender.com/storage/:path*"
+      "source": "/media/:path*",
+      "destination": "https://autovet.onrender.com/media/:path*"
     },
     {
       "source": "/(.*)",

@@ -18,7 +18,7 @@ const resolveLogoUrl = (logo) => {
   if (v.length < 5) return null;
   if (v.startsWith('http') || v.startsWith('data:')) return v;
   if (!/\.(png|jpe?g|webp|gif|svg)$/i.test(v)) return null;
-  return `/storage/${v.replace(/^\/*storage\/?/i, '')}`;
+  return `/media/${v.replace(/^\/*(?:storage|media)\/?/i, '')}`;
 };
 
 // Simple Map Preview Component

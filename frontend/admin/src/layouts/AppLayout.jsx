@@ -128,9 +128,9 @@ function AppLayoutInner() {
               const v = data.clinic_logo.trim();
               const looksValid = v.startsWith('http') || v.startsWith('data:') || /\.(png|jpe?g|webp|gif|svg)$/i.test(v);
               if (looksValid) {
-                const logoUrl = v.startsWith('http') || v.startsWith('data:') || v.startsWith('/storage/')
+                const logoUrl = v.startsWith('http') || v.startsWith('data:') || v.startsWith('/media/')
                   ? v
-                  : `/storage/${v}`;
+                  : `/media/${v.replace(/^\/*storage\/?/i, '')}`;
                 setClinic((prev) => ({ ...prev, logo: logoUrl }));
               }
             }

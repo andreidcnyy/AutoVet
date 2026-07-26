@@ -44,7 +44,7 @@ class SettingController extends Controller
 
                     $fullPath = 'logos/logo_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
                     \App\Models\StoredFile::store($fullPath, $binary, 'image/' . $ext);
-                    $valueToStore = '/storage/' . $fullPath;
+                    $valueToStore = '/media/' . $fullPath;
                     \Illuminate\Support\Facades\Log::info("Logo upload OK: " . $valueToStore);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::error("Logo Upload FAILED: " . $e->getMessage());

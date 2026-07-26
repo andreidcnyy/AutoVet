@@ -16,7 +16,7 @@ export const getActualPetImageUrl = (photoPath: string | null | undefined): stri
   // 2. Bare relative path (legacy rows) — resolve to Supabase public URL
   const v = photoPath.replace(/^\/+storage\/?/, '').trim();
   if (v.length === 0) return undefined;
-  return `/storage/${v}`;
+  return `/media/${v}`;
 };
 
 /**
