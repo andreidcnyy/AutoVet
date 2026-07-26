@@ -20,15 +20,8 @@ class PetController extends Controller
     {
         $ext = $ext === 'jpeg' ? 'jpg' : $ext;
         $name = 'pets/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $disk = \Illuminate\Support\Facades\Storage::disk('s3');
-        $ok = $disk->put($name, $bytes, [
-            'ContentType' => 'image/' . $ext,
-            'CacheControl' => 'public, max-age=31536000',
-        ]);
-        if (!$ok) {
-            throw new \RuntimeException('Pet photo upload failed: ' . $name);
-        }
-        return $disk->url($name);
+        \App\Models\StoredFile::store($name, $bytes, 'image/' . $ext);
+        return $name;
     }
 
     private function uploadPetPhotoFile(\Illuminate\Http\UploadedFile $file): string

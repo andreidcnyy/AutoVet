@@ -128,9 +128,9 @@ function AppLayoutInner() {
               const v = data.clinic_logo.trim();
               const looksValid = v.startsWith('http') || v.startsWith('data:') || /\.(png|jpe?g|webp|gif|svg)$/i.test(v);
               if (looksValid) {
-                const logoUrl = v.startsWith('http') || v.startsWith('data:')
+                const logoUrl = v.startsWith('http') || v.startsWith('data:') || v.startsWith('/storage/')
                   ? v
-                  : `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
+                  : `/storage/${v}`;
                 setClinic((prev) => ({ ...prev, logo: logoUrl }));
               }
             }

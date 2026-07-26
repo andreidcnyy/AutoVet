@@ -43,16 +43,8 @@ class SettingController extends Controller
                     }
 
                     $fullPath = 'logos/logo_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
-                    $disk = \Illuminate\Support\Facades\Storage::disk('s3');
-                    $success = $disk->put($fullPath, $binary, [
-                        'ContentType' => 'image/' . $ext,
-                        'CacheControl' => 'public, max-age=31536000',
-                    ]);
-
-                    if (!$success) {
-                        throw new \RuntimeException('Storage::put() returned false for ' . $fullPath);
-                    }
-                    $valueToStore = $disk->url($fullPath);
+                    \App\Models\StoredFile::store($fullPath, $binary, 'image/' . $ext);
+                    $valueToStore = '/storage/' . $fullPath;
                     \Illuminate\Support\Facades\Log::info("Logo upload OK: " . $valueToStore);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::error("Logo Upload FAILED: " . $e->getMessage());

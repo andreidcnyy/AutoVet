@@ -18,13 +18,16 @@ Route::get('/', function () {
  * without any frontend changes.
  */
 Route::get('/storage/{path}', function (string $path) {
-    $disk = \Illuminate\Support\Facades\Storage::disk('public');
-    $driver = config('filesystems.disks.public.driver');
-
-    if ($driver === 's3') {
-        return redirect()->away($disk->url($path));
+    // Primary store: files saved as bytes in the database (TiDB).
+    $file = \App\Models\StoredFile::where('path', $path)->first();
+    if ($file) {
+        return response($file->contents, 200)
+            ->header('Content-Type', $file->mime ?: 'application/octet-stream')
+            ->header('Cache-Control', 'public, max-age=31536000, immutable');
     }
 
+    // Fallback: local public disk (dev, or files baked into the image).
+    $disk = \Illuminate\Support\Facades\Storage::disk('public');
     if ($disk->exists($path)) {
         return $disk->response($path);
     }

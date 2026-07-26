@@ -25,7 +25,7 @@ export const getActualPetImageUrl = (photoPath) => {
   if (typeof photoPath === 'string') {
     const v = photoPath.replace(/^\/+storage\/?/, '').trim();
     if (v.length === 0) return null;
-    return `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
+    return `/storage/${v}`;
   }
 
   return null;

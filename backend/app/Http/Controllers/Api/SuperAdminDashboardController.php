@@ -64,23 +64,14 @@ class SuperAdminDashboardController extends Controller
         try {
             $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
             $name = 'clinics/logos/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-            $disk = \Illuminate\Support\Facades\Storage::disk('s3');
             $contents = file_get_contents($file->getRealPath());
             if ($contents === false) {
                 throw new \RuntimeException('Could not read uploaded file from temp path');
             }
             $mime = $file->getMimeType() ?: 'image/png';
-            $ok = $disk->put($name, $contents, [
-                'ContentType' => $mime,
-                'CacheControl' => 'public, max-age=31536000',
-            ]);
-            if (!$ok) {
-                \Illuminate\Support\Facades\Log::error('uploadClinicLogo: put returned false for ' . $name);
-                return null;
-            }
-            $url = $disk->url($name);
-            \Illuminate\Support\Facades\Log::info('uploadClinicLogo OK: ' . $url);
-            return $url;
+            \App\Models\StoredFile::store($name, $contents, $mime);
+            \Illuminate\Support\Facades\Log::info('uploadClinicLogo OK: ' . $name);
+            return $name;
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('uploadClinicLogo EXCEPTION: ' . $e->getMessage());
             throw $e;

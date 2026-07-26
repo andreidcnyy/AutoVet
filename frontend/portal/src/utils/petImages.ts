@@ -16,7 +16,7 @@ export const getActualPetImageUrl = (photoPath: string | null | undefined): stri
   // 2. Bare relative path (legacy rows) — resolve to Supabase public URL
   const v = photoPath.replace(/^\/+storage\/?/, '').trim();
   if (v.length === 0) return undefined;
-  return `https://zhujxjkusoetamtpotjh.supabase.co/storage/v1/object/public/autovet-storage/${v}`;
+  return `/storage/${v}`;
 };
 
 /**
