@@ -6,6 +6,15 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// TEMP diagnostic — remove after verifying image storage.
+Route::get('/__debug/storage', function () {
+    return response()->json([
+        'db'    => \Illuminate\Support\Facades\DB::connection()->getDatabaseName(),
+        'count' => \App\Models\StoredFile::count(),
+        'paths' => \App\Models\StoredFile::orderBy('id')->pluck('path'),
+    ]);
+});
+
 
 /*
  * Public storage proxy.

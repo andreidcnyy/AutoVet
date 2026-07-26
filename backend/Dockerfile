@@ -42,6 +42,6 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
 
 # Render injects $PORT. Migrate on boot (matches the old Railway start command),
 # then serve. config:clear avoids a stale cached config from the build layer.
-CMD php artisan config:clear \
+CMD php artisan optimize:clear \
     && php artisan migrate --force \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}"
