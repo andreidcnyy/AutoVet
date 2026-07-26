@@ -26,7 +26,7 @@ Route::get('/__debug/storage', function () {
  * public URL so the frontend's existing <img src="/storage/..." /> just works
  * without any frontend changes.
  */
-Route::get('/storage/{path}', function (string $path) {
+$serveStored = function (string $path) {
     // Primary store: files saved as bytes in the database (TiDB).
     $file = \App\Models\StoredFile::where('path', $path)->first();
     if ($file) {
@@ -41,6 +41,10 @@ Route::get('/storage/{path}', function (string $path) {
         return $disk->response($path);
     }
     abort(404);
-})->where('path', '.+');
+};
+
+// /media is the real serving path (avoids php artisan serve intercepting /storage).
+Route::get('/media/{path}', $serveStored)->where('path', '.+');
+Route::get('/storage/{path}', $serveStored)->where('path', '.+');
 
 
