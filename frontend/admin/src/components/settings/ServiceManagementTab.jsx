@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { FiTrash2, FiPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import echo from "../../utils/echo";
 
 export default function ServiceManagementTab() {
   const toast = useToast();
@@ -103,9 +104,15 @@ export default function ServiceManagementTab() {
 
     const onVisible = () => { if (document.visibilityState === 'visible') fetchServices(); };
     document.addEventListener('visibilitychange', onVisible);
+
+    // Real-time: refresh when any service/category changes elsewhere.
+    const rtChannel = echo.private('admin.notifications');
+    rtChannel.listen('.entity.created', () => fetchServices());
+
     return () => {
       controller.abort();
       document.removeEventListener('visibilitychange', onVisible);
+      try { rtChannel.stopListening('.entity.created'); } catch (_) {}
     };
   }, [user?.token]);
 

@@ -39,5 +39,34 @@ class AppServiceProvider extends ServiceProvider
                 new Dsn('brevo+api', 'default', $config['key'] ?? env('BREVO_API_KEY'))
             );
         });
+
+        // Real-time: broadcast create/update/delete of these entities so open
+        // admin pages refresh live. The frontend already listens for the generic
+        // `.entity.created` event on the `admin.notifications` channel and refetches.
+        // Guarded so it never runs during console (seeds/imports) or breaks a write.
+        $realtimeModels = [
+            \App\Models\Owner::class             => 'owner',
+            \App\Models\Pet::class               => 'pet',
+            \App\Models\MedicalRecord::class     => 'medical_record',
+            \App\Models\Service::class           => 'service',
+            \App\Models\VetSchedule::class       => 'vet_schedule',
+            \App\Models\InventoryCategory::class => 'inventory_category',
+            \App\Models\ServiceCategory::class   => 'service_category',
+            \App\Models\Breed::class             => 'breed',
+            \App\Models\Species::class           => 'species',
+        ];
+        foreach ($realtimeModels as $modelClass => $entityType) {
+            $broadcast = function ($model) use ($entityType) {
+                if (app()->runningInConsole()) return;
+                try {
+                    event(new \App\Events\EntityCreated($entityType, $model->getKey()));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Realtime broadcast failed for {$entityType}: " . $e->getMessage());
+                }
+            };
+            $modelClass::created($broadcast);
+            $modelClass::updated($broadcast);
+            $modelClass::deleted($broadcast);
+        }
     }
 }

@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiClock } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import echo from "../../utils/echo";
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -78,9 +79,15 @@ export default function VetScheduleTab() {
     fetchData(controller.signal);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
     document.addEventListener('visibilitychange', onVisible);
+
+    // Real-time: refresh when a vet schedule changes elsewhere.
+    const rtChannel = echo.private('admin.notifications');
+    rtChannel.listen('.entity.created', () => fetchData());
+
     return () => {
       controller.abort();
       document.removeEventListener('visibilitychange', onVisible);
+      try { rtChannel.stopListening('.entity.created'); } catch (_) {}
     };
   }, [user?.token]);
 
