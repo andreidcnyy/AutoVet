@@ -188,14 +188,17 @@ class InventoryForecastService
         $status = $result['forecast_status'] ?? 'Safe';
         $days = $result['days_until_stockout'] ?? null;
         $itemName = $inventory->item_name;
-        
-        $message = "AI Update: '{$itemName}' is currently stable.";
-        
-        if ($status === 'Critical') {
-            $message = "Critical: '{$itemName}' may run out in " . ($days ?? 'less than 7') . " days. Immediate reorder recommended.";
-        } elseif ($status === 'Reorder Soon') {
-            $message = "Advisory: '{$itemName}' is depleting. Reorder suggested within " . ($days ?? '14') . " days.";
+
+        // Only notify when action is actually needed. Previously EVERY forecast
+        // refresh (i.e. every invoice finalization) posted an "AI Update … currently
+        // stable" notification, which flooded the feed with non-actionable noise.
+        if ($status !== 'Critical' && $status !== 'Reorder Soon') {
+            return;
         }
+
+        $message = $status === 'Critical'
+            ? "Critical: '{$itemName}' may run out in " . ($days ?? 'less than 7') . " days. Immediate reorder recommended."
+            : "Advisory: '{$itemName}' is depleting. Reorder suggested within " . ($days ?? '14') . " days.";
 
         if (isset($result['predicted_weekly_sales']) && $result['predicted_weekly_sales'] > 0) {
              // Use revenue formatting directly since weekly sales in inventory typically means units*price or just units depending on script
