@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 class BackupController extends Controller
@@ -42,9 +43,13 @@ class BackupController extends Controller
             // client receives an empty body instead of JSON.
             @set_time_limit(0);
 
+            $startedAt = microtime(true);
             $exitCode = Artisan::call('db:backup');
+            $elapsed = round(microtime(true) - $startedAt, 1);
 
             if ($exitCode === 0) {
+                Log::info("Backup created in {$elapsed}s");
+
                 // Return the newly created file's metadata so the frontend
                 // can prepend it to the list without a second GET request.
                 $backupPath = storage_path('app/backups');
@@ -66,8 +71,13 @@ class BackupController extends Controller
 
             $output = trim(Artisan::output());
             $detail = $output ?: 'The backup command exited with an error.';
+            Log::error("Backup command failed after {$elapsed}s (exit {$exitCode}): {$detail}");
             return response()->json(['message' => $detail], 500);
         } catch (\Throwable $e) {
+            Log::error('Backup threw: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file'      => $e->getFile() . ':' . $e->getLine(),
+            ]);
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
