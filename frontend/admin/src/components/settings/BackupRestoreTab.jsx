@@ -69,8 +69,25 @@ function BackupRestoreTab() {
       headers: authHeader
     })
       .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to create backup");
+        // A gateway that times out mid-backup returns an empty (or non-JSON)
+        // body, so parse defensively — otherwise every such failure surfaces
+        // as "Unexpected end of JSON input" instead of the real status.
+        const text = await res.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          data = null;
+        }
+
+        if (!res.ok) {
+          throw new Error(data?.message || `Failed to create backup (HTTP ${res.status}).`);
+        }
+        if (!data) {
+          throw new Error(
+            "The server closed the connection before the backup finished. It may still be running — check the list again in a moment."
+          );
+        }
         return data;
       })
       .then((data) => {

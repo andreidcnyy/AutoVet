@@ -37,6 +37,11 @@ class BackupController extends Controller
     public function create()
     {
         try {
+            // Reading every table from a remote database takes far longer than a
+            // normal request; without this PHP can be killed mid-run and the
+            // client receives an empty body instead of JSON.
+            @set_time_limit(0);
+
             $exitCode = Artisan::call('db:backup');
 
             if ($exitCode === 0) {

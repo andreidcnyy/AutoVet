@@ -83,33 +83,47 @@ class BackupDatabaseCommand extends Command
             $phar = new \PharData($tarPath);
 
             foreach (self::TABLES as $table) {
+                $tmp = null;
                 try {
-                    $rows = DB::table($table)->get();
-
                     // Determine which columns to keep (drop internal/technical ones)
-                    $allColumns = $rows->isEmpty()
-                        ? DB::connection()->getSchemaBuilder()->getColumnListing($table)
-                        : array_keys((array) $rows->first());
                     $columns = array_values(array_filter(
-                        $allColumns,
+                        DB::connection()->getSchemaBuilder()->getColumnListing($table),
                         fn($c) => !in_array(strtolower($c), self::EXCLUDE_COLUMNS, true)
                     ));
 
-                    $csv = implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n";
-                    foreach ($rows as $row) {
+                    if (empty($columns)) {
+                        $this->warn("  ! Skipped {$table}: no exportable columns");
+                        continue;
+                    }
+
+                    // Stream rows straight to a temp file instead of buffering the
+                    // whole table (and the whole CSV string) in memory. Selecting
+                    // only the kept columns also keeps excluded blobs such as
+                    // `avatar` off the wire entirely — this runs against a remote
+                    // database in production, where both matter.
+                    $tmp = tempnam(sys_get_temp_dir(), 'bk_');
+                    $fh  = fopen($tmp, 'w');
+                    fwrite($fh, implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n");
+
+                    $count = 0;
+                    foreach (DB::table($table)->select($columns)->cursor() as $row) {
                         $row = (array) $row;
                         $values = array_map(function ($c) use ($row) {
                             $v = $row[$c] ?? null;
                             if ($v === null) return '';
                             return '"' . str_replace('"', '""', (string) $v) . '"';
                         }, $columns);
-                        $csv .= implode(',', $values) . "\n";
+                        fwrite($fh, implode(',', $values) . "\n");
+                        $count++;
                     }
+                    fclose($fh);
 
-                    $phar->addFromString("{$table}.csv", $csv);
-                    $this->info("  + {$table}.csv (" . $rows->count() . " rows)");
+                    $phar->addFile($tmp, "{$table}.csv");
+                    $this->info("  + {$table}.csv ({$count} rows)");
                 } catch (\Exception $e) {
                     $this->warn("  ! Skipped {$table}: " . $e->getMessage());
+                } finally {
+                    if ($tmp !== null && file_exists($tmp)) unlink($tmp);
                 }
             }
 
