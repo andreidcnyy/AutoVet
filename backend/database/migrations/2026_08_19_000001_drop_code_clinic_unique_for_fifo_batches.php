@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -42,6 +43,18 @@ return new class extends Migration
             ->contains(fn($i) => $i['name'] === $name);
     }
 
+    /**
+     * Echo to the deploy log as well as the app log. This runs from the
+     * container start command on Render, so stdout is what actually gets seen;
+     * silence here is indistinguishable from a no-op, which is the failure this
+     * migration exists to rule out.
+     */
+    private function report(string $line): void
+    {
+        echo "[fifo-batches] {$line}\n";
+        Log::info("[fifo-batches] {$line}");
+    }
+
     public function up(): void
     {
         // Add the replacement index first so `code` is never left unindexed —
@@ -50,14 +63,23 @@ return new class extends Migration
             Schema::table('inventories', function (Blueprint $table) {
                 $table->index(['code', 'clinic_id']);
             });
+            $this->report('created index inventories_code_clinic_id_index');
+        } else {
+            $this->report('index inventories_code_clinic_id_index already present');
         }
 
-        foreach ($this->blockingUniqueIndexes() as $name) {
-            // dropUnique() with an explicit name maps to DROP INDEX, which is
-            // what both MySQL and TiDB expect here.
+        $found = $this->blockingUniqueIndexes();
+        $this->report($found
+            ? 'unique index(es) constraining code: ' . implode(', ', $found)
+            : 'no unique index constrains code (nothing to drop)');
+
+        foreach ($found as $name) {
+            // Each drop is its own ALTER TABLE: TiDB rejects multiple changes to
+            // the same object in a single statement.
             Schema::table('inventories', function (Blueprint $table) use ($name) {
                 $table->dropUnique($name);
             });
+            $this->report("dropped unique index {$name}");
         }
 
         // Fail loudly rather than leave a half-applied schema recorded as "Ran".
@@ -68,6 +90,8 @@ return new class extends Migration
                 . '. FIFO batching requires multiple rows per code.'
             );
         }
+
+        $this->report('OK — code is no longer unique; FIFO batching is possible');
     }
 
     public function down(): void
