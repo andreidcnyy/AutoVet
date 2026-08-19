@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
 use App\Events\EntityCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -144,12 +145,27 @@ class ProfileController extends Controller
             'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i'],
         ];
 
-        // Allow role changes for Admin users only (not portal users)
-        if ($user instanceof Admin) {
+        // Role is a privilege, not a profile preference: only users who already
+        // hold an administrative role may set it here. Without this check any
+        // authenticated staff account could promote itself to clinic_admin by
+        // posting a role to its own profile.
+        $canManageRoles = $user instanceof Admin && in_array(
+            $user->role,
+            [Roles::SUPER_ADMIN->value, Roles::CLINIC_ADMIN->value],
+            true
+        );
+
+        if ($canManageRoles) {
             $rules['role'] = 'sometimes|string|in:clinic_admin,veterinarian,staff';
         }
 
         $validated = $request->validate($rules);
+
+        // Belt and braces: never let a role survive from an unauthorised caller,
+        // even if a future rule change reintroduces it.
+        if (!$canManageRoles) {
+            unset($validated['role']);
+        }
 
         $user->update($validated);
 

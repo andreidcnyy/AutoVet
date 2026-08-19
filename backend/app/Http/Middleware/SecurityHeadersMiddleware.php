@@ -20,7 +20,7 @@ class SecurityHeadersMiddleware
         $csp = "default-src 'self'; "
             . "script-src 'self' 'unsafe-inline'; "
             . "style-src 'self' 'unsafe-inline'; "
-            . "connect-src 'self' https://autovet-production.up.railway.app https://autovet-admin.vercel.app https://autovet-portal.vercel.app ws: wss:; "
+            . "connect-src 'self' https://autovet.onrender.com https://autovet-admin.vercel.app https://autovet-portal.vercel.app ws: wss:; "
             . "img-src 'self' https: data: blob:; "
             . "font-src 'self' data:; "
             . "frame-ancestors 'none';";

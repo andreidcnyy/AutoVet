@@ -42,6 +42,11 @@ function ProfileView({ user, setUser }) {
     const nameValue = watch("name");
     const roleValue = watch("role");
 
+    // The server only accepts a role change from an administrator, so anyone
+    // else gets a read-only field rather than a control that silently does
+    // nothing on save.
+    const canEditRole = user?.role === ROLES.CLINIC_ADMIN || user?.role === ROLES.SUPER_ADMIN;
+
     useEffect(() => {
         if (!user?.token) return;
 
@@ -191,8 +196,10 @@ function ProfileView({ user, setUser }) {
                                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Role</label>
                                 <select
                                     {...register("role")}
+                                    disabled={!canEditRole}
                                     className={clsx(
                                         "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        !canEditRole && "cursor-not-allowed opacity-60",
                                         errors.role ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border dark:focus:border-emerald-500"
                                     )}
                                 >
@@ -201,6 +208,9 @@ function ProfileView({ user, setUser }) {
                                     <option value={ROLES.VETERINARIAN}>Veterinarian</option>
                                     <option value={ROLES.STAFF}>Staff</option>
                                 </select>
+                                {!canEditRole && (
+                                    <p className="mt-1 text-xs text-zinc-400">Only an administrator can change roles.</p>
+                                )}
                                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>}
                             </div>
                             <div className="lg:col-span-2">

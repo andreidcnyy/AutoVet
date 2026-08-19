@@ -30,7 +30,9 @@ class PetController extends Controller
         if ($contents === false) {
             throw new \RuntimeException('Could not read uploaded pet photo from temp');
         }
-        $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
+        // Prefer the extension guessed from the file's actual contents over the
+        // client-supplied filename, which the uploader controls.
+        $ext = strtolower($file->extension() ?: $file->getClientOriginalExtension() ?: 'png');
         return $this->uploadPetPhotoBytes($contents, $ext);
     }
 
@@ -126,7 +128,11 @@ class PetController extends Controller
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
-            'photo' => 'nullable|string',
+            // The UI sends a base64 data URL, but the multipart branch below is
+            // still reachable, so constrain real uploads to actual images.
+            'photo' => $request->hasFile('photo')
+                ? ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120']
+                : ['nullable', 'string'],
             'chief_complaint' => 'nullable|string',
             'findings' => 'nullable|string',
             'diagnosis' => 'nullable|string',
@@ -200,7 +206,11 @@ class PetController extends Controller
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
             'notes' => 'nullable|string',
-            'photo' => 'nullable|string',
+            // The UI sends a base64 data URL, but the multipart branch below is
+            // still reachable, so constrain real uploads to actual images.
+            'photo' => $request->hasFile('photo')
+                ? ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120']
+                : ['nullable', 'string'],
             'chief_complaint' => 'nullable|string',
             'findings' => 'nullable|string',
             'diagnosis' => 'nullable|string',

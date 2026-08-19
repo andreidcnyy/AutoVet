@@ -50,10 +50,35 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 403);
             }
 
+            // Let Laravel render the exceptions that already carry a correct
+            // status and body. Without this the catch-all below turned every
+            // validation failure into a 500 with no field errors, and every
+            // missing record into a 500 instead of a 404.
+            if (
+                $e instanceof \Illuminate\Validation\ValidationException
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                || $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+            ) {
+                return null;
+            }
+
             if ($request->is('api/*')) {
+                // Raw exception messages carry SQL, table names and file paths.
+                // Keep them in the logs; show clients something generic unless
+                // debugging is explicitly switched on.
+                if (!config('app.debug')) {
+                    \Illuminate\Support\Facades\Log::error('[API 500] ' . $e->getMessage(), [
+                        'exception' => get_class($e),
+                        'file'      => $e->getFile() . ':' . $e->getLine(),
+                        'url'       => $request->fullUrl(),
+                    ]);
+                }
+
                 return response()->json([
-                    'error' => 'Server Error',
-                    'message' => $e->getMessage()
+                    'error'   => 'Server Error',
+                    'message' => config('app.debug')
+                        ? $e->getMessage()
+                        : 'An unexpected error occurred. Please try again or contact support.',
                 ], 500);
             }
         });
