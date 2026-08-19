@@ -23,6 +23,7 @@ import {
 import { LuPill, LuSparkles } from "react-icons/lu";
 import AddInventoryModal from "./AddInventoryModal";
 import ViewInventoryModal from "./ViewInventoryModal";
+import ReceiveStockModal from "./ReceiveStockModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import api from "../../api";
@@ -142,6 +143,7 @@ function InventoryView() {
   const [activeFilter, setActiveFilter] = useState("All Items");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewedProduct, setViewedProduct] = useState(null);
+  const [receivingProduct, setReceivingProduct] = useState(null);
   const [inventoryRows, setInventoryRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -222,6 +224,13 @@ function InventoryView() {
   const handleSaveNewItem = (newItem) => {
     setInventoryRows((prev) => [newItem, ...prev]);
     toast.success(`Successfully added ${newItem.item_name}!`);
+  };
+
+  const handleBatchReceived = (batch) => {
+    // The new batch is its own row, so insert it rather than merging into the
+    // product it replenishes.
+    if (batch?.id) setInventoryRows((prev) => [batch, ...prev.filter((r) => r.id !== batch.id)]);
+    fetchInventory();
   };
 
   const handleEditProduct = (updatedProduct) => {
@@ -507,7 +516,18 @@ function InventoryView() {
                          ) : <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-600 italic">Needs more transaction data</span>}
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <button onClick={() => setViewedProduct(row)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
+                        <div className="flex items-center justify-end gap-3">
+                          {isAdmin && (
+                            <button
+                              onClick={() => setReceivingProduct(row)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400"
+                              title="Receive a new batch of this product"
+                            >
+                              <FiPackage className="h-3 w-3" /> Receive
+                            </button>
+                          )}
+                          <button onClick={() => setViewedProduct(row)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -528,6 +548,12 @@ function InventoryView() {
 
       <AddInventoryModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveNewItem} />
       <ViewInventoryModal isOpen={!!viewedProduct} onClose={() => setViewedProduct(null)} product={viewedProduct} onDeleteRequest={handleDeleteProduct} onUpdate={handleEditProduct} />
+      <ReceiveStockModal
+        isOpen={!!receivingProduct}
+        onClose={() => setReceivingProduct(null)}
+        product={receivingProduct}
+        onReceived={handleBatchReceived}
+      />
       {showAiGuide && <AiGuideModal onClose={() => setShowAiGuide(false)} />}
     </div>
   );

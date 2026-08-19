@@ -33,6 +33,9 @@ class Inventory extends Model
         'min_stock_level',
         'is_sellable',
         'is_service_usable',
+        // Actual billing flags on the table (the two above predate the schema).
+        'is_billable',
+        'is_consumable',
         'deduct_on_finalize',
         // Archive tracking
         'deleted_by', 'restore_until',
@@ -49,6 +52,8 @@ class Inventory extends Model
         'selling_price'            => 'decimal:2',
         'is_sellable'              => 'boolean',
         'is_service_usable'        => 'boolean',
+        'is_billable'              => 'boolean',
+        'is_consumable'            => 'boolean',
         'deduct_on_finalize'       => 'boolean',
         'expiration_date'          => 'date',
         'synced_at'                => 'datetime',

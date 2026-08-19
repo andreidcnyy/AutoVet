@@ -158,11 +158,14 @@ class InvoiceFinalizationService
                             "{$deductFromThisBatch} units of '{$batchItem->item_name}' (Batch: {$batchItem->batch_number}) were deducted due to Invoice #{$invoice->invoice_number}.",
                             ['inventory_id' => $batchItem->id, 'invoice_id' => $invoice->id]
                         );
+                    }
 
-                        // Trigger low stock event if necessary
-                        if ($batchItem->stock_level <= $batchItem->min_stock_level) {
-                            event(new LowStockDetected($batchItem));
-                        }
+                    // Judge low stock on what is left across every batch, not on
+                    // the batch that happened to be drained. Emptying the oldest
+                    // batch is normal FIFO behaviour and is not itself a shortage.
+                    $remainingTotal = $batches->sum('stock_level');
+                    if ($remainingTotal <= $originalItem->min_stock_level) {
+                        event(new LowStockDetected($originalItem));
                     }
                 }
             }

@@ -209,6 +209,119 @@ $inventory->each(function ($item) use ($daysRemaining) {
             return response()->json($inventory->load('inventoryCategory'));
             }
 
+    /**
+     * Receive a new delivery of an existing product.
+     *
+     * Unlike update(), which overwrites the stock level of the row it is given,
+     * this creates a *new* row sharing the product's code. Rows sharing a code
+     * are the batches that InvoiceFinalizationService consumes oldest-first, so
+     * this is what puts real data behind the FIFO deduction.
+     */
+    public function receiveStock(Request $request, Inventory $inventory)
+    {
+        $validated = $request->validate([
+            'quantity'        => 'required|integer|min:1',
+            'batch_number'    => 'required|string|max:100',
+            'lot_number'      => 'nullable|string|max:100',
+            'expiration_date' => 'nullable|date',
+            'price'           => 'nullable|numeric|min:0',
+            'selling_price'   => 'nullable|numeric|min:0',
+            'supplier'        => 'nullable|string|max:255',
+            'remarks'         => 'nullable|string|max:255',
+        ]);
+
+        $batch = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $inventory) {
+            $product = Inventory::where('id', $inventory->id)->lockForUpdate()->first();
+
+            // FIFO groups batches by code, so a product without one can never
+            // accumulate batches. Backfill from the SKU before branching.
+            if (empty($product->code)) {
+                $product->code = $product->sku;
+                $product->save();
+            }
+
+            $categoryName = \App\Models\InventoryCategory::find($product->inventory_category_id)->name ?? 'UNK';
+
+            $batch = Inventory::create([
+                // Inherit the product's clinic rather than the actor's, so a
+                // batch always belongs to the same clinic as the stock it joins.
+                'clinic_id'             => $product->clinic_id,
+                'item_name'             => $product->item_name,
+                'code'                  => $product->code,
+                'sub_details'           => $product->sub_details,
+                'inventory_category_id' => $product->inventory_category_id,
+                'sku'                   => $this->skuGenerator->generate(
+                    $categoryName,
+                    $product->item_name,
+                    $product->sub_details
+                ),
+                'unit'                  => $product->unit,
+                'stock_level'           => $validated['quantity'],
+                'min_stock_level'       => $product->min_stock_level,
+                'price'                 => $validated['price']         ?? $product->price,
+                'selling_price'         => $validated['selling_price'] ?? $product->selling_price,
+                'supplier'              => $validated['supplier']      ?? $product->supplier,
+                'expiration_date'       => $validated['expiration_date'] ?? null,
+                'lot_number'            => $validated['lot_number']      ?? null,
+                'batch_number'          => $validated['batch_number'],
+                // Carry over the billing/consumption flags so the new batch is
+                // treated exactly like the stock it replenishes.
+                'is_billable'           => $product->is_billable,
+                'is_consumable'         => $product->is_consumable,
+                'deduct_on_finalize'    => $product->deduct_on_finalize,
+                'status'                => 'In Stock',
+            ]);
+
+            InventoryTransaction::create([
+                'inventory_id'     => $batch->id,
+                'transaction_type' => 'Stock In',
+                'quantity'         => $batch->stock_level,
+                'previous_stock'   => 0,
+                'new_stock'        => $batch->stock_level,
+                'remarks'          => $validated['remarks'] ?? "Received batch {$batch->batch_number}",
+                'created_by'       => auth()->id() ?? (Admin::first()->id ?? null),
+            ]);
+
+            return $batch;
+        });
+
+        $this->createInternalNotification(
+            'StockAdjustment',
+            'Stock Received',
+            "Received {$batch->stock_level} units of '{$batch->item_name}' as batch {$batch->batch_number}.",
+            ['inventory_id' => $batch->id]
+        );
+
+        event(new \App\Events\InventoryUpdated($batch));
+
+        RefreshInventoryForecast::dispatch([$batch->id], 'manual');
+
+        return response()->json($batch->load('inventoryCategory'), 201);
+    }
+
+    /**
+     * List every batch sharing a product's code, oldest first — the exact order
+     * InvoiceFinalizationService will consume them in.
+     */
+    public function batches(Inventory $inventory)
+    {
+        $query = Inventory::query();
+
+        if (!empty($inventory->code)) {
+            $query->where('code', $inventory->code);
+        } else {
+            $query->where('id', $inventory->id);
+        }
+
+        $batches = $query->orderBy('id', 'asc')->get();
+
+        return response()->json([
+            'code'        => $inventory->code,
+            'total_stock' => $batches->sum('stock_level'),
+            'batches'     => $batches,
+        ]);
+    }
+
     public function destroy(Inventory $inventory)
     {
         $inventory->delete();

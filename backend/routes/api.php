@@ -175,6 +175,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
     Route::get('inventory/batch-lot-options',            [InventoryController::class, 'batchLotOptions']);
     Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
+    Route::get('inventory/{inventory}/batches',          [InventoryController::class, 'batches']);
     Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
     Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
     Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
@@ -183,6 +184,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
         Route::post('inventory',                             [InventoryController::class, 'store']);
+        Route::post('inventory/{inventory}/receive',         [InventoryController::class, 'receiveStock']);
         Route::put('inventory/{inventory}',                  [InventoryController::class, 'update']);
         Route::patch('inventory/{inventory}',                [InventoryController::class, 'update']);
         Route::delete('inventory/{inventory}',               [InventoryController::class, 'destroy']);
