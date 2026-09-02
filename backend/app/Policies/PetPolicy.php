@@ -53,9 +53,14 @@ class PetPolicy
      */
     public function create(Authenticatable $user): bool
     {
+        if (method_exists($user, 'isOwner') && $user->isOwner()) {
+            return true;
+        }
+
         if (method_exists($user, 'hasRole')) {
             return $user->hasRole(...Roles::employeeRoles()) || $user->hasRole(Roles::OWNER->value);
         }
+
         return false;
     }
 

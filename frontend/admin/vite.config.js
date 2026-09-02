@@ -27,6 +27,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/media": {
+        target: "http://autovet.test",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 
@@ -59,6 +64,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/storage": {
+        target: "http://autovet.test",
+        changeOrigin: true,
+      },
+      "/media": {
         target: "http://autovet.test",
         changeOrigin: true,
       },
