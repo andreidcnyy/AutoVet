@@ -43,12 +43,17 @@ function ChartTooltip({ active, payload, label, prefix = "" }) {
 
 function StatBox({ title, value, icon: Icon, trend, color, prefix = "" }) {
   return (
-    <div className="card-shell p-6 flex items-center justify-between">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{title}</p>
-        <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{prefix}{value}</p>
+    // min-w-0 on the text column and flex-none on the icon: without them a long
+    // figure such as ₱1,234,567.89 cannot shrink, so it ran under the icon and
+    // the two overlapped. tabular-nums keeps digits aligned across the row.
+    <div className="card-shell p-6 flex items-center justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1 truncate">{title}</p>
+        <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50 truncate tabular-nums" title={`${prefix}${value}`}>
+          {prefix}{value}
+        </p>
         {trend && (
-          <div className={clsx("flex items-center gap-1 mt-1 text-[10px] font-bold uppercase", 
+          <div className={clsx("flex items-center gap-1 mt-1 text-[10px] font-bold uppercase",
             trend > 0 ? "text-emerald-500" : trend < 0 ? "text-rose-500" : "text-zinc-400"
           )}>
             {trend > 0 ? <FiArrowUp /> : trend < 0 ? <FiArrowDown /> : <FiMinus />}
@@ -56,7 +61,7 @@ function StatBox({ title, value, icon: Icon, trend, color, prefix = "" }) {
           </div>
         )}
       </div>
-      <div className={clsx("h-12 w-12 rounded-2xl flex items-center justify-center text-xl shadow-sm", color)}>
+      <div className={clsx("h-12 w-12 flex-none rounded-2xl flex items-center justify-center text-xl shadow-sm", color)}>
         <Icon />
       </div>
     </div>
@@ -385,14 +390,16 @@ export default function AnalyticsPage() {
              <div className="space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Critical Action Items</p>
                 {stock?.alert_items?.slice(0, 3).map(item => (
-                   <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border">
-                      <div>
-                         <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{item.name}</p>
-                         <p className="text-[10px] font-bold text-rose-500 uppercase">Stock: {item.stock} / Min: {item.min_stock}</p>
+                   // Same overflow guard: a long item name used to run into the
+                   // deficit column instead of being clipped.
+                   <div key={item.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-dark-surface border border-zinc-100 dark:border-dark-border">
+                      <div className="min-w-0 flex-1">
+                         <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate" title={item.name}>{item.name}</p>
+                         <p className="text-[10px] font-bold text-rose-500 uppercase tabular-nums">Stock: {item.stock} / Min: {item.min_stock}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="flex-none text-right">
                          <p className="text-[10px] font-black uppercase text-zinc-400">Deficit</p>
-                         <p className="text-sm font-black text-rose-600">+{item.deficit}</p>
+                         <p className="text-sm font-black text-rose-600 tabular-nums">+{item.deficit}</p>
                       </div>
                    </div>
                 ))}

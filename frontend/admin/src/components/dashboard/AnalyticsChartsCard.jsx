@@ -3,29 +3,93 @@ import {
   AreaChart, Area,
   BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, LabelList,
 } from "recharts";
 import { FiUsers, FiPackage, FiRefreshCw, FiActivity } from "react-icons/fi";
 import api from "../../api";
 import clsx from "clsx";
 import echo from "../../utils/echo";
 
-const COLORS = [
-  "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
-  "#ec4899", "#8b5cf6", "#14b8a6", "#f97316",
-];
+// One hue per measure, not one per bar. Bar length already encodes the value,
+// so colouring each category differently added a second, meaningless encoding
+// that also re-coloured every bar whenever the category order changed.
+// Both steps clear the lightness-band and 3:1 contrast checks in light and dark.
+const PRODUCT_HUE = "#6366f1";
+const SERVICE_HUE = "#f43f5e";
 
-function ChartTooltip({ active, payload, label }) {
+function ChartTooltip({ active, payload, label, total }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-xl dark:border-dark-border dark:bg-dark-card">
       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} className="text-sm font-bold" style={{ color: p.color ?? p.fill }}>
+        // Values stay in ink, not the series colour; the bar carries identity.
+        <p key={i} className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
           {p.value.toLocaleString()}
+          {total > 0 && (
+            <span className="ml-1.5 text-[11px] font-bold text-zinc-400">
+              {Math.round((p.value / total) * 100)}% of total
+            </span>
+          )}
         </p>
       ))}
     </div>
+  );
+}
+
+/**
+ * Ranked category breakdown.
+ *
+ * Was a vertical bar chart: long category names collided along the x-axis and
+ * were dropped or truncated, so the reader could not tell which bar was which
+ * and the numbers had to be inferred from gridlines. Horizontal bars give each
+ * name a full line of its own, the rows are sorted so rank is obvious, and each
+ * value is written at the end of its bar so nothing has to be read off an axis.
+ */
+function CategoryBreakdown({ data, hue, unitLabel }) {
+  const rows = [...data]
+    .map((d) => ({ ...d, total_qty: Number(d.total_qty) || 0 }))
+    .sort((a, b) => b.total_qty - a.total_qty);
+
+  const total = rows.reduce((sum, r) => sum + r.total_qty, 0);
+  // Give every row a constant slice of height so 3 categories and 12 categories
+  // both stay legible instead of being squeezed into a fixed box.
+  const height = Math.max(180, rows.length * 34 + 24);
+
+  return (
+    <>
+      <p className="-mt-2 mb-3 text-[11px] font-bold text-zinc-400 dark:text-zinc-500">
+        {total.toLocaleString()} {unitLabel} across {rows.length} {rows.length === 1 ? "category" : "categories"}
+      </p>
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" horizontal={false} />
+          <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+          <YAxis
+            type="category"
+            dataKey="category"
+            width={124}
+            tick={{ fontSize: 11, fontWeight: 700 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip content={<ChartTooltip total={total} />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+          {/* Animation off: the dashboard is exported to PDF via html2canvas, and an
+              animated bar is still growing from zero when the canvas is captured,
+              so the exported chart came out empty. */}
+          <Bar dataKey="total_qty" fill={hue} radius={[0, 4, 4, 0]} maxBarSize={22} isAnimationActive={false}>
+            {/* Labelled directly, so the value never has to be estimated. */}
+            <LabelList
+              dataKey="total_qty"
+              position="right"
+              className="fill-zinc-500 dark:fill-zinc-400"
+              style={{ fontSize: 11, fontWeight: 800 }}
+              formatter={(v) => Number(v).toLocaleString()}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </>
   );
 }
 
@@ -207,33 +271,7 @@ export default function AnalyticsChartsCard() {
             No product data available
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={categories}
-              margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-              <XAxis
-                dataKey="category"
-                tick={{ fontSize: 10, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 10, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'transparent' }} />
-              <Bar dataKey="total_qty" radius={[6, 6, 0, 0]}>
-                {categories.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <CategoryBreakdown data={categories} hue={PRODUCT_HUE} unitLabel="items sold" />
         )}
       </div>
 
@@ -249,33 +287,7 @@ export default function AnalyticsChartsCard() {
             No service data available
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={serviceCategories}
-              margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-              <XAxis
-                dataKey="category"
-                tick={{ fontSize: 10, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                allowDecimals={false}
-                tick={{ fontSize: 10, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'transparent' }} />
-              <Bar dataKey="total_qty" radius={[6, 6, 0, 0]}>
-                {serviceCategories.map((_, i) => (
-                  <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <CategoryBreakdown data={serviceCategories} hue={SERVICE_HUE} unitLabel="services rendered" />
         )}
       </div>
 
