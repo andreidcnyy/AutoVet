@@ -33,6 +33,9 @@ import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
 import api from "../../api";
 
+// The clinic prices VAT-inclusive: every line amount already contains this rate.
+const VAT_RATE = 0.12;
+
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -242,9 +245,11 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text("VAT (12%)", totalsX - 40, y, { align: "right" });
+  doc.text("VAT (12%, included)", totalsX - 40, y, { align: "right" });
   doc.setTextColor(30, 41, 59);
-  doc.text(pdfCurrency(invoiceData.subtotal * 0.12), totalsX, y, { align: "right" });
+  // Derived from the total so it follows any discount, and extracted rather
+  // than added, because the line prices already carry the VAT.
+  doc.text(pdfCurrency(Number(invoiceData.total || 0) * (VAT_RATE / (1 + VAT_RATE))), totalsX, y, { align: "right" });
 
   // Total Due
   y += 12;
@@ -1139,8 +1144,11 @@ function InvoiceModuleView() {
   }, [subtotal, discountVal, discountType]);
 
   const taxable = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
-  const taxAmount = useMemo(() => taxable * 0.12, [taxable]);
-  const totalDue = useMemo(() => taxable + taxAmount, [taxable, taxAmount]);
+  // Prices already include 12% VAT, so the tax is a portion of the gross
+  // (0.12 / 1.12) rather than an addition to it, and the amount due is simply
+  // the discounted subtotal. Adding 12% on top charged the customer twice.
+  const taxAmount = useMemo(() => taxable * (VAT_RATE / (1 + VAT_RATE)), [taxable]);
+  const totalDue = useMemo(() => taxable, [taxable]);
 
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -2390,7 +2398,7 @@ function InvoiceModuleView() {
                     <span>{currency(subtotal)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
-                    <span>VAT (12%)</span>
+                    <span>VAT (12%, included)</span>
                     <span>{currency(taxAmount)}</span>
                   </div>
                   <div className="mt-2 flex items-center justify-between border-t border-zinc-200 dark:border-dark-border pt-3">

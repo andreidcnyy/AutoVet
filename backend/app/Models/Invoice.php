@@ -12,6 +12,33 @@ class Invoice extends Model
 {
     use HasSyncFields, HasAuditTrail, HasClinic;
 
+    /** The VAT rate these prices already include. */
+    public const VAT_RATE = 0.12;
+
+    /**
+     * The VAT contained inside a VAT-inclusive amount.
+     *
+     * Line prices already carry the 12%, so the tax is a portion of the gross
+     * (rate / (1 + rate)), not an addition to it. Adding 12% on top charged
+     * the customer the tax twice.
+     */
+    public static function vatPortionOf(float $grossAmount): float
+    {
+        return round($grossAmount * (self::VAT_RATE / (1 + self::VAT_RATE)), 2);
+    }
+
+    /** The VAT contained in this invoice total. */
+    public function getVatAmountAttribute(): float
+    {
+        return self::vatPortionOf((float) $this->total);
+    }
+
+    /** This invoice total excluding the VAT it already contains. */
+    public function getNetOfVatAttribute(): float
+    {
+        return round((float) $this->total - $this->vat_amount, 2);
+    }
+
     protected $fillable = [
         'invoice_number', 'pet_id', 'appointment_id', 'service_date', 'report_type', 'status',
         'subtotal', 'discount_type', 'discount_value', 'tax_rate', 'total',

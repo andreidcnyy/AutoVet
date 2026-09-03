@@ -273,10 +273,12 @@ class InvoiceController extends Controller
                 : $validated['discount_value'];
             
             $taxable = $calculatedSubtotal - $discount;
-            // Enforce fixed 12% VAT
+            // Prices are VAT-inclusive: the 12% is already inside each line
+            // amount, so it is extracted for reporting rather than added on top.
+            // The amount owed is the discounted subtotal, unchanged.
             $validated['tax_rate'] = 12.00;
-            $tax = round($taxable * 0.12, 2); 
-            $calculatedTotal = round($taxable + $tax, 2);
+            $tax = Invoice::vatPortionOf($taxable);
+            $calculatedTotal = round($taxable, 2);
 
             // Refined status logic: If finalized but fully paid, mark as Paid (Receipt mode)
             $finalStatus = $validated['status'];
@@ -490,10 +492,10 @@ class InvoiceController extends Controller
                 : $validated['discount_value'];
             
             $taxable = $calculatedSubtotal - $discount;
-            // Enforce fixed 12% VAT
+            // VAT-inclusive: see store(). The 12% is extracted, never added.
             $validated['tax_rate'] = 12.00;
-            $tax = $taxable * 0.12; 
-            $calculatedTotal = $taxable + $tax;
+            $tax = Invoice::vatPortionOf($taxable);
+            $calculatedTotal = round($taxable, 2);
 
             // Determine status logic based on amount paid vs total
             $status = $validated['status'];

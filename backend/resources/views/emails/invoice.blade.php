@@ -113,8 +113,8 @@
                         <td style="text-align: right; font-weight: 700; color: #1e293b;">₱{{ number_format($invoice->subtotal, 2) }}</td>
                     </tr>
                     <tr>
-                        <td style="color: #64748b; font-weight: 600;">VAT (12%)</td>
-                        <td style="text-align: right; font-weight: 700; color: #1e293b;">₱{{ number_format($invoice->total - $invoice->subtotal, 2) }}</td>
+                        <td style="color: #64748b; font-weight: 600;">VAT (12%, included)</td>
+                        <td style="text-align: right; font-weight: 700; color: #1e293b;">₱{{ number_format($invoice->vat_amount, 2) }}</td>
                     </tr>
                     <tr class="grand-total">
                         <td style="font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Total</td>
