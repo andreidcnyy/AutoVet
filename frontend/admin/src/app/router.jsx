@@ -1,25 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import AppLayout from "../layouts/AppLayout";
-import AppointmentsPage from "../pages/AppointmentsPage";
-import AnalyticsPage from "../pages/AnalyticsPage";
-import DashboardPage from "../pages/DashboardPage";
-import InventoryPage from "../pages/InventoryPage";
-import PatientsPage from "../pages/PatientsPage";
-import ViewPatientProfilePage from "../pages/ViewPatientProfilePage";
-import ProfilePage from "../pages/ProfilePage";
-import SettingsPage from "../pages/SettingsPage";
-import SuperAdminDashboard from "../pages/SuperAdminDashboard";
-import SuperAdminLogs from "../pages/SuperAdminLogs";
-import SuperAdminAnnouncements from "../pages/SuperAdminAnnouncements";
-import LoginPage from "../pages/LoginPage";
-import ForbiddenPage from "../pages/ForbiddenPage";
-import CalendarPage from "../pages/CalendarPage";
-import ChangePasswordPage from "../pages/ChangePasswordPage";
-import NotificationHistoryPage from "../pages/NotificationHistoryPage";
-import ClientNotificationHistoryPage from "../pages/ClientNotificationHistoryPage";
-import AiClinicalSupportPage from "../pages/AiClinicalSupportPage";
-import InvoicePage from "../pages/InvoicePage";
-import ReviewsPage from "../pages/ReviewsPage";
+
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import {
   ADMIN_ONLY,
@@ -31,6 +13,50 @@ import {
 } from "../constants/roles";
 
 import RouterErrorElement from "../components/RouterErrorElement";
+
+/**
+ * Each page becomes its own chunk, fetched the first time its route is opened.
+ * Previously every page was imported eagerly, so one bundle had to download and
+ * parse before anything could render.
+ *
+ * The wrapper keeps its own Suspense boundary, so the route tree below is
+ * written exactly as it was with eager imports.
+ */
+const RouteFallback = () => (
+  <div className="flex h-full min-h-[60vh] w-full items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-emerald-500 dark:border-zinc-700 dark:border-t-emerald-400" />
+  </div>
+);
+
+const lazyPage = (loader) => {
+  const Loaded = lazy(loader);
+  return (props) => (
+    <Suspense fallback={<RouteFallback />}>
+      <Loaded {...props} />
+    </Suspense>
+  );
+};
+
+const AppointmentsPage = lazyPage(() => import("../pages/AppointmentsPage"));
+const AnalyticsPage = lazyPage(() => import("../pages/AnalyticsPage"));
+const DashboardPage = lazyPage(() => import("../pages/DashboardPage"));
+const InventoryPage = lazyPage(() => import("../pages/InventoryPage"));
+const PatientsPage = lazyPage(() => import("../pages/PatientsPage"));
+const ViewPatientProfilePage = lazyPage(() => import("../pages/ViewPatientProfilePage"));
+const ProfilePage = lazyPage(() => import("../pages/ProfilePage"));
+const SettingsPage = lazyPage(() => import("../pages/SettingsPage"));
+const SuperAdminDashboard = lazyPage(() => import("../pages/SuperAdminDashboard"));
+const SuperAdminLogs = lazyPage(() => import("../pages/SuperAdminLogs"));
+const SuperAdminAnnouncements = lazyPage(() => import("../pages/SuperAdminAnnouncements"));
+const LoginPage = lazyPage(() => import("../pages/LoginPage"));
+const ForbiddenPage = lazyPage(() => import("../pages/ForbiddenPage"));
+const CalendarPage = lazyPage(() => import("../pages/CalendarPage"));
+const ChangePasswordPage = lazyPage(() => import("../pages/ChangePasswordPage"));
+const NotificationHistoryPage = lazyPage(() => import("../pages/NotificationHistoryPage"));
+const ClientNotificationHistoryPage = lazyPage(() => import("../pages/ClientNotificationHistoryPage"));
+const AiClinicalSupportPage = lazyPage(() => import("../pages/AiClinicalSupportPage"));
+const InvoicePage = lazyPage(() => import("../pages/InvoicePage"));
+const ReviewsPage = lazyPage(() => import("../pages/ReviewsPage"));
 
 export const router = createBrowserRouter([
   {

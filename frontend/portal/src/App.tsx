@@ -1,28 +1,50 @@
-import { useEffect, useState } from 'react'; // useState kept for ProtectedRoute maintenance state
+import { useEffect, useState, lazy, Suspense } from 'react'; // useState kept for ProtectedRoute maintenance state
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
-import Login from './Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import Dashboard from './pages/Dashboard';
-import AddPet from './pages/AddPet';
-import EditPet from './pages/EditPet';
-import BookAppointment from './pages/BookAppointment';
-import PetProfile from './pages/PetProfile';
-import Appointments from './pages/Appointments';
-import Notifications from './pages/Notifications';
-import Invoices from './pages/Invoices';
-import AccountPendingDeletion from './pages/AccountPendingDeletion';
-import AccountBlockedPage from './pages/AccountBlockedPage';
+
 import MaintenancePage from './pages/MaintenancePage';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
 import { triggerSync } from './api';
 import WarningPopup from './components/WarningPopup';
+
+/**
+ * Each page becomes its own chunk, fetched the first time its route is opened,
+ * instead of every page being parsed before the first paint. The wrapper owns
+ * its Suspense boundary so the route tree stays written as it was.
+ */
+const RouteFallback = () => (
+  <div className="flex h-full min-h-[60vh] w-full items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-brand-500 dark:border-zinc-700" />
+  </div>
+);
+
+const lazyPage = <P extends object>(loader: () => Promise<{ default: React.ComponentType<P> }>) => {
+  const Loaded = lazy(loader);
+  return (props: P) => (
+    <Suspense fallback={<RouteFallback />}>
+      <Loaded {...props} />
+    </Suspense>
+  );
+};
+
+const Login = lazyPage(() => import('./Login'));
+const Register = lazyPage(() => import('./pages/Register'));
+const ForgotPassword = lazyPage(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyPage(() => import('./pages/ResetPassword'));
+const TermsOfService = lazyPage(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazyPage(() => import('./pages/PrivacyPolicy'));
+const Dashboard = lazyPage(() => import('./pages/Dashboard'));
+const AddPet = lazyPage(() => import('./pages/AddPet'));
+const EditPet = lazyPage(() => import('./pages/EditPet'));
+const BookAppointment = lazyPage(() => import('./pages/BookAppointment'));
+const PetProfile = lazyPage(() => import('./pages/PetProfile'));
+const Appointments = lazyPage(() => import('./pages/Appointments'));
+const Notifications = lazyPage(() => import('./pages/Notifications'));
+const Invoices = lazyPage(() => import('./pages/Invoices'));
+const AccountPendingDeletion = lazyPage(() => import('./pages/AccountPendingDeletion'));
+const AccountBlockedPage = lazyPage(() => import('./pages/AccountBlockedPage'));
 
 function ProtectedRoute({ children }: {
   children: React.ReactNode;
