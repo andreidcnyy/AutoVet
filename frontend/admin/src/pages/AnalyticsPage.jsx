@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 printable-dashboard">
+    <div className="space-y-8 printable-dashboard">
       
       {/* Print Header */}
       <div className="hidden print:flex items-center justify-between border-b-2 border-zinc-900 pb-4 mb-8">
@@ -268,8 +268,8 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${v/1000}k`} />
                 <Tooltip content={<ChartTooltip prefix="₱" />} />
-                <Area name="Actual Revenue" type="monotone" dataKey="actual_revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                <Line name="Trend Line" type="monotone" dataKey="trend_revenue" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                <Area isAnimationActive={false} name="Actual Revenue" type="monotone" dataKey="actual_revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                <Line isAnimationActive={false} name="Trend Line" type="monotone" dataKey="trend_revenue" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -289,8 +289,8 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar name="Actual Count" dataKey="actual_count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Line name="Trend" type="monotone" dataKey="trend_count" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                <Bar isAnimationActive={false} name="Actual Count" dataKey="actual_count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Line isAnimationActive={false} name="Trend" type="monotone" dataKey="trend_count" stroke="#f59e0b" strokeWidth={2} dot={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
                 <Tooltip content={<ChartTooltip />} />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
                 {consumption.map((cat, idx) => (
-                  <Line 
+                  <Line isAnimationActive={false} 
                     key={cat.category}
                     name={cat.category}
                     type="monotone" 
@@ -348,9 +348,12 @@ export default function AnalyticsPage() {
                   #{idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 truncate">{item.name}</p>
-                    <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{item.total_qty} units</p>
+                  {/* min-w-0 lets the name actually truncate inside the flex row,
+                      and shrink-0 keeps the count from being squeezed into it —
+                      without both, a long item name ran straight into the units. */}
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <p className="min-w-0 truncate text-sm font-bold text-zinc-700 dark:text-zinc-200" title={item.name}>{item.name}</p>
+                    <p className="shrink-0 text-xs font-black tabular-nums text-zinc-900 dark:text-zinc-50">{item.total_qty} units</p>
                   </div>
                   <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div 
@@ -371,18 +374,23 @@ export default function AnalyticsPage() {
               <FiPackage className="text-zinc-500" /> Inventory Health Summary
             </h3>
           </div>
-          <div className="flex flex-col h-full justify-between">
-             <div className="grid grid-cols-3 gap-4 mb-8">
+          {/* h-full + justify-between forced this column to the grid row's
+              height, which is set by the taller sibling card. When the alert
+              list was longer than that, the last row spilled out past the card
+              border instead of the card growing. Normal flow, so the card sizes
+              to its own content. */}
+          <div className="flex flex-col gap-6">
+             <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                   <p className="text-2xl font-black text-emerald-500">{stock?.summary?.in_stock}</p>
+                   <p className="truncate text-2xl font-black tabular-nums text-emerald-500">{Number(stock?.summary?.in_stock ?? 0).toLocaleString()}</p>
                    <p className="text-[10px] font-black uppercase text-zinc-400">In Stock</p>
                 </div>
                 <div className="text-center border-x border-zinc-100 dark:border-zinc-800">
-                   <p className="text-2xl font-black text-amber-500">{stock?.summary?.low_stock}</p>
+                   <p className="truncate text-2xl font-black tabular-nums text-amber-500">{Number(stock?.summary?.low_stock ?? 0).toLocaleString()}</p>
                    <p className="text-[10px] font-black uppercase text-zinc-400">Low Stock</p>
                 </div>
                 <div className="text-center">
-                   <p className="text-2xl font-black text-rose-500">{stock?.summary?.out_of_stock}</p>
+                   <p className="truncate text-2xl font-black tabular-nums text-rose-500">{Number(stock?.summary?.out_of_stock ?? 0).toLocaleString()}</p>
                    <p className="text-[10px] font-black uppercase text-zinc-400">Out of Stock</p>
                 </div>
              </div>

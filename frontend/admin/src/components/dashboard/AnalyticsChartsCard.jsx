@@ -77,7 +77,7 @@ function CategoryBreakdown({ data, hue, unitLabel }) {
           {/* Animation off: the dashboard is exported to PDF via html2canvas, and an
               animated bar is still growing from zero when the canvas is captured,
               so the exported chart came out empty. */}
-          <Bar dataKey="total_qty" fill={hue} radius={[0, 4, 4, 0]} maxBarSize={22} isAnimationActive={false}>
+          <Bar isAnimationActive={false} dataKey="total_qty" fill={hue} radius={[0, 4, 4, 0]} maxBarSize={22} >
             {/* Labelled directly, so the value never has to be estimated. */}
             <LabelList
               dataKey="total_qty"
@@ -245,7 +245,7 @@ export default function AnalyticsChartsCard() {
                 axisLine={false}
               />
               <Tooltip content={<ChartTooltip />} />
-              <Area
+              <Area isAnimationActive={false}
                 type="monotone"
                 dataKey="total"
                 stroke="#10b981"

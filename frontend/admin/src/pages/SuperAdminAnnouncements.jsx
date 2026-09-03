@@ -114,7 +114,7 @@ export default function SuperAdminAnnouncements() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6">
 
       {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center justify-between">

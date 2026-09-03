@@ -28,7 +28,11 @@ const RouteFallback = () => (
   </div>
 );
 
+// Every page loader, so they can be warmed once the app is idle.
+const pageLoaders = [];
+
 const lazyPage = (loader) => {
+  pageLoaders.push(loader);
   const Loaded = lazy(loader);
   return (props) => (
     <Suspense fallback={<RouteFallback />}>
@@ -36,6 +40,41 @@ const lazyPage = (loader) => {
     </Suspense>
   );
 };
+
+/**
+ * Warms every page chunk in the background once the browser is idle.
+ *
+ * Splitting the pages cut the first load roughly in half, but it moved the
+ * cost to navigation: each page fetched its chunk the first time it was
+ * opened, which showed as a spinner on every new tab. Fetching them during
+ * idle time keeps the small initial bundle and makes switching instant, since
+ * the chunk is already in the module cache by the time it is needed.
+ *
+ * Sequential on purpose — firing twenty parallel requests would compete with
+ * the data the visible page is still loading.
+ */
+function prefetchPages() {
+  let i = 0;
+  const next = () => {
+    if (i >= pageLoaders.length) return;
+    const load = pageLoaders[i++];
+    Promise.resolve()
+      .then(load)
+      .catch(() => {}) // a failed prefetch must never surface; the route retries
+      .finally(() => schedule(next));
+  };
+  schedule(next);
+}
+
+const schedule = (fn) =>
+  typeof requestIdleCallback === "function"
+    ? requestIdleCallback(fn, { timeout: 2000 })
+    : setTimeout(fn, 200);
+
+// Hold off until the first screen has settled, then warm the rest.
+if (typeof window !== "undefined") {
+  setTimeout(prefetchPages, 1500);
+}
 
 const AppointmentsPage = lazyPage(() => import("../pages/AppointmentsPage"));
 const AnalyticsPage = lazyPage(() => import("../pages/AnalyticsPage"));

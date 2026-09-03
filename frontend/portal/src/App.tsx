@@ -20,7 +20,11 @@ const RouteFallback = () => (
   </div>
 );
 
+// Every page loader, so they can be warmed once the browser is idle.
+const pageLoaders: Array<() => Promise<unknown>> = [];
+
 const lazyPage = <P extends object>(loader: () => Promise<{ default: React.ComponentType<P> }>) => {
+  pageLoaders.push(loader);
   const Loaded = lazy(loader);
   return (props: P) => (
     <Suspense fallback={<RouteFallback />}>
@@ -45,6 +49,34 @@ const Notifications = lazyPage(() => import('./pages/Notifications'));
 const Invoices = lazyPage(() => import('./pages/Invoices'));
 const AccountPendingDeletion = lazyPage(() => import('./pages/AccountPendingDeletion'));
 const AccountBlockedPage = lazyPage(() => import('./pages/AccountBlockedPage'));
+
+const schedule = (fn: () => void) =>
+  typeof (window as any).requestIdleCallback === "function"
+    ? (window as any).requestIdleCallback(fn, { timeout: 2000 })
+    : setTimeout(fn, 200);
+
+/**
+ * Warms every page chunk in the background once the browser is idle.
+ *
+ * Splitting the pages halved the first load but moved the cost to navigation:
+ * each page fetched its chunk the first time it was opened, which showed as a
+ * spinner on every tab change. Warming them during idle time keeps the small
+ * initial bundle and makes switching instant. Sequential, so the prefetch does
+ * not compete with data the visible page is still loading.
+ */
+function prefetchPages() {
+  let i = 0;
+  const next = () => {
+    if (i >= pageLoaders.length) return;
+    const load = pageLoaders[i++];
+    Promise.resolve().then(load).catch(() => {}).finally(() => schedule(next));
+  };
+  schedule(next);
+}
+
+if (typeof window !== "undefined") {
+  setTimeout(prefetchPages, 1500);
+}
 
 function ProtectedRoute({ children }: {
   children: React.ReactNode;

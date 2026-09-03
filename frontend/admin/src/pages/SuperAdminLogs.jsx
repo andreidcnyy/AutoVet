@@ -57,7 +57,7 @@ export default function SuperAdminManagement() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-autovet-navy dark:text-zinc-50 uppercase">Super Admins</h1>

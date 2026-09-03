@@ -365,7 +365,7 @@ export default function SuperAdminDashboard() {
   if (loading) return <div className="p-8 text-zinc-500 font-black uppercase tracking-widest text-sm animate-pulse">Platform Syncing...</div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-autovet-navy dark:text-zinc-50 uppercase">Digivet Platform</h1>
