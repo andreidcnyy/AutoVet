@@ -10,6 +10,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import ManageDevicesModal from "../profile/ManageDevicesModal";
 import clsx from "clsx";
 
@@ -195,7 +196,8 @@ function TopHeader({ title, user, onMenuToggle }) {
               onClick={() => setOpenProfileMenu((prev) => !prev)}
               className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-dark-surface"
             >
-              <img src={user?.avatar || getUserAvatarUrl(user?.role, user?.name)} alt={user?.name} className="h-9 w-9 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface sm:h-11 sm:w-11" />
+              <img src={resolveMediaUrl(user?.avatar) || getUserAvatarUrl(user?.role, user?.name)}
+              onError={onUserImageError(getUserAvatarUrl, user?.role, user?.name)} alt={user?.name} className="h-9 w-9 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface sm:h-11 sm:w-11" />
               <div className="hidden min-w-0 text-left sm:block">
                 <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50">{user?.name}</p>
                 <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>

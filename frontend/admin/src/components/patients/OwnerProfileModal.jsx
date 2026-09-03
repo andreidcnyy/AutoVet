@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiX, FiUser, FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
-import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
@@ -82,7 +82,8 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
                         className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition dark:border-dark-border dark:bg-dark-card dark:hover:border-emerald-500/50"
                       >
                         <img 
-                          src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)} 
+                          src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)}
+                                onError={onPetImageError(pet.species?.name, pet.breed?.name)} 
                           alt={pet.name} 
                           className="h-12 w-12 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800" 
                         />

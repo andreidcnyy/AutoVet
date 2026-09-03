@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import { ROLES } from "../../constants/roles";
 
 const profileSchema = z.object({
@@ -159,7 +160,8 @@ function ProfileView({ user, setUser }) {
                 <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8 md:flex-row md:items-start">
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group overflow-hidden rounded-full">
-                            <img src={avatarValue || getUserAvatarUrl(roleValue, nameValue)} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-zinc-100 dark:bg-dark-surface" />
+                            <img src={resolveMediaUrl(avatarValue) || getUserAvatarUrl(roleValue, nameValue)}
+                                 onError={onUserImageError(getUserAvatarUrl, roleValue, nameValue)} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-zinc-100 dark:bg-dark-surface" />
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"

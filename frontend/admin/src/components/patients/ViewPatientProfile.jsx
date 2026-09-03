@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import echo from "../../utils/echo";
-import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
 import {
   FiArrowLeft,
   FiPhone,
@@ -648,6 +648,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
         <div className="relative group h-40 w-40 shrink-0">
           <img
             src={patient.photo ? getActualPetImageUrl(patient.photo) : getPetImageUrl(patient.species?.name, patient.breed?.name)}
+                                onError={onPetImageError(patient.species?.name, patient.breed?.name)}
             alt={patient.name}
             className={clsx(
               "h-40 w-40 rounded-2xl border-2 border-zinc-100 object-cover shadow-sm dark:border-dark-border bg-zinc-100 transition-all duration-200",

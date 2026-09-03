@@ -55,6 +55,10 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+            // A retired or unreachable bucket must fail fast. Without these the
+            // SDK waits out its default timeouts on every miss, holding a PHP
+            // worker open for tens of seconds per missing image.
+            'http' => ['connect_timeout' => 2, 'timeout' => 5],
         ] : [
             'driver' => 'local',
             'root' => storage_path('app/public'),
@@ -75,6 +79,7 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
             'throw' => true,
             'report' => false,
+            'http' => ['connect_timeout' => 2, 'timeout' => 5],
         ],
 
     ],

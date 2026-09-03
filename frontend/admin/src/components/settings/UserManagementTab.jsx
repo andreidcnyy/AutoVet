@@ -5,6 +5,7 @@ import { FiTrash2, FiUserPlus, FiEdit2, FiX, FiSave, FiEye, FiEyeOff } from "rea
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
+import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import { ROLES } from "../../constants/roles";
 import echo from "../../utils/echo";
 
@@ -261,7 +262,8 @@ export default function UserManagementTab() {
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={member.avatar || getUserAvatarUrl(member.role, member.name)}
+                      src={resolveMediaUrl(member.avatar) || getUserAvatarUrl(member.role, member.name)}
+                      onError={onUserImageError(getUserAvatarUrl, member.role, member.name)}
                       alt={member.name}
                       className="h-9 w-9 rounded-full object-cover bg-zinc-100"
                     />

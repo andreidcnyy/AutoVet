@@ -8,7 +8,7 @@ import ReviewModal from '../components/ReviewModal';
 import PetProfileModal from '../components/PetProfileModal';
 import EditPetModal from '../components/EditPetModal';
 import PetCareRecommendations from '../components/PetCareRecommendations';
-import { getActualPetImageUrl } from '../utils/petImages';
+import { getActualPetImageUrl, onPetImageError } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import { useAuth } from '../context/AuthContext';
 import echo from '../utils/echo';
@@ -220,7 +220,7 @@ export default function Dashboard() {
                     <div className="card-shell card-shell-hover p-5 flex items-center gap-4 hover:border-brand-500/50 transition-all cursor-pointer group">
                       <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-dark-border">
                         {pet.photo ? (
-                          <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
+                          <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" onError={onPetImageError(pet.species?.name, pet.breed?.name)} />
                         ) : (
                           <FiHeart className="w-8 h-8 text-zinc-300 dark:text-zinc-600 group-hover:scale-110 transition-transform" />
                         )}

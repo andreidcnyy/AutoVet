@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES } from "../../constants/roles";
-import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
 import {
   FiPhone,
   FiMail,
@@ -385,7 +385,8 @@ function PatientRecordsView({
                             className="flex items-center gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/30 p-4 hover:border-emerald-500/30 hover:bg-white hover:shadow-xl hover:shadow-emerald-500/5 transition-all cursor-pointer dark:border-dark-border dark:bg-dark-surface/30 dark:hover:border-emerald-500/40"
                           >
                              <img 
-                                src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)} 
+                                src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)}
+                                onError={onPetImageError(pet.species?.name, pet.breed?.name)} 
                                 alt={pet.name} 
                                 className="h-14 w-14 rounded-xl object-cover shadow-sm bg-white dark:bg-dark-card" 
                              />

@@ -56,6 +56,31 @@ export const resolveMediaUrl = (value) => {
 export const getActualPetImageUrl = (photoPath) => resolveMediaUrl(photoPath);
 
 /**
+ * onError handler for a pet <img>, swapping in the species artwork.
+ *
+ * A stored photo can fail to load for reasons the row cannot express: the
+ * bytes were never migrated out of the retired bucket, or the key no longer
+ * matches. Without this the browser paints its broken-image glyph, which is
+ * what "the images are not appearing" looks like on screen. Falling back keeps
+ * the list looking right and makes a genuinely missing photo obvious rather
+ * than looking like a broken page.
+ */
+export const onPetImageError = (species, breed) => (event) => {
+  const img = event.currentTarget;
+  img.onerror = null; // never allow the fallback itself to loop
+  const fallback = getPetImageUrl(species, breed);
+  if (img.getAttribute('src') !== fallback) img.src = fallback;
+};
+
+/** onError handler for a user/staff avatar <img>, swapping in the role artwork. */
+export const onUserImageError = (getRoleAvatar, role, name) => (event) => {
+  const img = event.currentTarget;
+  img.onerror = null;
+  const fallback = getRoleAvatar(role, name);
+  if (img.getAttribute('src') !== fallback) img.src = fallback;
+};
+
+/**
  * Returns the best-matching local SVG fallback image for a pet
  * based on its species and breed. Fully offline-capable.
  */

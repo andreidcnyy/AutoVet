@@ -27,7 +27,7 @@ import { LuPawPrint } from "react-icons/lu";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { useFormErrors } from "../../hooks/useFormErrors";
-import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
@@ -2299,6 +2299,7 @@ function InvoiceModuleView() {
                       <div className="mt-2 flex items-center gap-3">
                         <img
                           src={patientDetails.photo ? getActualPetImageUrl(patientDetails.photo) : getPetImageUrl(patientDetails.species?.name, patientDetails.breed?.name)}
+                                onError={onPetImageError(patientDetails.species?.name, patientDetails.breed?.name)}
                           alt={patientDetails.name}
                           className="h-10 w-10 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
                         />

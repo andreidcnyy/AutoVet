@@ -17,7 +17,7 @@ import {
 } from 'react-icons/fi';
 import { LuPawPrint } from 'react-icons/lu';
 import { Link, useNavigate } from 'react-router-dom';
-import { getActualPetImageUrl } from '../utils/petImages';
+import { getActualPetImageUrl, onPetImageError } from '../utils/petImages';
 import { calculateAgeDisplay } from '../utils/petAgeGroups';
 import MedicalSummaryCard from './MedicalSummaryCard';
 import clsx from 'clsx';
@@ -166,7 +166,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                   {/* Photo */}
                   <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-2xl sm:rounded-[2.5rem] bg-white/20 backdrop-blur-md border-4 border-white/30 shadow-2xl flex items-center justify-center overflow-hidden shrink-0">
                     {pet.photo ? (
-                      <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
+                      <img src={getActualPetImageUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" onError={onPetImageError(pet.species?.name, pet.breed?.name)} />
                     ) : (
                       <LuPawPrint className="w-8 h-8 sm:w-12 sm:h-12 text-white/50" />
                     )}

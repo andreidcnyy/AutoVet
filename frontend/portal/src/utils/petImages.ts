@@ -47,6 +47,22 @@ export const getActualPetImageUrl = (photoPath: string | null | undefined): stri
   resolveMediaUrl(photoPath);
 
 /**
+ * onError handler for a pet <img>, swapping in the species artwork.
+ *
+ * A stored photo can fail to load for reasons the row cannot express: the
+ * bytes were never migrated out of the retired bucket, or the key no longer
+ * matches. Without this the browser paints its broken-image glyph, which is
+ * what "the images are not appearing" looks like on screen.
+ */
+export const onPetImageError =
+  (species: any, breed?: any) => (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    img.onerror = null; // never allow the fallback itself to loop
+    const fallback = getPetImageUrl(species, breed);
+    if (img.getAttribute('src') !== fallback) img.src = fallback;
+  };
+
+/**
  * Returns the best-matching local SVG fallback image for a pet
  */
 export const getPetImageUrl = (species: any, breed: any) => {

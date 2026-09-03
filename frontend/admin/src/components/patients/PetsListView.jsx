@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { getPetImageUrl, getActualPetImageUrl } from "../../utils/petImages";
+import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
 import ViewPatientModal from "./ViewPatientModal";
 import clsx from "clsx";
 import echo from "../../utils/echo";
@@ -161,7 +161,8 @@ function PetsListView() {
                         <div className="flex items-start justify-between gap-4">
                             <div className="relative">
                                 <img 
-                                    src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)} 
+                                    src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)}
+                                onError={onPetImageError(pet.species?.name, pet.breed?.name)} 
                                     alt={pet.name} 
                                     className="h-20 w-20 rounded-2xl object-cover shadow-lg border-2 border-white dark:border-dark-surface" 
                                 />
