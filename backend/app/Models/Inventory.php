@@ -43,7 +43,7 @@ class Inventory extends Model
         'uuid', 'sync_status', 'synced_at', 'last_modified_locally_at',
     ];
 
-    protected $appends = ['stock_status'];
+    protected $appends = ['stock_status', 'is_expired', 'days_until_expiry'];
 
     protected $casts = [
         'stock_level'              => 'integer',
@@ -93,6 +93,37 @@ class Inventory extends Model
         if ($this->stock_level <= 0) return 'out_of_stock';
         if ($this->stock_level <= ($this->min_stock_level ?? 0)) return 'low_stock';
         return 'in_stock';
+    }
+
+    /**
+     * Whether this item is past its expiration date, judged when asked.
+     *
+     * Expiry is deliberately not stored. The `status` column is written on save
+     * and only ever describes stock level, so an item that expired while nobody
+     * touched it kept reading "In Stock" until someone edited it by hand. Read
+     * against the current date, an item becomes expired on its own, and moving
+     * the system clock is reflected immediately.
+     */
+    public function getIsExpiredAttribute(): bool
+    {
+        if (!$this->expiration_date) {
+            return false;
+        }
+
+        return $this->expiration_date->startOfDay()->lt(now()->startOfDay());
+    }
+
+    /**
+     * Whole days until expiry: negative once past, null when no date is set.
+     * Same read-time basis as is_expired, so the two can never disagree.
+     */
+    public function getDaysUntilExpiryAttribute(): ?int
+    {
+        if (!$this->expiration_date) {
+            return null;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($this->expiration_date->startOfDay(), false);
     }
 
     public function transactions()

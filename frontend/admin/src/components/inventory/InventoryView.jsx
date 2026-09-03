@@ -28,6 +28,16 @@ import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import api from "../../api";
 
+// Expired is derived, never stored: the API sends is_expired computed against
+// the current date, and the date comparison is kept as a fallback for cached
+// rows fetched before that field existed.
+const isRowExpired = (row) => {
+  if (typeof row?.is_expired === "boolean") return row.is_expired;
+  if (!row?.expiration_date) return false;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return new Date(row.expiration_date) < t;
+};
+
 const statusStyles = {
   "In Stock": "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   Expiring: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
@@ -296,7 +306,7 @@ function InventoryView() {
     if (activeFilter === "All Items") return true;
     if (activeFilter === "Low Stock") return row.latest_forecast?.forecast_status === 'Low Stock';
     if (activeFilter === "Expiring") return expDate && Math.ceil((expDate - t) / 86400000) <= 30 && expDate >= t;
-    if (activeFilter === "Expired") return expDate && expDate < t;
+    if (activeFilter === "Expired") return isRowExpired(row);
     return true;
   });
 
@@ -308,7 +318,7 @@ function InventoryView() {
     const d = r.expiration_date ? new Date(r.expiration_date) : null;
     return d && Math.ceil((d - today) / 86400000) <= 30 && d >= today;
   }).length;
-  const expiredCount = inventoryRows.filter(r => r.expiration_date && new Date(r.expiration_date) < today).length;
+  const expiredCount = inventoryRows.filter(isRowExpired).length;
   const lowStockAiCount = inventoryRows.filter(r => r.latest_forecast?.forecast_status === 'Low Stock').length;
 
   const summaryCards = [
@@ -430,7 +440,7 @@ function InventoryView() {
                 <tr><td colSpan="8" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
                 currentItems.map((row) => {
-                  const isExpired = row.expiration_date && new Date(row.expiration_date) < new Date();
+                  const isExpired = isRowExpired(row);
                   return (
                     <tr key={row.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20 transition-colors">
                       <td className="px-6 py-5">
@@ -485,6 +495,14 @@ function InventoryView() {
                         </span>
                       </td>
                       <td className="px-6 py-5">
+                         {/* Expiry is judged from the date on every render, so an item
+                             lapses on its own and a changed system date is reflected
+                             at once — the stored status only ever tracks stock level. */}
+                         {isRowExpired(row) && (
+                            <span className={clsx("mb-1 inline-block rounded-md border px-2 py-1 text-[10px] font-black uppercase tracking-widest", statusStyles["Expired"])}>
+                                Expired
+                            </span>
+                         )}
                          {row.latest_forecast ? (
                             <div className={clsx(
                                 "flex flex-col gap-1 p-2 rounded-xl border",
