@@ -22,6 +22,11 @@ class SendLowStockNotification
         $urgencyLabel = $outOfStock ? 'OUT OF STOCK' : 'LOW STOCK';
         $urgencyColor = $outOfStock ? '#dc2626' : '#d97706';
 
+        // Replace any earlier unread low-stock alert for this same item, so a
+        // repeatedly-triggering item holds one slot in the bell rather than one
+        // per trigger.
+        \App\Models\Notification::supersedeUnreadFor('LowStockAlert', $item->clinic_id, $item->id);
+
         // In-app notification
         \App\Models\Notification::create([
             'clinic_id' => $item->clinic_id,

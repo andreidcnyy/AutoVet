@@ -705,6 +705,15 @@ class DashboardController extends Controller
             }
 
             // Admin Logic
+            //
+            // Sweep machine-generated alerts nobody acted on. Superseding at
+            // write time keeps one alert per item, but an item that stops
+            // triggering leaves its last alert behind forever; this retires
+            // those. Rate-limited so it runs about hourly, not per request.
+            if (\Illuminate\Support\Facades\Cache::add('notifications:auto-clear-lock', 1, now()->addHour())) {
+                \App\Models\Notification::autoClearStale();
+            }
+
             $query = \App\Models\Notification::orderBy('created_at', 'desc');
             
             if (!$showAll) {

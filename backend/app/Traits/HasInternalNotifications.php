@@ -18,6 +18,13 @@ trait HasInternalNotifications
      */
     protected function createInternalNotification(string $type, string $title, string $message, array $data = null, int $userId = null)
     {
+        // A repeat alert about the same item replaces the previous one rather
+        // than stacking beside it. These fire on a schedule, so without this a
+        // few watched items bury everything else in the bell within a day.
+        if (in_array($type, Notification::SELF_CLEARING_TYPES, true)) {
+            Notification::supersedeUnreadFor($type, $data['clinic_id'] ?? null, $data['inventory_id'] ?? null);
+        }
+
         $notification = Notification::create([
             'type' => $type,
             'title' => $title,
