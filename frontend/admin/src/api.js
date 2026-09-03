@@ -1,6 +1,18 @@
 const _cache = new Map();
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * Reference data the clinic edits rarely but nearly every screen needs.
+ *
+ * Only 6 of ~60 read sites opted into the cache, so switching pages re-fetched
+ * the same species, breeds, services and unit lists every time — a round trip
+ * per navigation against a backend that answers in 1-3s, which is a large part
+ * of why clicking between pages felt slow. These are cached by default rather
+ * than relying on each call site to remember to ask.
+ */
+const MASTER_DATA = /\/api\/(species|breeds|weight-ranges|pet-size-categories|units-of-measure|inventory-categories|service-categories|services|vets|settings)(\/|\?|$)/;
+const MASTER_DATA_TTL = 10 * 60 * 1000;
+
 // --- START: MODIFIED AUTH HANDLING ---
 let _token = null;
 
@@ -63,7 +75,12 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     requestUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}${qs}`;
   }
 
-  if (cache && method === 'GET') {
+  // Reference data is cached whether or not the caller opted in.
+  const isMasterData = method === 'GET' && MASTER_DATA.test(requestUrl);
+  const shouldCache = method === 'GET' && (cache || isMasterData);
+  const effectiveTtl = ttl ?? (isMasterData ? MASTER_DATA_TTL : DEFAULT_TTL);
+
+  if (shouldCache) {
     const cached = cacheGet(requestUrl);
     if (cached !== null) return cached;
   }
@@ -112,7 +129,13 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     }
 
     const data = await res.json();
-    if (cache && method === 'GET') cacheSet(requestUrl, data, ttl);
+    if (shouldCache) cacheSet(requestUrl, data, effectiveTtl);
+
+    // Any write can change what a cached list would return, and nothing else
+    // invalidates this map, so a mutation clears it wholesale. The cache is
+    // small and writes are far rarer than reads.
+    if (method !== 'GET') invalidateCache();
+
     return data;
   } catch (err) {
     clearTimeout(timeout);

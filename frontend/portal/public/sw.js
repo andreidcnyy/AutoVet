@@ -8,7 +8,7 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-portal-v4';
+const VERSION = 'autovet-portal-v5';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const MEDIA_CACHE = `${VERSION}-media`;
@@ -149,43 +149,85 @@ async function mediaStrategy(req) {
   }
 }
 
-// API reads. Network first, so master data (species, breeds, weight ranges,
-// size categories) and every other GET reflect the server -- under
-// stale-while-revalidate the cached copy won the race and was returned forever,
-// because nothing in the app listens for the "data-fresh" broadcast, which
-// pinned an empty species dropdown across reloads.
+// How long a cached API read is treated as fresh enough to serve instantly.
+const API_FRESH_MS = 30000;
+
+// Refuses to cache a payload that carries no rows. Caching one is what pinned
+// an empty species dropdown across reloads: fetched once before login or
+// mid-migration, then replayed as though it were real data.
+async function isWorthCaching(res) {
+  const len = Number(res.headers.get('content-length') || 0);
+  if (len > 65536) return true; // too big to be an empty list; don't spend time parsing
+  try {
+    const body = await res.clone().text();
+    // Whitespace-insensitive so a pretty-printed empty page is caught too.
+    const t = body.split(' ').join('').split('\n').join('').split('\r').join('').split('\t').join('');
+    if (t === '' || t === '[]' || t === '{}') return false;
+    if (t.startsWith('{"data":[]')) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+// Stamps the response so its age can be judged on the way back out.
+async function stampAndCache(res, req, cache) {
+  const headers = new Headers(res.headers);
+  headers.set('x-sw-cached-at', String(Date.now()));
+  const body = await res.clone().blob();
+  await cache.put(req, new Response(body, { status: res.status, statusText: res.statusText, headers }));
+}
+
+// API reads.
 //
-// The wait for the network is bounded, though. Blocking on a backend that
-// regularly needs 1-3s is what made modals feel like they never opened, so past
-// the timeout a cached copy is served immediately; the network result still
-// lands in the cache, making the next read instant.
+// This was stale-while-revalidate, which made page switches instant but could
+// replay a bad response forever, because nothing in the app listens for the
+// "data-fresh" broadcast. Swinging to plain network-first fixed that and broke
+// the feel of the app instead: with no client-side cache on ~54 of 60 read
+// sites, every navigation waited on a backend that answers in 1-3s.
+//
+// So: serve a recent cached copy immediately and refresh behind it, fall back
+// to a bounded network wait once that copy ages out, and never cache an empty
+// payload in the first place -- which removes the reason SWR was abandoned
+// rather than trading one problem for the other.
 async function apiStrategy(req) {
   const cache = await caches.open(API_CACHE);
-
-  const network = fetch(req)
-    .then((res) => {
-      if (res && res.status === 200) cache.put(req, res.clone());
-      return res;
-    })
-    .catch(() => null);
-
   const cached = await cache.match(req);
 
-  if (!cached) {
-    const res = await network;
-    if (res) return res;
-    return new Response(JSON.stringify({ offline: true, error: 'No cached data' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  const revalidate = () =>
+    fetch(req)
+      .then(async (res) => {
+        if (res && res.status === 200 && (await isWorthCaching(res))) {
+          await stampAndCache(res, req, cache);
+        }
+        return res;
+      })
+      .catch(() => null);
+
+  if (cached) {
+    const cachedAt = Number(cached.headers.get('x-sw-cached-at') || 0);
+    const age = Date.now() - cachedAt;
+
+    // Recent enough to trust: paint now, refresh in the background.
+    if (cachedAt && age < API_FRESH_MS) {
+      revalidate();
+      return cached;
+    }
+
+    // Older: prefer the network, but never let a slow backend hold the UI.
+    const raced = await Promise.race([
+      revalidate(),
+      new Promise((resolve) => setTimeout(resolve, API_NETWORK_TIMEOUT_MS)),
+    ]);
+    return raced || cached;
   }
 
-  const raced = await Promise.race([
-    network,
-    new Promise((resolve) => setTimeout(resolve, API_NETWORK_TIMEOUT_MS)),
-  ]);
-
-  return raced || cached;
+  const res = await revalidate();
+  if (res) return res;
+  return new Response(JSON.stringify({ offline: true, error: 'No cached data' }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 async function staleWhileRevalidate(req, cacheName) {
