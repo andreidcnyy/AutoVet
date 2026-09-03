@@ -3,21 +3,48 @@
  */
 
 /**
- * Returns the URL for a pet's actual uploaded photo.
+ * Matches a Supabase storage URL and captures the object path after the bucket,
+ * covering the public, authenticated, signed and S3-style forms.
  */
-export const getActualPetImageUrl = (photoPath: string | null | undefined): string | undefined => {
-  if (!photoPath) return undefined;
-  
-  // 1. Already an absolute URL or Data URI
-  if (photoPath.startsWith("http") || photoPath.startsWith("data:image")) {
-    return photoPath;
+const SUPABASE_OBJECT_URL =
+  /^https?:\/\/[^/]*supabase\.(?:co|in)\/storage\/v1\/(?:object\/(?:public|authenticated|sign)|s3)\/[^/]+\/(.+)$/i;
+
+/**
+ * Resolves any stored image reference to something this app can actually load.
+ *
+ * Rows written before image bytes moved into the database hold an absolute
+ * Supabase URL, because the old uploader returned Storage::disk('s3')->url().
+ * That project is gone, so those URLs resolve to nothing. The object path at
+ * the end of the URL is the same key the bytes now live under, so rewrite it
+ * to /media/<path> rather than handing the browser a dead host.
+ */
+export const resolveMediaUrl = (value: string | null | undefined): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const raw = value.trim();
+  if (!raw) return undefined;
+
+  if (raw.startsWith('data:image')) return raw;
+
+  const supabase = raw.match(SUPABASE_OBJECT_URL);
+  if (supabase) {
+    const path = supabase[1].split('?')[0].replace(/^\/+/, '');
+    return path ? `/media/${path}` : undefined;
   }
 
-  // 2. Bare relative path (legacy rows) — resolve to Supabase public URL
-  const v = photoPath.replace(/^\/+storage\/?/, '').trim();
-  if (v.length === 0) return undefined;
-  return `/media/${v}`;
+  // Any other absolute URL (Google avatars, for instance) is left alone.
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  // Bare path. Strip a leading slash and any storage/ or media/ prefix so the
+  // result never doubles up into /media/media/...
+  const path = raw.replace(/^\/+/, '').replace(/^(?:storage|media)\/+/i, '');
+  return path ? `/media/${path}` : undefined;
 };
+
+/**
+ * Returns the URL for a pet's actual uploaded photo.
+ */
+export const getActualPetImageUrl = (photoPath: string | null | undefined): string | undefined =>
+  resolveMediaUrl(photoPath);
 
 /**
  * Returns the best-matching local SVG fallback image for a pet

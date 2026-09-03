@@ -11,6 +11,7 @@ import {
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
+import { resolveMediaUrl } from "../utils/petImages";
 import api, { triggerSync } from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
 
@@ -128,10 +129,8 @@ function AppLayoutInner() {
               const v = data.clinic_logo.trim();
               const looksValid = v.startsWith('http') || v.startsWith('data:') || /\.(png|jpe?g|webp|gif|svg)$/i.test(v);
               if (looksValid) {
-                const logoUrl = v.startsWith('http') || v.startsWith('data:') || v.startsWith('/media/')
-                  ? v
-                  : `/media/${v.replace(/^\/*storage\/?/i, '')}`;
-                setClinic((prev) => ({ ...prev, logo: logoUrl }));
+                const logoUrl = v.startsWith('data:') ? v : resolveMediaUrl(v);
+                if (logoUrl) setClinic((prev) => ({ ...prev, logo: logoUrl }));
               }
             }
           }

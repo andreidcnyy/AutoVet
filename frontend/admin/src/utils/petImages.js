@@ -10,26 +10,50 @@
  */
 
 /**
+ * Matches a Supabase storage URL and captures the object path after the bucket,
+ * covering the public, authenticated, signed and S3-style forms.
+ */
+const SUPABASE_OBJECT_URL =
+  /^https?:\/\/[^/]*supabase\.(?:co|in)\/storage\/v1\/(?:object\/(?:public|authenticated|sign)|s3)\/[^/]+\/(.+)$/i;
+
+/**
+ * Resolves any stored image reference to something this app can actually load.
+ *
+ * Rows written before image bytes moved into the database hold an absolute
+ * Supabase URL, because the old uploader returned Storage::disk('s3')->url().
+ * That project is gone, so those URLs resolve to nothing. The object path at
+ * the end of the URL is the same key the bytes now live under, so rewrite it
+ * to /media/<path> rather than handing the browser a dead host.
+ *
+ * Returns null when there is nothing loadable.
+ */
+export const resolveMediaUrl = (value) => {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  if (raw.startsWith('data:image')) return raw;
+
+  const supabase = raw.match(SUPABASE_OBJECT_URL);
+  if (supabase) {
+    const path = supabase[1].split('?')[0].replace(/^\/+/, '');
+    return path ? `/media/${path}` : null;
+  }
+
+  // Any other absolute URL (Google avatars, for instance) is left alone.
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  // Bare path. Strip a leading slash and any storage/ or media/ prefix so the
+  // result never doubles up into /media/media/...
+  const path = raw.replace(/^\/+/, '').replace(/^(?:storage|media)\/+/i, '');
+  return path ? `/media/${path}` : null;
+};
+
+/**
  * Returns the URL for a pet's actual uploaded photo.
  * Falls through to getPetImageUrl for species-based fallback if no photo.
  */
-export const getActualPetImageUrl = (photoPath) => {
-  if (!photoPath) return null;
-  
-  // 1. Already an absolute URL or Data URI
-  if (typeof photoPath === 'string' && (photoPath.startsWith("http") || photoPath.startsWith("data:image"))) {
-    return photoPath;
-  }
-
-  // 2. Bare relative path (legacy rows) — resolve to Supabase public URL
-  if (typeof photoPath === 'string') {
-    const v = photoPath.replace(/^\/+storage\/?/, '').trim();
-    if (v.length === 0) return null;
-    return `/media/${v}`;
-  }
-
-  return null;
-};
+export const getActualPetImageUrl = (photoPath) => resolveMediaUrl(photoPath);
 
 /**
  * Returns the best-matching local SVG fallback image for a pet

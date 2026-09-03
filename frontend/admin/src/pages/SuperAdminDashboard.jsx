@@ -11,14 +11,16 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { resolveMediaUrl } from '../utils/petImages';
 
 const resolveLogoUrl = (logo) => {
   if (!logo || typeof logo !== 'string') return null;
   const v = logo.trim();
   if (v.length < 5) return null;
-  if (v.startsWith('http') || v.startsWith('data:')) return v;
-  if (!/\.(png|jpe?g|webp|gif|svg)$/i.test(v)) return null;
-  return `/media/${v.replace(/^\/*(?:storage|media)\/?/i, '')}`;
+  if (v.startsWith('data:')) return v;
+  // Bare paths must still look like an image; absolute URLs are taken as given.
+  if (!/^https?:\/\//i.test(v) && !/\.(png|jpe?g|webp|gif|svg)$/i.test(v)) return null;
+  return resolveMediaUrl(v);
 };
 
 // Simple Map Preview Component
