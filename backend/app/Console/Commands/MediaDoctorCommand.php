@@ -91,12 +91,59 @@ class MediaDoctorCommand extends Command
             $this->line(sprintf('  %-34s %d', $k, $n));
         }
 
+        $this->reportInlineAvatarWeight();
+
         $this->newLine();
         $this->line('data-uri / external-url  : rendered directly, needs no /media lookup.');
         $this->line('supabase-url / bare-path : served from /media/<path>, so needs "bytes OK".');
         $this->line('NO BYTES                 : stored_files has no such key -- that image is missing.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Avatars are validated up to 2.8 MB of base64 and stored inline in the
+     * row, and the admin and portal-user list endpoints return whole models.
+     * Every such byte is re-sent on each list load, so this reports how heavy
+     * those responses actually are.
+     */
+    private function reportInlineAvatarWeight(): void
+    {
+        $this->newLine();
+        $this->line('<fg=cyan>== inline base64 avatar weight (list payload cost) ==</>');
+
+        foreach ([['admins', 'avatar'], ['portal_users', 'avatar']] as [$table, $column]) {
+            if (!DB::getSchemaBuilder()->hasTable($table) || !DB::getSchemaBuilder()->hasColumn($table, $column)) {
+                continue;
+            }
+
+            $stat = DB::table($table)
+                ->selectRaw("COUNT(*) AS rows_total")
+                ->selectRaw("SUM(CASE WHEN {$column} LIKE 'data:%' THEN 1 ELSE 0 END) AS inline_rows")
+                ->selectRaw("COALESCE(SUM(CASE WHEN {$column} LIKE 'data:%' THEN CHAR_LENGTH({$column}) ELSE 0 END), 0) AS inline_bytes")
+                ->selectRaw("COALESCE(MAX(CASE WHEN {$column} LIKE 'data:%' THEN CHAR_LENGTH({$column}) ELSE 0 END), 0) AS worst_bytes")
+                ->first();
+
+            $this->line(sprintf(
+                '  %-14s rows=%-4d inline=%-4d  largest=%-9s  whole-list payload=%s',
+                $table,
+                $stat->rows_total,
+                $stat->inline_rows,
+                $this->bytes((int) $stat->worst_bytes),
+                $this->bytes((int) $stat->inline_bytes)
+            ));
+        }
+
+        $this->line('  Anything above a few hundred KB here is re-downloaded on every list load.');
+    }
+
+    private function bytes(int $n): string
+    {
+        if ($n >= 1048576) {
+            return number_format($n / 1048576, 2) . ' MB';
+        }
+
+        return $n >= 1024 ? number_format($n / 1024, 1) . ' KB' : $n . ' B';
     }
 
     /** Filters out rows that are plainly not image references (free-text settings). */

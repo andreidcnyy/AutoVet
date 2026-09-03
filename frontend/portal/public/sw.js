@@ -8,10 +8,13 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-portal-v3';
+const VERSION = 'autovet-portal-v4';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const MEDIA_CACHE = `${VERSION}-media`;
+
+// How long an API read waits for the network before a cached copy is served.
+const API_NETWORK_TIMEOUT_MS = 2500;
 const DB_NAME = 'autovet-offline';
 const DB_VERSION = 1;
 const QUEUE_STORE = 'mutation-queue';
@@ -127,45 +130,62 @@ async function navigationStrategy(req) {
   }
 }
 
-// Uploaded images. Network first, so a corrected or re-uploaded image appears
-// on the next load rather than being pinned to whatever was cached first --
-// these responses carry "immutable", which would otherwise make one bad fetch
-// permanent. The cache is only the offline fallback, and a miss resolves to an
-// empty error response so the <img> fails cleanly instead of receiving JSON.
+// Uploaded images. Cache first: every upload writes a new filename, so a
+// cached entry can never go stale for a given URL. Re-fetching each image over
+// a backend that answers in 1-3s is what made image-heavy lists crawl and left
+// photos blank while they queued behind one another. A miss goes to the network
+// and is cached; a failure with nothing cached resolves to an empty error
+// response so the <img> fails cleanly instead of receiving JSON.
 async function mediaStrategy(req) {
   const cache = await caches.open(MEDIA_CACHE);
+  const cached = await cache.match(req);
+  if (cached) return cached;
   try {
     const res = await fetch(req);
     if (res && res.status === 200) cache.put(req, res.clone());
     return res;
   } catch {
-    const cached = await cache.match(req);
-    if (cached) return cached;
     return new Response('', { status: 504, statusText: 'Image unavailable offline' });
   }
 }
 
 // API reads. Network first, so master data (species, breeds, weight ranges,
-// size categories) and every other GET reflect the server on each load. Under
-// stale-while-revalidate the cached copy won the race and was returned forever:
-// nothing in the app listens for the "data-fresh" broadcast, so a response
-// cached once while it was empty -- fetched before login, or mid-migration --
-// pinned an empty species dropdown across reloads. The cache is now only the
-// offline fallback.
+// size categories) and every other GET reflect the server -- under
+// stale-while-revalidate the cached copy won the race and was returned forever,
+// because nothing in the app listens for the "data-fresh" broadcast, which
+// pinned an empty species dropdown across reloads.
+//
+// The wait for the network is bounded, though. Blocking on a backend that
+// regularly needs 1-3s is what made modals feel like they never opened, so past
+// the timeout a cached copy is served immediately; the network result still
+// lands in the cache, making the next read instant.
 async function apiStrategy(req) {
   const cache = await caches.open(API_CACHE);
-  try {
-    const res = await fetch(req);
-    if (res && res.status === 200) cache.put(req, res.clone());
-    return res;
-  } catch {
-    const cached = await cache.match(req);
-    if (cached) return cached;
+
+  const network = fetch(req)
+    .then((res) => {
+      if (res && res.status === 200) cache.put(req, res.clone());
+      return res;
+    })
+    .catch(() => null);
+
+  const cached = await cache.match(req);
+
+  if (!cached) {
+    const res = await network;
+    if (res) return res;
     return new Response(JSON.stringify({ offline: true, error: 'No cached data' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  const raced = await Promise.race([
+    network,
+    new Promise((resolve) => setTimeout(resolve, API_NETWORK_TIMEOUT_MS)),
+  ]);
+
+  return raced || cached;
 }
 
 async function staleWhileRevalidate(req, cacheName) {
