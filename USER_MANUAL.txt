@@ -1,0 +1,932 @@
+================================================================================
+                        AUTOVET - SYSTEM USER MANUAL
+              Hybrid Veterinary Clinic Management System
+                       Pet Wellness Animal Clinic
+================================================================================
+Document version : 1.0
+Last updated     : September 3, 2026
+Applies to       : AutoVet Client Portal + AutoVet Clinic Admin System
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+PART I  - INTRODUCTION
+  1.  About AutoVet
+  2.  Who Uses the System (User Roles)
+  3.  System Requirements & Access
+  4.  Common Screen Elements
+
+PART II - CLIENT PORTAL (FOR PET OWNERS)
+  5.  Creating an Account
+  6.  Logging In / Forgot Password
+  7.  The Owner Dashboard
+  8.  Registering and Managing Pets
+  9.  Booking an Appointment
+  10. Viewing Visit History
+  11. Viewing Invoices and Receipts
+  12. Notifications
+  13. Leaving a Review
+  14. Managing Your Profile and Account
+  15. Using the Virtual Assistant (Chatbot)
+
+PART III - CLINIC ADMIN SYSTEM (FOR STAFF)
+  16. Logging In as Staff
+  17. Dashboard Overview
+  18. Analytics
+  19. Patient Records
+  20. Appointments and Walk-Ins
+  21. Inventory with AI Forecasting
+  22. Invoices and Billing
+  23. Reviews and Feedback
+  24. AI Clinical Support
+  25. Client Notifications
+  26. Maintenance / Settings
+
+PART IV - SUPER ADMIN
+  27. Clinic Management
+  28. System Broadcasts
+  29. Super Admin Accounts and Logs
+
+PART V  - REFERENCE
+  30. Status Definitions
+  31. Troubleshooting
+  32. Data Safety, Privacy and Backups
+  33. Support and Contact
+
+
+================================================================================
+                            PART I - INTRODUCTION
+================================================================================
+
+--------------------------------------------------------------------------------
+1. ABOUT AUTOVET
+--------------------------------------------------------------------------------
+AutoVet is a veterinary clinic management system made up of two connected
+applications that share one database:
+
+  (a) THE CLIENT PORTAL
+      A website for pet owners. Owners register their pets, book visits,
+      track medical summaries, view invoices, receive reminders and leave
+      reviews.
+
+  (b) THE CLINIC ADMIN SYSTEM
+      The staff workspace. Staff manage patient records, medical records,
+      appointments, walk-ins, inventory, invoicing, users and clinic
+      settings.
+
+The system also includes intelligent modules:
+
+  * AI INVENTORY FORECASTING - predicts when stock will run out using a
+    regression model trained on the clinic's own consumption history, and
+    flags items as Low Stock before they are depleted.
+  * AI CLINICAL SUPPORT - generates supporting suggestions from a patient's
+    profile, history and the symptoms a veterinarian types in. It is a
+    reference aid only; it does NOT diagnose or prescribe.
+  * VIRTUAL ASSISTANT - a rule-based chatbot on the portal that answers
+    frequently asked questions about location, hours, services and booking.
+
+Changes made in one application appear in the other. Several screens update
+live over a realtime connection (for example, an appointment approval appears
+on the owner's screen without a page refresh).
+
+--------------------------------------------------------------------------------
+2. WHO USES THE SYSTEM (USER ROLES)
+--------------------------------------------------------------------------------
+There are five roles. What you can see and do depends on your role.
+
+  OWNER (Pet Owner)
+      Uses the Client Portal only. Manages own pets, bookings, invoices and
+      profile. Cannot see other owners' data.
+
+  STAFF
+      Clinic Admin System. Day-to-day operations: dashboard, analytics,
+      patients, appointments, inventory, invoices. No access to Maintenance
+      (Settings) or Reviews management.
+
+  VETERINARIAN
+      Everything Staff can do, plus Reviews & Feedback, Maintenance
+      (Settings), and clinical actions such as writing medical records.
+
+  CLINIC ADMIN
+      Full control of one clinic: everything above, plus user management,
+      master data, backups, archives and audit logs.
+
+  SUPER ADMIN
+      Platform level. Manages clinics, creates clinic administrators,
+      publishes system-wide broadcasts and reviews system logs. Does NOT
+      work inside a clinic's day-to-day patient data.
+
+--------------------------------------------------------------------------------
+3. SYSTEM REQUIREMENTS & ACCESS
+--------------------------------------------------------------------------------
+  * A modern web browser (Google Chrome, Microsoft Edge, Firefox or Safari,
+    updated to a recent version).
+  * An internet connection.
+  * The Client Portal works on phones, tablets and desktops.
+  * The Clinic Admin System is designed for desktop or laptop screens; it
+    works on a tablet but a larger screen is strongly recommended.
+  * Owners need a working email address (a verification link is sent to it).
+  * Staff accounts are created by a Clinic Admin - staff cannot self-register.
+
+  Your clinic will give you the two web addresses:
+      Client Portal        -> used by pet owners
+      Clinic Admin System  -> used by clinic personnel
+
+--------------------------------------------------------------------------------
+4. COMMON SCREEN ELEMENTS
+--------------------------------------------------------------------------------
+  SIDEBAR / MENU
+      On the left of the Clinic Admin System, and in the slide-out menu on
+      the portal. Only the sections your role is allowed to open are shown.
+
+  TOP HEADER
+      Shows the current page title, notification bell, dark-mode switch and
+      your account menu (Profile, Change Password, Log Out).
+
+  DARK MODE
+      Click the sun/moon icon to switch between light and dark appearance.
+      Your choice is remembered on that device.
+
+  TOASTS
+      Short messages that slide in at the corner to confirm an action
+      ("Saved!", "Scheduled!") or warn you about a problem.
+
+  BROADCAST BANNER
+      A coloured strip across the top of the screen carrying a system-wide
+      announcement from the Super Admin (for example, scheduled downtime).
+
+  SEARCH AND FILTER BARS
+      Most list screens (Patients, Inventory, Invoices, Appointments) have a
+      search box and filter chips. Filters combine with the search text.
+
+
+================================================================================
+                  PART II - CLIENT PORTAL (FOR PET OWNERS)
+================================================================================
+
+--------------------------------------------------------------------------------
+5. CREATING AN ACCOUNT
+--------------------------------------------------------------------------------
+You have two ways to register.
+
+  OPTION A - REGISTER WITH EMAIL
+    1. Open the portal and click "Register".
+    2. Fill in the form:
+         - Full name
+         - Email address (must be real - the verification link is sent here)
+         - Mobile number
+         - Address, Province, City/Municipality, ZIP code
+         - Password, and Confirm password
+    3. Tick that you accept the Terms of Service and Privacy Policy.
+    4. Click Register. A confirmation screen tells you a verification link
+       was sent to your email.
+    5. Open your inbox and click the verification link. If you cannot find
+       the email, check the Spam or Promotions folder.
+    6. Return to the portal and log in.
+
+  OPTION B - SIGN UP WITH GOOGLE
+    1. Click "Sign up with Google" and choose your Google account.
+    2. Because Google does not supply your address or phone, the system asks
+       you to complete a short profile form (phone, address, province, city,
+       ZIP).
+    3. Submit it and you are signed in.
+
+  NOTES
+    * The province and city lists are Philippine location data; pick your
+      province first, then the city list is filtered for you.
+    * Mobile numbers are entered in the Philippine format (11 digits).
+
+--------------------------------------------------------------------------------
+6. LOGGING IN / FORGOT PASSWORD
+--------------------------------------------------------------------------------
+  TO LOG IN
+    1. Go to the portal and click "Log In".
+    2. Enter your email and password, or use "Continue with Google".
+
+  IF YOU FORGOT YOUR PASSWORD
+    1. Click "Forgot Password" on the login screen.
+    2. Enter the email address on your account and submit.
+    3. Open the reset link sent to your email.
+    4. Type your new password twice and save. You can now log in.
+
+  IF YOU CANNOT GET IN
+    * "Account pending deletion" - you requested deletion of your account.
+      A recovery screen appears with an option to cancel the deletion within
+      the grace period.
+    * "Account suspended / deactivated" - the clinic has restricted the
+      account. Contact the clinic directly; the on-screen message usually
+      states the reason.
+    * "Maintenance" screen - the system is briefly unavailable. The page
+      checks automatically every 15 seconds and returns you when it is back.
+
+--------------------------------------------------------------------------------
+7. THE OWNER DASHBOARD
+--------------------------------------------------------------------------------
+After logging in you land on the Dashboard. It shows:
+
+  * A greeting and quick summary of your account.
+  * YOUR PETS - a card for each registered pet with photo, species and
+    breed. Click a card to open that pet's profile.
+  * UPCOMING APPOINTMENTS - the next scheduled visits with date, time,
+    service and status.
+  * MEDICAL SUMMARY CARD - the most recent clinical summary recorded by the
+    clinic for your pet.
+  * PET CARE RECOMMENDATIONS - general care tips matched to your pet's
+    species and life stage.
+  * Shortcuts to Register Pet and Book Visit.
+
+  The portal menu contains: Dashboard, Register Pet, Book Visit,
+  Visit History, Notifications and Invoices.
+
+--------------------------------------------------------------------------------
+8. REGISTERING AND MANAGING PETS
+--------------------------------------------------------------------------------
+  TO REGISTER A PET
+    1. Click "Register Pet" in the menu.
+    2. Fill in the details:
+         - Pet name
+         - Species (Dog, Cat, etc.)
+         - Breed (the list depends on the species you chose)
+         - Sex
+         - Date of birth (the system computes the age)
+         - Colour / markings
+         - Weight and weight unit
+         - Known allergies, if any
+    3. Optionally upload a photo of your pet.
+    4. Click Save. The pet now appears on your dashboard.
+
+  TO EDIT A PET
+    Open the pet's profile and click Edit, change the fields and save.
+    Weight and photo are the fields most often updated.
+
+  PET PROFILE
+    The pet profile page shows the pet's demographic details, the medical
+    summary shared by the clinic, and that pet's appointment history.
+    Medical records are entered by the clinic - owners can view what the
+    clinic has shared but cannot edit clinical entries.
+
+--------------------------------------------------------------------------------
+9. BOOKING AN APPOINTMENT
+--------------------------------------------------------------------------------
+    1. Click "Book Visit".
+    2. A calendar is shown. You can switch between Month, Week and Day views
+       using the arrows and view buttons. Coloured dots mark existing
+       appointments:
+             grey    = Pending
+             green   = Approved / Scheduled
+             red     = Cancelled or Declined
+             blue    = Completed
+    3. Click the date you want. Past dates cannot be selected.
+    4. Choose the PET the visit is for.
+    5. Choose one or more SERVICES (for example Consultation, Vaccination,
+       Grooming). Only services the clinic has marked Active are listed.
+    6. Choose a VETERINARIAN if the selected service requires one. Services
+       that do not require a doctor will not ask for this.
+    7. Pick a TIME SLOT. Slots run from 08:00 to 17:00 in 30-minute steps.
+       Slots already taken by an active appointment are hidden, so double
+       booking is prevented. For today, past times are not offered.
+    8. Add NOTES describing the reason for the visit or anything the vet
+       should know.
+    9. Submit. The appointment is created with status PENDING.
+
+  WHAT HAPPENS NEXT
+    The clinic reviews the request and either approves or declines it. You
+    receive a notification, and the appointment status on your screen
+    updates live. If declined, the clinic's reason is included.
+
+  TO CANCEL OR RESCHEDULE
+    Open the appointment and cancel it, then book again at the new time, or
+    contact the clinic directly. The booking screen states this as well.
+
+  EMERGENCIES
+    Do not book through the portal for emergencies. Call the clinic and
+    bring your pet in immediately.
+
+--------------------------------------------------------------------------------
+10. VIEWING VISIT HISTORY
+--------------------------------------------------------------------------------
+  "Visit History" lists every appointment for all your pets, newest first,
+  with the date, time, pet, service, assigned vet and status. Click any row
+  to see the full details, including the notes you submitted and the
+  clinic's response.
+
+  Once a visit is marked COMPLETED, you may be invited to leave a review.
+
+--------------------------------------------------------------------------------
+11. VIEWING INVOICES AND RECEIPTS
+--------------------------------------------------------------------------------
+  The "Invoices" page lists the bills the clinic has issued to you, showing
+  the invoice number, date, total amount and payment status.
+
+  Open an invoice to see the itemised services and products, discounts, VAT
+  and the amount paid. A fully paid document is presented as a RECEIPT and
+  displays the payment method; an unpaid or partly paid one is presented as
+  an INVOICE.
+
+  Payment statuses you may see: Draft, Finalized, Partially Paid, Paid.
+
+  Payments themselves are settled at the clinic - the portal does not
+  process online payments.
+
+--------------------------------------------------------------------------------
+12. NOTIFICATIONS
+--------------------------------------------------------------------------------
+  The bell icon shows a badge with the number of unread items. The
+  Notifications page collects:
+
+    * appointment approvals, declines and reminders
+    * vaccination and follow-up reminders
+    * invoices sent to you by the clinic
+    * messages or warnings sent by clinic staff
+    * system announcements
+
+  You can mark all as read, dismiss a single item, or clear the list.
+
+--------------------------------------------------------------------------------
+13. LEAVING A REVIEW
+--------------------------------------------------------------------------------
+  After a completed visit the portal offers a review form. Give a star
+  rating and, optionally, written feedback about your experience.
+
+  Reviews are moderated: clinic staff approve them before they can appear
+  publicly, and may feature selected reviews on the clinic's public page.
+
+--------------------------------------------------------------------------------
+14. MANAGING YOUR PROFILE AND ACCOUNT
+--------------------------------------------------------------------------------
+  EDIT PROFILE
+      Update your name, phone number, address and profile photo.
+
+  CHANGE PASSWORD
+      Enter your current password and the new one twice.
+
+  DEVICES
+      You can review the devices signed in to your account and sign a device
+      out (or sign out everywhere) if you no longer recognise it.
+
+  DELETE ACCOUNT
+      Requesting deletion places the account in a pending-deletion state
+      rather than erasing it immediately. During the grace period you can
+      recover it by logging in and choosing to cancel the deletion; the
+      clinic can also cancel a pending deletion on your behalf.
+
+--------------------------------------------------------------------------------
+15. USING THE VIRTUAL ASSISTANT (CHATBOT)
+--------------------------------------------------------------------------------
+  The chat bubble in the corner of the public pages opens the AutoVet
+  assistant. Tap one of the suggested questions or type your own. It can
+  answer questions about:
+
+      * clinic location and branch address
+      * contact numbers and email
+      * the services offered
+      * clinic hours
+      * how to book an appointment
+      * general pricing guidance
+      * what to bring for a first visit
+      * what to do in an emergency
+
+  The assistant answers from a fixed set of clinic information. It does not
+  give medical advice and cannot access your account or book for you.
+
+
+================================================================================
+                PART III - CLINIC ADMIN SYSTEM (FOR STAFF)
+================================================================================
+
+--------------------------------------------------------------------------------
+16. LOGGING IN AS STAFF
+--------------------------------------------------------------------------------
+    1. Open the Clinic Admin System address and enter your email and
+       password. Accounts are issued by your Clinic Admin.
+    2. If you are logging in with a password that was reset for you, the
+       system sends you to the Change Password screen first. Set a new
+       password before continuing.
+    3. You land on the Dashboard. The menu shows only the modules your role
+       may open; opening a restricted address shows an "Access Denied" page.
+
+--------------------------------------------------------------------------------
+17. DASHBOARD OVERVIEW
+--------------------------------------------------------------------------------
+  The Dashboard is the clinic's daily control screen. It contains:
+
+  METRIC CARDS
+      Headline figures such as the number of patients, clients, today's
+      appointments and sales totals.
+
+  TODAY'S SCHEDULE
+      Appointments for the current day with the pet, owner, service, time
+      and status; and a list of upcoming appointments.
+
+  SALES SUMMARY
+      Revenue for the current period.
+
+  INVENTORY AI STATUS / FORECAST INSIGHTS
+      A summary of what the forecasting module currently predicts: which
+      items are trending toward Low Stock, and when the last forecast ran.
+      A "Run Forecast" action recalculates predictions on demand, and a
+      toast tells you when the run has finished.
+
+  ANALYTICS CHARTS
+      Compact charts for consumption and clinic activity.
+
+  RECENT NOTIFICATIONS
+      The latest internal alerts - low stock warnings, new bookings,
+      expiring items, new client registrations.
+
+--------------------------------------------------------------------------------
+18. ANALYTICS
+--------------------------------------------------------------------------------
+  The Analytics page collects the clinic's reports:
+
+  SALES
+      Revenue summary over time, top-performing services, and transaction
+      volume.
+
+  PATIENTS
+      Species distribution, registration trends, and demographics
+      (age groups, sex, size categories).
+
+  INVENTORY
+      Stock levels, consumption trends and the low-stock report.
+
+  TRANSACTIONS
+      Trends and statistics across invoiced transactions.
+
+  Use the date range and category controls on each card to narrow the view.
+  Charts are for reading on screen; the patient and medical reports in the
+  Patients module are the ones designed for printing/PDF export.
+
+--------------------------------------------------------------------------------
+19. PATIENT RECORDS
+--------------------------------------------------------------------------------
+  The Patients module holds owners (clients) and their pets (patients).
+
+  ADDING A PATIENT
+    1. Go to Patients and click Add Patient.
+    2. Enter the OWNER details first - name, mobile number, address,
+       province and city. The system checks for a duplicate mobile number
+       and warns you if an owner with that number already exists, so you can
+       attach the pet to the existing client instead of creating a double.
+    3. Enter the PET details - name, species, breed, sex, date of birth,
+       colour, weight and allergies. Optionally upload a photo.
+    4. Save. The pet appears in the patient list.
+
+  THE PATIENT LIST
+      Search by pet name or owner, and filter the list. Each row opens the
+      patient's profile.
+
+  THE PATIENT PROFILE
+      Four tabs:
+
+      OVERVIEW
+          Demographics (breed, sex, age, colour, weight, date of birth),
+          last visit, next due date, allergies and clinical notes, plus the
+          owner's contact card. You can export a Patient Medical Summary
+          as a PDF from here.
+
+      MEDICAL RECORDS
+          Every consultation recorded for the pet. A record captures the
+          chief complaint, findings, diagnosis, treatment plan and the
+          products or medicines used. Veterinarians create and edit these
+          entries. You can export a single medical record as a PDF, or the
+          pet's entire medical history as one report.
+
+      APPOINTMENTS
+          The pet's booking history with dates, services, notes and status.
+
+      INVOICES
+          Every invoice issued for this patient.
+
+  EDITING AND OWNER TOOLS
+      From the patient list and profile you can edit the pet, edit the
+      owner's details, open the owner's full profile, and - where your role
+      allows - send the owner a warning message about conduct such as
+      repeated no-shows.
+
+  RECORDING PRODUCT USE
+      When medicines or consumables are used on a patient, record them
+      against the visit. The system deducts the quantity from inventory
+      automatically, so stock levels and the forecast stay accurate.
+
+--------------------------------------------------------------------------------
+20. APPOINTMENTS AND WALK-INS
+--------------------------------------------------------------------------------
+  The Appointments module manages both portal bookings and in-clinic
+  registrations. A Calendar view of the same data is also available.
+
+  HANDLING A PORTAL REQUEST
+    New bookings arrive with status PENDING and appear immediately (no
+    refresh needed).
+
+      APPROVE  - confirms the slot. The owner is notified and the status
+                 becomes Approved/Scheduled on their screen.
+      DECLINE  - you must type a reason. The reason is sent to the owner.
+      REMIND   - sends the owner a reminder notification about the visit.
+      COMPLETE - marks the visit as finished after the pet has been seen.
+                 A completed visit is what makes the review request and the
+                 billing step available.
+
+  CREATING AN APPOINTMENT AS STAFF
+    Use the Add/Schedule action, choose the owner, pet, service(s), vet,
+    date and time, and save.
+
+  REGISTERING A WALK-IN
+    1. Open the Add form and switch on "Walk-in".
+    2. Choose NEW OWNER or EXISTING OWNER.
+         - New owner: enter name, phone, address, city and province. As you
+           type the phone number the system checks for duplicates and warns
+           you if that number already belongs to a client.
+         - Existing owner: search and select the client; their pets are
+           offered for selection.
+    3. Enter the pet (name, species, breed) or pick an existing one.
+    4. Tick "Emergency" if the case is urgent so it is prioritised.
+    5. Submit. The owner, pet and visit are created together in one step.
+
+  DOUBLE-BOOKING PROTECTION
+    A time slot already held by an active appointment is not offered again.
+    Cancelled and declined appointments release their slot.
+
+  VET SCHEDULES
+    Availability is driven by the vet schedules configured under
+    Maintenance -> Vet Schedule.
+
+--------------------------------------------------------------------------------
+21. INVENTORY WITH AI FORECASTING
+--------------------------------------------------------------------------------
+  The Inventory module tracks medicines, consumables and retail products by
+  BATCH, so each batch keeps its own batch/lot number and expiry date.
+
+  READING THE LIST
+      Each row shows the item name, batch number, current stock level with
+      its unit of measure, category, and the AI status. Filter chips let you
+      show All, Low Stock, or Out of Stock, and the search box finds items
+      by name.
+
+      Colour coding:
+          green  = healthy stock level
+          amber  = LOW STOCK - the forecast predicts it will run out soon
+          red    = OUT OF STOCK - zero units left, reorder immediately
+
+  ADDING AN ITEM
+    1. Click Add Item.
+    2. Enter the item name, category, unit of measure, unit cost/price,
+       reorder point, batch/lot number, quantity and expiry date.
+    3. Save.
+
+  RECEIVING STOCK
+    Use "Receive" on an existing item to log a new delivery. Each delivery
+    is recorded as its own batch row with its own quantity and expiry date,
+    so the clinic can track which batch expires first.
+
+  VIEWING AN ITEM
+    Opening an item shows its details, its batches, and its transaction
+    history - every receipt, deduction and adjustment with dates, so stock
+    movement is auditable.
+
+  AUTOMATIC DEDUCTION
+    Stock is deducted automatically when products are used on a patient or
+    added to an invoice. Manual counting is not required for normal use.
+
+  THE AI FORECAST
+    The forecasting module fits a linear regression over each item's
+    cumulative consumption history and projects it forward. For each item it
+    produces:
+
+        * a predicted depletion date (when stock is expected to hit zero)
+        * a suggested reorder timing
+        * a forecast status (for example Low Stock)
+        * a CONFIDENCE LEVEL derived from how well the trend fits the data:
+              High   - strong, consistent consumption pattern
+              Medium - moderate fit
+              Low    - erratic or sparse history; treat as a rough hint
+
+    You can view an item's current forecast, its saved forecast and its
+    forecast history, and you can ACCEPT a forecast to act on its
+    recommendation. Forecasts can be recalculated for all items from the
+    Dashboard's Run Forecast action.
+
+    IMPORTANT: the forecast is decision support. It suggests when to
+    reorder; it never orders anything by itself, and a Low confidence result
+    on an item with little history should be checked against your own
+    judgement.
+
+  EXPIRY MONITORING
+    The system checks for approaching expiry dates and raises notifications
+    so near-expiry batches can be used or pulled first.
+
+--------------------------------------------------------------------------------
+22. INVOICES AND BILLING
+--------------------------------------------------------------------------------
+  The Invoices module turns a visit into a billing document.
+
+  CREATING AN INVOICE
+    1. Open Invoices and start a new invoice, selecting the client and pet
+       (usually from a completed appointment).
+    2. Add LINE ITEMS - services performed and products/medicines used.
+       Each line has a quantity and unit price; the subtotal updates as you
+       type. Products added here are deducted from inventory.
+    3. Apply a DISCOUNT if applicable. Choose PERCENTAGE or a FIXED AMOUNT.
+       The discount is capped so it can never exceed the subtotal.
+    4. VAT of 12% is applied to the discounted amount automatically.
+    5. Review the total due.
+
+  SAVING AND STATUS
+       DRAFT          - still being edited; nothing is committed.
+       FINALIZED      - the invoice is issued.
+       PARTIALLY PAID - the amount paid is greater than zero but less than
+                        the total due. The system sets this automatically.
+       PAID           - the amount paid covers the total due. Set
+                        automatically once payment is recorded.
+
+  RECORDING PAYMENT
+    Enter the amount paid and the payment method. The status is promoted to
+    Partially Paid or Paid on its own based on the amount - you do not set
+    it manually.
+
+  PRINTING AND SENDING
+    Export the document as a PDF. An unpaid document prints as an INVOICE;
+    a fully paid one prints as a RECEIPT and shows the payment method. You
+    can also send the invoice to the client so it appears in their portal
+    Invoices page and notifications.
+
+--------------------------------------------------------------------------------
+23. REVIEWS AND FEEDBACK
+--------------------------------------------------------------------------------
+  (Veterinarian and Clinic Admin only.)
+
+  Reviews submitted by owners after completed visits arrive here for
+  moderation. For each review you can:
+
+      APPROVE  - allow it to be shown publicly
+      FEATURE  - highlight it among the public reviews
+      DELETE   - remove it
+
+  Only approved reviews are visible on the public side of the portal.
+
+--------------------------------------------------------------------------------
+24. AI CLINICAL SUPPORT
+--------------------------------------------------------------------------------
+  This module is available only to accounts where AI features have been
+  enabled. If it is switched off for your account, the page reports that the
+  feature is not enabled.
+
+  HOW TO USE IT
+    1. Open AI Clinical Support and select the patient.
+    2. Type the presenting SYMPTOMS in your own words (a short description
+       is enough; the field accepts up to 1000 characters).
+    3. Submit.
+
+  The system builds a profile for the AI from the pet's species, breed, age,
+  weight, sex, recorded allergies and a summary of its five most recent
+  medical records (chief complaint, diagnosis and treatment plan), then
+  returns supporting suggestions to consider.
+
+  LIMITS - READ THIS
+    The output is reference material for a qualified veterinarian. It does
+    not diagnose, does not prescribe, and must never replace clinical
+    examination and professional judgement. Always verify against your own
+    findings before acting.
+
+--------------------------------------------------------------------------------
+25. CLIENT NOTIFICATIONS
+--------------------------------------------------------------------------------
+  From this area staff can communicate with clients:
+
+    * Send a message to a client manually.
+    * Send an invoice to a client.
+    * Send a warning to an owner (for example, for repeated no-shows).
+    * Review the client notification history - what was sent, to whom and
+      when.
+
+  Internal staff notifications (low stock, new bookings, expiring items)
+  have their own history page.
+
+--------------------------------------------------------------------------------
+26. MAINTENANCE / SETTINGS
+--------------------------------------------------------------------------------
+  (Veterinarian and Clinic Admin only.) Settings is organised into tabs.
+
+  CLINIC PROFILE
+      Clinic name, address, contact details and branding shown on documents
+      and in the portal.
+
+  MASTER DATA
+      The reference lists the rest of the system depends on: inventory
+      categories, service categories, units of measure, pet size categories
+      and weight ranges. Keep these tidy - they populate the dropdowns
+      everywhere else.
+
+  SERVICE MANAGEMENT
+      The clinic's services. For each service set the name, category, price,
+      whether it is ACTIVE (only active services can be booked by owners)
+      and whether it requires a veterinarian (which controls whether the
+      booking form asks the owner to pick a vet).
+
+  SPECIES & BREEDS
+      Maintain the species list and the breeds under each species. These
+      drive the pet registration forms on both applications.
+
+  USERS / ROLES
+      Create clinic user accounts, assign roles (Staff, Veterinarian,
+      Clinic Admin), deactivate accounts and reset a user's password. A user
+      whose password was reset is required to change it at next login.
+
+      This area also covers PORTAL USERS - the owner accounts. You can
+      suspend, deactivate or reactivate a portal account. A suspended or
+      deactivated owner is signed out and shown an explanatory screen.
+
+  VET SCHEDULE
+      Set each veterinarian's working days and hours. Schedules can be added
+      one at a time or in bulk. Appointment availability follows these
+      schedules.
+
+  SYSTEM & AI PREFERENCES
+      System-wide switches, including maintenance mode and the AI feature
+      toggles.
+
+  SYSTEM AUDIT LOGS
+      A searchable record of who did what and when - logins, record changes,
+      deletions and administrative actions.
+
+  BACKUP & RESTORE
+      Create a backup on demand, list existing backups, download one, delete
+      one, or restore the system from a backup. RESTORING OVERWRITES CURRENT
+      DATA - take a fresh backup first and be certain before you proceed.
+
+  ARCHIVE & RECOVERY
+      Deleted records are archived rather than destroyed. Browse archived
+      items by type, RESTORE one back into active use, or permanently delete
+      it. Portal accounts pending deletion are listed here too, and their
+      deletion can be cancelled on the owner's behalf.
+
+
+================================================================================
+                          PART IV - SUPER ADMIN
+================================================================================
+
+--------------------------------------------------------------------------------
+27. CLINIC MANAGEMENT
+--------------------------------------------------------------------------------
+  The Super Admin dashboard covers the whole platform rather than one
+  clinic. From "Clinic Management" you can:
+
+      * view platform-wide statistics
+      * list all clinics on the platform
+      * create a new clinic and create its first users
+      * edit a clinic's details
+      * activate or deactivate a clinic (toggle status)
+      * view a clinic's administrators and reset an administrator's password
+      * delete a clinic
+      * IMPERSONATE a clinic in order to see the system exactly as that
+        clinic's staff sees it, for support purposes
+
+--------------------------------------------------------------------------------
+28. SYSTEM BROADCASTS
+--------------------------------------------------------------------------------
+  Create, edit, publish and delete announcements that appear as a banner to
+  users across the platform - for example scheduled maintenance windows or
+  release notes. Announcements can also be shown on the public portal pages.
+
+--------------------------------------------------------------------------------
+29. SUPER ADMIN ACCOUNTS AND LOGS
+--------------------------------------------------------------------------------
+  Manage the list of Super Admin accounts and add new ones, and review the
+  platform-level system logs for activity across all clinics.
+
+
+================================================================================
+                            PART V - REFERENCE
+================================================================================
+
+--------------------------------------------------------------------------------
+30. STATUS DEFINITIONS
+--------------------------------------------------------------------------------
+  APPOINTMENT STATUSES
+      Pending    - submitted by the owner, awaiting clinic action.
+      Approved / Scheduled / Confirmed
+                 - accepted by the clinic; the slot is reserved.
+      Declined   - refused by the clinic; a reason is given to the owner.
+      Cancelled  - called off; the time slot is released.
+      Completed  - the visit took place. Enables billing and review.
+
+  INVOICE STATUSES
+      Draft          - being prepared, not yet issued.
+      Finalized      - issued to the client.
+      Partially Paid - some payment received, balance outstanding.
+      Paid           - fully settled; prints as a receipt.
+
+  INVENTORY STATUSES
+      In Stock     - healthy level, no action needed.
+      Low Stock    - the forecast predicts depletion soon; reorder.
+      Out of Stock - zero units; immediate reorder required.
+
+  FORECAST CONFIDENCE
+      High   - the consumption trend fits the data strongly.
+      Medium - moderate fit; usable but verify.
+      Low    - weak or sparse history; treat as a hint only.
+
+  PORTAL ACCOUNT STATES
+      Active            - normal use.
+      Suspended         - temporarily blocked by the clinic.
+      Deactivated       - blocked; contact the clinic.
+      Pending deletion  - deletion requested; recoverable during the grace
+                          period by the owner or the clinic.
+
+--------------------------------------------------------------------------------
+31. TROUBLESHOOTING
+--------------------------------------------------------------------------------
+  I DID NOT RECEIVE THE VERIFICATION EMAIL
+      Check Spam/Junk and Promotions. Confirm the address was typed
+      correctly. If it is wrong, register again with the correct address or
+      ask the clinic for help.
+
+  THE TIME SLOT I WANT IS NOT LISTED
+      It is already booked, it is in the past, or it falls outside the
+      bookable window (08:00-17:00) or outside the selected vet's schedule.
+      Try another slot or another day.
+
+  I CANNOT SELECT A VETERINARIAN
+      The service you selected does not require one. This is normal.
+
+  A PAGE SAYS "ACCESS DENIED"
+      Your role is not permitted to open that section. Ask your Clinic Admin
+      if you believe you should have access.
+
+  THE SYSTEM SHOWS A MAINTENANCE SCREEN
+      Maintenance mode is on. The portal re-checks automatically every 15
+      seconds and returns you when the system is available again.
+
+  I WAS SIGNED OUT UNEXPECTEDLY
+      Your session ended, your password was reset, or your account status
+      changed. Log in again; if it repeats, contact the clinic.
+
+  STOCK NUMBERS LOOK WRONG
+      Open the item and review its transaction history - every movement is
+      listed with its source. Remember that products added to invoices and
+      recorded against patients are deducted automatically, so do not deduct
+      them a second time by hand.
+
+  A FORECAST LOOKS UNREALISTIC
+      Check its confidence level. Items with little or irregular
+      consumption history produce Low confidence forecasts. Adding more
+      usage history improves accuracy over time.
+
+  IMAGES ARE NOT LOADING
+      Reload the page. If a specific pet or user photo stays broken,
+      re-upload it from the edit form.
+
+--------------------------------------------------------------------------------
+32. DATA SAFETY, PRIVACY AND BACKUPS
+--------------------------------------------------------------------------------
+  ACCESS CONTROL
+      The system enforces role-based access. Owners can only ever see their
+      own pets, appointments and invoices. Staff see only their clinic's
+      data.
+
+  AUDIT TRAIL
+      Administrative actions and record changes are written to the audit
+      log, so changes can be traced to a user and a time.
+
+  ARCHIVING
+      Deleting a record archives it instead of destroying it, and it can be
+      restored from Archive & Recovery.
+
+  BACKUPS
+      Clinic Admins should take regular backups from Maintenance -> Backup
+      & Restore, and download a copy off the system. Always take a backup
+      immediately before restoring one.
+
+  ACCOUNT SECURITY - GOOD PRACTICE
+      * Do not share accounts; every user should have their own login so the
+        audit log stays meaningful.
+      * Change any password that was reset for you at first login.
+      * Review your signed-in devices and remove ones you do not recognise.
+      * Log out on shared or public computers.
+
+  PRIVACY
+      The portal's Terms of Service and Privacy Policy pages describe how
+      client and pet data are handled. Owners may request deletion of their
+      account from their profile.
+
+--------------------------------------------------------------------------------
+33. SUPPORT AND CONTACT
+--------------------------------------------------------------------------------
+  Pet Wellness Animal Clinic
+      Address : Blk 10 Lot 2D Dahlia Ave, West Fairview, Quezon City
+      Mobile  : 0933-461-7957 / 0966-421-9903
+      Email   : badetvelasquez@gmail.com
+
+      Clinic hours : Monday - Saturday, 8:00 AM - 6:00 PM
+                     Sunday, 9:00 AM - 4:00 PM
+
+  FOR EMERGENCIES, CALL THE CLINIC DIRECTLY. Do not wait for a portal
+  booking to be approved.
+
+  For account problems (locked out, wrong details, access rights), contact
+  your Clinic Admin. For platform-level problems affecting the whole system,
+  the Clinic Admin should escalate to the Super Admin.
+
+================================================================================
+                            END OF USER MANUAL
+================================================================================
