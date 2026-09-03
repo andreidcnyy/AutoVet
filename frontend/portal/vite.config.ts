@@ -33,4 +33,31 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` gets its own proxy table -- without one, a production build
+  // served locally has no /media route and every uploaded image 404s.
+  preview: {
+    port: 4174,
+    proxy: {
+      '/api': {
+        target: 'http://autovet.test',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/sanctum': {
+        target: 'http://autovet.test',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/storage': {
+        target: 'http://autovet.test',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/media': {
+        target: 'http://autovet.test',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

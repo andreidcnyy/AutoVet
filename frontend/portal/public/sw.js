@@ -7,9 +7,10 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-portal-v1';
+const VERSION = 'autovet-portal-v2';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
+const MEDIA_CACHE = `${VERSION}-media`;
 const DB_NAME = 'autovet-offline';
 const DB_VERSION = 1;
 const QUEUE_STORE = 'mutation-queue';
@@ -87,12 +88,15 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin and our backend APIs
   const isSameOrigin = url.origin === self.location.origin;
   const isApi = /\/api\//.test(url.pathname);
+  const isMedia = url.pathname.startsWith('/media/');
 
   if (!isSameOrigin && !isApi) return; // let the browser handle CDNs etc.
 
   if (req.method === 'GET') {
     if (req.mode === 'navigate') {
       event.respondWith(navigationStrategy(req));
+    } else if (isMedia) {
+      event.respondWith(mediaStrategy(req));
     } else if (isApi) {
       event.respondWith(staleWhileRevalidate(req, API_CACHE));
     } else {
@@ -119,6 +123,24 @@ async function navigationStrategy(req) {
       '<h1 style="font-family:system-ui;padding:40px">Offline</h1><p style="font-family:system-ui;padding:0 40px">App shell not yet cached. Reconnect once to install.</p>',
       { headers: { 'Content-Type': 'text/html' } }
     );
+  }
+}
+
+// Uploaded images. Network first, so a corrected or re-uploaded image appears
+// on the next load rather than being pinned to whatever was cached first --
+// these responses carry "immutable", which would otherwise make one bad fetch
+// permanent. The cache is only the offline fallback, and a miss resolves to an
+// empty error response so the <img> fails cleanly instead of receiving JSON.
+async function mediaStrategy(req) {
+  const cache = await caches.open(MEDIA_CACHE);
+  try {
+    const res = await fetch(req);
+    if (res && res.status === 200) cache.put(req, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    return new Response('', { status: 504, statusText: 'Image unavailable offline' });
   }
 }
 
