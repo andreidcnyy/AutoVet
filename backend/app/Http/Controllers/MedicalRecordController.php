@@ -41,7 +41,13 @@ class MedicalRecordController extends Controller
                     $q->where('owner_id', $ownerId);
                 });
             }
-        } elseif ($request->has('pet_id')) {
+        }
+
+        // Applied for every caller, not just staff. This used to hang off an
+        // elseif on the owner branch above, so a portal user opening one pet
+        // was served every record belonging to every pet they own — the whole
+        // history, each row eager-loading its pet, vet and appointment.
+        if ($request->has('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }
 
