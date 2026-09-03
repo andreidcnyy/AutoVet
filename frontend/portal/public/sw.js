@@ -1,5 +1,6 @@
 /* AutoVet offline-first service worker.
- * - GET: stale-while-revalidate (cache + network race; offline serves cache).
+ * - GET: API and media are network-first (cache is the offline fallback only);
+ *   static assets are stale-while-revalidate.
  * - Mutations (POST/PUT/PATCH/DELETE): when offline, queued in IndexedDB and
  *   replayed in FIFO order when the connection returns. Replays preserve
  *   method, headers (incl. Authorization), and body.
@@ -7,7 +8,7 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-portal-v2';
+const VERSION = 'autovet-portal-v3';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const MEDIA_CACHE = `${VERSION}-media`;
@@ -98,7 +99,7 @@ self.addEventListener('fetch', (event) => {
     } else if (isMedia) {
       event.respondWith(mediaStrategy(req));
     } else if (isApi) {
-      event.respondWith(staleWhileRevalidate(req, API_CACHE));
+      event.respondWith(apiStrategy(req));
     } else {
       event.respondWith(staleWhileRevalidate(req, SHELL_CACHE));
     }
@@ -141,6 +142,29 @@ async function mediaStrategy(req) {
     const cached = await cache.match(req);
     if (cached) return cached;
     return new Response('', { status: 504, statusText: 'Image unavailable offline' });
+  }
+}
+
+// API reads. Network first, so master data (species, breeds, weight ranges,
+// size categories) and every other GET reflect the server on each load. Under
+// stale-while-revalidate the cached copy won the race and was returned forever:
+// nothing in the app listens for the "data-fresh" broadcast, so a response
+// cached once while it was empty -- fetched before login, or mid-migration --
+// pinned an empty species dropdown across reloads. The cache is now only the
+// offline fallback.
+async function apiStrategy(req) {
+  const cache = await caches.open(API_CACHE);
+  try {
+    const res = await fetch(req);
+    if (res && res.status === 200) cache.put(req, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    return new Response(JSON.stringify({ offline: true, error: 'No cached data' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
