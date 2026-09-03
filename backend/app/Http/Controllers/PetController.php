@@ -106,10 +106,38 @@ class PetController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
+    /**
+     * Resolves the owner for a portal caller, or aborts with a message that says
+     * what actually went wrong. Returning null here used to fall through to the
+     * validator, which then reported "the owner id field is required" — a rule
+     * the portal never fills in itself, so the real problem stayed hidden.
+     *
+     * Staff callers pass owner_id explicitly and get null here, unchanged.
+     */
+    private function resolvePortalOwnerIdOrFail(): ?int
+    {
+        $user = auth()->user();
+        $isOwner = $user && method_exists($user, 'isOwner') && $user->isOwner();
+
+        if (!$isOwner) {
+            return null;
+        }
+
+        $ownerId = $this->getPortalOwnerId();
+
+        if (!$ownerId) {
+            abort(response()->json([
+                'message' => 'Your client record could not be found or created. Please contact the clinic so they can restore your profile.',
+            ], 422));
+        }
+
+        return (int) $ownerId;
+    }
+
     public function store(Request $request)
     {
-        if ($ownerId = $this->getPortalOwnerId()) {
-            $request->merge(['owner_id' => $ownerId]);
+        if ($resolved = $this->resolvePortalOwnerIdOrFail()) {
+            $request->merge(['owner_id' => $resolved]);
         }
 
         $validated = $request->validate([
@@ -186,8 +214,8 @@ class PetController extends Controller
 
     public function update(Request $request, Pet $pet)
     {
-        if ($ownerId = $this->getPortalOwnerId()) {
-            $request->merge(['owner_id' => $ownerId]);
+        if ($resolved = $this->resolvePortalOwnerIdOrFail()) {
+            $request->merge(['owner_id' => $resolved]);
         }
 
         $validated = $request->validate([
