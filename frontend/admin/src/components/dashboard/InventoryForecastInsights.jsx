@@ -70,7 +70,9 @@ export default function InventoryForecastInsights() {
 
     window.addEventListener('inventory-forecast-refresh', handleGlobalRefresh);
     
-    const interval = setInterval(() => fetchForecasts(), 30000);
+    // Forecasts come from a queued job; the explicit refresh event above is the
+    // real update path, so this is only a backstop.
+    const interval = setInterval(() => fetchForecasts(), 300000);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchForecasts(); };
     document.addEventListener('visibilitychange', onVisible);
 

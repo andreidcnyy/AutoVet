@@ -16,7 +16,10 @@
         if (!ok) return;
 
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js').catch(function () {});
+          // updateViaCache 'none' stops the browser serving sw.js itself from the
+          // HTTP cache, which is how two devices ended up running different
+          // service worker versions against the same deployment.
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(function () {});
         });
 
         var pill;

@@ -7,7 +7,7 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-admin-v5';
+const VERSION = 'autovet-admin-v6';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const MEDIA_CACHE = `${VERSION}-media`;
@@ -265,21 +265,43 @@ async function staleWhileRevalidate(req, cacheName) {
   });
 }
 
+/** "/api/appointments/12?x=1" -> "/api/appointments". */
+function collectionOf(url) {
+  const m = String(url || '').match(/\/api\/[a-z0-9-]+/i);
+  return m ? m[0] : null;
+}
+
 /**
- * Drops every cached API read after a successful write.
+ * Drops the cached API reads a write can plausibly have changed.
  *
  * Reads are served from cache for API_FRESH_MS without touching the network,
- * which is what makes navigation feel instant — but it also meant a write
- * followed by an immediate re-read replayed pre-write data. Marking all
+ * which is what makes navigation feel instant — but a write followed by an
+ * immediate re-read would otherwise replay pre-write data. Marking all
  * notifications read and watching the unread badge come straight back was this:
  * the POST went to the network, the refetch behind it did not.
  *
- * The whole cache goes rather than guessing which paths a write affects; it is
- * small, and writes are far rarer than reads.
+ * This used to delete the whole cache, on the reasoning that writes are rare.
+ * They were not — a background sync POST ran on a timer — so the entire cache
+ * was thrown away every few seconds and no cached read ever lived long enough
+ * to be used. Only the written collection is dropped now: a write to
+ * "/api/appointments/12" clears the cached "/api/appointments…" reads and
+ * leaves everything else alone. Sibling collections settle within
+ * API_FRESH_MS on their own revalidation.
  */
-async function invalidateApiCache() {
+async function invalidateApiCache(req) {
   try {
-    await caches.delete(API_CACHE);
+    const scope = collectionOf(req && req.url);
+    if (!scope) {
+      // Unrecognised URL shape: clear everything rather than risk serving data
+      // the write has invalidated.
+      await caches.delete(API_CACHE);
+      return;
+    }
+    const cache = await caches.open(API_CACHE);
+    const keys = await cache.keys();
+    await Promise.all(
+      keys.filter((k) => collectionOf(k.url) === scope).map((k) => cache.delete(k))
+    );
   } catch {
     // A cache that cannot be cleared just revalidates on its own timer.
   }
@@ -288,7 +310,7 @@ async function invalidateApiCache() {
 async function mutationStrategy(req) {
   try {
     const res = await fetch(req.clone());
-    if (res && res.ok) await invalidateApiCache();
+    if (res && res.ok) await invalidateApiCache(req);
     return res;
   } catch (err) {
     // Likely offline. Snapshot the request and queue it.

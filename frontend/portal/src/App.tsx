@@ -6,7 +6,6 @@ import MaintenancePage from './pages/MaintenancePage';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
-import { triggerSync } from './api';
 import WarningPopup from './components/WarningPopup';
 
 /**
@@ -163,20 +162,10 @@ function ProtectedRoute({ children }: {
 function AppContent() {
   const { user } = useAuth();
 
-  // --- AUTOMATIC SYNC HEARTBEAT ---
-  // This triggers a background sync every 5 seconds as long as the app is open.
-  useEffect(() => {
-    if (!user) return;
-
-    // Initial trigger
-    triggerSync().catch(() => {});
-
-    const interval = setInterval(() => {
-      triggerSync().catch(() => {});
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [user]);
+  // Removed: this fired triggerSync() every 5 seconds. Being a POST, it made
+  // the service worker drop its entire API cache twelve times a minute, so no
+  // cached read ever survived long enough to be used. `app:sync-to-portal`
+  // already runs on the server scheduler every minute.
 
   const router = createBrowserRouter([
     {

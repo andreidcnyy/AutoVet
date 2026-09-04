@@ -57,7 +57,9 @@ function InventoryChartCard({ initialData }) {
           else if (Array.isArray(response)) { setData(response); setSource("live"); }
         }).catch(() => {});
     };
-    const poll = setInterval(refresh, 15000);
+    // Consumption is a rolling aggregate; refreshing it four times a minute cost
+    // a request each time and never changed the chart.
+    const poll = setInterval(refresh, 120000);
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('inventory-forecast-refresh', refresh);

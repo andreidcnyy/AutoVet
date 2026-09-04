@@ -13,10 +13,13 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 const MASTER_DATA = /\/api\/(species|breeds|weight-ranges|pet-size-categories|units-of-measure|inventory-categories|service-categories|services|vets|settings)(\/|\?|$)/;
 const MASTER_DATA_TTL = 10 * 60 * 1000;
 
-// Ceiling for a single request. 20s was below the cold-start time of the
-// backend, so first-load dashboard reads were being aborted by this timer
-// rather than by anything the user did.
-const REQUEST_TIMEOUT_MS = 45000;
+// Ceiling for a single request. 20s was below the backend's cold-start time
+// (measured at 10.4s on the first request after it spins down), so first-load
+// reads were aborted by this timer rather than by anything the user did. 45s
+// overcorrected: a genuinely stuck request held its card for three quarters of
+// a minute. 30s clears a cold start with margin and still gives up in time to
+// retry inside the user's patience.
+const REQUEST_TIMEOUT_MS = 30000;
 
 // --- START: MODIFIED AUTH HANDLING ---
 let _token = null;
@@ -51,6 +54,15 @@ function cacheGet(key) {
 
 function cacheSet(key, data, ttl = DEFAULT_TTL) {
   _cache.set(key, { data, expires: Date.now() + ttl });
+}
+
+/**
+ * The collection a request belongs to, e.g. "/api/appointments/12" -> "/api/appointments".
+ * Used so a write only drops the reads it can actually have changed.
+ */
+function resourceOf(url) {
+  const m = String(url).match(/\/api\/[a-z0-9-]+/i);
+  return m ? m[0] : null;
 }
 
 export function invalidateCache(urlPattern) {
@@ -150,10 +162,11 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     const data = await res.json();
     if (shouldCache) cacheSet(requestUrl, data, effectiveTtl);
 
-    // Any write can change what a cached list would return, and nothing else
-    // invalidates this map, so a mutation clears it wholesale. The cache is
-    // small and writes are far rarer than reads.
-    if (method !== 'GET') invalidateCache();
+    // A write drops the cached reads for its own collection only. Clearing the
+    // map wholesale looked safe on the assumption that writes are rare, but any
+    // background POST was then enough to throw away every unrelated cached list
+    // and make the next navigation refetch the whole app.
+    if (method !== 'GET') invalidateCache(resourceOf(requestUrl) || undefined);
 
     return data;
   } catch (err) {

@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../constants/roles";
 import { resolveMediaUrl } from "../utils/petImages";
-import api, { triggerSync } from "../api";
+import api from "../api";
 import autovetLogo from "../assets/autovet-logo.png";
 
 function AppLayoutInner() {
@@ -51,20 +51,13 @@ function AppLayoutInner() {
     if (location.pathname.startsWith("/appointments")) markAppointmentsSeen();
   }, [location.pathname]);
 
-  // --- AUTOMATIC SYNC HEARTBEAT ---
-  // This triggers a background sync every 5 seconds as long as the dashboard is open.
-  React.useEffect(() => {
-    if (!user || isSuperAdmin) return;
-
-    // Initial trigger
-    triggerSync().catch(() => {});
-
-    const interval = setInterval(() => {
-      triggerSync().catch(() => {});
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [user, isSuperAdmin]);
+  // The portal sync used to be driven from here on a 15s interval. It is a
+  // write, so it tripped the "a mutation invalidates the caches" rule in both
+  // api.js and the service worker every 15 seconds -- which capped the lifetime
+  // of every cached read at 15s and made each navigation a fresh round trip
+  // against a backend that costs 10s when it is cold. The scheduler already
+  // runs `app:sync-to-portal` every minute with withoutOverlapping(), so the
+  // heartbeat only duplicated work the server does anyway. Removed.
 
   // Fetch active announcements for clinic users
   React.useEffect(() => {
