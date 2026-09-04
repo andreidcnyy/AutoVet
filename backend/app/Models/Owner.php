@@ -54,8 +54,17 @@ class Owner extends Model
      */
     public function scopeRealClients($query)
     {
-        return $query
-            ->where('email', '!=', 'dataset.seeder@autovet.ai')
-            ->where('email', 'not like', 'client.prod.%@autovet.ph');
+        // email is nullable, and in SQL both `email != x` and `email NOT LIKE y`
+        // evaluate to NULL — not TRUE — for a NULL email, so a client saved
+        // without an email address was silently filtered out of every screen
+        // built on this scope, the dashboard and the invoice list included.
+        // The seeded rows always have an address, so a missing one is real.
+        return $query->where(function ($q) {
+            $q->whereNull('email')
+              ->orWhere(function ($inner) {
+                  $inner->where('email', '!=', 'dataset.seeder@autovet.ai')
+                        ->where('email', 'not like', 'client.prod.%@autovet.ph');
+              });
+        });
     }
 }

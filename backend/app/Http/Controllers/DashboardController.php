@@ -948,12 +948,18 @@ class DashboardController extends Controller
         $tz = 'Asia/Manila';
         $today = \Carbon\Carbon::now($tz)->toDateString();
         $perPage = $request->query('per_page', 10);
-        // USER REQUEST: Only show APPROVED status for today
-        $confirmedStatuses = ['Approved', 'approved'];
+
+        // Everything actually happening today, not just what has been approved.
+        // Restricting this to Approved meant a same-day booking — which the
+        // portal creates as 'pending' — was invisible to the front desk, so
+        // nobody knew to approve it and it never became billable either.
+        // Statuses are compared lower-cased because the column holds a mix of
+        // 'approved', 'Scheduled' and 'Completed'.
+        $hiddenStatuses = ['cancelled', 'declined', 'declined (system)', 'rejected', 'rescheduled'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
             ->whereDate('date', $today)
-            ->whereIn('status', $confirmedStatuses)
+            ->whereRaw('LOWER(status) NOT IN (?, ?, ?, ?, ?)', $hiddenStatuses)
             ->whereHas('pet.owner', function($q) {
                 $q->realClients();
             })
