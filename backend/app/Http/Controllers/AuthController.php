@@ -285,11 +285,18 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // One token per device — delete any existing token for this user agent before creating a new one
         $currentUserAgent = $request->userAgent();
-        if ($currentUserAgent) {
-            $user->tokens()->where('user_agent', $currentUserAgent)->delete();
-        }
+
+        // Signing in no longer revokes the session already running on this
+        // device. Deleting the token that matched this user agent meant a
+        // second tab — or simply reloading the login page — invalidated the tab
+        // the user was working in, which then failed its next request with a
+        // 401 and looked like being logged out at random.
+        //
+        // Sessions are still bounded rather than unbounded: tokens past
+        // Sanctum's expiration window are already dead and are cleared out, and
+        // only the most recent few are kept per account.
+        $this->pruneStaleTokens($user);
 
         $deviceName = $this->parseDeviceName($currentUserAgent ?? '');
         $newToken = $user->createToken($deviceName);
@@ -422,6 +429,36 @@ class AuthController extends Controller
         return response()->json(['message' => 'Password reset successfully.']);
     }
 
+    /** How many concurrent sign-ins an account may hold before the oldest is dropped. */
+    private const MAX_ACTIVE_SESSIONS = 10;
+
+    /**
+     * Keeps the token table bounded without revoking sessions still in use.
+     *
+     * Runs before a new token is issued, so it leaves room for the one about to
+     * be created. Two passes: anything older than Sanctum's expiration window
+     * cannot authenticate anyway, then the oldest surplus beyond the cap.
+     */
+    private function pruneStaleTokens($user): void
+    {
+        $expirationMinutes = config('sanctum.expiration');
+        if ($expirationMinutes) {
+            $user->tokens()
+                ->where('created_at', '<', now()->subMinutes($expirationMinutes))
+                ->delete();
+        }
+
+        $keep = $user->tokens()
+            ->orderByDesc('id')
+            ->take(self::MAX_ACTIVE_SESSIONS - 1)
+            ->pluck('id');
+
+        // whereNotIn with an empty list resolves to 1=1 in Laravel, which would
+        // delete every remaining token. Only prune when something is being kept.
+        if ($keep->isNotEmpty()) {
+            $user->tokens()->whereNotIn('id', $keep)->delete();
+        }
+    }
     private function parseDeviceName(string $userAgent): string
     {
         $browser = 'Unknown Browser';
