@@ -36,6 +36,11 @@ import api from "../../api";
 // The clinic prices VAT-inclusive: every line amount already contains this rate.
 const VAT_RATE = 0.12;
 
+// Kept in step with the API's status=invoiceable filter. This screen previously
+// accepted only 'approved', which excluded every Scheduled and Completed
+// appointment — the bulk of the table — so most visits could not be billed.
+const INVOICEABLE_STATUSES = ["approved", "scheduled", "completed"];
+
 const currency = (value) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 const pdfCurrency = (value) => "P " + (value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -865,13 +870,13 @@ function InvoiceModuleView() {
   };
 
   const fetchApprovedAppointments = useCallback((petId) => {
-    return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=approved`, {
+    return fetch(`/api/appointments?pet_id=${petId}&per_page=100&status=invoiceable`, {
       headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
     })
       .then(res => res.json())
       .then(data => {
         const arr = Array.isArray(data) ? data : (data?.data || []);
-        setAppointments(sortAppts(arr.filter(a => a.status?.toLowerCase() === 'approved')));
+        setAppointments(sortAppts(arr.filter(a => INVOICEABLE_STATUSES.includes(a.status?.toLowerCase()))));
       })
       .catch(() => setAppointments([]));
   }, [user?.token]);
@@ -983,9 +988,10 @@ function InvoiceModuleView() {
   }, [searchQuery]);
 
   const filteredAppointments = useMemo(() => {
-    // Only approved appointments can be invoiced
+    // A booked or completed visit can be invoiced; cancelled, declined,
+    // rescheduled and still-pending ones cannot.
     const activeAppts = appointments.filter(appt =>
-      appt.status?.toLowerCase() === 'approved'
+      INVOICEABLE_STATUSES.includes(appt.status?.toLowerCase())
     );
     
     if (!appointmentSearch) return activeAppts;

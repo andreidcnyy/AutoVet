@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getSpecies, getPetSizeCategories, getWeightRanges, createPet, getBreeds } from '../api';
+import { useBreedsForSpecies } from '../hooks/useBreedsForSpecies';
 import { getAgeGroup, calculateAgeDisplay } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { readCache, writeCache, clearAllPortalCache } from '../utils/swrCache';
@@ -42,7 +43,6 @@ export default function AddPet() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [speciesList, setSpeciesList] = useState<any[]>([]);
-  const [availableBreeds, setAvailableBreeds] = useState<any[]>([]);
   const [weightRanges, setWeightRanges] = useState<any[]>([]);
 
   const {
@@ -91,27 +91,14 @@ export default function AddPet() {
     }).catch(console.error);
   }, []);
 
-  // Sync Breeds when Species changes
-  useEffect(() => {
-    if (speciesIdValue) {
-      const selected = speciesList.find(s => String(s.id) === String(speciesIdValue));
-      if (selected && selected.breeds && selected.breeds.length > 0) {
-        setAvailableBreeds(selected.breeds);
-      } else {
-        const breedsKey = `portal_breeds_${speciesIdValue}_cache`;
-        const cachedBreeds = readCache<any[]>(breedsKey);
-        if (cachedBreeds) setAvailableBreeds(cachedBreeds);
-        getBreeds(Number(speciesIdValue)).then(res => {
-          const data = res.data.data || res.data;
-          const list = Array.isArray(data) ? data : [];
-          setAvailableBreeds(list);
-          writeCache(breedsKey, list);
-        }).catch(console.error);
-      }
-    } else {
-      setAvailableBreeds([]);
-    }
-  }, [speciesIdValue, speciesList]);
+  // Breed options follow the selected species. Clearing breed_id on a real
+  // species change is what stops a dog keeping a cat breed that was picked
+  // before the switch.
+  const { breeds: availableBreeds } = useBreedsForSpecies(
+    speciesIdValue,
+    speciesList,
+    () => setValue("breed_id", "")
+  );
 
   // Logic: Auto-calculate Age Group
   useEffect(() => {

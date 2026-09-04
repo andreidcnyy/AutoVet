@@ -84,6 +84,14 @@ class AppointmentController extends Controller
                       ->whereNotIn('status', ['cancelled', 'declined', 'completed']);
             } elseif ($status === 'past') {
                 $query->where('date', '<', now()->toDateString());
+            } elseif ($status === 'invoiceable') {
+                // Appointments that can be billed: a visit that is booked or has
+                // happened. The invoice screen used to ask for 'approved' alone,
+                // which hid every Scheduled and Completed appointment — the bulk
+                // of the table — so most visits could not be invoiced at all.
+                // Compared case-insensitively because this column holds a mix of
+                // 'approved', 'Scheduled' and 'Completed'.
+                $query->whereRaw('LOWER(status) IN (?, ?, ?)', ['approved', 'scheduled', 'completed']);
             } else {
                 $query->whereRaw('LOWER(status) = ?', [strtolower($status)]);
             }

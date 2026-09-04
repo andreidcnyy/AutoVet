@@ -132,9 +132,27 @@ function DashboardPage() {
     }
   };
 
-  const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { enabled, cacheKey: 'dashboard_stats_cache' });
-  const { data: notifications, isLoading: loadingNotifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { enabled, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
-  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today', { enabled });
+  /**
+   * Live figures must not depend on the websocket alone.
+   *
+   * These panels refreshed only when an echo event arrived, but broadcasting is
+   * configured as BROADCAST_CONNECTION=log — events are written to a log file
+   * and never delivered to a socket — so no listener ever fired and today's
+   * appointments simply never changed until a full reload. The websocket
+   * listeners below are kept for when broadcasting is switched on; these
+   * options are what actually keeps the numbers current today.
+   */
+  const liveOptions = {
+    enabled,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60 * 1000,
+    refetchIntervalInBackground: false,
+  };
+
+  const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { ...liveOptions, cacheKey: 'dashboard_stats_cache' });
+  const { data: notifications, isLoading: loadingNotifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { ...liveOptions, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
+  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today', liveOptions);
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 

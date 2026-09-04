@@ -6,9 +6,28 @@ export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
     const idCounter = useRef(0);
 
+    // At most this many toasts on screen at once. Websocket bursts (a run of
+    // low-stock events, several appointments landing together) could otherwise
+    // stack faster than they expire and cover the screen until dismissed.
+    const MAX_VISIBLE = 3;
+
     const addToast = useCallback((message, type = "info", duration = 4000) => {
         const id = idCounter.current++;
-        setToasts((prev) => [...prev, { id, message, type, isExiting: false }]);
+
+        setToasts((prev) => {
+            // Collapse an identical message that is still showing rather than
+            // stacking a second copy of it.
+            const duplicate = prev.find(
+                (t) => !t.isExiting && t.type === type && typeof t.message === "string" && t.message === message
+            );
+            if (duplicate) return prev;
+
+            const next = [...prev, { id, message, type, isExiting: false }];
+
+            // Drop the oldest beyond the cap immediately; their own timers are
+            // harmless once they are gone.
+            return next.length > MAX_VISIBLE ? next.slice(next.length - MAX_VISIBLE) : next;
+        });
 
         if (duration > 0) {
             setTimeout(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -16,8 +16,7 @@ import {
   FiAlertCircle,
   FiHeart,
   FiFileText,
-  FiXCircle
-} from 'react-icons/fi';
+  FiXCircle, FiSearch } from "react-icons/fi";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
@@ -113,6 +112,23 @@ export default function BookAppointment() {
   const selectedTime = watch("time");
   const selectedServiceId = watch("service_id");
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  const [serviceSearch, setServiceSearch] = useState("");
+
+  /**
+   * Services matching the search, with anything already ticked always kept in
+   * the list — otherwise typing would hide a selection the user cannot then
+   * see or undo, while it still counts towards the booking.
+   */
+  const visibleServices = useMemo(() => {
+    const q = serviceSearch.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter(
+      (s) =>
+        selectedServiceIds.includes(s.id.toString()) ||
+        String(s.name ?? "").toLowerCase().includes(q)
+    );
+  }, [services, serviceSearch, selectedServiceIds]);
 
   const requiresDoctor = selectedServiceIds.some(id => {
     const svc = services.find(s => s.id.toString() === id);
@@ -648,8 +664,36 @@ export default function BookAppointment() {
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Service</label>
                       <span className="text-[9px] text-zinc-400 font-semibold">Prices may vary at checkout</span>
                     </div>
+                    {/* The full list is long and lives in a short scroll box, so
+                        finding one service meant scrolling through all of them. */}
+                    <div className="relative mb-2">
+                      <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+                      <input
+                        type="text"
+                        value={serviceSearch}
+                        onChange={(e) => setServiceSearch(e.target.value)}
+                        placeholder="Search services…"
+                        className="input-field w-full py-2 pl-9 pr-8 text-sm font-medium"
+                        aria-label="Search services"
+                      />
+                      {serviceSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setServiceSearch("")}
+                          aria-label="Clear service search"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-border"
+                        >
+                          <FiX className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                     <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
-                      {services.map(s => {
+                      {visibleServices.length === 0 && (
+                        <p className="px-3 py-4 text-center text-xs font-semibold text-zinc-400">
+                          No service matches “{serviceSearch}”.
+                        </p>
+                      )}
+                      {visibleServices.map(s => {
                         const checked = selectedServiceIds.includes(s.id.toString());
                         const rules = s.pricingRules ?? s.sizePrices ?? [];
                         const minTier = rules.length > 0 ? Math.min(...rules.map((r: any) => Number(r.price))) : 0;
