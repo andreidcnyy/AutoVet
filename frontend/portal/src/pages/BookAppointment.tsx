@@ -20,7 +20,7 @@ import {
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
-import { serviceMatchesSpecies } from '../utils/serviceSpecies';
+import { serviceMatchesSpecies, speciesNamedBy, petSpeciesName } from '../utils/serviceSpecies';
 import echo from '../utils/echo';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
@@ -118,8 +118,14 @@ export default function BookAppointment() {
 
   const selectedPetSpecies = useMemo(() => {
     const pet = pets.find((p) => String(p.id) === String(selectedPetId));
-    return pet?.species?.name ?? null;
+    return petSpeciesName(pet);
   }, [pets, selectedPetId]);
+
+  // "No pet chosen yet" and "pet chosen but its species did not come through"
+  // have to be told apart. The first should hide the species-specific vaccines,
+  // because none of them can be correct yet; the second must not, because
+  // hiding a service the clinic really offers is worse than showing one extra.
+  const hasPetSelected = Boolean(selectedPetId);
 
   /**
    * Services offered for the chosen pet, narrowed by the search box.
@@ -135,27 +141,41 @@ export default function BookAppointment() {
   const visibleServices = useMemo(() => {
     const q = serviceSearch.trim().toLowerCase();
     return services.filter((s) => {
+      // Species is decided first. This used to sit behind the "always keep a
+      // ticked service visible" rule below, so a dog vaccine selected for a dog
+      // stayed on screen after switching to a cat.
+      if (hasPetSelected) {
+        if (!serviceMatchesSpecies(s.name, selectedPetSpecies)) return false;
+      } else if (speciesNamedBy(s.name).length > 0) {
+        // Nothing is selected yet, so a service that names a species cannot be
+        // known to apply. "4 in 1 Vaccine (Cats)" appears once a cat is chosen.
+        return false;
+      }
       if (selectedServiceIds.includes(s.id.toString())) return true;
-      if (!serviceMatchesSpecies(s.name, selectedPetSpecies)) return false;
       return !q || String(s.name ?? "").toLowerCase().includes(q);
     });
-  }, [services, serviceSearch, selectedServiceIds, selectedPetSpecies]);
+  }, [services, serviceSearch, selectedServiceIds, selectedPetSpecies, hasPetSelected]);
 
   /**
    * Drop selections that the newly chosen pet cannot receive, so switching from
    * a dog to a cat cannot silently carry a dog-only vaccine into the booking.
    */
   useEffect(() => {
-    if (!selectedPetSpecies || selectedServiceIds.length === 0) return;
+    if (selectedServiceIds.length === 0) return;
     const stillValid = selectedServiceIds.filter((id) => {
       const svc = services.find((s) => s.id.toString() === id);
-      return !svc || serviceMatchesSpecies(svc.name, selectedPetSpecies);
+      if (!svc) return true;
+      // With no pet chosen, a species-specific service is now hidden, so it must
+      // not stay silently ticked and counted towards the booking.
+      if (!hasPetSelected) return speciesNamedBy(svc.name).length === 0;
+      if (!selectedPetSpecies) return true;
+      return serviceMatchesSpecies(svc.name, selectedPetSpecies);
     });
     if (stillValid.length !== selectedServiceIds.length) {
       setSelectedServiceIds(stillValid);
       setValue("service_id", stillValid[0] || "", { shouldValidate: true });
     }
-  }, [selectedPetSpecies, services]);
+  }, [selectedPetSpecies, hasPetSelected, services]);
 
   const requiresDoctor = selectedServiceIds.some(id => {
     const svc = services.find(s => s.id.toString() === id);
@@ -689,7 +709,11 @@ export default function BookAppointment() {
                   <div>
                     <div className="flex items-baseline justify-between mb-2">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Service</label>
-                      <span className="text-[9px] text-zinc-400 font-semibold">Prices may vary at checkout</span>
+                      <span className="text-[9px] text-zinc-400 font-semibold">
+                        {hasPetSelected
+                          ? "Prices may vary at checkout"
+                          : "Select a pet to see its vaccines"}
+                      </span>
                     </div>
                     {/* The full list is long and lives in a short scroll box, so
                         finding one service meant scrolling through all of them. */}
@@ -717,7 +741,9 @@ export default function BookAppointment() {
                     <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
                       {visibleServices.length === 0 && (
                         <p className="px-3 py-4 text-center text-xs font-semibold text-zinc-400">
-                          No service matches “{serviceSearch}”.
+                          {serviceSearch
+                            ? `No service matches “${serviceSearch}”.`
+                            : "No services available."}
                         </p>
                       )}
                       {visibleServices.map(s => {

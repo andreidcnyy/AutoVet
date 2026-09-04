@@ -48,6 +48,24 @@ export function speciesNamedBy(serviceName?: string | null): string[] {
 }
 
 /**
+ * The species name for a pet record, whatever shape it arrives in.
+ *
+ * /pets serialises species as a nested { id, name } object, but the same pet
+ * reaches this screen from a localStorage snapshot and from other endpoints
+ * that flatten it. Reading only `pet.species.name` meant one unexpected shape
+ * silently disabled the filter and every service was offered again, which is
+ * indistinguishable from the filter not existing.
+ */
+export function petSpeciesName(pet: any): string | null {
+  if (!pet) return null;
+  const s = pet.species;
+  if (typeof s === 'string' && s.trim()) return s;
+  if (s && typeof s.name === 'string' && s.name.trim()) return s.name;
+  if (typeof pet.species_name === 'string' && pet.species_name.trim()) return pet.species_name;
+  return null;
+}
+
+/**
  * True when this service should be offered for a pet of this species.
  * Unknown species, or a service naming none, always returns true.
  */
