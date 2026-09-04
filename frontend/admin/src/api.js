@@ -13,6 +13,11 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 const MASTER_DATA = /\/api\/(species|breeds|weight-ranges|pet-size-categories|units-of-measure|inventory-categories|service-categories|services|vets|settings)(\/|\?|$)/;
 const MASTER_DATA_TTL = 10 * 60 * 1000;
 
+// Ceiling for a single request. 20s was below the cold-start time of the
+// backend, so first-load dashboard reads were being aborted by this timer
+// rather than by anything the user did.
+const REQUEST_TIMEOUT_MS = 45000;
+
 // --- START: MODIFIED AUTH HANDLING ---
 let _token = null;
 
@@ -85,8 +90,19 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
     if (cached !== null) return cached;
   }
 
+  // abort() with no argument makes the browser synthesise
+  // "AbortError: signal is aborted without reason", which is the console noise
+  // these requests were producing. Aborting with an explicit reason names the
+  // cause instead, and the flag lets the catch tell a timeout apart from a
+  // caller deliberately cancelling.
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort(
+      new DOMException(`Request exceeded ${REQUEST_TIMEOUT_MS}ms`, 'TimeoutError')
+    );
+  }, REQUEST_TIMEOUT_MS);
   const effectiveSignal = signal ?? controller.signal;
 
   try {
@@ -97,8 +113,6 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
       body: body != null ? JSON.stringify(body) : undefined,
       credentials: 'include',
     });
-    
-    clearTimeout(timeout);
     
     if (!res.ok) {
       console.error(`[API ERROR] ${res.status} from ${requestUrl}`);
@@ -143,11 +157,29 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
 
     return data;
   } catch (err) {
-    clearTimeout(timeout);
     // Silent fail for non-critical errors to avoid crashing UI
-    if (err.name === 'SyntaxError') return null; 
+    if (err.name === 'SyntaxError') return null;
+
+    const wasAborted = err?.name === 'AbortError' || err?.name === 'TimeoutError';
+
+    if (wasAborted && !timedOut) {
+      // Cancelled on purpose: an effect cleaned up, a query key changed, or the
+      // component unmounted. This is the normal way React discards a request it
+      // no longer needs, so it is rethrown for the caller to ignore but never
+      // logged — logging it is what filled the console with AbortError.
+      throw err;
+    }
+
+    if (timedOut) {
+      console.warn(`[API TIMEOUT] ${method} ${requestUrl} exceeded ${REQUEST_TIMEOUT_MS}ms`);
+      throw err;
+    }
+
     console.error(`[API FETCH ERROR]`, err);
     throw err;
+  } finally {
+    // One place, so the timer cannot outlive the request and fire mid-parse.
+    clearTimeout(timeout);
   }
 }
 

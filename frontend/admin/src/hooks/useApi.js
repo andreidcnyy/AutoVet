@@ -27,8 +27,14 @@ export function useApi(queryKey, url, options = {}) {
 
   return useQuery({
     queryKey: Array.isArray(queryKey) ? queryKey : [queryKey],
-    queryFn: async () => {
-      const data = await api.get(url, params ? { params } : {});
+    // react-query hands the query function an AbortSignal and aborts it when the
+    // query is superseded — a key change, a remount, an unmount. It was not being
+    // forwarded, so a discarded request kept running and the only thing that
+    // could stop it was the API client's own timeout, which is what surfaced as
+    // AbortError on the dashboard reads. Passing it through means a cancelled
+    // query is cancelled immediately and quietly.
+    queryFn: async ({ signal }) => {
+      const data = await api.get(url, params ? { params, signal } : { signal });
       if (cacheKey) {
         try { localStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() })); } catch (_) {}
       }
