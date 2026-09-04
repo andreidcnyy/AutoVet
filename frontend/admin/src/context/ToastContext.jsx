@@ -69,3 +69,11 @@ export function useToast() {
     }
     return context;
 }
+
+/**
+ * Same context, but returns null instead of throwing when no provider is above.
+ * For callers that only want to notify if a toaster happens to be mounted.
+ */
+export function useToastOptional() {
+    return useContext(ToastContext);
+}
