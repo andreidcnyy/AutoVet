@@ -26,6 +26,7 @@ import ViewInventoryModal from "./ViewInventoryModal";
 import ReceiveStockModal from "./ReceiveStockModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
+import { useApi, useQueryClient } from "../../hooks/useApi";
 import api from "../../api";
 
 // Expired is derived, never stored: the API sends is_expired computed against
@@ -154,8 +155,6 @@ function InventoryView() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewedProduct, setViewedProduct] = useState(null);
   const [receivingProduct, setReceivingProduct] = useState(null);
-  const [inventoryRows, setInventoryRows] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [forecastStatus, setForecastStatus] = useState({ percent: 0, message: "", is_running: false });
   const [searchQuery, setSearchQuery] = useState("");
@@ -172,37 +171,54 @@ function InventoryView() {
   const INVENTORY_CACHE_KEY = 'inventory_cache_v2';
   const CACHE_TTL = 5 * 60 * 1000;
 
-  const fetchInventory = useCallback(async (signal = null) => {
-    try {
-        const data = await api.get('/api/inventory', { signal });
-        if (!Array.isArray(data)) return;
-        setInventoryRows(data);
-        const uniqueCats = [...new Set(data.map(item => item.inventory_category?.name).filter(Boolean))];
-        setCategories(uniqueCats);
-        localStorage.setItem(INVENTORY_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-    } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error("Failed to fetch inventory:", err);
-    } finally {
-        setIsLoading(false);
-    }
-  }, []);
+  const queryClient = useQueryClient();
+
+  /**
+   * Inventory list, held in the shared query cache.
+   *
+   * The manual version kept its own localStorage copy and re-read it in an
+   * effect to paint before the network answered. useApi does the same thing
+   * with the same key, so a return visit still paints instantly, but the rows
+   * now live in one cache that the websocket handlers and every optimistic
+   * update below write to — instead of a component-local array that was thrown
+   * away on unmount.
+   */
+  const inventoryQuery = useApi(["inventory"], "/api/inventory", {
+    enabled: Boolean(user?.token),
+    cacheKey: INVENTORY_CACHE_KEY,
+    cacheTTL: CACHE_TTL,
+    staleTime: 60 * 1000,
+  });
+
+  const inventoryRows = Array.isArray(inventoryQuery.data) ? inventoryQuery.data : [];
+  const isLoading = inventoryQuery.isLoading;
+
+  /** Applies a list updater to the cached inventory, replacing setInventoryRows. */
+  const setInventoryRows = useCallback(
+    (updater) => {
+      queryClient.setQueryData(["inventory"], (current) => {
+        const list = Array.isArray(current) ? current : [];
+        return typeof updater === "function" ? updater(list) : updater;
+      });
+    },
+    [queryClient]
+  );
+
+  const fetchInventory = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+    [queryClient]
+  );
+
+  // Category filter options follow whatever the cached rows contain.
+  useEffect(() => {
+    setCategories([
+      ...new Set(inventoryRows.map((item) => item.inventory_category?.name).filter(Boolean)),
+    ]);
+  }, [inventoryQuery.data]);
 
   useEffect(() => {
     if (!user?.token) return;
 
-    try {
-      const cached = JSON.parse(localStorage.getItem(INVENTORY_CACHE_KEY) || 'null');
-      if (cached && Date.now() - cached.ts < CACHE_TTL && Array.isArray(cached.data)) {
-        setInventoryRows(cached.data);
-        const uniqueCats = [...new Set(cached.data.map(item => item.inventory_category?.name).filter(Boolean))];
-        setCategories(uniqueCats);
-        setIsLoading(false);
-      }
-    } catch (_) {}
-
-    const controller = new AbortController();
-    fetchInventory(controller.signal);
     handleForecast();
 
     const channel = echo.private('admin.inventory')
@@ -218,11 +234,10 @@ function InventoryView() {
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
-      controller.abort();
       document.removeEventListener('visibilitychange', onVisible);
       echo.leave('admin.inventory');
     };
-  }, [user?.token, fetchInventory]);
+  }, [user?.token, fetchInventory, setInventoryRows]);
 
   // Keep viewedProduct in sync when inventoryRows refreshes (e.g. after background fetch)
   useEffect(() => {

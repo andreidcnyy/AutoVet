@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/fi";
 import clsx from "clsx";
-import api from "../../api";
 import echo from "../../utils/echo";
+import { useApi, useQueryClient } from "../../hooks/useApi";
 
 const peso = (n) =>
   "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -22,38 +22,47 @@ const formatDate = (dateStr) => {
 
 export default function SalesSummaryCard() {
   const navigate = useNavigate();
-  const [revenue, setRevenue]     = useState([]);
-  const [topItems, setTopItems]   = useState([]);
-  const [recent, setRecent]       = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const queryClient = useQueryClient();
 
-  const load = (showSpinner = false) => {
-    if (showSpinner) setLoading(true);
-    Promise.all([
-      api.get("/api/reports/sales/revenue-summary?days=30").catch(() => []),
-      api.get("/api/reports/sales/top-services?limit=5").catch(() => []),
-      api.get("/api/invoices?per_page=7&page=1&search=").catch(() => null),
-    ]).then(([rev, top, inv]) => {
-      setRevenue(Array.isArray(rev) ? rev : []);
-      setTopItems(Array.isArray(top) ? top : []);
-      const list = inv?.data || [];
-      setRecent(Array.isArray(list) ? list : []);
-    }).finally(() => { if (showSpinner) setLoading(false); });
-  };
+  /**
+   * The three summary reads, cached per key instead of re-fetched together.
+   *
+   * Previously one load() refetched all three on mount, on every tab focus, on
+   * each invoice event and on a window event — so returning to the dashboard
+   * always started blank, and a burst of invoice updates meant a burst of
+   * triple fetches.
+   */
+  const revenueQuery = useApi(["sales", "revenue-summary", 30], "/api/reports/sales/revenue-summary?days=30");
+  const topItemsQuery = useApi(["sales", "top-services", 5], "/api/reports/sales/top-services?limit=5");
+  const recentQuery = useApi(["invoices", "recent"], "/api/invoices?per_page=7&page=1&search=");
+
+  const revenue = Array.isArray(revenueQuery.data) ? revenueQuery.data : [];
+  const topItems = Array.isArray(topItemsQuery.data) ? topItemsQuery.data : [];
+  const recent = Array.isArray(recentQuery.data?.data) ? recentQuery.data.data : [];
+
+  // Spinner only on the first load; later refreshes leave the figures up.
+  const loading = revenueQuery.isLoading || topItemsQuery.isLoading || recentQuery.isLoading;
+
+  const refresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["sales"] });
+    queryClient.invalidateQueries({ queryKey: ["invoices", "recent"] });
+  }, [queryClient]);
 
   useEffect(() => {
-    load(true);
-    const onVisible = () => { if (document.visibilityState === 'visible') load(false); };
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('inventory-forecast-refresh', () => load(false));
+    // Named, so it can actually be removed again — the old cleanup passed a
+    // different function reference than the one registered, leaking a listener
+    // on every mount.
+    window.addEventListener('inventory-forecast-refresh', refresh);
     const ch = echo.private('admin.invoices');
-    ch.listen('.invoice.updated', () => load(false));
+    ch.listen('.invoice.updated', refresh);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('inventory-forecast-refresh', load);
+      window.removeEventListener('inventory-forecast-refresh', refresh);
       ch.stopListening('.invoice.updated');
     };
-  }, []);
+  }, [refresh]);
 
   // Today / this week / this month from daily revenue data
   const { today, week, month } = useMemo(() => {
@@ -100,7 +109,7 @@ export default function SalesSummaryCard() {
           </h3>
         </div>
         <button
-          onClick={() => load(true)}
+          onClick={refresh}
           className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-dark-border px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors"
         >
           <FiRefreshCw className="h-3.5 w-3.5" /> Refresh

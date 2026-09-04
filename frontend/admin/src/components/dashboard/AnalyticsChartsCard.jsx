@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -6,8 +6,8 @@ import {
   ResponsiveContainer, LabelList,
 } from "recharts";
 import { FiUsers, FiPackage, FiRefreshCw, FiActivity } from "react-icons/fi";
-import api from "../../api";
 import clsx from "clsx";
+import { useApi, useQueryClient } from "../../hooks/useApi";
 import echo from "../../utils/echo";
 
 // One hue per measure, not one per bar. Bar length already encodes the value,
@@ -106,66 +106,43 @@ function SectionHeader({ icon: Icon, title, color }) {
   );
 }
 
+const asArray = (v) => (Array.isArray(v) ? v : []);
+
 export default function AnalyticsChartsCard() {
-  const [clients, setClients] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [serviceCategories, setServiceCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
+
+  /**
+   * The three dashboard series, each cached under its own key.
+   *
+   * This was two effects that both listed the same three endpoints — one for
+   * the initial load, one for refreshing — plus a 15-second interval that
+   * re-fetched all three whether or not anything had changed. On the landing
+   * page that meant a steady four requests a minute per series against a
+   * backend that answers in 1-3s, and returning to the dashboard always
+   * started from an empty state because nothing was cached.
+   */
+  const clientsQuery = useApi(["dashboard", "monthly-clients"], "/dashboard/analytics/monthly-clients");
+  const categoriesQuery = useApi(["dashboard", "items-by-category"], "/dashboard/analytics/items-by-category");
+  const serviceCategoriesQuery = useApi(["dashboard", "services-by-category"], "/dashboard/analytics/services-by-category");
+
+  const clients = asArray(clientsQuery.data);
+  const categories = asArray(categoriesQuery.data);
+  const serviceCategories = asArray(serviceCategoriesQuery.data);
+
+  // Only the first load shows the spinner; refreshes keep the charts on screen.
+  const loading = clientsQuery.isLoading || categoriesQuery.isLoading || serviceCategoriesQuery.isLoading;
+  const error = clientsQuery.error || categoriesQuery.error || serviceCategoriesQuery.error;
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    Promise.all([
-      api.get("/dashboard/analytics/monthly-clients"),
-      api.get("/dashboard/analytics/items-by-category"),
-      api.get("/dashboard/analytics/services-by-category"),
-    ])
-      .then(([clientRes, catRes, svcRes]) => {
-        if (cancelled) return;
-        setClients(Array.isArray(clientRes) ? clientRes : []);
-        setCategories(Array.isArray(catRes) ? catRes : []);
-        setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err.message || "Failed to load analytics");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const refreshAll = () => {
-      Promise.all([
-        api.get("/dashboard/analytics/monthly-clients"),
-        api.get("/dashboard/analytics/items-by-category"),
-        api.get("/dashboard/analytics/services-by-category"),
-      ]).then(([clientRes, catRes, svcRes]) => {
-        setClients(Array.isArray(clientRes) ? clientRes : []);
-        setCategories(Array.isArray(catRes) ? catRes : []);
-        setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
-      }).catch(() => {});
-    };
-
+    const refreshAll = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     const refreshCategories = () => {
-      Promise.all([
-        api.get("/dashboard/analytics/items-by-category"),
-        api.get("/dashboard/analytics/services-by-category"),
-      ])
-        .then(([catRes, svcRes]) => { 
-          setCategories(Array.isArray(catRes) ? catRes : []); 
-          setServiceCategories(Array.isArray(svcRes) ? svcRes : []);
-        })
-        .catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "items-by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "services-by-category"] });
     };
 
-    const poll = setInterval(refreshAll, 15000);
+    // The websocket already pushes the events that actually change these
+    // numbers, so the poll is a slow backstop rather than the primary path.
+    const poll = setInterval(refreshAll, 120000);
 
     const onVisible = () => { if (document.visibilityState === 'visible') refreshAll(); };
     document.addEventListener('visibilitychange', onVisible);
@@ -184,7 +161,7 @@ export default function AnalyticsChartsCard() {
       document.removeEventListener('visibilitychange', onVisible);
       if (echoInstance) echoInstance.leave('admin.inventory');
     };
-  }, []);
+  }, [queryClient]);
 
   if (loading) {
     return (

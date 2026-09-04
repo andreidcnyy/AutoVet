@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AddPatientFormView from "../components/patients/AddPatientFormView";
 import PatientRecordsView from "../components/patients/PatientRecordsView";
@@ -8,6 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useNewItems } from "../context/NewItemsContext";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
+import { useApi, useQueryClient } from "../hooks/useApi";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import clsx from "clsx";
@@ -19,12 +20,10 @@ function PatientsPage() {
   const [activeTab, setActiveTab] = useState("owners");
   const { user } = useAuth();
   const { refreshCounts } = useNewItems();
-  const [owners, setOwners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 }); // Initialize with a safe default
+  const [page, setPage] = useState(1);
 
   // Form States for New Owner Registration
   const [phoneValue, setPhoneValue] = useState("");
@@ -36,78 +35,101 @@ function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterValue, setFilterValue] = useState("All");
 
-  const fetchOwners = useCallback((page = 1, search = searchQuery, filter = filterValue) => {
-    if (!user?.token) {
-      setIsLoading(false);
-      return; // Don't fetch if no user token
+  const queryClient = useQueryClient();
+
+  /**
+   * Owners list, held in the shared query cache.
+   *
+   * This was a hand-rolled fetch plus four effects: one to load on mount and on
+   * every search or filter change, one to reload when the tab regained focus,
+   * one mirroring pagination into a ref so the other two could read it, and one
+   * for the websocket. Because nothing cached the result, returning to this page
+   * always re-fetched from scratch and rendered a spinner first.
+   *
+   * The search term, filter and page are part of the key, so changing any of
+   * them is a cache lookup rather than a manual re-fetch, and a combination
+   * already seen paints immediately while it revalidates behind.
+   */
+  const ownersQuery = useApi(
+    ["owners", { page, search: searchQuery, filter: filterValue }],
+    "/api/owners",
+    {
+      params: {
+        page,
+        ...(searchQuery ? { search: searchQuery } : {}),
+        ...(filterValue && filterValue !== "All" ? { filter: filterValue } : {}),
+      },
+      enabled: Boolean(user?.token) && activeTab === "owners",
+      // Hold the current rows while the next page loads instead of blanking the
+      // table, which is what made paging feel like a full reload.
+      placeholderData: (previous) => previous,
+      staleTime: 60 * 1000,
     }
-    setIsLoading(true);
-    const params = new URLSearchParams({ page });
-    if (search) params.set("search", search);
-    if (filter && filter !== "All") params.set("filter", filter);
-    fetch(`/api/owners?${params}`, {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${user.token}`
+  );
+
+  const ownersData = ownersQuery.data;
+  const owners = ownersData?.data ?? (Array.isArray(ownersData) ? ownersData : []);
+  const pagination = ownersData?.data
+    ? {
+        current_page: ownersData.current_page,
+        last_page: ownersData.last_page,
+        total: ownersData.total,
       }
-    })
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then(errData => {
-            throw new Error(errData.message || `HTTP error! status: ${res.status}`);
-          }).catch(() => {
-            throw new Error(`HTTP error! status: ${res.status}`);
-          });
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data && data.data) {
-          setOwners(data.data);
-          // Map Laravel pagination fields to what the component expects
-          setPagination({
-            current_page: data.current_page,
-            last_page: data.last_page,
-            total: data.total
-          });
-        } else {
-          setOwners(Array.isArray(data) ? data : []);
-          setPagination({ current_page: 1, last_page: 1, total: (data?.length || 0) });
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load owner data:", err); // Corrected typo: console.error
-        toast.error(err.message || "Failed to load owner records.");
-        setIsLoading(false);
-        setPagination({ current_page: 1, last_page: 1, total: 0 });
-      });
-  }, [user?.token, toast, searchQuery, filterValue]);
+    : { current_page: 1, last_page: 1, total: owners.length };
+  // Only the very first load blanks the page; a background refresh keeps the
+  // existing rows on screen.
+  const isLoading = ownersQuery.isLoading;
 
   useEffect(() => {
-    if (user?.token && activeTab === 'owners') {
-      fetchOwners(1);
-    } else if (!user) {
-      setIsLoading(false);
+    if (ownersQuery.error) {
+      console.error("Failed to load owner data:", ownersQuery.error);
+      toast.error(ownersQuery.error.message || "Failed to load owner records.");
     }
-  }, [user?.token, activeTab, fetchOwners]);
+  }, [ownersQuery.error, toast]);
 
-  // Re-fetch when tab regains focus (fallback when WebSocket is unavailable)
+  /**
+   * Kept as a shim so the existing call sites read the same. Moving to a page
+   * changes the key; staying put marks the current key stale.
+   */
+  const fetchOwners = useCallback(
+    (nextPage) => {
+      if (nextPage && nextPage !== page) setPage(nextPage);
+      queryClient.invalidateQueries({ queryKey: ["owners"] });
+    },
+    [page, queryClient]
+  );
+
+  /**
+   * Applies a list updater to every cached owners page. Stands in for the old
+   * local setOwners so the optimistic updates below still work, but writes to
+   * the shared cache so the change survives navigating away and back.
+   */
+  const patchOwners = useCallback(
+    (updater) => {
+      queryClient.setQueriesData({ queryKey: ["owners"] }, (current) => {
+        if (!current) return current;
+        if (Array.isArray(current)) return updater(current);
+        if (Array.isArray(current.data)) return { ...current, data: updater(current.data) };
+        return current;
+      });
+    },
+    [queryClient]
+  );
+
+  // Re-check when the tab regains focus (fallback when WebSocket is unavailable).
+  // refetchOnWindowFocus is off globally, so this stays explicit.
   useEffect(() => {
     if (!user?.token) return;
     const onVisible = () => {
       if (document.visibilityState === "visible" && activeTab === "owners") {
-        fetchOwners(paginationRef.current.current_page || 1);
+        queryClient.invalidateQueries({ queryKey: ["owners"] });
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [user?.token, activeTab, fetchOwners]);
+  }, [user?.token, activeTab, queryClient]);
 
   // Auto-refresh when portal users create pets or owners
-  const paginationRef = useRef(pagination);
-  useEffect(() => { paginationRef.current = pagination; }, [pagination]);
-
   useEffect(() => {
     if (!user?.token) return;
     let channel;
@@ -115,14 +137,17 @@ function PatientsPage() {
       channel = echo.private("admin.notifications");
       channel.listen(".entity.created", (e) => {
         if (["pet", "owner"].includes(e.entityType)) {
-          fetchOwners(paginationRef.current.current_page || 1);
+          queryClient.invalidateQueries({ queryKey: ["owners"] });
         }
       });
       channel.listen(".portal.status.changed", (e) => {
-        // Update the matching owner's portal user status in-place
-        setOwners(prev => prev.map(o =>
-          o.user?.id === e.portalUserId ? { ...o, user: { ...o.user, status: e.status } } : o
-        ));
+        // Patch the cached page in place rather than re-fetching for a single
+        // status flag.
+        patchOwners((list) =>
+          list.map((o) =>
+            o.user?.id === e.portalUserId ? { ...o, user: { ...o.user, status: e.status } } : o
+          )
+        );
       });
     });
     return () => {
@@ -131,7 +156,7 @@ function PatientsPage() {
         channel.stopListening(".portal.status.changed");
       }
     };
-  }, [user?.token, fetchOwners]);
+  }, [user?.token, queryClient, patchOwners]);
 
   useEffect(() => {
     const provinceData = PH_LOCATION_DATA.find(p => p.name === province);
@@ -165,7 +190,7 @@ function PatientsPage() {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.message || `HTTP error! status: ${res.status}`);
       }
-      setOwners((prev) => prev.filter((o) => o.id !== ownerId));
+      patchOwners((prev) => prev.filter((o) => o.id !== ownerId));
       if (selectedOwnerId === ownerId) setSelectedOwnerId(null);
       toast.success("Owner archived successfully.");
     } catch (err) {
@@ -180,7 +205,7 @@ function PatientsPage() {
   };
 
   const handleUpdateOwnerSuccess = (updatedOwner) => {
-    setOwners((prev) =>
+    patchOwners((prev) =>
       prev.map((o) => (o.id === updatedOwner.id ? updatedOwner : o))
     );
     if (selectedOwnerId === updatedOwner.id) {
@@ -413,7 +438,7 @@ function PatientsPage() {
           onDeleteOwner={handleDeleteOwner}
           onEditOwner={handleEditOwner}
           onOwnerEdited={(updatedOwner) => {
-            setOwners((prev) =>
+            patchOwners((prev) =>
               prev.map((o) => (o.id === updatedOwner.id ? { ...o, ...updatedOwner } : o))
             );
             if (selectedOwnerId === updatedOwner.id) {
