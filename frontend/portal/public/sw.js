@@ -8,7 +8,7 @@
  *   the app boots even with no network.
  */
 
-const VERSION = 'autovet-portal-v5';
+const VERSION = 'autovet-portal-v6';
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const MEDIA_CACHE = `${VERSION}-media`;
@@ -252,9 +252,30 @@ async function staleWhileRevalidate(req, cacheName) {
   });
 }
 
+/**
+ * Drops every cached API read after a successful write.
+ *
+ * Reads are served from cache for API_FRESH_MS without touching the network,
+ * which is what makes navigation feel instant — but it also meant a write
+ * followed by an immediate re-read replayed pre-write data. Marking all
+ * notifications read and watching the unread badge come straight back was this:
+ * the POST went to the network, the refetch behind it did not.
+ *
+ * The whole cache goes rather than guessing which paths a write affects; it is
+ * small, and writes are far rarer than reads.
+ */
+async function invalidateApiCache() {
+  try {
+    await caches.delete(API_CACHE);
+  } catch {
+    // A cache that cannot be cleared just revalidates on its own timer.
+  }
+}
+
 async function mutationStrategy(req) {
   try {
     const res = await fetch(req.clone());
+    if (res && res.ok) await invalidateApiCache();
     return res;
   } catch (err) {
     // Likely offline. Snapshot the request and queue it.

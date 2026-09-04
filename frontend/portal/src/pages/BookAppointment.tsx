@@ -20,6 +20,7 @@ import {
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
+import { serviceMatchesSpecies } from '../utils/serviceSpecies';
 import echo from '../utils/echo';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
@@ -115,20 +116,46 @@ export default function BookAppointment() {
 
   const [serviceSearch, setServiceSearch] = useState("");
 
+  const selectedPetSpecies = useMemo(() => {
+    const pet = pets.find((p) => String(p.id) === String(selectedPetId));
+    return pet?.species?.name ?? null;
+  }, [pets, selectedPetId]);
+
   /**
-   * Services matching the search, with anything already ticked always kept in
-   * the list — otherwise typing would hide a selection the user cannot then
-   * see or undo, while it still counts towards the booking.
+   * Services offered for the chosen pet, narrowed by the search box.
+   *
+   * Species first: a service whose name calls out another species — the
+   * dog-only and cat-only vaccines — is not offered for this pet. Everything
+   * that names no species stays, which is most of the catalogue.
+   *
+   * Anything already ticked is always kept in the list, so neither the search
+   * nor a change of pet can hide a selection the user cannot then see or undo
+   * while it still counts towards the booking.
    */
   const visibleServices = useMemo(() => {
     const q = serviceSearch.trim().toLowerCase();
-    if (!q) return services;
-    return services.filter(
-      (s) =>
-        selectedServiceIds.includes(s.id.toString()) ||
-        String(s.name ?? "").toLowerCase().includes(q)
-    );
-  }, [services, serviceSearch, selectedServiceIds]);
+    return services.filter((s) => {
+      if (selectedServiceIds.includes(s.id.toString())) return true;
+      if (!serviceMatchesSpecies(s.name, selectedPetSpecies)) return false;
+      return !q || String(s.name ?? "").toLowerCase().includes(q);
+    });
+  }, [services, serviceSearch, selectedServiceIds, selectedPetSpecies]);
+
+  /**
+   * Drop selections that the newly chosen pet cannot receive, so switching from
+   * a dog to a cat cannot silently carry a dog-only vaccine into the booking.
+   */
+  useEffect(() => {
+    if (!selectedPetSpecies || selectedServiceIds.length === 0) return;
+    const stillValid = selectedServiceIds.filter((id) => {
+      const svc = services.find((s) => s.id.toString() === id);
+      return !svc || serviceMatchesSpecies(svc.name, selectedPetSpecies);
+    });
+    if (stillValid.length !== selectedServiceIds.length) {
+      setSelectedServiceIds(stillValid);
+      setValue("service_id", stillValid[0] || "", { shouldValidate: true });
+    }
+  }, [selectedPetSpecies, services]);
 
   const requiresDoctor = selectedServiceIds.some(id => {
     const svc = services.find(s => s.id.toString() === id);

@@ -230,9 +230,12 @@ export default function Dashboard() {
                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-500 truncate mt-0.5">
                           {pet.breed?.name || pet.species?.name || 'Unknown Breed'}
                         </p>
-                        <p className="text-xs font-bold text-zinc-400 mt-1 flex items-center gap-1">
-                          <FiClock className="w-3 h-3" /> {calculateAgeDisplay(pet.date_of_birth)}
-                        </p>
+                        {/* Age reads as a property of the pet rather than a faint
+                            third line, so it is legible at a glance in the card. */}
+                        <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-600 dark:bg-dark-surface dark:text-zinc-300">
+                          <FiClock className="h-3 w-3 shrink-0 text-brand-500" />
+                          {calculateAgeDisplay(pet.date_of_birth)}
+                        </span>
                       </div>
                       <button 
                         onClick={(e) => handleEditClick(e, pet.id)}

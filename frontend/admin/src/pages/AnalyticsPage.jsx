@@ -16,7 +16,7 @@ import api from "../api";
 import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { buildAnalyticsReport, analyticsReportFilename } from "../utils/analyticsReport";
 
 const COLORS = [
   "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
@@ -101,67 +101,44 @@ export default function AnalyticsPage() {
     fetchData();
   }, []);
 
-  const downloadPDF = async () => {
-    const element = document.querySelector(".printable-dashboard");
-    if (!element) return;
+  /**
+   * Captures one chart as a PNG for embedding. Charts are genuinely graphics,
+   * so they stay raster; everything else in the report is drawn as text.
+   */
+  const captureChart = async (selector) => {
+    const node = document.querySelector(selector);
+    if (!node) return null;
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+      });
+      return canvas.toDataURL("image/png");
+    } catch {
+      // A missing chart image must not stop the report being produced.
+      return null;
+    }
+  };
 
+  const downloadPDF = async () => {
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2, // Sharp text
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: 1200, // Lock layout width for consistency
-        height: element.scrollHeight, // Capture full scrollable height
-        scrollY: 0, // Prevent scroll cutoff
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.querySelector(".printable-dashboard");
-          if (clonedElement) {
-            clonedElement.classList.add("pdf-export");
-            clonedElement.style.padding = "40px";
-          }
+      const revenue = await captureChart(".analytics-revenue-chart");
 
-          // Fix Recharts ResponsiveContainer collapsing to 0 width/height in the clone iframe
-          const liveCharts = element.querySelectorAll(".recharts-responsive-container");
-          const clonedCharts = clonedDoc.querySelectorAll(".recharts-responsive-container");
-          liveCharts.forEach((chart, idx) => {
-            if (clonedCharts[idx]) {
-              clonedCharts[idx].style.width = (chart.offsetWidth || 500) + "px";
-              clonedCharts[idx].style.height = (chart.offsetHeight || 250) + "px";
-            }
-          });
-        }
+      const doc = buildAnalyticsReport({
+        clinicName: "Pet Wellness Animal Clinic",
+        generatedBy: user?.name || "Authorized Personnel",
+        trends,
+        stats,
+        stock,
+        charts: revenue ? { revenue } : {},
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      
-      pdf.save(`AutoVet_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(analyticsReportFilename());
     } catch (err) {
       console.error("PDF Export failed:", err);
-      toast.error("Failed to generate PDF report.");
     } finally {
       setIsExporting(false);
     }
