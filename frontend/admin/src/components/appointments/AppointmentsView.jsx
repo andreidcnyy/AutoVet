@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
@@ -160,6 +160,9 @@ function AppointmentsView() {
       .then(data => setCalendarSummaries(Array.isArray(data) ? data : []));
   }, [user?.token, currentDate]);
 
+  // Monotonic ticket identifying the newest appointments request in flight.
+  const requestSeq = useRef(0);
+
   const fetchAppointments = useCallback((signal, silent = false) => {
     if (!user?.token) return;
     if (!silent) setIsLoading(true);
@@ -177,12 +180,40 @@ function AppointmentsView() {
         fetchParams.date_to = format(endOfMonth(currentDate), 'yyyy-MM-dd');
     }
 
-    api.get('/api/appointments', { params: fetchParams, signal }).then((data) => {
-      if (data && data.data) {
-        setAppointments(data.data);
-        setPagination({ current_page: data.current_page, last_page: data.last_page, total: data.total });
-      }
-    }).finally(() => { if (!silent) setIsLoading(false); });
+    // Only the newest request may write state.
+    //
+    // Several callers refresh without an AbortController — the tab-focus
+    // listener, the websocket handler and both save handlers all call
+    // fetchAppointments() with no signal. Each captures the params it was
+    // created with, so one still in flight when the date changes would land
+    // afterwards and repaint the list with the previous date's rows. That is
+    // why picking a new date kept showing the last date's appointments, and
+    // why an empty date appeared to keep the old ones.
+    const ticket = ++requestSeq.current;
+    const isCurrent = () => ticket === requestSeq.current;
+
+    api.get('/api/appointments', { params: fetchParams, signal })
+      .then((data) => {
+        if (!isCurrent()) return;
+
+        // Always assign, even when the page is empty. The previous guard
+        // skipped the update for any response without a `data` key, leaving
+        // the last date's rows on screen instead of clearing them.
+        const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        setAppointments(rows);
+        setPagination({
+          current_page: data?.current_page ?? 1,
+          last_page: data?.last_page ?? 1,
+          total: data?.total ?? rows.length,
+        });
+      })
+      .catch((err) => {
+        // An aborted request is expected whenever the filters change.
+        if (err?.name === 'AbortError' || err?.name === 'CanceledError') return;
+        if (!isCurrent()) return;
+        console.error('Failed to load appointments:', err);
+      })
+      .finally(() => { if (!silent && isCurrent()) setIsLoading(false); });
   }, [user?.token, params, debouncedSearch, currentDate]);
 
   useEffect(() => {

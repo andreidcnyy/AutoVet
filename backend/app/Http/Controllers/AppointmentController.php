@@ -13,6 +13,19 @@ class AppointmentController extends Controller
 {
     use HasInternalNotifications, IdentifiesPortalOwner;
 
+    /**
+     * Statuses the UI shows when no specific status is asked for.
+     *
+     * 'Scheduled' is deliberately absent — those rows are seeded mock data and
+     * are hidden from the listing. Shared with the calendar summary so a day
+     * cannot advertise a count the listing then refuses to show.
+     */
+    public const DEFAULT_VISIBLE_STATUSES = [
+        'Pending', 'pending', 'Approved', 'approved',
+        'Cancelled', 'cancelled', 'Declined', 'declined',
+        'Declined (System)', 'Rejected', 'completed', 'no_show',
+    ];
+
     protected $clientNotificationService;
 
     public function __construct(
@@ -115,7 +128,7 @@ class AppointmentController extends Controller
         // we still want to hide 'Scheduled' (mock) data by default to keep the UI clean.
         // USER REQUEST: Only show APPROVED and CANCELLED (which includes Declined) by default
         if (!$request->has('status') || $request->status === 'all') {
-             $query->whereIn('status', ['Pending', 'pending', 'Approved', 'approved', 'Cancelled', 'cancelled', 'Declined', 'declined', 'Declined (System)', 'Rejected', 'completed', 'no_show']);
+             $query->whereIn('status', self::DEFAULT_VISIBLE_STATUSES);
         }
 
         if ($request->filled('date_from')) {
@@ -152,6 +165,10 @@ class AppointmentController extends Controller
         $query = Appointment::select('date', \DB::raw('count(*) as count'))
             ->where('date', '>=', $request->date_from)
             ->where('date', '<=', $request->date_to)
+            // Count only what the listing will actually show. Without this the
+            // calendar counted hidden 'Scheduled' rows too, so a day could
+            // advertise appointments and then open to "No records found".
+            ->whereIn('status', self::DEFAULT_VISIBLE_STATUSES)
             ->whereHas('pet.owner', function($q) {
                 $q->realClients();
             })
