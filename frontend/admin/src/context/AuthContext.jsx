@@ -50,11 +50,51 @@ export function AuthProvider({ children }) {
     window.location.replace("/login");
   };
 
-  // Handle auth failures triggered by the API client
+  /**
+   * Handle auth failures reported by the API client.
+   *
+   * A 401 from any single request used to end the session immediately. With
+   * background polling on several screens that meant an unrelated hiccup could
+   * sign an admin out mid-work with no warning, which is what looked like an
+   * automatic timeout — there has never been an inactivity timer.
+   *
+   * The session is now only ended when the token itself is actually rejected,
+   * checked once against /api/user. Anything else — a flaky endpoint, a route
+   * this role cannot reach, the backend still waking up — leaves the user
+   * signed in.
+   */
   useEffect(() => {
-    const handleAuthFailure = () => {
-      logout();
+    let verifying = false;
+
+    const handleAuthFailure = async () => {
+      if (verifying) return;
+
+      let token = null;
+      try {
+        token = JSON.parse(localStorage.getItem("user") || "null")?.token ?? null;
+      } catch (_) {}
+
+      // Nothing left to verify with — the session really is gone.
+      if (!token) {
+        logout();
+        return;
+      }
+
+      verifying = true;
+      try {
+        // Deliberately raw fetch: going through the API client would dispatch
+        // auth-failure again and recurse.
+        const res = await fetch("/api/user", {
+          headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401) logout();
+      } catch (_) {
+        // A network error proves nothing about the token. Stay signed in.
+      } finally {
+        verifying = false;
+      }
     };
+
     window.addEventListener('auth-failure', handleAuthFailure);
     return () => {
       window.removeEventListener('auth-failure', handleAuthFailure);

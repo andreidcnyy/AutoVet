@@ -117,8 +117,13 @@ async function request(method, url, { body, params, signal, cache = false, ttl }
       const err = new Error(errorMsg);
       err.status = res.status;
       if (res.status === 401) {
-        setAuthToken(null);
-        window.dispatchEvent(new Event('auth-failure'));
+        // A single 401 is not proof the session is over. Several dashboard
+        // cards poll every 15-30s, so one blip — a backend restart, a request
+        // that raced the token being set, a route the role cannot reach — used
+        // to clear the token here and bounce the user to /login mid-work, which
+        // read as being logged out at random. The token is left alone;
+        // AuthContext verifies the session before ending it.
+        window.dispatchEvent(new CustomEvent('auth-failure', { detail: { url: requestUrl } }));
       }
       throw err;
     }
