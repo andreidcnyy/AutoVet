@@ -254,7 +254,7 @@ class DashboardController extends Controller
             $days = [];
             for ($i = 0; $i < 7; $i++) {
                 $date = now()->addDays($i);
-                $count = $counts[$date->toDateString()] ?? \App\Models\Appointment::whereDate('date', $date->toDateString())->count();
+                $count = $counts[$date->toDateString()] ?? \App\Models\Appointment::where('date', $date->toDateString())->count();
                 $days[] = [
                     'label' => $date->format('D'),
                     'date'  => $date->toDateString(),
@@ -397,17 +397,24 @@ class DashboardController extends Controller
         // USER REQUEST: Only show APPROVED status for today.
         $confirmedStatuses = ['Approved', 'approved'];
         
-        $apptsToday = Appointment::whereDate('date', $today)
+        // Compared with where() rather than whereDate() throughout this file.
+        // `date` is a DATE NOT NULL column, so DATE(date) is the value itself
+        // and the two forms select exactly the same rows — but wrapping the
+        // column in a function hides it from appointments_date_status_idx and
+        // forces a scan. Only safe because the column is DATE: on a timestamp
+        // like invoices.created_at the two are genuinely different, which is
+        // why those call sites are left alone.
+        $apptsToday = Appointment::where('date', $today)
             ->whereIn('status', $confirmedStatuses)
             ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
 
-        $apptsUpcoming = Appointment::whereDate('date', $tomorrow)
+        $apptsUpcoming = Appointment::where('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
             ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
 
-        $cancelledDeclined = Appointment::whereDate('date', $today)
+        $cancelledDeclined = Appointment::where('date', $today)
             ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
             ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
@@ -958,7 +965,7 @@ class DashboardController extends Controller
         $hiddenStatuses = ['cancelled', 'declined', 'declined (system)', 'rejected', 'rescheduled'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
-            ->whereDate('date', $today)
+            ->where('date', $today)
             ->whereRaw('LOWER(status) NOT IN (?, ?, ?, ?, ?)', $hiddenStatuses)
             ->whereHas('pet.owner', function($q) {
                 $q->realClients();
@@ -999,7 +1006,7 @@ class DashboardController extends Controller
         $confirmedStatuses = ['Approved', 'approved'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
-            ->whereDate('date', $tomorrow)
+            ->where('date', $tomorrow)
             ->whereIn('status', $confirmedStatuses)
             ->whereHas('pet.owner', function($q) {
                 $q->realClients();
@@ -1101,7 +1108,7 @@ class DashboardController extends Controller
         $cancelledDeclinedStatuses = ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'];
 
         $appointments = Appointment::with(['pet.owner', 'service'])
-            ->whereDate('date', $today)
+            ->where('date', $today)
             ->whereIn('status', $cancelledDeclinedStatuses)
             ->whereHas('pet.owner', function($q) {
                 $q->where('email', '!=', 'dataset.seeder@autovet.ai');
