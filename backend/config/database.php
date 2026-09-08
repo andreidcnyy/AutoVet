@@ -21,7 +21,13 @@ return [
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => 'autovet',
+            // Hardcoding this meant DB_DATABASE was ignored on the mysql
+            // connection, so nothing could point elsewhere — including the test
+            // suite, which then ran RefreshDatabase against the development
+            // database and dropped every table in it. The default keeps the
+            // previous value for anyone without DB_DATABASE set, and production
+            // already sets it to 'autovet', so nothing changes there.
+            'database' => env('DB_DATABASE', 'autovet'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),

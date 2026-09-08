@@ -23,8 +23,13 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- A throwaway database, never the one you develop against. The
+             Feature suite uses RefreshDatabase, which drops every table before
+             re-migrating: pointed at 'autovet' that silently destroys local
+             development data. Create it once with
+             CREATE DATABASE autovet_test; -->
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="autovet"/>
+        <env name="DB_DATABASE" value="autovet_test"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
