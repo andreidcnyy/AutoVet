@@ -36,6 +36,17 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Reuse the connection between requests instead of building a
+                // new one each time. TiDB Serverless charges ~240ms for the TLS
+                // handshake and auth, which Laravel otherwise pays on every
+                // single request: measured connect+SELECT 1 at 258ms cold vs
+                // 82ms on a pooled handle.
+                //
+                // array_filter drops the key when the flag is false, which is
+                // identical to never setting it — so this is off unless asked
+                // for, and can be switched back from the Render dashboard
+                // without a code change.
+                \PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', false),
             ]) : [],
         ],
 
