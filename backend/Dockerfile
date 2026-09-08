@@ -46,8 +46,28 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && npm ci \
     && (npm run build || true)
 
+# --- Precompile the parts that do not depend on runtime environment ---
+# Routes, views and events are fixed by the source tree, so they can be built
+# into the image instead of being rebuilt from scratch on every request. The
+# route table alone is 258 routes across a 411-line api.php.
+#
+# config:cache is deliberately absent. Seven env() calls live outside config/
+# (PYTHON_BIN_PATH in four places, CRON_SECRET, BREVO_API_KEY,
+# FILESYSTEM_PUBLIC), and env() returns null once the config is cached — that
+# would quietly send the forecast subprocess to the system python3 instead of
+# the venv, and leave the cron endpoint comparing against a null secret.
+# Caching config safely means moving those reads into config/ first.
+RUN php artisan route:cache \
+    && php artisan view:cache \
+    && php artisan event:cache
+
 # Render injects $PORT. Migrate on boot (matches the old Railway start command),
-# then serve. config:clear avoids a stale cached config from the build layer.
-CMD php artisan optimize:clear \
-    && php artisan migrate --force \
+# then serve.
+#
+# optimize:clear used to run here to avoid a stale cached config from the build
+# layer. Nothing caches config any more — not at build time and not here — so
+# there is nothing stale to guard against, and the clear would now delete the
+# route/view/event caches built above. bootstrap/cache is gitignored, so a
+# Render build starts from a clean tree regardless.
+CMD php artisan migrate --force \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}"
