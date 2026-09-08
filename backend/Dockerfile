@@ -29,6 +29,12 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
+# --- Opcache settings ---
+# The extension is installed above, but `php artisan serve` runs under the CLI
+# SAPI where opcache is off unless enable_cli is set, so it was inert. Copied
+# before composer/npm so the build steps benefit from it too.
+RUN cp docker/opcache.ini "$PHP_INI_DIR/conf.d/zz-opcache.ini"
+
 # --- Python venv with the forecasting deps (numpy/pandas/scikit-learn/...) ---
 # PYTHON_BIN_PATH tells InventoryForecastingService which interpreter to spawn.
 RUN python3 -m venv /opt/venv \
