@@ -61,6 +61,24 @@ RUN php artisan route:cache \
     && php artisan view:cache \
     && php artisan event:cache
 
+# --- Concurrency ---
+# Without this the server handles exactly one request at a time: eight parallel
+# requests measured as a clean staircase, each waiting for the one before it,
+# while the same eight run flat when issued serially. The admin dashboard opens
+# with three parallel calls, so the third was paying for the first two.
+#
+# Laravel's ServeCommand reads PHP_CLI_SERVER_WORKERS and forks that many
+# workers, but only when --no-reload is also passed (see the flag below).
+# Requests are mostly waiting on TiDB rather than burning CPU, so workers
+# overlap that wait even on a 0.1-CPU instance.
+#
+# Set here as an ENV rather than inline so it can be re-tuned from the Render
+# dashboard without a rebuild. Watch memory when changing it: workers are forks
+# and share the opcache SHM, but the forecast job spawns a pandas/scikit-learn
+# subprocess that is the largest single allocation on a 512MB instance. If the
+# service starts OOM-restarting, lower this to 2 before anything else.
+ENV PHP_CLI_SERVER_WORKERS=4
+
 # Render injects $PORT. Migrate on boot (matches the old Railway start command),
 # then serve.
 #
@@ -69,5 +87,9 @@ RUN php artisan route:cache \
 # there is nothing stale to guard against, and the clear would now delete the
 # route/view/event caches built above. bootstrap/cache is gitignored, so a
 # Render build starts from a clean tree regardless.
+#
+# --no-reload only stops the server watching .env for changes and restarting.
+# .dockerignore excludes .env, so there is no such file in the image and
+# nothing to watch; the flag is required for the worker count above to apply.
 CMD php artisan migrate --force \
-    && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}"
+    && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}" --no-reload
