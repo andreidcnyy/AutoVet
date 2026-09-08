@@ -48,7 +48,7 @@ class SyncAiDatasetForecasts extends Command
 
         $inventoryForecastService = app(\App\Services\InventoryForecastService::class);
         $pythonScriptPath = base_path('ai/forecast.py');
-        $pythonExecutable = env('PYTHON_BIN_PATH')
+        $pythonExecutable = config('services.ai.python_bin')
             ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
 
         $synced = 0;

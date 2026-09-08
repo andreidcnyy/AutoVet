@@ -394,7 +394,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
 // Vercel Cron Jobs (no auth middleware — protected by CRON_SECRET header)
 // -----------------------------------------------------------------------
 Route::get('/cron/check-expiry', function (Illuminate\Http\Request $request) {
-    $secret = env('CRON_SECRET');
+    $secret = config('services.cron.secret');
     $bearer = $request->bearerToken();
 
     if (!$secret || $bearer !== $secret) {

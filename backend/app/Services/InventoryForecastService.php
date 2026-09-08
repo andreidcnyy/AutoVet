@@ -311,7 +311,7 @@ class InventoryForecastService
                 return null;
             }
 
-            $pythonExecutable = env('PYTHON_BIN_PATH')
+            $pythonExecutable = config('services.ai.python_bin')
                 ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
 
             $minStockLevel = $inventory->min_stock_level ?? 0;
@@ -470,7 +470,7 @@ class InventoryForecastService
 
         $this->updateBatchProgress($batchId, 15, $totalItems, 'Executing AI Batch Model...');
 
-        $pythonExecutable = env('PYTHON_BIN_PATH')
+        $pythonExecutable = config('services.ai.python_bin')
             ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
         $scriptPath = base_path('ai/batch_forecast.py');
 

@@ -41,7 +41,7 @@ class InventoryForecastingService
             return ["error" => "Forecasting script not found. Please contact support."];
         }
         
-        $pythonExecutable = env('PYTHON_BIN_PATH') ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
+        $pythonExecutable = config('services.ai.python_bin') ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
 
         // 3. Build and manage temporary CSV
         $tempFilePath = null;

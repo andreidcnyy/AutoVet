@@ -91,5 +91,17 @@ ENV PHP_CLI_SERVER_WORKERS=4
 # --no-reload only stops the server watching .env for changes and restarting.
 # .dockerignore excludes .env, so there is no such file in the image and
 # nothing to watch; the flag is required for the worker count above to apply.
-CMD php artisan migrate --force \
+#
+# config:cache runs here rather than at build time because Render injects the
+# environment at container start, so a build-time cache would bake in whatever
+# was present during the build — which is nothing. Running it at boot captures
+# the real values once, instead of re-reading ~30 config files per request.
+#
+# Safe despite the env() calls that remain outside config/: the "env() returns
+# null once config is cached" rule applies to variables read from a .env file,
+# and .dockerignore keeps .env out of the image entirely. Render's variables
+# are real process environment variables, which env() still resolves. Verified
+# both ways — every value below is identical cached and uncached.
+CMD php artisan config:cache \
+    && php artisan migrate --force \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}" --no-reload

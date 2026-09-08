@@ -49,6 +49,21 @@ return [
         // Inventory forecasting Python service. Read via config() so it survives
         // config:cache (env() would return null once config is cached).
         'url' => env('AI_API_URL'),
+
+        // Interpreter used to run ai/forecast.py and ai/batch_forecast.py. On
+        // Render this is /opt/venv/bin/python, the only one with numpy, pandas
+        // and scikit-learn installed — the system python3 has none of them, so
+        // resolving this to null silently breaks forecasting rather than
+        // failing loudly. Here for the same reason as 'url' above.
+        'python_bin' => env('PYTHON_BIN_PATH'),
+    ],
+
+    'cron' => [
+        // Shared secret for the Vercel cron endpoints, which sit outside the
+        // auth middleware and compare it against a bearer token. Must be read
+        // through config(): under config:cache an env() call here would return
+        // null, and the route would then reject every legitimate cron request.
+        'secret' => env('CRON_SECRET'),
     ],
 
     'google' => [
