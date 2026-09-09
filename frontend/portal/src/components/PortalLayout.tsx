@@ -196,8 +196,11 @@ export default function PortalLayout({ children }: LayoutProps) {
           </div>
         )}
 
-        {/* Page Content */}
-        <div className="flex-1 overflow-y-auto relative">
+        {/* Page Content — overflow-x is pinned shut because setting only
+            overflow-y makes the browser compute overflow-x as auto too, so any
+            element a pixel wider than the column (a wide table, a long
+            unbreakable string) gave the whole page a sideways scrollbar. */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
           <div className="flex flex-col min-h-full p-4 sm:p-8">
             <div className="max-w-6xl mx-auto w-full flex-1">
               {children}

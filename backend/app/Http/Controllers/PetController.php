@@ -36,13 +36,30 @@ class PetController extends Controller
         return $this->uploadPetPhotoBytes($contents, $ext);
     }
 
+    /**
+     * Eager-load an id/name lookup without the clinic filter.
+     *
+     * Species and breeds are clinic-scoped, but portal clients have no matching
+     * clinic_id, so the scope reduced these relations to null for every pet the
+     * portal loaded. A pet then arrived with no species name, which is what
+     * silently disabled the species filter on the booking screen and offered
+     * the dog and cat vaccines for every pet. Safe to bypass: the pets
+     * themselves are already restricted to the caller's own records.
+     */
+    private function unscopedName(): \Closure
+    {
+        return fn ($q) => $q
+            ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+            ->select('id', 'name');
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
 
         if ($request->boolean('minimal')) {
             $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'weight')
-                ->with(['owner:id,name', 'species:id,name']);
+                ->with(['owner:id,name', 'species' => $this->unscopedName()]);
             
             // Always hide AI Training Records for minimal lists too
             $query->whereHas('owner', function($q) {
@@ -62,9 +79,9 @@ class PetController extends Controller
         // Start with optimized query for the list
         $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'photo', 'sex', 'date_of_birth', 'created_at')
             ->with([
-                'owner:id,name,email', 
-                'species:id,name', 
-                'breed:id,name'
+                'owner:id,name,email',
+                'species' => $this->unscopedName(),
+                'breed' => $this->unscopedName(),
             ]);
 
         // Always hide AI Training Records from the list for Admins/Staff
@@ -208,7 +225,12 @@ class PetController extends Controller
     public function show(Pet $pet)
     {
         // Explicitly load relations and append attributes for the detail view
-        return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices'])
+        return response()->json($pet->load([
+                'owner',
+                'species' => $this->unscopedName(),
+                'breed' => $this->unscopedName(),
+                'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices',
+            ])
             ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
 

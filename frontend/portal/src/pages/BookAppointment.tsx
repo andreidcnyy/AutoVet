@@ -121,10 +121,10 @@ export default function BookAppointment() {
     return petSpeciesName(pet);
   }, [pets, selectedPetId]);
 
-  // "No pet chosen yet" and "pet chosen but its species did not come through"
-  // have to be told apart. The first should hide the species-specific vaccines,
-  // because none of them can be correct yet; the second must not, because
-  // hiding a service the clinic really offers is worse than showing one extra.
+  // Species-specific services stay hidden until a pet of that species is
+  // chosen, so neither "nothing selected yet" nor "selected, but its species
+  // did not come through" can put the dog vaccine and the cat vaccine on screen
+  // at the same time.
   const hasPetSelected = Boolean(selectedPetId);
 
   /**
@@ -168,7 +168,6 @@ export default function BookAppointment() {
       // With no pet chosen, a species-specific service is now hidden, so it must
       // not stay silently ticked and counted towards the booking.
       if (!hasPetSelected) return speciesNamedBy(svc.name).length === 0;
-      if (!selectedPetSpecies) return true;
       return serviceMatchesSpecies(svc.name, selectedPetSpecies);
     });
     if (stillValid.length !== selectedServiceIds.length) {

@@ -15,9 +15,13 @@ import { useApi } from "../hooks/useApi";
 import api from "../api";
 import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { brandedTable, drawClinicFooter, drawClinicLetterhead, drawSectionLabel } from "../utils/clinicPdf";
 
+/** Peso amounts for the report. "P " matches the invoice PDF, whose built-in
+ *  helvetica has no glyph for the peso sign. */
+const peso = (value) =>
+  "P " + (Number(value) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const StatusBadge = ({ status }) => {
   const colors = { 'approved': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'pending': 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'completed': 'bg-blue-500/10 text-blue-600 dark:text-blue-400', 'cancelled': 'bg-rose-500/10 text-rose-600 dark:text-rose-400', 'declined': 'bg-rose-600/10 text-rose-500' };
@@ -35,74 +39,126 @@ function DashboardPage() {
   const [modal, setModal] = useState({ open: false, type: null, title: "", data: null, loading: false, error: null, pagination: null });
   const closeModal = () => setModal(prev => ({ ...prev, open: false }));
 
+  /**
+   * A typeset clinic report, not a screenshot.
+   *
+   * This used to run html2canvas over the dashboard and paste the bitmap into
+   * A4, so the download was the dark-mode UI — cards, badges, icons and all —
+   * sliced across page breaks, with unselectable text. It is now built from the
+   * same figures the dashboard reads, on the letterhead the invoice uses.
+   */
   const downloadPDF = async () => {
-    const element = document.querySelector(".printable-dashboard");
-    if (!element) return;
-
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2, // Sharp text
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: 1400, // Slightly wider to preserve layout spacing nicely
-        height: element.scrollHeight + 100, // Add padding margin for complete capture
-        scrollY: 0, // Prevent scroll cutoff
-        imageTimeout: 0, // Disable image load timeout
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.querySelector(".printable-dashboard");
-          if (clonedElement) {
-            clonedElement.classList.add("pdf-export");
-            clonedElement.style.padding = "40px";
-            clonedElement.style.height = "auto";
-            clonedElement.style.overflow = "visible";
-          }
+      const [clinic, upcoming, revenue, topServices] = await Promise.all([
+        api.get('/api/settings').catch(() => null),
+        api.get('/api/dashboard/appointments/upcoming').catch(() => null),
+        isStaff ? Promise.resolve(null) : api.get('/api/reports/sales/revenue-summary?days=30').catch(() => null),
+        isStaff ? Promise.resolve(null) : api.get('/api/reports/sales/top-services?limit=5').catch(() => null),
+      ]);
 
-          // Force full visibility on charts and tables
-          clonedDoc.querySelectorAll(".card-shell").forEach(shell => {
-            shell.style.overflow = "visible";
-            shell.style.height = "auto";
-          });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const generatedOn = new Date();
 
-          // Fix Recharts ResponsiveContainer collapsing to 0 width/height in the clone iframe
-          const liveCharts = element.querySelectorAll(".recharts-responsive-container");
-          const clonedCharts = clonedDoc.querySelectorAll(".recharts-responsive-container");
-          liveCharts.forEach((chart, idx) => {
-            if (clonedCharts[idx]) {
-              clonedCharts[idx].style.width = (chart.offsetWidth || 500) + "px";
-              clonedCharts[idx].style.height = (chart.offsetHeight || 250) + "px";
-              clonedCharts[idx].style.overflow = "visible";
-            }
-          });
-        }
-      });
+      let y = await drawClinicLetterhead(doc, clinic, "REPORT", [
+        "Clinic Operations Summary",
+        `Generated: ${generatedOn.toLocaleString()}`,
+        `Prepared by: ${user?.name || "Authorised personnel"}`,
+      ]);
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      // Key figures — the metric cards as a plain two-column table.
+      const metricRows = (Array.isArray(stats) ? stats : []).map(s => [
+        s.title,
+        String(s.value ?? "—"),
+        s.detail || "",
+      ]);
+      if (metricRows.length > 0) {
+        y = drawSectionLabel(doc, "Key figures", y);
+        y = brandedTable(doc, {
+          startY: y,
+          head: ["METRIC", "VALUE", "NOTE"],
+          body: metricRows,
+          columnStyles: { 1: { halign: "right", cellWidth: 28 }, 2: { cellWidth: 70 } },
+        });
       }
 
-      pdf.save(`AutoVet_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      // Revenue over the trailing 30 days, summarised rather than plotted.
+      const revenueRows = Array.isArray(revenue) ? revenue : [];
+      if (revenueRows.length > 0) {
+        const total = revenueRows.reduce((sum, r) => sum + Number(r.total || 0), 0);
+        const busiest = revenueRows.reduce((best, r) => (Number(r.total || 0) > Number(best.total || 0) ? r : best), revenueRows[0]);
+        y = drawSectionLabel(doc, "Revenue — last 30 days", y);
+        y = brandedTable(doc, {
+          startY: y,
+          head: ["MEASURE", "VALUE"],
+          body: [
+            ["Total invoiced", peso(total)],
+            ["Days with activity", String(revenueRows.length)],
+            ["Daily average", peso(total / revenueRows.length)],
+            ["Best day", `${busiest.date} — ${peso(busiest.total)}`],
+          ],
+          columnStyles: { 0: { fontStyle: "bold", cellWidth: 60 }, 1: { halign: "right" } },
+        });
+      }
+
+      const serviceRows = Array.isArray(topServices) ? topServices : [];
+      if (serviceRows.length > 0) {
+        y = drawSectionLabel(doc, "Top services by revenue", y);
+        y = brandedTable(doc, {
+          startY: y,
+          head: ["SERVICE", "TIMES BILLED", "REVENUE"],
+          body: serviceRows.map(s => [s.name || "—", String(s.total_count ?? 0), peso(s.total_revenue)]),
+          columnStyles: { 1: { halign: "right", cellWidth: 32 }, 2: { halign: "right", cellWidth: 38 } },
+        });
+      }
+
+      const todayRows = (todayAppts?.appointments || []).map(a => [
+        a.time || "—",
+        a.pet_name || "—",
+        a.owner_name || "—",
+        a.status || "—",
+      ]);
+      y = drawSectionLabel(doc, `Appointments today (${todayRows.length})`, y);
+      y = brandedTable(doc, {
+        startY: y,
+        head: ["TIME", "PATIENT", "CLIENT", "STATUS"],
+        body: todayRows.length > 0 ? todayRows : [["—", "No appointments scheduled", "", ""]],
+        columnStyles: { 0: { cellWidth: 22 }, 3: { halign: "right", cellWidth: 34 } },
+      });
+
+      const upcomingRows = (upcoming?.appointments || []).slice(0, 25).map(a => [
+        a.date || "—",
+        a.time || "—",
+        a.pet_name || "—",
+        a.owner_name || "—",
+        a.status || "—",
+      ]);
+      if (upcomingRows.length > 0) {
+        y = drawSectionLabel(doc, "Upcoming appointments", y);
+        y = brandedTable(doc, {
+          startY: y,
+          head: ["DATE", "TIME", "PATIENT", "CLIENT", "STATUS"],
+          body: upcomingRows,
+          columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 20 }, 4: { halign: "right", cellWidth: 32 } },
+        });
+      }
+
+      const alertRows = (notifications || []).slice(0, 12).map(n => [
+        n.title || n.message || "—",
+        n.detail || n.subtitle || n.time || "",
+      ]);
+      if (alertRows.length > 0) {
+        y = drawSectionLabel(doc, "Recent alerts", y);
+        brandedTable(doc, {
+          startY: y,
+          head: ["ALERT", "DETAIL"],
+          body: alertRows,
+          columnStyles: { 1: { cellWidth: 70 } },
+        });
+      }
+
+      drawClinicFooter(doc);
+      doc.save(`Clinic_Report_${generatedOn.toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error("PDF Export failed:", err);
       toast.error("Failed to generate PDF report.");

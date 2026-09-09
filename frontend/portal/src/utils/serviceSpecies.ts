@@ -20,15 +20,23 @@ const SPECIES_TOKENS: Record<string, string[]> = {
   hamster: ['hamster', 'hamsters'],
 };
 
+/** Matches one token as a whole word, so "cattle" does not read as "cat". */
+function mentions(haystack: string, token: string): boolean {
+  return new RegExp(`\\b${token.replace(/\s+/g, '\\s+')}\\b`, 'i').test(haystack);
+}
+
 /** Normalises a species name from the API ("Canine", "Feline") to a token key. */
 function speciesKey(speciesName?: string | null): string | null {
   if (!speciesName) return null;
   const name = speciesName.trim().toLowerCase();
   if (SPECIES_TOKENS[name]) return name;
 
-  // Tolerate a species recorded as "Dog" or "Cat" rather than "Canine"/"Feline".
+  // Species names are free text the clinic types in, so an exact match only
+  // recognises the canonical spelling. "Dog", "Dogs", "Canine (Dog)" and
+  // "Feline - Cat" all have to resolve, or the filter quietly gives up and
+  // every species-specific vaccine is offered for every pet again.
   for (const [key, tokens] of Object.entries(SPECIES_TOKENS)) {
-    if (tokens.includes(name)) return key;
+    if (tokens.some((t) => mentions(name, t))) return key;
   }
   return null;
 }
@@ -39,11 +47,9 @@ export function speciesNamedBy(serviceName?: string | null): string[] {
   const name = serviceName.toLowerCase();
 
   return Object.entries(SPECIES_TOKENS)
-    .filter(([, tokens]) =>
-      // Word-boundary matched so "rabies" does not read as "rabbit" and
-      // "cattle" does not read as "cat".
-      tokens.some((t) => new RegExp(`\\b${t.replace(/\s+/g, '\\s+')}\\b`, 'i').test(name))
-    )
+    // Word-boundary matched so "rabies" does not read as "rabbit" and
+    // "cattle" does not read as "cat".
+    .filter(([, tokens]) => tokens.some((t) => mentions(name, t)))
     .map(([key]) => key);
 }
 
@@ -67,7 +73,12 @@ export function petSpeciesName(pet: any): string | null {
 
 /**
  * True when this service should be offered for a pet of this species.
- * Unknown species, or a service naming none, always returns true.
+ *
+ * A service naming no species is always offered. One that names a species is
+ * offered only when the pet is positively known to be that species — a species
+ * that cannot be read counts as "not a match", because listing the dog vaccine
+ * and the cat vaccine together under every pet is exactly the confusion this
+ * filter exists to remove.
  */
 export function serviceMatchesSpecies(
   serviceName?: string | null,
@@ -77,7 +88,7 @@ export function serviceMatchesSpecies(
   if (named.length === 0) return true;
 
   const key = speciesKey(speciesName);
-  if (!key) return true;
+  if (!key) return false;
 
   return named.includes(key);
 }

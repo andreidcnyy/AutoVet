@@ -109,11 +109,24 @@ export default function Invoices() {
       phone: full.pet?.owner?.phone || user?.phone || '',
     };
 
+    // The pet already loaded for the filter dropdown carries the species,
+    // breed and weight, so it fills any gap left by the invoice payload rather
+    // than the PDF printing a placeholder patient.
+    const listPet = pets.find((p) => String(p.id) === String(full.pet_id ?? invoice.pet_id));
+    const basePet = full.pet || listPet;
+    const mergedPet = basePet && {
+      ...basePet,
+      // Only the blanks are filled, so a field the invoice did answer wins.
+      name: basePet.name || listPet?.name,
+      species: basePet.species || listPet?.species,
+      breed: basePet.breed || listPet?.breed,
+      weight: basePet.weight ?? listPet?.weight,
+      photo: basePet.photo || listPet?.photo,
+    };
+
     const enrichedInvoice = {
       ...full,
-      pet: full.pet
-        ? { ...full.pet, owner: ownerFromUser }
-        : { name: 'N/A', owner: ownerFromUser },
+      pet: mergedPet ? { ...mergedPet, owner: ownerFromUser } : null,
     };
     generateInvoicePDF(enrichedInvoice, clinicSettings);
   };

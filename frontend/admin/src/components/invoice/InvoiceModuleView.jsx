@@ -191,13 +191,26 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
         console.error("PDF Patient Image error:", e);
       }
     }
+    // Only what the record actually holds is printed. The card used to fall
+    // back to "N/A" and "Mixed" for a species and breed that were simply never
+    // loaded, which read as if the clinic had no record of the patient.
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(10);
-    doc.text(patient.name || "N/A", patientCardX + 16, y + 10);
+    if (patient.name) doc.text(patient.name, patientCardX + 16, y + 10);
+
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`${patient.species?.name || "N/A"} • ${patient.breed?.name || "Mixed"}`, patientCardX + 16, y + 15);
-    doc.text(`Weight: ${invoiceData.weight_override || patient.weight || "N/A"} kg`, patientCardX + 16, y + 20);
+    let detailY = y + 15;
+    const speciesName = typeof patient.species === 'string' ? patient.species : patient.species?.name;
+    const breedName = typeof patient.breed === 'string' ? patient.breed : patient.breed?.name;
+    const breedLine = [speciesName, breedName].filter(Boolean).join(" • ");
+    if (breedLine) {
+      doc.text(breedLine, patientCardX + 16, detailY);
+      detailY += 5;
+    }
+    if (patient.weight) {
+      doc.text(`Weight: ${patient.weight} kg`, patientCardX + 16, detailY);
+    }
   }
 
   y += 45;
@@ -223,6 +236,14 @@ async function generateInvoicePDF(invoiceData, patient, clinic) {
       1: { halign: 'right', cellWidth: 20 },
       2: { halign: 'right', cellWidth: 30 },
       3: { halign: 'right', cellWidth: 35 },
+    },
+    // jspdf-autotable applies columnStyles to body cells only, so the QTY,
+    // UNIT PRICE and AMOUNT headings stayed left-aligned above right-aligned
+    // figures. Mirroring the alignment onto the header row lines them up.
+    didParseCell: (data) => {
+      if (data.section === 'head' && data.column.index > 0) {
+        data.cell.styles.halign = 'right';
+      }
     },
     head: [["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"]],
     body: (invoiceData.items || []).filter(item => !item.is_hidden).map(item => [

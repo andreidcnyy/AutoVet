@@ -29,6 +29,7 @@ import { useFormErrors } from "../../hooks/useFormErrors";
 import { LuStethoscope, LuPawPrint, LuPill } from "react-icons/lu";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { brandedTable, drawClinicFooter, drawClinicLetterhead } from "../../utils/clinicPdf";
 import OwnerProfileModal from "./OwnerProfileModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
@@ -129,92 +130,68 @@ function calculateAge(dob) {
 }
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PDF Generation â”€â”€ */
-async function generatePatientPDF(patient) {
-  const doc = new jsPDF();
-  const pageW = doc.internal.pageSize.getWidth();
-
-  // Header bar
-  doc.setFillColor(37, 99, 235); // emerald-600
-  doc.rect(0, 0, pageW, 32, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("Digivet Clinic", 14, 16);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("Patient Medical Summary", 14, 24);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageW - 14, 24, {
-    align: "right",
+/** The field/value table every section of the summary is laid out with. */
+function summaryTable(doc, startY, head, body) {
+  return brandedTable(doc, {
+    startY,
+    head,
+    body,
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 45 } },
   });
+}
 
-  let y = 44;
-  doc.setTextColor(30, 41, 59); // zinc-800
+/**
+ * The medical summary clients take home, on the same stationery as the
+ * invoice: clinic letterhead, blue-headed tables, "Powered by AutoVet Systems"
+ * footer. It used to open with a hardcoded "Digivet Clinic" banner, so a
+ * clinic's own branding never reached it.
+ */
+async function generatePatientPDF(patient) {
+  const clinic = await api.get("/api/settings").catch(() => null);
 
-  // Patient name & ID
-  doc.setFontSize(16);
+  const doc = new jsPDF();
+  let y = await drawClinicLetterhead(doc, clinic, "SUMMARY", [
+    `Patient Record #${patient.id}`,
+    `Date: ${new Date().toLocaleDateString()}`,
+  ]);
+
+  // Patient headline, laid out like the invoice's "BILL TO" block.
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
-  doc.text(patient.name, 14, y);
+  doc.text("PATIENT MEDICAL SUMMARY", 14, y);
+
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(16);
+  doc.text(patient.name || "", 14, y + 9);
+
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(`Patient ID: #${patient.id}`, 14, y + 6);
-  y += 16;
+  const headline = [patient.species?.name, patient.breed?.name, patient.sex].filter(Boolean).join(" • ");
+  if (headline) doc.text(headline, 14, y + 15);
 
-  // Demographics table
-  doc.setTextColor(30, 41, 59);
-  autoTable(doc, {
-    startY: y,
-    theme: "grid",
-    headStyles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: "bold", fontSize: 9 },
-    bodyStyles: { fontSize: 9 },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
-    head: [["Field", "Details"]],
-    body: [
-      ["Breed", patient.breed?.name || "—"],
-      ["Sex", patient.sex || "—"],
-      ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
-      ["Color", patient.color || "—"],
-      ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit || 'kg'}` : "—"],
-      ["Status", patient.status || "—"],
-    ],
-    margin: { left: 14, right: 14 },
-  });
+  y += 26;
 
-  y = doc.lastAutoTable.finalY + 10;
+  y = summaryTable(doc, y, ["PATIENT DETAILS", "VALUE"], [
+    ["Species", patient.species?.name || "—"],
+    ["Breed", patient.breed?.name || "—"],
+    ["Sex", patient.sex || "—"],
+    ["Date of Birth", patient.date_of_birth ? `${formatDate(patient.date_of_birth)} (${calculateAge(patient.date_of_birth)})` : "—"],
+    ["Color", patient.color || "—"],
+    ["Weight", patient.weight ? `${patient.weight} ${patient.weight_unit || "kg"}` : "—"],
+    ["Status", patient.status || "—"],
+  ]);
 
-  // Medical info
   if (patient.allergies || patient.medication || patient.notes) {
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Medical Information", 14, y);
-    y += 6;
-
     const medBody = [];
     if (patient.allergies) medBody.push(["Allergies", patient.allergies]);
     if (patient.medication) medBody.push(["Medication", patient.medication]);
     if (patient.notes) medBody.push(["Notes", patient.notes]);
-
-    autoTable(doc, {
-      startY: y,
-      theme: "grid",
-      headStyles: { fillColor: [254, 242, 242], textColor: [153, 27, 27], fontStyle: "bold", fontSize: 9 },
-      bodyStyles: { fontSize: 9 },
-      columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
-      head: [["Field", "Details"]],
-      body: medBody,
-      margin: { left: 14, right: 14 },
-    });
-
-    y = doc.lastAutoTable.finalY + 10;
+    y = summaryTable(doc, y, ["MEDICAL INFORMATION", "VALUE"], medBody);
   }
 
-  // Owner info
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Owner Information", 14, y);
-  y += 6;
-
-  const ownerBody = [
+  summaryTable(doc, y, ["OWNER INFORMATION", "VALUE"], [
     ["Name", patient.owner?.name || "—"],
     ["Phone", patient.owner?.phone || "—"],
     ["Email", patient.owner?.email || "—"],
@@ -224,26 +201,11 @@ async function generatePatientPDF(patient) {
         .filter(Boolean)
         .join(", ") || "—",
     ],
-  ];
+  ]);
 
-  autoTable(doc, {
-    startY: y,
-    theme: "grid",
-    headStyles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: "bold", fontSize: 9 },
-    bodyStyles: { fontSize: 9 },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 35 } },
-    head: [["Field", "Details"]],
-    body: ownerBody,
-    margin: { left: 14, right: 14 },
-  });
+  drawClinicFooter(doc);
 
-  // Footer
-  const pageH = doc.internal.pageSize.getHeight();
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  doc.text("This document was automatically generated by Pet Wellness Animal Clinic Management System.", 14, pageH - 10);
-
-  doc.save(`${patient.name.replace(/\s+/g, "_")}_Summary.pdf`);
+  doc.save(`Summary_${(patient.name || "Patient").replace(/\s+/g, "_")}.pdf`);
 }
 
 async function generateMedicalRecordPDF(record, patient) {
@@ -862,9 +824,19 @@ function AppointmentsTab({ appointments }) {
 
 
 function DetailViewModal({ title, onClose, data }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border overflow-hidden">
+  // Portalled to the body. This profile is itself rendered inside a modal whose
+  // panel is transformed for its open animation, and a transform makes that
+  // panel the containing block for anything "fixed" beneath it — so the detail
+  // view opened as a pane inside the pet's own window instead of over it.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border">
           <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">{title}</h3>
           <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors">✕</button>
@@ -891,7 +863,8 @@ function DetailViewModal({ title, onClose, data }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

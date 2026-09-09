@@ -18,7 +18,7 @@ import autovetLogo from "../assets/autovet-logo.png";
 function AppLayoutInner() {
   const { user, loading, login: setUser } = useAuth();
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
-  const { patientCount, appointmentCount, invoiceCount, markPatientsSeen, markAppointmentsSeen } = useNewItems();
+  const { patientCount, appointmentCount, markPatientsSeen, markAppointmentsSeen } = useNewItems();
   const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -177,11 +177,11 @@ function AppLayoutInner() {
           return { ...item, newCount: patientCount };
         if (item.id === "appointments" && appointmentCount > 0 && !onAppointments)
           return { ...item, newCount: appointmentCount };
-        if (item.id === "invoices" && invoiceCount > 0)
-          return { ...item, newCount: invoiceCount };
+        // Invoices deliberately carries no "+N" badge: a draft invoice is
+        // ordinary work in progress, not something new waiting to be seen.
         return item;
       });
-  }, [user, patientCount, appointmentCount, invoiceCount, location.pathname]);
+  }, [user, patientCount, appointmentCount, location.pathname]);
 
   const filteredBottomNav = useMemo(() => {
     if (!user || !user.role) return [];

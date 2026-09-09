@@ -370,8 +370,21 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice)
     {
+        // "pet.owner" eager-loads the pet and its owner but not the pet's
+        // species or breed, so the invoice PDF — which is the only consumer of
+        // this endpoint that reads them — printed the patient as "N/A • Mixed".
+        //
+        // They are loaded unscoped because species and breeds are clinic-scoped
+        // while portal clients carry no matching clinic_id, which would empty
+        // the relations again. Safe: the invoice is already caller-restricted.
+        $unscoped = fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class);
+
         return response()->json($invoice->load([
-            'pet.owner', 'items',
+            'pet' => $unscoped,
+            'pet.owner',
+            'pet.species' => $unscoped,
+            'pet.breed' => $unscoped,
+            'items',
             'appointment' => fn ($q) => $q
                 ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
                 ->withTrashed(),
