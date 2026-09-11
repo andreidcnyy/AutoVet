@@ -9,23 +9,11 @@ import DarkModeToggle from "../ui/DarkModeToggle";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
-import { ROLES } from "../../constants/roles";
+import { displayUserName, roleLabel } from "../../utils/userDisplay";
 import { getUserAvatarUrl } from "../../utils/userImages";
 import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import ManageDevicesModal from "../profile/ManageDevicesModal";
 import clsx from "clsx";
-
-/**
- * Veterinarians are addressed by title in the clinic, so the header shows
- * "Dr. Reyes" rather than the bare name. A name already entered as "Dr. …" is
- * left alone instead of being doubled up.
- */
-function displayName(user) {
-  const name = user?.name?.trim();
-  if (!name) return name;
-  if (user?.role !== ROLES.VETERINARIAN) return name;
-  return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`;
-}
 
 const iconMap = {
   FiBell,
@@ -212,8 +200,8 @@ function TopHeader({ title, user, onMenuToggle }) {
               <img src={resolveMediaUrl(user?.avatar) || getUserAvatarUrl(user?.role, user?.name)}
               onError={onUserImageError(getUserAvatarUrl, user?.role, user?.name)} alt={user?.name} className="h-9 w-9 rounded-full object-cover bg-zinc-100 dark:bg-dark-surface sm:h-11 sm:w-11" />
               <div className="hidden min-w-0 text-left sm:block">
-                <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50">{displayName(user)}</p>
-                <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>
+                <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-50">{displayUserName(user)}</p>
+                <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{roleLabel(user?.role)}</p>
               </div>
               <FiChevronDown className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
             </button>

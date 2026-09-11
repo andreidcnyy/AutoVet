@@ -7,13 +7,10 @@ import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
 import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import { ROLES } from "../../constants/roles";
+import { displayUserName, roleLabel } from "../../utils/userDisplay";
 import echo from "../../utils/echo";
 
 const isSuperAdmin = (role) => role === ROLES.SUPER_ADMIN;
-
-/** Roles are stored as snake_case keys; the table showed them raw. */
-const roleLabel = (role) =>
-  (role || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 // Normalize status to Title Case for consistent storage + display
 const normalizeStatus = (s) => {
@@ -271,7 +268,7 @@ export default function UserManagementTab() {
                       alt={member.name}
                       className="h-9 w-9 rounded-full object-cover bg-zinc-100"
                     />
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{member.name}</span>
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{displayUserName(member)}</span>
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm text-zinc-500 dark:text-zinc-400">{member.email}</td>
