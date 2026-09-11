@@ -336,8 +336,21 @@ function InventoryView() {
   const expiredCount = inventoryRows.filter(isRowExpired).length;
   const lowStockAiCount = inventoryRows.filter(r => r.latest_forecast?.forecast_status === 'Low Stock').length;
 
+  // Receiving a delivery creates a new row sharing the product's code — that is
+  // what FIFO consumes oldest-first. Counting rows therefore made "Total Stock
+  // Items" climb by one every time stock was received, as if a new product had
+  // been added. Count distinct products instead. Rows predating the code
+  // backfill can still have an empty code, so those fall back to their own id
+  // and count once each rather than collapsing into a single "" group.
+  const distinctProductCount = new Set(
+    inventoryRows.map((r) => {
+      const code = r.code ? String(r.code).trim() : "";
+      return code !== "" ? `code:${code}` : `id:${r.id}`;
+    })
+  ).size;
+
   const summaryCards = [
-    { id: "total",    label: "TOTAL STOCK ITEMS",   value: inventoryRows.length, meta: "Live DB Records",    icon: FiBox,          color: "text-zinc-900 dark:text-zinc-100", accent: "bg-emerald-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
+    { id: "total",    label: "TOTAL STOCK ITEMS",   value: distinctProductCount, meta: "Distinct Products",  icon: FiBox,          color: "text-zinc-900 dark:text-zinc-100", accent: "bg-emerald-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
     { id: "low",      label: "LOW STOCK ALERTS",     value: lowStockAiCount,      meta: "Predictive Need",   icon: FiAlertTriangle, color: "text-amber-600",                  accent: "bg-amber-500",  bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
     { id: "expiring", label: "EXPIRING PRODUCTS",    value: expiringCount,        meta: "Within 30 Days",    icon: FiClock,         color: "text-orange-500",                  accent: "bg-orange-400", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
     { id: "expired",  label: "EXPIRED PRODUCTS",     value: expiredCount,         meta: "Check Expiry Dates", icon: FiBell,         color: "text-rose-600",                   accent: "bg-rose-500",   bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
