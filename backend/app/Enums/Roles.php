@@ -25,6 +25,20 @@ enum Roles: string
     }
 
     /**
+     * Roles allowed to READ the clinic dashboard and analytics.
+     *
+     * Wider than adminRoles() because front-desk staff need the dashboard
+     * counters and the analytics charts to do their job — the admin sidebar
+     * already lists both for them (CLINIC_STAFF_ROLES in the frontend).
+     * Financial endpoints (sales revenue, top services) stay on adminRoles();
+     * the dashboard hides that card from staff.
+     */
+    public static function dashboardRoles(): array
+    {
+        return [...self::adminRoles(), self::STAFF->value];
+    }
+
+    /**
      * Roles with clinical privileges (diagnose, write medical records).
      */
     public static function clinicalRoles(): array

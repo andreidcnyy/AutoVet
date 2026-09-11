@@ -141,13 +141,18 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
     Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
 
-    // Admin-only dashboard & metrics
+    // Triggering a forecast run is a write action — keep it on admin roles.
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('/dashboard/run-forecast',         [DashboardController::class, 'runForecastSync']);
+    });
+
+    // Read-only dashboard & metrics — includes front-desk staff, who are shown
+    // the Dashboard and Analytics nav items and need these to render.
+    Route::middleware('role:' . implode(',', Roles::dashboardRoles()))->group(function () {
         Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
         Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
         Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
         Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecast']);
-        Route::post('/dashboard/run-forecast',         [DashboardController::class, 'runForecastSync']);
         Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
         Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
         Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
@@ -382,7 +387,13 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
         // Inventory Reports
         Route::get('/reports/inventory/low-stock', [LowStockReportController::class, 'generate']);
 
-        // Analytics (feeds linear regression from real invoice + usage data)
+    });
+
+    // Analytics (feeds linear regression from real invoice + usage data).
+    // Separate from the reports group above so front-desk staff can open the
+    // Analytics page, which is in their sidebar. Sales/revenue reports stay
+    // restricted to admin roles.
+    Route::group(['middleware' => 'role:' . implode(',', Roles::dashboardRoles())], function () {
         Route::get('/reports/analytics/transaction-trends', [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionTrends']);
         Route::get('/reports/analytics/transaction-stats',  [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionStats']);
         Route::get('/reports/analytics/inventory-consumption', [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryConsumption']);
