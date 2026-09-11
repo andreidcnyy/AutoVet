@@ -208,7 +208,10 @@ function PetsListView() {
                         </div>
                     </div>
                     
-                    <div className="absolute bottom-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 duration-300">
+                    {/* Sat at bottom-right, directly on top of the Age value, so
+                        hovering a card hid the very figure it was inviting you to
+                        read. The top-right corner is empty by design. */}
+                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 duration-300">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg">
                             <FiChevronRight className="h-4 w-4" />
                         </div>

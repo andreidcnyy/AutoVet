@@ -443,7 +443,10 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
   return (
     <div className={clsx("space-y-5", isModal && "p-6")}>
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* In modal mode the parent floats its close button at right-6/top-6, which
+          landed on top of the Archive button below. Reserve that corner so the
+          two stop sharing it. */}
+      <div className={clsx("flex flex-wrap items-center justify-between gap-4", isModal && "pr-14")}>
         <div className="flex items-center gap-4">
           {!isModal && (
             <button

@@ -63,8 +63,10 @@ function CategoryBreakdown({ data, hue, unitLabel }) {
       </p>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 48, left: 0, bottom: 0 }} barCategoryGap="28%">
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" horizontal={false} />
-          <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+          {/* Axis kept for the scale it gives the bars, but hidden: every bar is
+              labelled with its own value below, so the tick row and the gridlines
+              tied to it were a second way of reading a number already in print. */}
+          <XAxis type="number" allowDecimals={false} hide />
           <YAxis
             type="category"
             dataKey="category"
