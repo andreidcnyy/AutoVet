@@ -54,7 +54,7 @@ export default function SpeciesBreedsTab() {
   const fetchSizeCategories = async (signal) => {
     if (!user?.token) return;
     try {
-      const res = await fetch("/api/pet-size-categories", {
+      const res = await fetch("/api/pet-size-categories?per_page=100", {
         signal,
         headers: { "Accept": "application/json", "Authorization": `Bearer ${user.token}` }
       });
@@ -253,9 +253,16 @@ export default function SpeciesBreedsTab() {
     ? species.filter(s => s.name.toLowerCase().includes(newSpeciesName.toLowerCase()))
     : species;
 
-  const filteredBreeds = newBreedName.trim()
-    ? (currentSpeciesData?.breeds || []).filter(b => b.name.toLowerCase().includes(newBreedName.toLowerCase()))
-    : (currentSpeciesData?.breeds || []);
+  // The size select narrows the list as well as supplying the default size for
+  // a breed added from this form. It only did the latter, so choosing a size
+  // left every other size on screen and read as a filter that does nothing.
+  const filteredBreeds = (currentSpeciesData?.breeds || []).filter(b => {
+    const matchesName = !newBreedName.trim()
+      || b.name.toLowerCase().includes(newBreedName.toLowerCase());
+    const matchesSize = !newBreedDefaultSize
+      || String(b.default_size_category_id ?? "") === String(newBreedDefaultSize);
+    return matchesName && matchesSize;
+  });
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -361,7 +368,7 @@ export default function SpeciesBreedsTab() {
                   onChange={(e) => setNewBreedDefaultSize(e.target.value)}
                   className="h-10 w-48 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                 >
-                  <option value="">Default Size...</option>
+                  <option value="">All Sizes</option>
                   {sizeCategories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -430,7 +437,7 @@ export default function SpeciesBreedsTab() {
               ))}
               {filteredBreeds.length === 0 && (
                 <p className="text-sm text-zinc-500">
-                  {newBreedName ? "No breeds match your search." : "No breeds added yet."}
+                  {newBreedName || newBreedDefaultSize ? "No breeds match your search." : "No breeds added yet."}
                 </p>
               )}
             </ul>
