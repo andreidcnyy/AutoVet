@@ -11,6 +11,10 @@ import echo from "../../utils/echo";
 
 const isSuperAdmin = (role) => role === ROLES.SUPER_ADMIN;
 
+/** Roles are stored as snake_case keys; the table showed them raw. */
+const roleLabel = (role) =>
+  (role || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 // Normalize status to Title Case for consistent storage + display
 const normalizeStatus = (s) => {
   if (!s) return "Active";
@@ -271,7 +275,7 @@ export default function UserManagementTab() {
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm text-zinc-500 dark:text-zinc-400">{member.email}</td>
-                <td className="px-4 py-4 text-sm text-zinc-700 dark:text-zinc-300">{member.role}</td>
+                <td className="px-4 py-4 text-sm text-zinc-700 dark:text-zinc-300">{roleLabel(member.role)}</td>
                 <td className="px-4 py-4">
                   <span
                     className={clsx(
