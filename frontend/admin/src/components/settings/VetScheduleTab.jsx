@@ -249,26 +249,34 @@ export default function VetScheduleTab() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-end">
-                <div className="grid grid-cols-2 gap-4 md:col-span-1">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break Start (Opt)</label>
-                    <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break End (Opt)</label>
-                    <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
-                  </div>
+              {/* One flat grid rather than a 2-up pair nested in a 3-up row: the
+                  nested pair made the break fields half the width of the ones
+                  beside them, and the third cell wrapped onto its own line at
+                  medium widths. Each cell is a column whose input is pushed to
+                  the bottom, so the controls stay on one line however many lines
+                  a label wraps to at a given width. */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="flex flex-col">
+                  <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break Start (Opt)</label>
+                  <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                 </div>
 
-                <div>
+                <div className="flex flex-col">
+                  <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break End (Opt)</label>
+                  <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                </div>
+
+                <div className="flex flex-col">
                   <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Max Appointments (per shift)</label>
-                  <input type="number" min="1" max="100" value={maxAppointments} onChange={e => setMaxAppointments(parseInt(e.target.value))} className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  <input type="number" min="1" max="100" value={maxAppointments} onChange={e => setMaxAppointments(parseInt(e.target.value))} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                 </div>
 
-                <div className="flex items-center h-10 gap-2 mb-0.5">
-                  <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
-                  <label htmlFor="isAvail" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Available</label>
+                <div className="flex flex-col">
+                  <span aria-hidden="true" className="mb-1 hidden text-xs font-semibold sm:block">&nbsp;</span>
+                  <div className="mt-auto flex h-10 items-center gap-2">
+                    <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
+                    <label htmlFor="isAvail" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Available</label>
+                  </div>
                 </div>
               </div>
 
@@ -303,10 +311,13 @@ export default function VetScheduleTab() {
                   const daySchedules = currentVetSchedules.filter(s => s.day_of_week === day);
                   return (
                     <div key={day} className="flex flex-col md:flex-row md:items-start justify-between py-3 border-b border-zinc-100 dark:border-dark-border last:border-0">
-                      <div className="w-32 font-medium text-zinc-800 dark:text-zinc-200">{day}</div>
-                      <div className="flex-1 flex flex-col gap-2 mt-2 md:mt-0">
+                      <div className="w-32 shrink-0 font-medium text-zinc-800 dark:text-zinc-200">{day}</div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 mt-2 md:mt-0">
                         {daySchedules.length > 0 ? daySchedules.map(schedule => (
-                          <div key={schedule.id} className="flex items-center gap-4 text-sm bg-zinc-50 dark:bg-dark-surface p-2 rounded-lg border border-zinc-200 dark:border-dark-border">
+                          /* Wraps instead of overflowing: the status pill, the
+                             hours and the break pill did not fit one line on a
+                             phone, so the row spilled past the card edge. */
+                          <div key={schedule.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm bg-zinc-50 dark:bg-dark-surface p-2 rounded-lg border border-zinc-200 dark:border-dark-border">
                             <span className={`px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${schedule.is_available ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                               {schedule.is_available ? 'Working' : 'Off'}
                             </span>

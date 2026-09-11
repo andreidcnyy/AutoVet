@@ -306,12 +306,17 @@ export default function ServiceManagementTab() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
-            <div className="flex items-center justify-between mb-4">
+          {/* Capped to the viewport with the body scrolling inside it. The panel
+              used to grow with its content, so a size- or weight-priced service
+              pushed the header off the top of the screen and the page itself
+              had to be scrolled to reach the Save button. */}
+          <div className="flex w-full max-w-md flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-card border dark:border-dark-border">
+            <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingService ? "Edit Service" : "Add Service"}</h3>
               <button onClick={handleCloseModal} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Service Name *</label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
@@ -348,7 +353,7 @@ export default function ServiceManagementTab() {
               {formData.pricing_type === 'size_based' && (
                 <div className="mt-4 border-t pt-4 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/50 p-3 rounded-xl">
                   <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Size-based Pricing</p>
-                  <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+                  <div className="space-y-3">
                     {petSizes.map(size => {
                       const rule = formData.pricing_rules.find(r => r.basis_type === 'size' && r.reference_id === size.id);
                       return (
@@ -384,7 +389,7 @@ export default function ServiceManagementTab() {
                 <div className="mt-4 border-t pt-4 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/50 p-3 rounded-xl">
                   <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Weight-based Pricing</p>
                   <p className="text-[10px] text-zinc-500 mb-3 italic">Prices are set per size category. Weights are auto-mapped based on species.</p>
-                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-3">
                     {petSizes.map(size => {
                       const rule = formData.pricing_rules.find(r => r.basis_type === 'size' && r.reference_id === size.id);
                       return (
@@ -447,8 +452,9 @@ export default function ServiceManagementTab() {
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
-              
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-dark-border">
+              </div>
+
+              <div className="flex shrink-0 justify-end gap-3 border-t border-zinc-200 px-6 py-4 dark:border-dark-border">
                 <button type="button" onClick={handleCloseModal} className="px-4 py-2 font-semibold text-zinc-600 hover:text-zinc-800 dark:text-zinc-300">Cancel</button>
                 <button type="submit" className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 font-semibold text-white hover:bg-emerald-700"><FiSave/> Save</button>
               </div>
