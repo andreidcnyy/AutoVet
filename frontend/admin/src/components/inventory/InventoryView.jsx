@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Fragment, useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
 import echo from "../../utils/echo";
@@ -37,6 +37,15 @@ const isRowExpired = (row) => {
   if (!row?.expiration_date) return false;
   const t = new Date(); t.setHours(0, 0, 0, 0);
   return new Date(row.expiration_date) < t;
+};
+
+// Expiring means "within the next 30 days and not yet lapsed", judged per
+// batch, since each delivery carries its own expiration date.
+const isBatchExpiringSoon = (row) => {
+  if (!row?.expiration_date) return false;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const exp = new Date(row.expiration_date);
+  return exp >= t && Math.ceil((exp - t) / 86400000) <= 30;
 };
 
 const statusStyles = {
@@ -163,7 +172,17 @@ function InventoryView() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [showAiGuide, setShowAiGuide] = useState(false);
+  // Which product rows have their batch list open. Keyed by product key, so it
+  // survives a refetch that hands back new row objects.
+  const [expandedProducts, setExpandedProducts] = useState(() => new Set());
   const itemsPerPage = 8;
+
+  const toggleProduct = (key) =>
+    setExpandedProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
 
   const { user } = useAuth();
   const isAdmin = VET_AND_ADMIN.includes(user?.role);
@@ -310,44 +329,91 @@ function InventoryView() {
     }
   };
 
-  const filteredRows = inventoryRows.filter((row) => {
+  // Receiving a delivery creates a NEW row sharing the product's code — those
+  // sibling rows are the batches InvoiceFinalizationService consumes
+  // oldest-first, so the extra row is correct FIFO behaviour and the API must
+  // keep returning it. What was wrong was the screen: one product with three
+  // deliveries read as three separate products, and its quantity looked split.
+  // Group the rows back into products here, in the view only. Nothing about
+  // the schema, the endpoints or the deduction order changes.
+  const products = useMemo(() => {
+    const groups = new Map();
+
+    for (const row of inventoryRows) {
+      const code = row.code ? String(row.code).trim() : "";
+      // Rows predating the code backfill have no code to group on, so they
+      // stand alone rather than collapsing into one shared "" bucket.
+      const key = code !== "" ? `code:${code}` : `id:${row.id}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row);
+    }
+
+    return Array.from(groups.entries()).map(([key, rows]) => {
+      // Ascending id is the order FIFO consumes, so the first row is both the
+      // original product and the next batch to be drawn down.
+      const batches = [...rows].sort((a, b) => a.id - b.id);
+      const primary = batches[0];
+
+      const totalStock = batches.reduce((sum, b) => sum + Number(b.stock_level || 0), 0);
+
+      // A forecast is stored per batch. At product level report the most
+      // severe one, so a product is never shown as Safe while one of its
+      // batches is projected to run out.
+      const severity = { "Low Stock": 3, "Reorder Soon": 2, Safe: 1 };
+      const worstStatus = batches.reduce((worst, b) => {
+        const status = b.latest_forecast?.forecast_status;
+        if (!status) return worst;
+        return (severity[status] ?? 0) > (severity[worst] ?? 0) ? status : worst;
+      }, null);
+      const worstForecast =
+        batches.find((b) => b.latest_forecast?.forecast_status === worstStatus)?.latest_forecast ?? null;
+
+      const priceVaries = batches.some((b) => Number(b.price) !== Number(primary.price));
+      const sellPriceVaries = batches.some((b) => Number(b.selling_price) !== Number(primary.selling_price));
+
+      return {
+        key,
+        primary,
+        batches,
+        totalStock,
+        worstStatus,
+        worstForecast,
+        priceVaries,
+        sellPriceVaries,
+        hasExpiring: batches.some(isBatchExpiringSoon),
+        hasExpired: batches.some(isRowExpired),
+      };
+    });
+  }, [inventoryRows]);
+
+  // Filter whole products, never individual batches, so a product's displayed
+  // total is always its real total rather than the sum of whatever matched.
+  const filteredProducts = products.filter((p) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch = row.item_name.toLowerCase().includes(q) || (row.code && row.code.toLowerCase().includes(q));
+    const matchesSearch =
+      p.primary.item_name.toLowerCase().includes(q) ||
+      (p.primary.code && p.primary.code.toLowerCase().includes(q)) ||
+      p.batches.some((b) => (b.batch_number || "").toLowerCase().includes(q));
     if (!matchesSearch) return false;
-    if (selectedCategory !== "all" && row.inventory_category?.name !== selectedCategory) return false;
-    const t = new Date(); t.setHours(0,0,0,0);
-    const expDate = row.expiration_date ? new Date(row.expiration_date) : null;
+    if (selectedCategory !== "all" && p.primary.inventory_category?.name !== selectedCategory) return false;
 
     if (activeFilter === "All Items") return true;
-    if (activeFilter === "Low Stock") return row.latest_forecast?.forecast_status === 'Low Stock';
-    if (activeFilter === "Expiring") return expDate && Math.ceil((expDate - t) / 86400000) <= 30 && expDate >= t;
-    if (activeFilter === "Expired") return isRowExpired(row);
+    if (activeFilter === "Low Stock") return p.worstStatus === "Low Stock" || p.totalStock <= 0;
+    if (activeFilter === "Expiring") return p.hasExpiring;
+    if (activeFilter === "Expired") return p.hasExpired;
     return true;
   });
 
-  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-  const currentItems = filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentItems = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const expiringCount = inventoryRows.filter(r => {
-    const d = r.expiration_date ? new Date(r.expiration_date) : null;
-    return d && Math.ceil((d - today) / 86400000) <= 30 && d >= today;
-  }).length;
+  // Expiry belongs to the individual batch, so these two stay batch-level
+  // counts on purpose — one expired batch of a product is one thing to pull
+  // off the shelf. The other two cards count products.
+  const expiringCount = inventoryRows.filter(isBatchExpiringSoon).length;
   const expiredCount = inventoryRows.filter(isRowExpired).length;
-  const lowStockAiCount = inventoryRows.filter(r => r.latest_forecast?.forecast_status === 'Low Stock').length;
-
-  // Receiving a delivery creates a new row sharing the product's code — that is
-  // what FIFO consumes oldest-first. Counting rows therefore made "Total Stock
-  // Items" climb by one every time stock was received, as if a new product had
-  // been added. Count distinct products instead. Rows predating the code
-  // backfill can still have an empty code, so those fall back to their own id
-  // and count once each rather than collapsing into a single "" group.
-  const distinctProductCount = new Set(
-    inventoryRows.map((r) => {
-      const code = r.code ? String(r.code).trim() : "";
-      return code !== "" ? `code:${code}` : `id:${r.id}`;
-    })
-  ).size;
+  const lowStockAiCount = products.filter((p) => p.worstStatus === "Low Stock").length;
+  const distinctProductCount = products.length;
 
   const summaryCards = [
     { id: "total",    label: "TOTAL STOCK ITEMS",   value: distinctProductCount, meta: "Distinct Products",  icon: FiBox,          color: "text-zinc-900 dark:text-zinc-100", accent: "bg-emerald-500", bg: "bg-white dark:bg-dark-card", labelColor: "text-zinc-400" },
@@ -467,96 +533,124 @@ function InventoryView() {
               ) : currentItems.length === 0 ? (
                 <tr><td colSpan="8" className="py-20 text-center font-bold text-zinc-400 uppercase tracking-widest">No Items Found</td></tr>
               ) : (
-                currentItems.map((row) => {
-                  const isExpired = isRowExpired(row);
+                currentItems.map((product) => {
+                  const { key, primary, batches, totalStock, worstStatus, worstForecast } = product;
+                  const isExpanded = expandedProducts.has(key);
+                  const isOut = totalStock <= 0;
+                  const isLow = worstStatus === 'Low Stock';
+                  const money = (v) => `₱${Number(v).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   return (
-                    <tr key={row.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20 transition-colors">
+                    <Fragment key={key}>
+                    <tr className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/20 transition-colors">
                       <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight leading-tight">{row.item_name}</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{row.code || row.sku}</span>
-                                {row.expiration_date && (
-                                    <span className={clsx("text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm", isExpired ? "bg-rose-100 text-rose-600" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800")}>
-                                        EXP: {new Date(row.expiration_date).toLocaleDateString()}
+                        <div className="flex items-start gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleProduct(key)}
+                            aria-expanded={isExpanded}
+                            aria-label={isExpanded ? `Hide batches of ${primary.item_name}` : `Show batches of ${primary.item_name}`}
+                            className="mt-0.5 rounded-md p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                          >
+                            <FiChevronRight className={clsx("h-4 w-4 transition-transform", isExpanded && "rotate-90")} />
+                          </button>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight leading-tight">{primary.item_name}</span>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{primary.code || primary.sku}</span>
+                                {product.hasExpired && (
+                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                                        Has expired batch
+                                    </span>
+                                )}
+                                {!product.hasExpired && product.hasExpiring && (
+                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                                        Expiring soon
                                     </span>
                                 )}
                             </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <div className="flex flex-col">
+                        <button
+                          type="button"
+                          onClick={() => toggleProduct(key)}
+                          className="flex flex-col text-left hover:opacity-70"
+                        >
                             <span className="text-[10px] font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-widest">
-                                {row.batch_number || "No Batch"}
+                                {batches.length === 1 ? (primary.batch_number || "No Batch") : `${batches.length} batches`}
                             </span>
-                            {row.lot_number && (
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase mt-0.5">Lot: {row.lot_number}</span>
-                            )}
-                        </div>
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase mt-0.5">
+                                {batches.length === 1
+                                  ? (primary.lot_number ? `Lot: ${primary.lot_number}` : "Single batch")
+                                  : (isExpanded ? "Hide breakdown" : "Show breakdown")}
+                            </span>
+                        </button>
                       </td>
                       <td className="px-6 py-5">
                         <span className="text-[10px] font-black uppercase text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg">
-                            {row.inventory_category?.name || "Unsorted"}
+                            {primary.inventory_category?.name || "Unsorted"}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-center">
                          <div className="flex flex-col items-center">
                             <span className={clsx(
                                 "text-lg font-black",
-                                row.stock_level <= 0 ? "text-rose-600 animate-pulse" : "text-zinc-900 dark:text-zinc-100"
+                                isOut ? "text-rose-600 animate-pulse" : "text-zinc-900 dark:text-zinc-100"
                             )}>
-                                {row.stock_level <= 0 ? "OUT" : row.stock_level}
+                                {isOut ? "OUT" : totalStock}
                             </span>
                             <span className="text-[9px] font-bold text-zinc-400 uppercase">
-                                {row.stock_level <= 0 ? "OF STOCK" : (row.unit || "pcs")}
+                                {isOut ? "OF STOCK" : `${primary.unit || "pcs"}${batches.length > 1 ? " total" : ""}`}
                             </span>
                          </div>
                       </td>
                       <td className="px-6 py-5 text-right">
                         <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                          {row.price > 0 ? `₱${Number(row.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                          {primary.price > 0 ? money(primary.price) : <span className="text-zinc-300 dark:text-zinc-600">—</span>}
                         </span>
+                        {product.priceVaries && (
+                          <span className="block text-[9px] font-bold uppercase tracking-widest text-zinc-400">Varies by batch</span>
+                        )}
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <span className={clsx("text-sm font-black", row.selling_price > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-400 dark:text-rose-500")}>
-                          {row.selling_price > 0 ? `₱${Number(row.selling_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "No price"}
+                        <span className={clsx("text-sm font-black", primary.selling_price > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-400 dark:text-rose-500")}>
+                          {primary.selling_price > 0 ? money(primary.selling_price) : "No price"}
                         </span>
+                        {product.sellPriceVaries && (
+                          <span className="block text-[9px] font-bold uppercase tracking-widest text-zinc-400">Varies by batch</span>
+                        )}
                       </td>
                       <td className="px-6 py-5">
                          {/* Expiry is judged from the date on every render, so an item
                              lapses on its own and a changed system date is reflected
                              at once — the stored status only ever tracks stock level. */}
-                         {isRowExpired(row) && (
-                            <span className={clsx("mb-1 inline-block rounded-md border px-2 py-1 text-[10px] font-black uppercase tracking-widest", statusStyles["Expired"])}>
-                                Expired
-                            </span>
-                         )}
-                         {row.latest_forecast ? (
+                         {worstForecast ? (
                             <div className={clsx(
                                 "flex flex-col gap-1 p-2 rounded-xl border",
-                                (row.latest_forecast.forecast_status === 'Low Stock' || row.stock_level <= 0)
-                                    ? (row.stock_level <= 0 ? "border-rose-200 bg-rose-50 dark:bg-rose-900/10" : "border-amber-200 bg-amber-50 dark:bg-amber-900/10")
+                                (isLow || isOut)
+                                    ? (isOut ? "border-rose-200 bg-rose-50 dark:bg-rose-900/10" : "border-amber-200 bg-amber-50 dark:bg-amber-900/10")
                                     : "border-emerald-100 bg-emerald-50/30 dark:bg-emerald-900/10 dark:border-emerald-800"
                             )}>
                                 <span className={clsx(
                                     "text-[9px] font-black uppercase leading-none tracking-widest",
-                                    row.stock_level <= 0 ? "text-rose-400" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-400" : "text-emerald-400")
-                                )}>AI projection</span>
+                                    isOut ? "text-rose-400" : (isLow ? "text-amber-400" : "text-emerald-400")
+                                )}>AI projection{batches.length > 1 ? " — worst batch" : ""}</span>
                                 <span className={clsx(
                                     "text-[11px] font-black uppercase",
-                                    row.stock_level <= 0 ? "text-rose-600 dark:text-rose-400" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")
+                                    isOut ? "text-rose-600 dark:text-rose-400" : (isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")
                                 )}>
-                                    {row.stock_level <= 0 ? "Out of Stock" : row.latest_forecast.forecast_status}
+                                    {isOut ? "Out of Stock" : worstStatus}
                                 </span>
                                 <span className={clsx(
                                     "text-[10px] font-bold italic",
-                                    row.stock_level <= 0 ? "text-rose-500" : (row.latest_forecast.forecast_status === 'Low Stock' ? "text-amber-500" : "text-zinc-500 dark:text-zinc-400")
+                                    isOut ? "text-rose-500" : (isLow ? "text-amber-500" : "text-zinc-500 dark:text-zinc-400")
                                 )}>
-                                    {row.stock_level <= 0
+                                    {isOut
                                         ? "Immediate reorder required"
-                                        : (row.latest_forecast.days_until_stockout == null
+                                        : (worstForecast.days_until_stockout == null
                                             ? "Stable trend — no stockout predicted"
-                                            : `Out in ~${row.latest_forecast.days_until_stockout} ${row.latest_forecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
+                                            : `Out in ~${worstForecast.days_until_stockout} ${worstForecast.days_until_stockout === 1 ? 'day' : 'days'}`)}
                                 </span>
                             </div>
                          ) : <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-600 italic">Needs more transaction data</span>}
@@ -565,17 +659,79 @@ function InventoryView() {
                         <div className="flex items-center justify-end gap-3">
                           {isAdmin && (
                             <button
-                              onClick={() => setReceivingProduct(row)}
+                              onClick={() => setReceivingProduct(primary)}
                               className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400"
                               title="Receive a new batch of this product"
                             >
                               <FiPackage className="h-3 w-3" /> Receive
                             </button>
                           )}
-                          <button onClick={() => setViewedProduct(row)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
+                          <button onClick={() => setViewedProduct(primary)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
                         </div>
                       </td>
                     </tr>
+
+                    {/* Batch breakdown. Listed oldest-first, which is the order
+                        FIFO draws them down, so the top row is what the next
+                        invoice will consume. */}
+                    {isExpanded && batches.map((b, i) => {
+                      const batchExpired = isRowExpired(b);
+                      return (
+                        <tr key={b.id} className="bg-zinc-50/70 dark:bg-dark-surface/30 text-zinc-600 dark:text-zinc-400">
+                          <td className="px-6 py-3 pl-14">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                {i === 0 ? "Next to be used" : `Batch ${i + 1}`}
+                              </span>
+                              {b.expiration_date && (
+                                <span className="mt-0.5 text-[9px] font-black uppercase tracking-tighter text-zinc-400">
+                                  EXP: {new Date(b.expiration_date).toLocaleDateString()}
+                                </span>
+                              )}
+                              {batchExpired && (
+                                <span className={clsx("mt-1 inline-block w-fit rounded-md border px-2 py-0.5 text-[9px] font-black uppercase tracking-widest", statusStyles["Expired"])}>
+                                  Expired
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300">{b.batch_number || "No Batch"}</span>
+                              {b.lot_number && <span className="text-[9px] font-bold text-zinc-400 uppercase mt-0.5">Lot: {b.lot_number}</span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3">
+                            {b.supplier && <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">{b.supplier}</span>}
+                          </td>
+                          <td className="px-6 py-3 text-center">
+                            <span className={clsx("text-sm font-black", b.stock_level <= 0 ? "text-rose-500" : "text-zinc-700 dark:text-zinc-300")}>
+                              {b.stock_level <= 0 ? "0" : b.stock_level}
+                            </span>
+                            <span className="block text-[9px] font-bold text-zinc-400 uppercase">{b.unit || "pcs"}</span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="text-[11px] font-bold">{b.price > 0 ? money(b.price) : "—"}</span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="text-[11px] font-bold">{b.selling_price > 0 ? money(b.selling_price) : "—"}</span>
+                          </td>
+                          <td className="px-6 py-3">
+                            {b.latest_forecast ? (
+                              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                {b.latest_forecast.forecast_status}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-600 italic">No forecast</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <button onClick={() => setViewedProduct(b)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 underline underline-offset-4">Details</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    </Fragment>
                   );
                 })
               )}
