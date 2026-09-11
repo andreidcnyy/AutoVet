@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FiTrash2, FiPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
@@ -84,8 +85,8 @@ export default function ServiceManagementTab() {
 
     Promise.all([
       fetch("/api/service-categories", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/pet-size-categories", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
-      fetch("/api/weight-ranges", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/pet-size-categories?per_page=100", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
+      fetch("/api/weight-ranges?per_page=200", { signal: controller.signal, headers }).then(r => r.json()).catch(() => []),
     ]).then(([catsRaw, sizesRaw, rangesRaw]) => {
       const categories = Array.isArray(catsRaw?.data) ? catsRaw.data : (Array.isArray(catsRaw) ? catsRaw : []);
       const sizesList = Array.isArray(sizesRaw?.data) ? sizesRaw.data : (Array.isArray(sizesRaw) ? sizesRaw : []);
@@ -129,7 +130,16 @@ export default function ServiceManagementTab() {
         pricing_type: service.pricing_type || "fixed",
         measurement_basis: service.measurement_basis || "none",
         base_price: service.base_price || service.price || 0,
-        pricing_rules: service.pricing_rules || []
+        // The API serialises the relation under its camelCase method name, so
+        // reading pricing_rules always found undefined and every size price
+        // opened blank — and, being required inputs, had to be retyped before
+        // the service could be saved at all. reference_id is normalised to a
+        // number so it matches the size ids these rows are looked up by.
+        pricing_rules: (service.pricingRules || service.pricing_rules || []).map(r => ({
+          basis_type: r.basis_type,
+          reference_id: Number(r.reference_id),
+          price: r.price,
+        })),
       });
     } else {
       setEditingService(null);
@@ -304,13 +314,15 @@ export default function ServiceManagementTab() {
         </table>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4">
-          {/* Capped to the viewport with the body scrolling inside it. The panel
-              used to grow with its content, so a size- or weight-priced service
-              pushed the header off the top of the screen and the page itself
-              had to be scrolled to reach the Save button. */}
-          <div className="flex w-full max-w-md flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-card border dark:border-dark-border">
+      {isModalOpen && createPortal(
+        /* Rendered straight into the body, on the same overlay the inventory
+           modals use. Left in the settings tree it sat under whatever the page
+           layout did around it, and a "fixed" overlay is only the viewport
+           while no ancestor has a transform, filter or containment of its own.
+           my-auto inside a scrollable overlay keeps it centred when it fits and
+           lets it scroll when it does not. */
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-zinc-950/50 p-4">
+          <div className="my-auto flex w-full max-w-md flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingService ? "Edit Service" : "Add Service"}</h3>
               <button onClick={handleCloseModal} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><FiX size={20}/></button>
@@ -460,7 +472,8 @@ export default function ServiceManagementTab() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
