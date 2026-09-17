@@ -3,16 +3,27 @@
               Hybrid Veterinary Clinic Management System
                        Pet Wellness Animal Clinic
 ================================================================================
-Document version : 1.0
-Last updated     : September 3, 2026
+Document version : 2.0
+Last updated     : September 17, 2026
 Applies to       : AutoVet Client Portal + AutoVet Clinic Admin System
+
+NOTE ON ACCURACY
+This manual was written by reading the system's source code directly, not from
+the original project proposal. Where the proposal and the built system differ,
+this manual describes THE BUILT SYSTEM. Features that exist in the code but are
+switched off, or that are only partially wired up, are listed plainly in
+Section 36 (Known Limitations) rather than described as if they work.
+
+Currency amounts are shown in the system with the Philippine peso sign. This
+document writes them as "PHP 1,200.00" to avoid text-encoding problems.
+
 
 ================================================================================
 TABLE OF CONTENTS
 ================================================================================
 PART I  - INTRODUCTION
   1.  About AutoVet
-  2.  Who Uses the System (User Roles)
+  2.  User Roles and What Each Can Do
   3.  System Requirements & Access
   4.  Common Screen Elements
 
@@ -22,7 +33,7 @@ PART II - CLIENT PORTAL (FOR PET OWNERS)
   7.  The Owner Dashboard
   8.  Registering and Managing Pets
   9.  Booking an Appointment
-  10. Viewing Visit History
+  10. Viewing Appointments and Visit History
   11. Viewing Invoices and Receipts
   12. Notifications
   13. Leaving a Review
@@ -31,27 +42,31 @@ PART II - CLIENT PORTAL (FOR PET OWNERS)
 
 PART III - CLINIC ADMIN SYSTEM (FOR STAFF)
   16. Logging In as Staff
-  17. Dashboard Overview
+  17. Dashboard
   18. Analytics
-  19. Patient Records
+  19. Patients
   20. Appointments and Walk-Ins
-  21. Inventory with AI Forecasting
-  22. Invoices and Billing
-  23. Reviews and Feedback
-  24. AI Clinical Support
-  25. Client Notifications
-  26. Maintenance / Settings
+  21. Calendar
+  22. Inventory with AI Forecasting
+  23. Invoices and Billing
+  24. Reviews and Feedback
+  25. AI Clinical Support
+  26. Client Notifications
+  27. Maintenance / Settings
+  28. Your Profile, Notifications and Password
 
 PART IV - SUPER ADMIN
-  27. Clinic Management
-  28. System Broadcasts
-  29. Super Admin Accounts and Logs
+  29. Clinic Management
+  30. System Broadcasts
+  31. Super Admin Accounts and System Logs
 
 PART V  - REFERENCE
-  30. Status Definitions
-  31. Troubleshooting
-  32. Data Safety, Privacy and Backups
-  33. Support and Contact
+  32. Status Definitions
+  33. Automated Background Tasks
+  34. Troubleshooting
+  35. Data Safety, Privacy and Backups
+  36. Known Limitations
+  37. Support and Contact
 
 
 ================================================================================
@@ -61,103 +76,122 @@ PART V  - REFERENCE
 --------------------------------------------------------------------------------
 1. ABOUT AUTOVET
 --------------------------------------------------------------------------------
-AutoVet is a veterinary clinic management system made up of two connected
-applications that share one database:
+AutoVet is a veterinary clinic management system made up of three connected
+parts:
 
-  (a) THE CLIENT PORTAL
-      A website for pet owners. Owners register their pets, book visits,
-      track medical summaries, view invoices, receive reminders and leave
-      reviews.
+  (a) THE CLIENT PORTAL - a website where pet owners register, add their pets,
+      book appointments, view invoices and leave reviews.
 
-  (b) THE CLINIC ADMIN SYSTEM
-      The staff workspace. Staff manage patient records, medical records,
-      appointments, walk-ins, inventory, invoicing, users and clinic
-      settings.
+  (b) THE CLINIC ADMIN SYSTEM - a dashboard where clinic staff manage patients,
+      appointments, medical records, billing and inventory.
 
-The system also includes intelligent modules:
+  (c) THE AI FORECASTING MODULE - a prediction engine that estimates when each
+      inventory item will run out, so stock can be reordered before it is gone.
 
-  * AI INVENTORY FORECASTING - predicts when stock will run out using a
-    regression model trained on the clinic's own consumption history, and
-    flags items as Low Stock before they are depleted.
-  * AI CLINICAL SUPPORT - generates supporting suggestions from a patient's
-    profile, history and the symptoms a veterinarian types in. It is a
-    reference aid only; it does NOT diagnose or prescribe.
-  * VIRTUAL ASSISTANT - a rule-based chatbot on the portal that answers
-    frequently asked questions about location, hours, services and booking.
+The three are linked. Booking in the portal creates an appointment the clinic
+sees immediately. Finalizing an invoice deducts stock. Deducted stock becomes
+the data the forecast learns from.
 
-Changes made in one application appear in the other. Several screens update
-live over a realtime connection (for example, an appointment approval appears
-on the owner's screen without a page refresh).
+WHAT THE SYSTEM DOES NOT DO
+  - It does not diagnose animals. The AI Clinical Support tool (Section 25)
+    offers reference suggestions only; a licensed veterinarian decides.
+  - It does not accept online payments. Invoices are produced and recorded in
+    the system; payment itself happens at the clinic.
+  - It does not order stock automatically. The forecast recommends; a human
+    places the order.
+
 
 --------------------------------------------------------------------------------
-2. WHO USES THE SYSTEM (USER ROLES)
+2. USER ROLES AND WHAT EACH CAN DO
 --------------------------------------------------------------------------------
-There are five roles. What you can see and do depends on your role.
+There are five roles.
 
-  OWNER (Pet Owner)
-      Uses the Client Portal only. Manages own pets, bookings, invoices and
-      profile. Cannot see other owners' data.
+  SUPER ADMIN    Platform level. Manages clinics, clinic accounts, system-wide
+                 broadcasts and other super admins. Can view data across all
+                 clinics.
 
-  STAFF
-      Clinic Admin System. Day-to-day operations: dashboard, analytics,
-      patients, appointments, inventory, invoices. No access to Maintenance
-      (Settings) or Reviews management.
+  CLINIC ADMIN   Full control of one clinic: staff accounts, services, pricing,
+                 inventory, reports, settings.
 
-  VETERINARIAN
-      Everything Staff can do, plus Reviews & Feedback, Maintenance
-      (Settings), and clinical actions such as writing medical records.
+  VETERINARIAN   Clinical privileges - writes medical records and diagnoses -
+                 plus normal clinic operations and settings access.
 
-  CLINIC ADMIN
-      Full control of one clinic: everything above, plus user management,
-      master data, backups, archives and audit logs.
+  STAFF          Front desk. Appointments, patients, invoicing, inventory and
+                 analytics. Cannot open Settings or Reviews, and does not see
+                 the sales/revenue card on the dashboard.
 
-  SUPER ADMIN
-      Platform level. Manages clinics, creates clinic administrators,
-      publishes system-wide broadcasts and reviews system logs. Does NOT
-      work inside a clinic's day-to-day patient data.
+  OWNER          A pet owner using the Client Portal. Sees only their own pets,
+                 bookings and invoices.
+
+SCREEN ACCESS BY ROLE (Clinic Admin System)
+
+  Screen                  Super Admin  Clinic Admin  Veterinarian  Staff
+  ----------------------  -----------  ------------  ------------  -----
+  Dashboard                    -            Yes           Yes       Yes
+  Analytics                    -            Yes           Yes       Yes
+  Patients                    Yes           Yes           Yes       Yes
+  Appointments                Yes           Yes           Yes       Yes
+  Inventory                    -            Yes           Yes       Yes
+  Invoices                     -            Yes           Yes       Yes
+  Reviews & Feedback           -            Yes           Yes        -
+  AI Clinical Support          -            Yes           Yes       Yes
+  Maintenance / Settings       -            Yes           Yes        -
+  Clinic Management           Yes            -             -         -
+  System Broadcasts           Yes            -             -         -
+  Super Admins / Logs         Yes            -             -         -
+
+  A dash means the item does not appear in that role's sidebar. Super Admin
+  works from the platform screens rather than the clinic screens; Patients and
+  Appointments remain reachable for support purposes.
+
+Access is enforced on the server, not merely hidden in the interface. Opening a
+restricted address directly produces a "Forbidden" screen or an empty result,
+never another clinic's data.
+
 
 --------------------------------------------------------------------------------
 3. SYSTEM REQUIREMENTS & ACCESS
 --------------------------------------------------------------------------------
-  * A modern web browser (Google Chrome, Microsoft Edge, Firefox or Safari,
-    updated to a recent version).
-  * An internet connection.
-  * The Client Portal works on phones, tablets and desktops.
-  * The Clinic Admin System is designed for desktop or laptop screens; it
-    works on a tablet but a larger screen is strongly recommended.
-  * Owners need a working email address (a verification link is sent to it).
-  * Staff accounts are created by a Clinic Admin - staff cannot self-register.
+  - A current web browser (Chrome, Edge, Firefox or Safari).
+  - An internet connection.
+  - No installation. Both systems run in the browser.
 
-  Your clinic will give you the two web addresses:
-      Client Portal        -> used by pet owners
-      Clinic Admin System  -> used by clinic personnel
+  Client Portal        - the portal web address supplied by the clinic
+  Clinic Admin System  - the admin web address supplied by the clinic
+
+Both work on phones and tablets as well as desktop computers. A dark-mode
+toggle is available in the portal.
+
+ACCOUNTS
+  - Pet owners create their own portal account (Section 5).
+  - Clinic staff accounts are created for them by a Clinic Admin or
+    Veterinarian under Settings > Users / Roles. Staff cannot self-register.
+
 
 --------------------------------------------------------------------------------
 4. COMMON SCREEN ELEMENTS
 --------------------------------------------------------------------------------
-  SIDEBAR / MENU
-      On the left of the Clinic Admin System, and in the slide-out menu on
-      the portal. Only the sections your role is allowed to open are shown.
+  SIDEBAR            Left-hand navigation in the admin system. Only the screens
+                     your role may open are listed.
 
-  TOP HEADER
-      Shows the current page title, notification bell, dark-mode switch and
-      your account menu (Profile, Change Password, Log Out).
+  SEARCH BOX         Filters the list on screen as you type.
 
-  DARK MODE
-      Click the sun/moon icon to switch between light and dark appearance.
-      Your choice is remembered on that device.
+  FILTER CHIPS       Buttons such as All Items / Low Stock / Expiring / Expired
+                     that narrow a list to one category.
 
-  TOASTS
-      Short messages that slide in at the corner to confirm an action
-      ("Saved!", "Scheduled!") or warn you about a problem.
+  STATUS BADGES      Coloured labels showing state. Green means healthy, amber
+                     means attention needed, red means urgent or expired.
 
-  BROADCAST BANNER
-      A coloured strip across the top of the screen carrying a system-wide
-      announcement from the Super Admin (for example, scheduled downtime).
+  NOTIFICATION BELL  Unread count of system notifications.
 
-  SEARCH AND FILTER BARS
-      Most list screens (Patients, Inventory, Invoices, Appointments) have a
-      search box and filter chips. Filters combine with the search text.
+  LIVE UPDATING      Most screens update on their own when something changes,
+                     without pressing refresh. If the live connection drops,
+                     screens still refresh themselves every 10-30 seconds and
+                     whenever you click back into the browser tab. A short
+                     delay is normal; a frozen screen is not.
+
+  PAGINATION         Lists show a fixed number of rows per page with arrows at
+                     the bottom to move between pages.
 
 
 ================================================================================
@@ -167,227 +201,223 @@ There are five roles. What you can see and do depends on your role.
 --------------------------------------------------------------------------------
 5. CREATING AN ACCOUNT
 --------------------------------------------------------------------------------
-You have two ways to register.
+There are two ways to register.
 
-  OPTION A - REGISTER WITH EMAIL
-    1. Open the portal and click "Register".
-    2. Fill in the form:
-         - Full name
-         - Email address (must be real - the verification link is sent here)
-         - Mobile number
-         - Address, Province, City/Municipality, ZIP code
-         - Password, and Confirm password
-    3. Tick that you accept the Terms of Service and Privacy Policy.
-    4. Click Register. A confirmation screen tells you a verification link
-       was sent to your email.
-    5. Open your inbox and click the verification link. If you cannot find
-       the email, check the Spam or Promotions folder.
-    6. Return to the portal and log in.
+  A. EMAIL REGISTRATION
+     1. Open the portal and choose Register.
+     2. Fill in your details and choose a password.
+     3. Submit the form. The system sends a verification link to your email.
+     4. Open the email and click the link.
+     5. You may now log in.
 
-  OPTION B - SIGN UP WITH GOOGLE
-    1. Click "Sign up with Google" and choose your Google account.
-    2. Because Google does not supply your address or phone, the system asks
-       you to complete a short profile form (phone, address, province, city,
-       ZIP).
-    3. Submit it and you are signed in.
+     The verification link expires and can only be used once. If it expires,
+     register again or use Forgot Password.
 
-  NOTES
-    * The province and city lists are Philippine location data; pick your
-      province first, then the city list is filtered for you.
-    * Mobile numbers are entered in the Philippine format (11 digits).
+  B. GOOGLE SIGN-IN
+     Choose the Google option on the login or register screen and pick your
+     Google account. No separate password is created.
+
+COMPLETING YOUR PROFILE
+After your first sign-in the system may ask you to complete your profile
+(contact number and address) before you can book. This is required so the
+clinic can reach you about an appointment.
+
+REGISTRATION LIMITS
+For security, registration, password reset and login attempts are rate limited.
+If you try too many times in quick succession you will be asked to wait about a
+minute before trying again. This is normal and not an error with your account.
+
 
 --------------------------------------------------------------------------------
 6. LOGGING IN / FORGOT PASSWORD
 --------------------------------------------------------------------------------
-  TO LOG IN
-    1. Go to the portal and click "Log In".
-    2. Enter your email and password, or use "Continue with Google".
+LOGGING IN
+  1. Open the portal and enter your email and password, or use Google sign-in.
+  2. You arrive at your Dashboard.
 
-  IF YOU FORGOT YOUR PASSWORD
-    1. Click "Forgot Password" on the login screen.
-    2. Enter the email address on your account and submit.
-    3. Open the reset link sent to your email.
-    4. Type your new password twice and save. You can now log in.
+FORGOT PASSWORD
+  1. Choose "Forgot password" on the login screen.
+  2. Enter your email address.
+  3. The system emails you a reset link.
+  4. Open the link and set a new password.
 
-  IF YOU CANNOT GET IN
-    * "Account pending deletion" - you requested deletion of your account.
-      A recovery screen appears with an option to cancel the deletion within
-      the grace period.
-    * "Account suspended / deactivated" - the clinic has restricted the
-      account. Contact the clinic directly; the on-screen message usually
-      states the reason.
-    * "Maintenance" screen - the system is briefly unavailable. The page
-      checks automatically every 15 seconds and returns you when it is back.
+  The reset link expires and works only once. The system never emails you your
+  existing password - it cannot, because passwords are stored scrambled and
+  cannot be read back by anyone, including clinic staff.
+
+ACCOUNT STATES YOU MAY ENCOUNTER
+  ACCOUNT BLOCKED     The clinic has suspended portal access for your account.
+                      Contact the clinic directly.
+  PENDING DELETION    You asked for your account to be deleted and the waiting
+                      period has not finished. You may still be able to cancel
+                      the request from this screen.
+  MAINTENANCE         The system is briefly unavailable while the clinic
+                      performs maintenance. Try again shortly.
+
 
 --------------------------------------------------------------------------------
 7. THE OWNER DASHBOARD
 --------------------------------------------------------------------------------
-After logging in you land on the Dashboard. It shows:
+The Dashboard is your home screen. It brings together:
 
-  * A greeting and quick summary of your account.
-  * YOUR PETS - a card for each registered pet with photo, species and
-    breed. Click a card to open that pet's profile.
-  * UPCOMING APPOINTMENTS - the next scheduled visits with date, time,
-    service and status.
-  * MEDICAL SUMMARY CARD - the most recent clinical summary recorded by the
-    clinic for your pet.
-  * PET CARE RECOMMENDATIONS - general care tips matched to your pet's
-    species and life stage.
-  * Shortcuts to Register Pet and Book Visit.
+  - Your registered pets, with quick access to each pet's profile.
+  - Your upcoming appointments.
+  - Recent notifications from the clinic.
+  - A medical summary card for your pet's recent clinical history.
+  - Pet care recommendations.
+  - Any clinic-wide announcement, shown as a banner across the top.
 
-  The portal menu contains: Dashboard, Register Pet, Book Visit,
-  Visit History, Notifications and Invoices.
+From here you can move to booking, your pets, invoices and notifications.
+
 
 --------------------------------------------------------------------------------
 8. REGISTERING AND MANAGING PETS
 --------------------------------------------------------------------------------
-  TO REGISTER A PET
-    1. Click "Register Pet" in the menu.
-    2. Fill in the details:
-         - Pet name
-         - Species (Dog, Cat, etc.)
-         - Breed (the list depends on the species you chose)
-         - Sex
-         - Date of birth (the system computes the age)
-         - Colour / markings
-         - Weight and weight unit
-         - Known allergies, if any
-    3. Optionally upload a photo of your pet.
-    4. Click Save. The pet now appears on your dashboard.
+ADDING A PET
+  1. From the Dashboard choose Add Pet.
+  2. Complete the form. The system records:
+        - Name
+        - Species and breed (chosen from the clinic's lists)
+        - Date of birth / age group
+        - Sex
+        - Colour
+        - Weight and weight unit
+        - Size category
+        - Allergies
+        - Current medication
+        - Notes
+        - A photo (optional)
+  3. Save. The pet now appears on your Dashboard.
 
-  TO EDIT A PET
-    Open the pet's profile and click Edit, change the fields and save.
-    Weight and photo are the fields most often updated.
+Species, breeds, size categories and weight ranges are maintained by the
+clinic. If your pet's breed is not listed, choose the closest match and note
+the exact breed in the Notes field, then mention it at your visit.
 
-  PET PROFILE
-    The pet profile page shows the pet's demographic details, the medical
-    summary shared by the clinic, and that pet's appointment history.
-    Medical records are entered by the clinic - owners can view what the
-    clinic has shared but cannot edit clinical entries.
+VIEWING A PET
+Open the pet from your Dashboard to see its profile, including its recorded
+details and medical summary.
+
+EDITING A PET
+Open the pet and choose Edit. Update the details and save.
+
+WHY WEIGHT AND SIZE MATTER
+Some services are priced by the pet's size category or weight range, so keeping
+these current helps the clinic quote you accurately.
+
 
 --------------------------------------------------------------------------------
 9. BOOKING AN APPOINTMENT
 --------------------------------------------------------------------------------
-    1. Click "Book Visit".
-    2. A calendar is shown. You can switch between Month, Week and Day views
-       using the arrows and view buttons. Coloured dots mark existing
-       appointments:
-             grey    = Pending
-             green   = Approved / Scheduled
-             red     = Cancelled or Declined
-             blue    = Completed
-    3. Click the date you want. Past dates cannot be selected.
-    4. Choose the PET the visit is for.
-    5. Choose one or more SERVICES (for example Consultation, Vaccination,
-       Grooming). Only services the clinic has marked Active are listed.
-    6. Choose a VETERINARIAN if the selected service requires one. Services
-       that do not require a doctor will not ask for this.
-    7. Pick a TIME SLOT. Slots run from 08:00 to 17:00 in 30-minute steps.
-       Slots already taken by an active appointment are hidden, so double
-       booking is prevented. For today, past times are not offered.
-    8. Add NOTES describing the reason for the visit or anything the vet
-       should know.
-    9. Submit. The appointment is created with status PENDING.
+  1. Choose Book Appointment.
+  2. Select the pet.
+  3. Select the service you need.
+  4. Select a date and an available time.
+  5. Add any notes for the clinic.
+  6. Submit.
 
-  WHAT HAPPENS NEXT
-    The clinic reviews the request and either approves or declines it. You
-    receive a notification, and the appointment status on your screen
-    updates live. If declined, the clinic's reason is included.
+WHAT HAPPENS NEXT
+  - Your booking is created with the status PENDING.
+  - The clinic sees the request immediately on their dashboard.
+  - You receive an "Appointment Received" email confirming the request arrived.
+  - When the clinic reviews it, the status becomes APPROVED or DECLINED and you
+    are emailed either way.
+  - If it is declined, the clinic must supply a written reason, which you can
+    read on your Appointments screen.
 
-  TO CANCEL OR RESCHEDULE
-    Open the appointment and cancel it, then book again at the new time, or
-    contact the clinic directly. The booking screen states this as well.
+AVAILABILITY AND DOUBLE BOOKING
+Available times come from the veterinarians' working schedules as configured by
+the clinic. The system checks the slot on the server before saving, so two
+people cannot take the same slot. If a slot disappears while you are filling in
+the form, it was taken first - choose another.
 
-  EMERGENCIES
-    Do not book through the portal for emergencies. Call the clinic and
-    bring your pet in immediately.
+IMPORTANT: a PENDING booking is a request, not a confirmed appointment. Please
+wait for the APPROVED email before travelling to the clinic.
+
 
 --------------------------------------------------------------------------------
-10. VIEWING VISIT HISTORY
+10. VIEWING APPOINTMENTS AND VISIT HISTORY
 --------------------------------------------------------------------------------
-  "Visit History" lists every appointment for all your pets, newest first,
-  with the date, time, pet, service, assigned vet and status. Click any row
-  to see the full details, including the notes you submitted and the
-  clinic's response.
+The Appointments screen lists your bookings with their current status
+(see Section 32 for what each status means).
 
-  Once a visit is marked COMPLETED, you may be invited to leave a review.
+For a declined appointment, the clinic's written reason is shown with it.
+
+Your pet's clinical history - what the vet found, the diagnosis and the
+treatment plan - appears in the pet's profile and medical summary rather than
+on the appointments list.
+
 
 --------------------------------------------------------------------------------
 11. VIEWING INVOICES AND RECEIPTS
 --------------------------------------------------------------------------------
-  The "Invoices" page lists the bills the clinic has issued to you, showing
-  the invoice number, date, total amount and payment status.
+The Invoices screen lists invoices raised for your pets, with the date, the
+invoice number, the amount and the status.
 
-  Open an invoice to see the itemised services and products, discounts, VAT
-  and the amount paid. A fully paid document is presented as a RECEIPT and
-  displays the payment method; an unpaid or partly paid one is presented as
-  an INVOICE.
+  - Open an invoice to see the itemised services and products.
+  - Invoices can be downloaded as a PDF for your records.
+  - A DRAFT invoice is still being prepared by the clinic and may change.
+    FINALIZED and PAID invoices are settled records.
 
-  Payment statuses you may see: Draft, Finalized, Partially Paid, Paid.
+Payment is made at the clinic. The portal does not take card payments.
 
-  Payments themselves are settled at the clinic - the portal does not
-  process online payments.
 
 --------------------------------------------------------------------------------
 12. NOTIFICATIONS
 --------------------------------------------------------------------------------
-  The bell icon shows a badge with the number of unread items. The
-  Notifications page collects:
+The Notifications screen collects messages from the clinic - appointment
+updates, reminders and any direct messages staff have sent you.
 
-    * appointment approvals, declines and reminders
-    * vaccination and follow-up reminders
-    * invoices sent to you by the clinic
-    * messages or warnings sent by clinic staff
-    * system announcements
+  - Unread items are marked; opening one marks it read.
+  - Important notices from the clinic may also appear as a pop-up warning when
+    you log in, which you must acknowledge.
+  - Clinic-wide announcements appear as a banner on your Dashboard.
 
-  You can mark all as read, dismiss a single item, or clear the list.
+Appointment emails are sent automatically for: appointment received,
+appointment approved, appointment declined, and appointment reminders.
+
 
 --------------------------------------------------------------------------------
 13. LEAVING A REVIEW
 --------------------------------------------------------------------------------
-  After a completed visit the portal offers a review form. Give a star
-  rating and, optionally, written feedback about your experience.
+After a completed visit the portal invites you to review your experience.
 
-  Reviews are moderated: clinic staff approve them before they can appear
-  publicly, and may feature selected reviews on the clinic's public page.
+  1. Open the review invitation from your Dashboard or Notifications.
+  2. Give a rating and write your comments.
+  3. Submit.
+
+Reviews are read by the clinic under Reviews & Feedback. Approved reviews may
+be displayed publicly on the clinic's landing page.
+
 
 --------------------------------------------------------------------------------
 14. MANAGING YOUR PROFILE AND ACCOUNT
 --------------------------------------------------------------------------------
-  EDIT PROFILE
-      Update your name, phone number, address and profile photo.
+From your profile you can:
+  - Update your name, contact number and address.
+  - Change your password.
+  - Update your profile photo.
+  - Request deletion of your account.
 
-  CHANGE PASSWORD
-      Enter your current password and the new one twice.
+ACCOUNT DELETION
+Requesting deletion starts a grace period rather than removing everything at
+once. During that period the account is marked pending deletion and you can
+still contact the clinic to stop it. This delay exists because the clinic is
+required to retain treatment and billing records.
 
-  DEVICES
-      You can review the devices signed in to your account and sign a device
-      out (or sign out everywhere) if you no longer recognise it.
-
-  DELETE ACCOUNT
-      Requesting deletion places the account in a pending-deletion state
-      rather than erasing it immediately. During the grace period you can
-      recover it by logging in and choosing to cancel the deletion; the
-      clinic can also cancel a pending deletion on your behalf.
 
 --------------------------------------------------------------------------------
 15. USING THE VIRTUAL ASSISTANT (CHATBOT)
 --------------------------------------------------------------------------------
-  The chat bubble in the corner of the public pages opens the AutoVet
-  assistant. Tap one of the suggested questions or type your own. It can
-  answer questions about:
+The portal includes a built-in assistant that answers common questions about
+the clinic - services, hours, booking, and how the portal works.
 
-      * clinic location and branch address
-      * contact numbers and email
-      * the services offered
-      * clinic hours
-      * how to book an appointment
-      * general pricing guidance
-      * what to bring for a first visit
-      * what to do in an emergency
+HOW IT WORKS
+It matches your question against a prepared set of topics, allowing for minor
+spelling mistakes. It is a structured assistant working from a fixed list of
+subjects. It is NOT a conversational AI, it does not read your pet's records,
+and it cannot give medical advice.
 
-  The assistant answers from a fixed set of clinic information. It does not
-  give medical advice and cannot access your account or book for you.
+If it cannot answer, contact the clinic directly.
 
 
 ================================================================================
@@ -397,536 +427,624 @@ After logging in you land on the Dashboard. It shows:
 --------------------------------------------------------------------------------
 16. LOGGING IN AS STAFF
 --------------------------------------------------------------------------------
-    1. Open the Clinic Admin System address and enter your email and
-       password. Accounts are issued by your Clinic Admin.
-    2. If you are logging in with a password that was reset for you, the
-       system sends you to the Change Password screen first. Set a new
-       password before continuing.
-    3. You land on the Dashboard. The menu shows only the modules your role
-       may open; opening a restricted address shows an "Access Denied" page.
+  1. Open the admin address and enter your work email and password.
+  2. You arrive at the Dashboard; the sidebar shows only what your role allows.
+
+  - Staff accounts are created by a Clinic Admin or Veterinarian under
+    Settings > Users / Roles.
+  - Change your password from the Change Password screen at any time.
+  - Repeated failed logins are rate limited; wait about a minute and retry.
+  - Logging out invalidates your session on the server, not just in the
+    browser. Always log out on a shared computer.
+
 
 --------------------------------------------------------------------------------
-17. DASHBOARD OVERVIEW
+17. DASHBOARD
 --------------------------------------------------------------------------------
-  The Dashboard is the clinic's daily control screen. It contains:
+The Dashboard is the clinic's daily overview. It shows:
 
-  METRIC CARDS
-      Headline figures such as the number of patients, clients, today's
-      appointments and sales totals.
+  - Headline counters: total pets, total clients, appointments confirmed for
+    today, appointments confirmed for tomorrow, and today's cancelled or
+    declined appointments. Each counter can be opened to see the list behind
+    it.
+  - Today's appointment schedule.
+  - Analytics charts: monthly clients, inventory items by category, and
+    services by category.
+  - Recent notifications.
+  - A sales summary (revenue for the last 30 days and top services).
 
-  TODAY'S SCHEDULE
-      Appointments for the current day with the pet, owner, service, time
-      and status; and a list of upcoming appointments.
+ROLE DIFFERENCE
+Staff see the dashboard without the sales summary card. Revenue figures are
+restricted to Clinic Admin and Veterinarian roles.
 
-  SALES SUMMARY
-      Revenue for the current period.
+The counters only include real clients; internal seed/demo records are excluded
+so the numbers reflect the actual practice.
 
-  INVENTORY AI STATUS / FORECAST INSIGHTS
-      A summary of what the forecasting module currently predicts: which
-      items are trending toward Low Stock, and when the last forecast ran.
-      A "Run Forecast" action recalculates predictions on demand, and a
-      toast tells you when the run has finished.
-
-  ANALYTICS CHARTS
-      Compact charts for consumption and clinic activity.
-
-  RECENT NOTIFICATIONS
-      The latest internal alerts - low stock warnings, new bookings,
-      expiring items, new client registrations.
 
 --------------------------------------------------------------------------------
 18. ANALYTICS
 --------------------------------------------------------------------------------
-  The Analytics page collects the clinic's reports:
+The Analytics screen presents trends drawn from real invoice and stock-usage
+data:
 
-  SALES
-      Revenue summary over time, top-performing services, and transaction
-      volume.
+  - Transaction trends over the last 12 months
+  - Transaction statistics for the last 30 days
+  - Inventory consumption over the last 6 months
+  - Current inventory stock summary
 
-  PATIENTS
-      Species distribution, registration trends, and demographics
-      (age groups, sex, size categories).
+Use these to spot seasonal patterns, busy periods and which products are moving
+fastest. Clinic Admin, Veterinarian and Staff can all open this screen.
 
-  INVENTORY
-      Stock levels, consumption trends and the low-stock report.
-
-  TRANSACTIONS
-      Trends and statistics across invoiced transactions.
-
-  Use the date range and category controls on each card to narrow the view.
-  Charts are for reading on screen; the patient and medical reports in the
-  Patients module are the ones designed for printing/PDF export.
 
 --------------------------------------------------------------------------------
-19. PATIENT RECORDS
+19. PATIENTS
 --------------------------------------------------------------------------------
-  The Patients module holds owners (clients) and their pets (patients).
+The Patients screen is the clinical record system.
 
-  ADDING A PATIENT
-    1. Go to Patients and click Add Patient.
-    2. Enter the OWNER details first - name, mobile number, address,
-       province and city. The system checks for a duplicate mobile number
-       and warns you if an owner with that number already exists, so you can
-       attach the pet to the existing client instead of creating a double.
-    3. Enter the PET details - name, species, breed, sex, date of birth,
-       colour, weight and allergies. Optionally upload a photo.
-    4. Save. The pet appears in the patient list.
+FINDING A PATIENT
+Search by pet name or owner name. The search is indexed, so it stays fast as
+the list grows. You can also filter by species.
 
-  THE PATIENT LIST
-      Search by pet name or owner, and filter the list. Each row opens the
-      patient's profile.
+PATIENT PROFILE
+Opening a patient shows:
+  - Pet details: species, breed, date of birth, sex, colour, weight, size
+    category, allergies, current medication and notes.
+  - Owner details: name, phone, email and address.
+  - Medical history.
+  - Invoice history.
 
-  THE PATIENT PROFILE
-      Four tabs:
+ADDING AND EDITING
+Staff can create and edit patient and owner records. Owners registered through
+the portal are linked to their clinic record, so a client who later registers
+online does not become a duplicate.
 
-      OVERVIEW
-          Demographics (breed, sex, age, colour, weight, date of birth),
-          last visit, next due date, allergies and clinical notes, plus the
-          owner's contact card. You can export a Patient Medical Summary
-          as a PDF from here.
+MEDICAL RECORDS
+A medical record is attached to a pet and, where relevant, to an appointment.
+It captures:
+  - Chief complaint
+  - Findings
+  - Diagnosis
+  - Treatment plan
+  - Notes
+  - Follow-up date and time
 
-      MEDICAL RECORDS
-          Every consultation recorded for the pet. A record captures the
-          chief complaint, findings, diagnosis, treatment plan and the
-          products or medicines used. Veterinarians create and edit these
-          entries. You can export a single medical record as a PDF, or the
-          pet's entire medical history as one report.
+Writing medical records is a clinical action, reserved for Veterinarian and
+Clinic Admin roles.
 
-      APPOINTMENTS
-          The pet's booking history with dates, services, notes and status.
+DELETION
+Deleting a patient hides it from lists but retains the record, because billing
+and treatment history must remain auditable. Recovery is possible from
+Settings > Archive & Recovery.
 
-      INVOICES
-          Every invoice issued for this patient.
-
-  EDITING AND OWNER TOOLS
-      From the patient list and profile you can edit the pet, edit the
-      owner's details, open the owner's full profile, and - where your role
-      allows - send the owner a warning message about conduct such as
-      repeated no-shows.
-
-  RECORDING PRODUCT USE
-      When medicines or consumables are used on a patient, record them
-      against the visit. The system deducts the quantity from inventory
-      automatically, so stock levels and the forecast stay accurate.
 
 --------------------------------------------------------------------------------
 20. APPOINTMENTS AND WALK-INS
 --------------------------------------------------------------------------------
-  The Appointments module manages both portal bookings and in-clinic
-  registrations. A Calendar view of the same data is also available.
+The Appointments screen lists bookings from the portal and appointments created
+at the clinic.
 
-  HANDLING A PORTAL REQUEST
-    New bookings arrive with status PENDING and appear immediately (no
-    refresh needed).
+PROCESSING A BOOKING REQUEST
+  - APPROVE   Confirms the appointment. The owner is emailed automatically.
+  - DECLINE   Requires a written reason of at least 10 characters. The reason is
+              stored and shown to the owner, and a decline email is sent.
+  - COMPLETE  Marks the visit as finished once the patient has been seen.
+  - REMIND    Sends the owner a reminder message for the appointment.
 
-      APPROVE  - confirms the slot. The owner is notified and the status
-                 becomes Approved/Scheduled on their screen.
-      DECLINE  - you must type a reason. The reason is sent to the owner.
-      REMIND   - sends the owner a reminder notification about the visit.
-      COMPLETE - marks the visit as finished after the pet has been seen.
-                 A completed visit is what makes the review request and the
-                 billing step available.
+Approve, Decline, Complete and Remind are restricted to Clinic Admin,
+Veterinarian and Super Admin roles.
 
-  CREATING AN APPOINTMENT AS STAFF
-    Use the Add/Schedule action, choose the owner, pet, service(s), vet,
-    date and time, and save.
+WALK-INS
+Clients who arrive without booking are registered through the walk-in flow.
+Walk-in appointments are flagged as such and deliberately bypass the time-slot
+check, because a walk-in has no pre-booked slot. Flagging them keeps reporting
+honest: booked and unbooked visits remain distinguishable.
 
-  REGISTERING A WALK-IN
-    1. Open the Add form and switch on "Walk-in".
-    2. Choose NEW OWNER or EXISTING OWNER.
-         - New owner: enter name, phone, address, city and province. As you
-           type the phone number the system checks for duplicates and warns
-           you if that number already belongs to a client.
-         - Existing owner: search and select the client; their pets are
-           offered for selection.
-    3. Enter the pet (name, species, breed) or pick an existing one.
-    4. Tick "Emergency" if the case is urgent so it is prioritised.
-    5. Submit. The owner, pet and visit are created together in one step.
+NEW-REQUEST INDICATOR
+The sidebar shows a count of items needing attention, so a new booking is not
+missed during a busy clinic.
 
-  DOUBLE-BOOKING PROTECTION
-    A time slot already held by an active appointment is not offered again.
-    Cancelled and declined appointments release their slot.
-
-  VET SCHEDULES
-    Availability is driven by the vet schedules configured under
-    Maintenance -> Vet Schedule.
 
 --------------------------------------------------------------------------------
-21. INVENTORY WITH AI FORECASTING
+21. CALENDAR
 --------------------------------------------------------------------------------
-  The Inventory module tracks medicines, consumables and retail products by
-  BATCH, so each batch keeps its own batch/lot number and expiry date.
+A calendar view of appointments is available in the system at the /calendar
+address. It is not currently listed in the sidebar, so it is reached by typing
+the address directly. All clinic roles may open it.
 
-  READING THE LIST
-      Each row shows the item name, batch number, current stock level with
-      its unit of measure, category, and the AI status. Filter chips let you
-      show All, Low Stock, or Out of Stock, and the search box finds items
-      by name.
-
-      Colour coding:
-          green  = healthy stock level
-          amber  = LOW STOCK - the forecast predicts it will run out soon
-          red    = OUT OF STOCK - zero units left, reorder immediately
-
-  ADDING AN ITEM
-    1. Click Add Item.
-    2. Enter the item name, category, unit of measure, unit cost/price,
-       reorder point, batch/lot number, quantity and expiry date.
-    3. Save.
-
-  RECEIVING STOCK
-    Use "Receive" on an existing item to log a new delivery. Each delivery
-    is recorded as its own batch row with its own quantity and expiry date,
-    so the clinic can track which batch expires first.
-
-  VIEWING AN ITEM
-    Opening an item shows its details, its batches, and its transaction
-    history - every receipt, deduction and adjustment with dates, so stock
-    movement is auditable.
-
-  AUTOMATIC DEDUCTION
-    Stock is deducted automatically when products are used on a patient or
-    added to an invoice. Manual counting is not required for normal use.
-
-  THE AI FORECAST
-    The forecasting module fits a linear regression over each item's
-    cumulative consumption history and projects it forward. For each item it
-    produces:
-
-        * a predicted depletion date (when stock is expected to hit zero)
-        * a suggested reorder timing
-        * a forecast status (for example Low Stock)
-        * a CONFIDENCE LEVEL derived from how well the trend fits the data:
-              High   - strong, consistent consumption pattern
-              Medium - moderate fit
-              Low    - erratic or sparse history; treat as a rough hint
-
-    You can view an item's current forecast, its saved forecast and its
-    forecast history, and you can ACCEPT a forecast to act on its
-    recommendation. Forecasts can be recalculated for all items from the
-    Dashboard's Run Forecast action.
-
-    IMPORTANT: the forecast is decision support. It suggests when to
-    reorder; it never orders anything by itself, and a Low confidence result
-    on an item with little history should be checked against your own
-    judgement.
-
-  EXPIRY MONITORING
-    The system checks for approaching expiry dates and raises notifications
-    so near-expiry batches can be used or pulled first.
 
 --------------------------------------------------------------------------------
-22. INVOICES AND BILLING
+22. INVENTORY WITH AI FORECASTING
 --------------------------------------------------------------------------------
-  The Invoices module turns a visit into a billing document.
+HOW STOCK IS ORGANISED - READ THIS FIRST
+Stock is tracked in BATCHES, not as a single running total per product. Each
+delivery is its own batch with its own expiry date, supplier and cost. Batches
+of the same product share the product's code.
 
-  CREATING AN INVOICE
-    1. Open Invoices and start a new invoice, selecting the client and pet
-       (usually from a completed appointment).
-    2. Add LINE ITEMS - services performed and products/medicines used.
-       Each line has a quantity and unit price; the subtotal updates as you
-       type. Products added here are deducted from inventory.
-    3. Apply a DISCOUNT if applicable. Choose PERCENTAGE or a FIXED AMOUNT.
-       The discount is capped so it can never exceed the subtotal.
-    4. VAT of 12% is applied to the discounted amount automatically.
-    5. Review the total due.
+This matters because medicines expire. When stock is used, the system draws
+from the OLDEST batch first and moves to the next when it is exhausted. This is
+called FIFO (first in, first out) and it mirrors what staff do physically -
+use the stock closest to expiring before it is wasted.
 
-  SAVING AND STATUS
-       DRAFT          - still being edited; nothing is committed.
-       FINALIZED      - the invoice is issued.
-       PARTIALLY PAID - the amount paid is greater than zero but less than
-                        the total due. The system sets this automatically.
-       PAID           - the amount paid covers the total due. Set
-                        automatically once payment is recorded.
+THE INVENTORY SCREEN
+Each row is a PRODUCT showing its TOTAL stock across all its batches. Click the
+arrow at the left of a row to expand it and see the individual batches, listed
+oldest first. The top batch in that list is the one the next invoice will draw
+from.
 
-  RECORDING PAYMENT
-    Enter the amount paid and the payment method. The status is promoted to
-    Partially Paid or Paid on its own based on the amount - you do not set
-    it manually.
+SUMMARY CARDS
+  TOTAL STOCK ITEMS   Number of distinct products. Receiving a new delivery of
+                      an existing product does NOT increase this number - it
+                      increases that product's total stock instead.
+  LOW STOCK ALERTS    Number of products the forecast flags as running low.
+  EXPIRING PRODUCTS   Number of BATCHES expiring within 30 days.
+  EXPIRED PRODUCTS    Number of BATCHES already past their expiry date.
 
-  PRINTING AND SENDING
-    Export the document as a PDF. An unpaid document prints as an INVOICE;
-    a fully paid one prints as a RECEIPT and shows the payment method. You
-    can also send the invoice to the client so it appears in their portal
-    Invoices page and notifications.
+  Expiring and Expired are counted per batch on purpose: an expired batch is
+  one physical box to pull off the shelf.
 
---------------------------------------------------------------------------------
-23. REVIEWS AND FEEDBACK
---------------------------------------------------------------------------------
-  (Veterinarian and Clinic Admin only.)
+RECEIVING STOCK
+  1. Find the product and choose Receive.
+  2. Enter quantity, batch number, and optionally lot number, expiry date, cost
+     price, selling price, supplier and remarks.
+  3. Save.
 
-  Reviews submitted by owners after completed visits arrive here for
-  moderation. For each review you can:
+  A new batch is created and the product's total rises by the quantity
+  received. A stock-in transaction is recorded. Receiving stock is restricted
+  to Clinic Admin, Veterinarian and Super Admin.
 
-      APPROVE  - allow it to be shown publicly
-      FEATURE  - highlight it among the public reviews
-      DELETE   - remove it
+ADDING A NEW PRODUCT
+Use Add Item for a product the clinic has never stocked before. Use Receive for
+another delivery of something you already stock.
 
-  Only approved reviews are visible on the public side of the portal.
+AI FORECASTING
+For each product the system predicts when stock will run out.
 
---------------------------------------------------------------------------------
-24. AI CLINICAL SUPPORT
---------------------------------------------------------------------------------
-  This module is available only to accounts where AI features have been
-  enabled. If it is switched off for your account, the page reports that the
-  feature is not enabled.
+  HOW IT WORKS
+  It studies how much of the item has actually been dispensed over time,
+  calculates the daily usage rate, and projects the date the stock will fall
+  below the minimum level. It learns only from real dispensing recorded when
+  invoices are finalized. Stock corrections and data imports are deliberately
+  excluded, because they are not consumption.
 
-  HOW TO USE IT
-    1. Open AI Clinical Support and select the patient.
-    2. Type the presenting SYMPTOMS in your own words (a short description
-       is enough; the field accepts up to 1000 characters).
-    3. Submit.
+  CONFIDENCE LEVELS
+  Every forecast carries a confidence score:
+     HIGH    - usage is steady; the date is dependable
+     MEDIUM  - a usable trend with visible irregularity
+     LOW     - erratic usage; treat the date as a rough guide
 
-  The system builds a profile for the AI from the pet's species, breed, age,
-  weight, sex, recorded allergies and a summary of its five most recent
-  medical records (chief complaint, diagnosis and treatment plan), then
-  returns supporting suggestions to consider.
+  NEW ITEMS
+  A product needs at least 3 completed transactions before a trend can be
+  produced. Until then it shows "Insufficient Data" together with a progress
+  percentage and the number of further transactions required. The system
+  deliberately shows this rather than inventing a forecast from sample data.
 
-  LIMITS - READ THIS
-    The output is reference material for a qualified veterinarian. It does
-    not diagnose, does not prescribe, and must never replace clinical
-    examination and professional judgement. Always verify against your own
-    findings before acting.
+  WHEN IT RUNS
+  Forecasts refresh automatically every night. A Clinic Admin or Veterinarian
+  can also trigger a recalculation from the inventory screen. Because results
+  are stored, opening the screen is instant.
 
---------------------------------------------------------------------------------
-25. CLIENT NOTIFICATIONS
---------------------------------------------------------------------------------
-  From this area staff can communicate with clients:
+  WHAT IT CANNOT DO
+  It assumes steady usage. A disease outbreak, a vaccination drive or a
+  seasonal surge is a sudden change it cannot anticipate. It does not know
+  supplier lead times or holidays. It recommends; it never orders.
 
-    * Send a message to a client manually.
-    * Send an invoice to a client.
-    * Send a warning to an owner (for example, for repeated no-shows).
-    * Review the client notification history - what was sent, to whom and
-      when.
+EXPIRY MONITORING
+The system checks for expiring stock every morning and notifies staff.
 
-  Internal staff notifications (low stock, new bookings, expiring items)
-  have their own history page.
 
 --------------------------------------------------------------------------------
-26. MAINTENANCE / SETTINGS
+23. INVOICES AND BILLING
 --------------------------------------------------------------------------------
-  (Veterinarian and Clinic Admin only.) Settings is organised into tabs.
+CREATING AN INVOICE
+  1. Open Invoices and create a new invoice.
+  2. Select the patient.
+  3. Add services and products as line items.
+  4. Prices fill in automatically from the clinic's price list.
+  5. Save as DRAFT while you work.
 
-  CLINIC PROFILE
-      Clinic name, address, contact details and branding shown on documents
-      and in the portal.
+HOW PRICES ARE CALCULATED
+Services are priced one of three ways:
+  FIXED         One price regardless of patient.
+  SIZE-BASED    Priced by the pet's size category.
+  WEIGHT-BASED  Priced by the pet's weight range.
+A manual price can be entered where required. The price used is stored on the
+invoice line, so later changes to the price list never alter past invoices.
 
-  MASTER DATA
-      The reference lists the rest of the system depends on: inventory
-      categories, service categories, units of measure, pet size categories
-      and weight ranges. Keep these tidy - they populate the dropdowns
-      everywhere else.
+FINALIZING AN INVOICE - WHAT IT TRIGGERS
+Finalizing is the point at which the invoice becomes a settled record, and it
+does three things at once:
+  1. The invoice locks to FINALIZED.
+  2. Stock is deducted FIFO across batches for every consumable line marked to
+     deduct on finalize. If the first batch cannot cover the quantity, the
+     remainder comes from the next batch.
+  3. A usage-history entry is written for each deduction, which becomes the
+     training data for the AI forecast.
 
-  SERVICE MANAGEMENT
-      The clinic's services. For each service set the name, category, price,
-      whether it is ACTIVE (only active services can be booked by owners)
-      and whether it requires a veterinarian (which controls whether the
-      booking form asks the owner to pick a vet).
+Because of step 2, finalize only when the visit is genuinely complete.
 
-  SPECIES & BREEDS
-      Maintain the species list and the breeds under each species. These
-      drive the pet registration forms on both applications.
+If stock is insufficient to cover a line, the system records the shortage
+rather than silently allowing a negative stock level.
 
-  USERS / ROLES
-      Create clinic user accounts, assign roles (Staff, Veterinarian,
-      Clinic Admin), deactivate accounts and reset a user's password. A user
-      whose password was reset is required to change it at next login.
+DOCUMENTS
+Invoices can be produced as PDFs. Reports and summaries can also be exported
+from the reporting screens.
 
-      This area also covers PORTAL USERS - the owner accounts. You can
-      suspend, deactivate or reactivate a portal account. A suspended or
-      deactivated owner is signed out and shown an explanatory screen.
+REPORTS AVAILABLE
+  - Sales: revenue summary, top services, transaction volume
+  - Patients: species distribution, registration trends, demographics
+  - Inventory: low stock report
+  Sales, patient and inventory reports are restricted to Clinic Admin,
+  Veterinarian and Super Admin.
 
-  VET SCHEDULE
-      Set each veterinarian's working days and hours. Schedules can be added
-      one at a time or in bulk. Appointment availability follows these
-      schedules.
 
-  SYSTEM & AI PREFERENCES
-      System-wide switches, including maintenance mode and the AI feature
+--------------------------------------------------------------------------------
+24. REVIEWS AND FEEDBACK
+--------------------------------------------------------------------------------
+Reviews submitted by pet owners are collected here for Clinic Admin and
+Veterinarian roles.
+
+  - Read reviews with the rating, the comment and the pet's species.
+  - Approved reviews can be published to the clinic's public landing page.
+
+Reviews are also manageable from Settings > Reviews.
+
+
+--------------------------------------------------------------------------------
+25. AI CLINICAL SUPPORT
+--------------------------------------------------------------------------------
+This screen provides reference suggestions to assist a veterinarian's thinking.
+
+HOW TO USE IT
+  1. Open AI Clinical Support.
+  2. Provide the pet's profile details and describe the presenting symptoms.
+  3. Submit to receive suggestions.
+
+IMPORTANT - PLEASE READ
+  - This is a SUPPORT tool. It does not diagnose and it does not prescribe.
+    A licensed veterinarian makes every clinical decision.
+  - It is a separate technology from the inventory forecasting. Inventory
+    forecasting is a statistical model running on the clinic's own data; AI
+    Clinical Support sends the information you type to an external AI service.
+  - It requires configuration by the administrator. If it has not been set up,
+    the screen reports that the AI service is not configured.
+  - It can be switched on or off per administrator account, and under
+    Settings > System & AI Preferences.
+  - Because information is sent externally, do not enter client personal
+    details that are not clinically necessary.
+
+
+--------------------------------------------------------------------------------
+26. CLIENT NOTIFICATIONS
+--------------------------------------------------------------------------------
+This screen is for communicating with pet owners.
+
+  - Send a message to a client.
+  - Send an invoice to a client.
+  - Issue a formal warning to an owner, which appears to them as a pop-up they
+    must acknowledge.
+  - Review the history of what has been sent.
+
+MESSAGE TEMPLATES
+Automatic messages are built from editable templates, so wording can be changed
+without a developer. The templates supplied with the system cover:
+  - Appointment Reminder
+  - Appointment Created (request received)
+  - Appointment Approved
+  - Appointment Declined
+
+Templates use placeholders such as {pet_name}, {date} and {time}, which are
+replaced with real values when the message is sent. Keep the placeholders
+intact when editing.
+
+Sending client notifications is restricted to Clinic Admin, Veterinarian and
+Super Admin.
+
+
+--------------------------------------------------------------------------------
+27. MAINTENANCE / SETTINGS
+--------------------------------------------------------------------------------
+Settings is available to Clinic Admin and Veterinarian roles only. It contains
+ten sections.
+
+  1.  CLINIC PROFILE
+      Clinic name, contact numbers, address and logo. These appear on printed
+      documents.
+
+  2.  MASTER DATA
+      The reference lists the rest of the system draws on: inventory
+      categories, service categories, units of measure, pet size categories and
+      weight ranges. Changing these changes the options staff see everywhere.
+
+  3.  SERVICE MANAGEMENT
+      The service catalogue and its pricing. Set each service's pricing method
+      (fixed, size-based or weight-based), its price rules, whether it requires
+      a doctor, and which consumables it uses.
+
+  4.  SPECIES & BREEDS
+      The species and breed lists offered when registering a pet.
+
+  5.  USERS / ROLES
+      Create, edit and deactivate staff accounts and set each person's role.
+      Passwords can be reset here.
+
+  6.  VET SCHEDULE
+      Each veterinarian's working hours. This is what generates the bookable
+      time slots in the portal, so keep it current - an empty schedule means no
+      slots for clients to book.
+
+  7.  SYSTEM & AI PREFERENCES
+      System-wide options including maintenance mode, cloud sync and AI feature
       toggles.
 
-  SYSTEM AUDIT LOGS
-      A searchable record of who did what and when - logins, record changes,
-      deletions and administrative actions.
+  8.  SYSTEM AUDIT LOGS
+      A record of actions taken in the system and who took them, searchable by
+      date and exportable.
 
-  BACKUP & RESTORE
-      Create a backup on demand, list existing backups, download one, delete
-      one, or restore the system from a backup. RESTORING OVERWRITES CURRENT
-      DATA - take a fresh backup first and be certain before you proceed.
+  9.  BACKUP & RESTORE
+      Create a backup on demand, list existing backups, download one, or delete
+      one. A backup also runs automatically every night. Backups are kept on
+      separate cloud storage rather than on the application server.
 
-  ARCHIVE & RECOVERY
-      Deleted records are archived rather than destroyed. Browse archived
-      items by type, RESTORE one back into active use, or permanently delete
-      it. Portal accounts pending deletion are listed here too, and their
-      deletion can be cancelled on the owner's behalf.
+  10. ARCHIVE & RECOVERY
+      Deleted records are retained for a recovery window rather than removed
+      immediately. Restore a record here if something was deleted in error.
+
+MAINTENANCE MODE
+When enabled, the system shows a maintenance screen to users while work is
+carried out. Remember to switch it off afterwards.
+
+
+--------------------------------------------------------------------------------
+28. YOUR PROFILE, NOTIFICATIONS AND PASSWORD
+--------------------------------------------------------------------------------
+Available to every clinic role:
+  PROFILE            View and update your own details.
+  NOTIFICATIONS      Your notification history; mark all read, dismiss one, or
+                     clear all.
+  CHANGE PASSWORD    Change your own password. Choose something not used
+                     elsewhere.
 
 
 ================================================================================
                           PART IV - SUPER ADMIN
 ================================================================================
 
---------------------------------------------------------------------------------
-27. CLINIC MANAGEMENT
---------------------------------------------------------------------------------
-  The Super Admin dashboard covers the whole platform rather than one
-  clinic. From "Clinic Management" you can:
-
-      * view platform-wide statistics
-      * list all clinics on the platform
-      * create a new clinic and create its first users
-      * edit a clinic's details
-      * activate or deactivate a clinic (toggle status)
-      * view a clinic's administrators and reset an administrator's password
-      * delete a clinic
-      * IMPERSONATE a clinic in order to see the system exactly as that
-        clinic's staff sees it, for support purposes
+These screens are visible only to Super Admin accounts.
 
 --------------------------------------------------------------------------------
-28. SYSTEM BROADCASTS
+29. CLINIC MANAGEMENT
 --------------------------------------------------------------------------------
-  Create, edit, publish and delete announcements that appear as a banner to
-  users across the platform - for example scheduled maintenance windows or
-  release notes. Announcements can also be shown on the public portal pages.
+The platform-level dashboard for managing clinics on the system.
+
+  - View platform statistics.
+  - List all clinics.
+  - Create a clinic, edit its details, or remove it.
+  - Activate or suspend a clinic.
+  - Manage a clinic's administrator accounts and create users within a clinic.
+  - Reset a clinic administrator's password.
+  - Enter a clinic's own view to investigate a problem (impersonation). Use
+    this only for genuine support work; the action is logged.
+
+Each clinic's data is separated at the database level. Clinic staff can never
+see another clinic's records; Super Admin is the only role that sees across
+clinics, by design.
+
 
 --------------------------------------------------------------------------------
-29. SUPER ADMIN ACCOUNTS AND LOGS
+30. SYSTEM BROADCASTS
 --------------------------------------------------------------------------------
-  Manage the list of Super Admin accounts and add new ones, and review the
-  platform-level system logs for activity across all clinics.
+Announcements shown to users across the platform.
+
+  - Create, edit and delete announcements.
+  - Target an announcement at a particular audience or at everyone.
+  - Set an expiry date so the notice disappears on its own.
+  - Active announcements appear as a banner in the portal and on the landing
+    page.
+
+
+--------------------------------------------------------------------------------
+31. SUPER ADMIN ACCOUNTS AND SYSTEM LOGS
+--------------------------------------------------------------------------------
+  - List existing Super Admin accounts and create new ones. Grant this role
+    sparingly; it sees every clinic.
+  - Review system-wide logs to trace activity across the platform.
 
 
 ================================================================================
-                            PART V - REFERENCE
+                           PART V - REFERENCE
 ================================================================================
 
 --------------------------------------------------------------------------------
-30. STATUS DEFINITIONS
+32. STATUS DEFINITIONS
 --------------------------------------------------------------------------------
-  APPOINTMENT STATUSES
-      Pending    - submitted by the owner, awaiting clinic action.
-      Approved / Scheduled / Confirmed
-                 - accepted by the clinic; the slot is reserved.
-      Declined   - refused by the clinic; a reason is given to the owner.
-      Cancelled  - called off; the time slot is released.
-      Completed  - the visit took place. Enables billing and review.
+APPOINTMENT STATUS
+  PENDING     Requested by the owner, awaiting clinic review. Not confirmed.
+  APPROVED    Confirmed by the clinic. The owner has been emailed.
+  DECLINED    Refused by the clinic, with a written reason shown to the owner.
+  COMPLETED   The patient has been seen and the visit is finished.
+  CANCELLED   The appointment will not take place.
 
-  INVOICE STATUSES
-      Draft          - being prepared, not yet issued.
-      Finalized      - issued to the client.
-      Partially Paid - some payment received, balance outstanding.
-      Paid           - fully settled; prints as a receipt.
+INVOICE STATUS
+  DRAFT       Being prepared. Editable. No stock has been deducted.
+  FINALIZED   Locked. Stock has been deducted FIFO and usage recorded.
+  PAID        Settled.
+  CANCELLED   Voided.
 
-  INVENTORY STATUSES
-      In Stock     - healthy level, no action needed.
-      Low Stock    - the forecast predicts depletion soon; reorder.
-      Out of Stock - zero units; immediate reorder required.
+INVENTORY FORECAST STATUS
+  SAFE               Stock is sufficient on current usage.
+  REORDER SOON       Projected to run low within roughly two weeks.
+  LOW STOCK          Predicted to run out soon, or below the minimum level.
+  OUT OF STOCK       Zero units remain. Immediate reorder required.
+  INSUFFICIENT DATA  Fewer than 3 recorded transactions; no trend yet.
 
-  FORECAST CONFIDENCE
-      High   - the consumption trend fits the data strongly.
-      Medium - moderate fit; usable but verify.
-      Low    - weak or sparse history; treat as a hint only.
+FORECAST CONFIDENCE
+  HIGH    Steady consumption; the projected date is dependable.
+  MEDIUM  A usable trend with visible irregularity.
+  LOW     Erratic usage; treat the date as indicative only.
 
-  PORTAL ACCOUNT STATES
-      Active            - normal use.
-      Suspended         - temporarily blocked by the clinic.
-      Deactivated       - blocked; contact the clinic.
-      Pending deletion  - deletion requested; recoverable during the grace
-                          period by the owner or the clinic.
+STOCK/BATCH LABELS
+  IN STOCK   Batch has units available.
+  EXPIRING   Batch expires within 30 days.
+  EXPIRED    Batch is past its expiry date. Remove it from use.
 
---------------------------------------------------------------------------------
-31. TROUBLESHOOTING
---------------------------------------------------------------------------------
-  I DID NOT RECEIVE THE VERIFICATION EMAIL
-      Check Spam/Junk and Promotions. Confirm the address was typed
-      correctly. If it is wrong, register again with the correct address or
-      ask the clinic for help.
-
-  THE TIME SLOT I WANT IS NOT LISTED
-      It is already booked, it is in the past, or it falls outside the
-      bookable window (08:00-17:00) or outside the selected vet's schedule.
-      Try another slot or another day.
-
-  I CANNOT SELECT A VETERINARIAN
-      The service you selected does not require one. This is normal.
-
-  A PAGE SAYS "ACCESS DENIED"
-      Your role is not permitted to open that section. Ask your Clinic Admin
-      if you believe you should have access.
-
-  THE SYSTEM SHOWS A MAINTENANCE SCREEN
-      Maintenance mode is on. The portal re-checks automatically every 15
-      seconds and returns you when the system is available again.
-
-  I WAS SIGNED OUT UNEXPECTEDLY
-      Your session ended, your password was reset, or your account status
-      changed. Log in again; if it repeats, contact the clinic.
-
-  STOCK NUMBERS LOOK WRONG
-      Open the item and review its transaction history - every movement is
-      listed with its source. Remember that products added to invoices and
-      recorded against patients are deducted automatically, so do not deduct
-      them a second time by hand.
-
-  A FORECAST LOOKS UNREALISTIC
-      Check its confidence level. Items with little or irregular
-      consumption history produce Low confidence forecasts. Adding more
-      usage history improves accuracy over time.
-
-  IMAGES ARE NOT LOADING
-      Reload the page. If a specific pet or user photo stays broken,
-      re-upload it from the edit form.
 
 --------------------------------------------------------------------------------
-32. DATA SAFETY, PRIVACY AND BACKUPS
+33. AUTOMATED BACKGROUND TASKS
 --------------------------------------------------------------------------------
-  ACCESS CONTROL
-      The system enforces role-based access. Owners can only ever see their
-      own pets, appointments and invoices. Staff see only their clinic's
-      data.
+These run on their own; no one needs to start them.
 
-  AUDIT TRAIL
-      Administrative actions and record changes are written to the audit
-      log, so changes can be traced to a user and a time.
+  00:00 nightly   Refresh every inventory forecast.
+  00:00 nightly   Clean up archived records past their recovery window.
+  03:00 nightly   Database backup.
+  07:00 daily     Check for expiring stock and notify staff.
+  every minute    Push any queued changes to the cloud, when cloud sync is
+                  enabled (see Section 36).
 
-  ARCHIVING
-      Deleting a record archives it instead of destroying it, and it can be
-      restored from Archive & Recovery.
-
-  BACKUPS
-      Clinic Admins should take regular backups from Maintenance -> Backup
-      & Restore, and download a copy off the system. Always take a backup
-      immediately before restoring one.
-
-  ACCOUNT SECURITY - GOOD PRACTICE
-      * Do not share accounts; every user should have their own login so the
-        audit log stays meaningful.
-      * Change any password that was reset for you at first login.
-      * Review your signed-in devices and remove ones you do not recognise.
-      * Log out on shared or public computers.
-
-  PRIVACY
-      The portal's Terms of Service and Privacy Policy pages describe how
-      client and pet data are handled. Owners may request deletion of their
-      account from their profile.
 
 --------------------------------------------------------------------------------
-33. SUPPORT AND CONTACT
+34. TROUBLESHOOTING
 --------------------------------------------------------------------------------
-  Pet Wellness Animal Clinic
-      Address : Blk 10 Lot 2D Dahlia Ave, West Fairview, Quezon City
-      Mobile  : 0933-461-7957 / 0966-421-9903
-      Email   : badetvelasquez@gmail.com
+"A screen is empty or will not load."
+  Check that your role may open it (Section 2). If it should be available, log
+  out and back in, then refresh. If it persists, report it with the screen name
+  and the time.
 
-      Clinic hours : Monday - Saturday, 8:00 AM - 6:00 PM
-                     Sunday, 9:00 AM - 4:00 PM
+"My numbers on screen do not match the database."
+  Deleted records and records belonging to other clinics are excluded from what
+  you see, and the inventory screen counts PRODUCTS while the database stores
+  one row per BATCH. Both are expected.
 
-  FOR EMERGENCIES, CALL THE CLINIC DIRECTLY. Do not wait for a portal
-  booking to be approved.
+"Received stock did not increase the item count."
+  Correct. Receiving stock increases that product's total quantity, not the
+  number of products. Expand the product row to see the new batch.
 
-  For account problems (locked out, wrong details, access rights), contact
-  your Clinic Admin. For platform-level problems affecting the whole system,
-  the Clinic Admin should escalate to the Super Admin.
+"Changes are not appearing immediately."
+  Live updating may have dropped. Screens refresh themselves every 10-30
+  seconds and when you click back into the tab. Refresh manually if urgent.
+
+"Too many attempts / please wait."
+  Rate limiting after repeated login, registration or reset attempts. Wait
+  about a minute.
+
+"A forecast says Insufficient Data."
+  The product needs at least 3 completed transactions. The percentage shown
+  tells you how close it is.
+
+"AI Clinical Support says it is not configured."
+  It needs an administrator to supply its configuration and enable the feature.
+
+"An owner cannot book - no times are available."
+  Check Settings > Vet Schedule. Slots come from the vets' working hours.
+
+"A client says they never received an email."
+  Ask them to check spam. Confirm the email on their clinic record is correct,
+  then resend from Client Notifications.
+
+"Stock went negative or a shortage was reported."
+  The invoice was finalized for more units than were in stock. Receive the
+  delivery that is physically present, then review the affected invoice.
+
+
+--------------------------------------------------------------------------------
+35. DATA SAFETY, PRIVACY AND BACKUPS
+--------------------------------------------------------------------------------
+WHAT PROTECTS THE DATA
+  - Passwords are stored scrambled with a method that cannot be reversed.
+    No one, including clinic staff and system administrators, can read a
+    user's password.
+  - All traffic between browser and server is encrypted.
+  - Every request must carry a valid session token; logging out destroys it on
+    the server.
+  - Each clinic's data is filtered at the database level, so one clinic cannot
+    retrieve another's records even by manipulating a web address.
+  - Actions are recorded in the audit log with the person who performed them.
+  - Deleted records are retained for a recovery window rather than destroyed.
+  - Backups run nightly to separate cloud storage.
+  - Error details are never shown to users; they go to the system logs.
+
+GOOD PRACTICE FOR STAFF
+  - Never share an account. Everyone who uses the system needs their own, so
+    the audit log means something.
+  - Log out on shared computers.
+  - Deactivate accounts promptly when someone leaves.
+  - Only enter clinically necessary personal information into AI Clinical
+    Support, which sends data to an external service.
+
+
+--------------------------------------------------------------------------------
+36. KNOWN LIMITATIONS
+--------------------------------------------------------------------------------
+Stated plainly so expectations are accurate.
+
+  NO ONLINE PAYMENTS
+    Invoices are produced and recorded; payment is taken at the clinic.
+
+  NO SMS MESSAGING
+    The system is built to support SMS and the connection point exists, but no
+    SMS provider is connected. Notifications go by email and in-app messages.
+
+  CLOUD SYNC IS NOT ACTIVE
+    The system contains an offline-resilience mechanism: changes are queued
+    durably and pushed to a central portal every minute, signed and protected
+    against replay and duplication. However, this is switched OFF by default,
+    the receiving endpoint is not currently connected, and the flow is one-way
+    (clinic to cloud) with no conflict resolution. Do not rely on the system
+    continuing to work without an internet connection in the current
+    cloud-hosted deployment. If the connection drops, the system is
+    unavailable until it returns.
+
+  NO OFFLINE BROWSER MODE
+    The websites need an internet connection. There is no offline mode in the
+    browser itself.
+
+  FORECASTING IS SINGLE-FACTOR
+    It looks only at past usage over time. It does not account for seasonality,
+    outbreaks, supplier lead times or holidays.
+
+  CHATBOT IS RULE-BASED
+    It answers from a fixed list of topics and cannot hold a conversation or
+    read pet records.
+
+  NO TWO-STEP LOGIN
+    Accounts are protected by password, email verification and rate limiting.
+    Two-factor authentication is not implemented.
+
+  PERSONAL DETAILS ARE NOT INDIVIDUALLY ENCRYPTED
+    Passwords are scrambled and all traffic is encrypted, and the database and
+    file storage are encrypted by the hosting providers. Individual fields such
+    as phone numbers are not separately encrypted within the database.
+
+  NO MOBILE APP
+    Both systems work in a mobile browser, but there is no installable app.
+
+  CALENDAR NOT IN THE MENU
+    The calendar view exists but must be reached by typing its address.
+
+
+--------------------------------------------------------------------------------
+37. SUPPORT AND CONTACT
+--------------------------------------------------------------------------------
+FOR PET OWNERS
+  Contact the clinic directly using the number or email on the portal. Clinic
+  staff can check your bookings, pets and invoices for you.
+
+FOR CLINIC STAFF
+  Raise password resets, new accounts and permission changes with your Clinic
+  Admin, under Settings > Users / Roles.
+  For system faults, note the screen name, the time and what you were doing,
+  then report it to your system administrator.
+
+FOR CLINIC ADMINISTRATORS
+  Escalate platform-level problems - clinic setup, access across clinics,
+  system-wide announcements - to the Super Admin.
+
+WHEN REPORTING A PROBLEM, INCLUDE
+  1. Which system (Client Portal or Clinic Admin).
+  2. The screen name.
+  3. What you expected and what happened instead.
+  4. The date and time.
+  5. The exact wording of any error message.
 
 ================================================================================
-                            END OF USER MANUAL
+                              END OF MANUAL
 ================================================================================
