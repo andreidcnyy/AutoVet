@@ -28,10 +28,12 @@ class MeasurementSeeder extends Seeder
 
         // Weight Ranges
         $weightRanges = [
+            // Bands must touch, or a pet landing in a gap (a 5.5kg dog, say)
+            // matches no range and weight-based pricing has nothing to quote.
             ['label' => 'Small', 'min_weight' => 0, 'max_weight' => 5],
-            ['label' => 'Medium', 'min_weight' => 6, 'max_weight' => 10],
-            ['label' => 'Large', 'min_weight' => 11, 'max_weight' => 20],
-            ['label' => 'Giant', 'min_weight' => 21, 'max_weight' => null],
+            ['label' => 'Medium', 'min_weight' => 5.01, 'max_weight' => 10],
+            ['label' => 'Large', 'min_weight' => 10.01, 'max_weight' => 20],
+            ['label' => 'Giant', 'min_weight' => 20.01, 'max_weight' => null],
         ];
 
         foreach ($weightRanges as $range) {

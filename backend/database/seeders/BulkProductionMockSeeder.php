@@ -36,6 +36,7 @@ class BulkProductionMockSeeder extends Seeder
         if (!$feline) $feline = Species::create(['name' => 'Feline', 'status' => 'Active', 'clinic_id' => $clinic->id]);
 
         $breeds = Breed::all();
+        $vets = ClinicStaffSeeder::veterinarians($clinic);
         $pool = Service::whereIn('category', ['Consultation', 'Vaccination', 'Grooming', 'Laboratory'])->get();
         if ($pool->isEmpty()) {
             $this->call(ServicesSeeder::class);
@@ -97,13 +98,20 @@ class BulkProductionMockSeeder extends Seeder
                 for ($m = 0; $m <= 3; $m++) {
                     $monthDate = $now->copy()->subMonths($m);
                     $svc = $pool->random();
+                    // category, uuid and vet_id were all left unset, so every row
+                    // in this batch was a half-populated appointment. The status
+                    // is lowercase to match what AppointmentStatusController
+                    // writes for a real booking.
                     Appointment::create([
                         'pet_id' => $pet->id,
                         'service_id' => $svc->id,
+                        'vet_id' => ($svc->requires_doctor && $vets->isNotEmpty()) ? $vets->random()->id : null,
                         'title' => $svc->category . ' for ' . $pet->name,
+                        'category' => $svc->category,
                         'date' => $monthDate->copy()->subDays(rand(1, 25))->toDateString(),
                         'time' => '09:00 AM',
-                        'status' => 'Approved',
+                        'status' => 'completed',
+                        'uuid' => (string) Str::uuid(),
                         'clinic_id' => $clinic->id,
                     ]);
                 }

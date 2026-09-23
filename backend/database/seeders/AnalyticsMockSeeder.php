@@ -129,6 +129,12 @@ class AnalyticsMockSeeder extends Seeder
                     ->value('id');
 
                 if (!$invId) {
+                    // Cost and selling price used to be rolled independently, which
+                    // left some items priced below cost. Mark the price up from
+                    // the cost instead, and fill the stock fields the inventory
+                    // screens read so they are not blank.
+                    $cost = rand(50, 300);
+
                     $invId = DB::table('inventories')->insertGetId([
                         'inventory_category_id' => $catId,
                         'clinic_id'             => $clinic->id,
@@ -137,8 +143,12 @@ class AnalyticsMockSeeder extends Seeder
                         'sku'                   => 'SKU-' . strtoupper(substr(md5($itemName), 0, 4)),
                         'stock_level'           => rand(30, 150),
                         'min_stock_level'       => 10,
-                        'price'                 => rand(50, 300),
-                        'selling_price'         => rand(100, 600),
+                        'unit'                  => 'pc',
+                        'price'                 => $cost,
+                        'selling_price'         => round($cost * (1 + rand(35, 90) / 100), 2),
+                        'expiration_date'       => now()->addMonths(rand(6, 30))->toDateString(),
+                        'lot_number'            => 'LOT-' . now()->format('Y') . '-' . strtoupper(substr(md5($itemName), 0, 4)),
+                        'batch_number'          => 'B' . strtoupper(substr(md5($itemName), 0, 5)),
                         'status'                => 'Active',
                         'is_billable'           => true,
                         'is_consumable'         => false,

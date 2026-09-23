@@ -19,7 +19,15 @@ return new class extends Migration
         }
 
         Schema::table('notification_templates', function (Blueprint $table) {
+            $table->dropForeign(['clinic_id']);
+        });
+
+        Schema::table('notification_templates', function (Blueprint $table) {
             $table->unsignedBigInteger('clinic_id')->nullable(false)->change();
+        });
+
+        Schema::table('notification_templates', function (Blueprint $table) {
+            $table->foreign('clinic_id')->references('id')->on('clinics')->onDelete('cascade');
         });
     }
 

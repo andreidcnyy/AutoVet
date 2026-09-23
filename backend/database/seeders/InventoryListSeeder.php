@@ -32,6 +32,13 @@ class InventoryListSeeder extends Seeder
             $itemId = $item['id'];
             $isConsumable = stripos($item['item_name'] ?? '', 'syringe') !== false || stripos($item['item_name'] ?? '', 'needle') !== false;
             
+            // Cost and selling price were rolled independently, so most items
+            // sold below cost and every margin report came out negative. Derive
+            // the selling price from the cost instead, and fill the fields the
+            // stock screens read (unit, expiry, lot/batch) so they are not blank.
+            $cost = rand(10, 500);
+            $unit = $isConsumable ? 'pc' : (stripos($item['item_name'] ?? '', 'suspension') !== false ? 'mL' : 'vial');
+
             $inserts[] = [
                 'clinic_id' => $clinic->id,
                 'inventory_category_id' => $isConsumable ? $conCat->id : $medCat->id,
@@ -40,8 +47,12 @@ class InventoryListSeeder extends Seeder
                 'sku' => 'SKU-' . str_pad($itemId, 3, '0', STR_PAD_LEFT),
                 'stock_level' => rand(50, 200),
                 'min_stock_level' => 20,
-                'price' => rand(10, 500),
-                'selling_price' => rand(20, 1000),
+                'unit' => $unit,
+                'price' => $cost,
+                'selling_price' => round($cost * (1 + rand(35, 90) / 100), 2),
+                'expiration_date' => now()->addMonths(rand(3, 30))->toDateString(),
+                'lot_number' => 'LOT-' . now()->format('Y') . '-' . str_pad($itemId, 4, '0', STR_PAD_LEFT),
+                'batch_number' => 'B' . str_pad($itemId, 5, '0', STR_PAD_LEFT),
                 'status' => 'Active',
                 'is_billable' => true,
                 'is_consumable' => $isConsumable,

@@ -70,10 +70,20 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // 4. Make clinic_id non-nullable for core tables
-        foreach ($tables as $table) {
-             Schema::table($table, function (Blueprint $table) {
+        // 4. Make clinic_id non-nullable for core tables. MySQL 8 refuses to
+        // MODIFY a column a foreign key still points at (error 1832), so drop
+        // the constraint, change the column, then put the key back.
+        foreach ($tables as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) {
+                $table->dropForeign(['clinic_id']);
+            });
+
+            Schema::table($tableName, function (Blueprint $table) {
                 $table->unsignedBigInteger('clinic_id')->nullable(false)->change();
+            });
+
+            Schema::table($tableName, function (Blueprint $table) {
+                $table->foreign('clinic_id')->references('id')->on('clinics')->onDelete('cascade');
             });
         }
 

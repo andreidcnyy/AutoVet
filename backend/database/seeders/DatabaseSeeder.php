@@ -27,12 +27,17 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             NotificationTemplateSeeder::class,
             AdminUserSeeder::class,
+            // Early: later seeders need a veterinarian to assign visits to.
+            ClinicStaffSeeder::class,
             PortalUserSeeder::class,
             ServicesSeeder::class,
             DashboardAIForecastSeeder::class,
             PatientPetSeeder::class,
             BulkProductionMockSeeder::class,
             AnalyticsMockSeeder::class,
+            // Last: builds the visible clinic (clients, visits, records, billing)
+            // on top of the reference and mock data the seeders above provide.
+            ClinicOperationsSeeder::class,
         ]);
     }
 }

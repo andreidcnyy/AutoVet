@@ -12,17 +12,25 @@ return new class extends Migration
         $tables = ['species', 'breeds'];
         $clinic = DB::table('clinics')->first();
 
-        foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
+        foreach ($tables as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) {
                 $table->foreignId('clinic_id')->nullable()->after('id')->constrained('clinics')->onDelete('cascade');
             });
 
             if ($clinic) {
-                DB::table($table)->update(['clinic_id' => $clinic->id]);
+                DB::table($tableName)->update(['clinic_id' => $clinic->id]);
             }
 
-            Schema::table($table, function (Blueprint $table) {
+            Schema::table($tableName, function (Blueprint $table) {
+                $table->dropForeign(['clinic_id']);
+            });
+
+            Schema::table($tableName, function (Blueprint $table) {
                 $table->unsignedBigInteger('clinic_id')->nullable(false)->change();
+            });
+
+            Schema::table($tableName, function (Blueprint $table) {
+                $table->foreign('clinic_id')->references('id')->on('clinics')->onDelete('cascade');
             });
         }
     }
@@ -30,8 +38,8 @@ return new class extends Migration
     public function down(): void
     {
         $tables = ['species', 'breeds'];
-        foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
+        foreach ($tables as $tableName) {
+            Schema::table($tableName, function (Blueprint $table) {
                 $table->dropForeign(['clinic_id']);
                 $table->dropColumn('clinic_id');
             });
