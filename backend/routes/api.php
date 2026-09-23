@@ -261,7 +261,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('/service-categories',    [\App\Http\Controllers\ServiceCategoryController::class, 'index']);
 
     Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->only(['index', 'show']);
-    Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->only(['index', 'show']);
+    Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->only(['index', 'show']);
     Route::apiResource('species',             SpeciesController::class)->only(['index', 'show']);
     Route::apiResource('breeds',              BreedController::class)->only(['index', 'show']);
     Route::apiResource('weight-ranges',       WeightRangeController::class)->only(['index', 'show']);
@@ -269,7 +269,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     // Master Data Write Access - Admin only
     Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
         Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index', 'show']);
-        Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->except(['index', 'show']);
+        Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->except(['index', 'show']);
         Route::apiResource('species',             SpeciesController::class)->except(['index', 'show']);
         Route::apiResource('breeds',              BreedController::class)->except(['index', 'show']);
         Route::apiResource('weight-ranges',       WeightRangeController::class)->except(['index', 'show']);
