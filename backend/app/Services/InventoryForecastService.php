@@ -257,12 +257,17 @@ class InventoryForecastService
     {
         $inventoryId = $inventory->id;
         $csvFilename = "inventory_{$inventoryId}_history_{$historyDays}_days.csv";
-        $csvPath     = $customCsvPath ?? Storage::path($csvFilename);
+
+        // Pinned to the local disk on purpose. The default disk is S3 (Supabase),
+        // and this is a scratch file that a Python subprocess on this machine has
+        // to open by path — on S3 the existence check fails outright and there is
+        // no local path to hand the subprocess.
+        $csvPath = $customCsvPath ?? Storage::disk('local')->path($csvFilename);
 
         try {
             if (!$customCsvPath) {
-                if (Storage::exists($csvFilename)) {
-                    Storage::delete($csvFilename);
+                if (Storage::disk('local')->exists($csvFilename)) {
+                    Storage::disk('local')->delete($csvFilename);
                 }
 
                 Artisan::call('app:export-inventory-history', [
@@ -270,7 +275,7 @@ class InventoryForecastService
                     '--days'       => $historyDays,
                 ]);
 
-                if (!Storage::exists($csvFilename)) {
+                if (!Storage::disk('local')->exists($csvFilename)) {
                     Log::warning("InventoryForecastService: CSV export produced no file for inventory ID {$inventoryId}.");
                     return null;
                 }
@@ -344,8 +349,8 @@ class InventoryForecastService
             Log::error("InventoryForecastService: exception for inventory ID {$inventoryId}: " . $e->getMessage());
             return null;
         } finally {
-            if (Storage::exists($csvFilename)) {
-                Storage::delete($csvFilename);
+            if (Storage::disk('local')->exists($csvFilename)) {
+                Storage::disk('local')->delete($csvFilename);
             }
         }
     }

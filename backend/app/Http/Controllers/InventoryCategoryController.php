@@ -33,6 +33,16 @@ class InventoryCategoryController extends Controller
         return response()->json($category, 201);
     }
 
+    /**
+     * The route for this exists via apiResource, so without the method
+     * the request reached Laravel's router and died with a
+     * BadMethodCallException, surfacing to the client as a 500.
+     */
+    public function show(InventoryCategory $inventoryCategory)
+    {
+        return response()->json($inventoryCategory);
+    }
+
     public function update(Request $request, InventoryCategory $inventoryCategory)
     {
         $validated = $request->validate([

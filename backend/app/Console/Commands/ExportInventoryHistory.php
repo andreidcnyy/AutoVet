@@ -73,7 +73,9 @@ class ExportInventoryHistory extends Command
         ksort($stockCurve);
 
         $filename = "inventory_{$inventoryId}_history_{$days}_days.csv";
-        $csvPath = Storage::path($filename);
+        // Local disk on purpose: the default is S3, and this CSV is written with
+        // fopen() and then read back by a Python subprocess on this machine.
+        $csvPath = Storage::disk('local')->path($filename);
 
         $file = fopen($csvPath, 'w');
         fputcsv($file, ['date', 'stock_level']);

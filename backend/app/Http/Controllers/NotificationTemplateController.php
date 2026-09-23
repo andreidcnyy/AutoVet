@@ -27,6 +27,16 @@ class NotificationTemplateController extends Controller
         return response()->json($template, 201);
     }
 
+    /**
+     * The route for this exists via apiResource, so without the method
+     * the request reached Laravel's router and died with a
+     * BadMethodCallException, surfacing to the client as a 500.
+     */
+    public function show(NotificationTemplate $template)
+    {
+        return response()->json($template);
+    }
+
     public function update(Request $request, NotificationTemplate $template)
     {
         $validated = $request->validate([

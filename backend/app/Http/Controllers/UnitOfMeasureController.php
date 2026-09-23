@@ -35,6 +35,16 @@ class UnitOfMeasureController extends Controller
         return response()->json($unit, 201);
     }
 
+    /**
+     * The route for this exists via apiResource, so without the method
+     * the request reached Laravel's router and died with a
+     * BadMethodCallException, surfacing to the client as a 500.
+     */
+    public function show(UnitOfMeasure $unitOfMeasure)
+    {
+        return response()->json($unitOfMeasure);
+    }
+
     public function update(Request $request, UnitOfMeasure $unitOfMeasure)
     {
         $validated = $request->validate([

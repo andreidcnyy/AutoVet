@@ -34,6 +34,16 @@ class PetSizeCategoryController extends Controller
         return response()->json($category, 201);
     }
 
+    /**
+     * The route for this exists via apiResource, so without the method
+     * the request reached Laravel's router and died with a
+     * BadMethodCallException, surfacing to the client as a 500.
+     */
+    public function show(PetSizeCategory $petSizeCategory)
+    {
+        return response()->json($petSizeCategory);
+    }
+
     public function update(Request $request, PetSizeCategory $petSizeCategory)
     {
         $validated = $request->validate([
