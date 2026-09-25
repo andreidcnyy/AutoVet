@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Console\Concerns\LoadsLiveConnection;
+use Throwable;
 
 /**
  * Fills in the sync identity columns that bulk inserts left empty.
@@ -28,15 +30,42 @@ use Illuminate\Support\Facades\Schema;
  */
 class BackfillSyncUuids extends Command
 {
+    use LoadsLiveConnection;
+
     protected $signature = 'db:backfill-sync-uuids
-        {--database= : Database to work on. Defaults to the configured one}
-        {--dry-run : Report what would change and write nothing}';
+        {--connection=mysql : Which connection to work on. Use "live" to repair production}
+        {--database= : Database name on the local connection. Ignored for --connection=live}
+        {--dry-run : Report what would change and write nothing}
+        {--force : Skip the confirmation prompt when writing to live}';
 
     protected $description = 'Give bulk-inserted rows the uuid and local-modified stamp that Eloquent would have set';
 
     public function handle(): int
     {
-        if ($target = $this->option('database')) {
+        $dry = $this->option('dry-run');
+        $onLive = $this->option('connection') === 'live';
+
+        if ($onLive) {
+            if (!$this->loadLiveEnv()) {
+                $this->explainMissingLiveConfig();
+
+                return self::FAILURE;
+            }
+
+            DB::setDefaultConnection('live');
+
+            try {
+                DB::connection('live')->getPdo();
+            } catch (Throwable $e) {
+                $this->error('Could not reach the live database: ' . $e->getMessage());
+
+                return self::FAILURE;
+            }
+
+            $this->newLine();
+            $this->line('  <fg=red;options=bold>This writes to PRODUCTION.</>');
+            $this->line('  host: <fg=yellow>' . config('database.connections.live.host') . '</>');
+        } elseif ($target = $this->option('database')) {
             if (!preg_match('/^[A-Za-z0-9_]+$/', $target)) {
                 $this->error("Refusing to use '{$target}' as a database name.");
 
@@ -48,11 +77,18 @@ class BackfillSyncUuids extends Command
             DB::setDefaultConnection('mysql');
         }
 
-        $dry = $this->option('dry-run');
-
         $this->line('  database: <fg=yellow>' . DB::connection()->getDatabaseName() . '</>'
             . ($dry ? '  <fg=cyan>(dry run)</>' : ''));
         $this->newLine();
+
+        // Only the write path against production needs a prompt; a dry run
+        // reads nothing but information_schema and row counts.
+        if ($onLive && !$dry && !$this->option('force')
+            && !$this->confirm('  Fill in the missing uuids on production?', false)) {
+            $this->line('  Aborted. Nothing was written.');
+
+            return self::SUCCESS;
+        }
 
         $tables = $this->tablesWithSyncColumns();
         if ($tables === []) {
