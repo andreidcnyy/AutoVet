@@ -22,8 +22,9 @@ use Throwable;
 class PullLiveDatabase extends Command
 {
     protected $signature = 'db:pull-live
+        {--database= : Local database to copy into. Created and migrated if absent. Defaults to the one the app is configured for}
         {--force : Skip the confirmation prompt}
-        {--chunk=500 : Rows to insert per batch}
+        {--chunk=2000 : Rows to insert per batch}
         {--only= : Comma-separated list of tables to copy instead of all}
         {--password= : After copying, set every admin and portal password to this, so you can log in locally}';
 
@@ -73,6 +74,10 @@ class PullLiveDatabase extends Command
             return self::FAILURE;
         }
 
+        if (!$this->prepareTarget()) {
+            return self::FAILURE;
+        }
+
         $localName = DB::connection()->getDatabaseName();
         $liveHost = config('database.connections.live.host');
 
@@ -115,6 +120,55 @@ class PullLiveDatabase extends Command
         $this->report($copied);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Points the default connection at --database, creating and migrating it if
+     * it does not exist yet.
+     *
+     * This is what lets a snapshot of production live beside the seeded demo
+     * database instead of replacing it: pull into its own database, and switch
+     * between the two with DB_DATABASE.
+     */
+    private function prepareTarget(): bool
+    {
+        $target = $this->option('database');
+        if (!$target) {
+            return true;
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $target)) {
+            $this->error("Refusing to use '{$target}' as a database name.");
+
+            return false;
+        }
+
+        // Connect with no database selected so the name can be created.
+        Config::set('database.connections.bootstrap', array_merge(
+            config('database.connections.mysql'),
+            ['database' => null]
+        ));
+
+        try {
+            DB::connection('bootstrap')->statement(
+                "CREATE DATABASE IF NOT EXISTS `{$target}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            );
+        } catch (Throwable $e) {
+            $this->error("Could not create '{$target}': " . $e->getMessage());
+
+            return false;
+        }
+
+        Config::set('database.connections.mysql.database', $target);
+        DB::purge('mysql');
+        DB::setDefaultConnection('mysql');
+
+        if (!Schema::hasTable('migrations')) {
+            $this->line("  Migrating fresh database <fg=yellow>{$target}</> ...");
+            $this->call('migrate', ['--force' => true, '--database' => 'mysql']);
+        }
+
+        return true;
     }
 
     /**
@@ -289,16 +343,25 @@ class PullLiveDatabase extends Command
                     $bar->setMessage($table);
                     $bar->start();
 
-                    DB::connection('live')
-                        ->table($table)
-                        ->select($columns)
-                        ->orderBy($this->orderColumn($table, $columns))
-                        ->chunk($chunk, function ($rows) use ($table, &$written, $bar) {
-                            $batch = array_map(fn($row) => (array) $row, $rows->all());
-                            DB::table($table)->insert($batch);
-                            $written += count($batch);
-                            $bar->advance(count($batch));
-                        });
+                    $handle = function ($rows) use ($table, &$written, $bar) {
+                        $batch = array_map(fn($row) => (array) $row, $rows->all());
+                        DB::table($table)->insert($batch);
+                        $written += count($batch);
+                        $bar->advance(count($batch));
+                    };
+
+                    $query = DB::connection('live')->table($table)->select($columns);
+
+                    // Keyset pagination where there is an id to key on. OFFSET
+                    // makes the database re-scan and discard every earlier row,
+                    // which on the 84k-row appointments table means the last
+                    // chunks cost far more than the first — over a connection
+                    // already paying ~240ms per round trip.
+                    if (in_array('id', $columns, true)) {
+                        $query->chunkById($chunk, $handle, 'id');
+                    } else {
+                        $query->orderBy($columns[0])->chunk($chunk, $handle);
+                    }
 
                     $bar->finish();
                     $this->newLine();
@@ -315,11 +378,6 @@ class PullLiveDatabase extends Command
         return $result;
     }
 
-    /** chunk() needs a deterministic order; most tables have an id. */
-    private function orderColumn(string $table, array $columns): string
-    {
-        return in_array('id', $columns, true) ? 'id' : $columns[0];
-    }
 
     /**
      * Live password hashes belong to real accounts whose passwords nobody here
