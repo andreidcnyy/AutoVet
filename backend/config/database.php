@@ -56,6 +56,36 @@ return [
             ]) : [],
         ],
 
+        // Read-only handle on the production database, used by `db:pull-live` to
+        // copy live data down into a local copy. Deliberately a separate
+        // connection rather than a change to `mysql`: nothing in the app writes
+        // through it, and pointing the default connection at production would
+        // put every local migrate/seed one keystroke away from the real data.
+        //
+        // Credentials come from .env.live, which is gitignored. With no
+        // LIVE_DB_HOST set this connection simply never resolves, which is the
+        // correct state for anyone who is not pulling a snapshot.
+        'live' => [
+            'driver' => 'mysql',
+            'host' => env('LIVE_DB_HOST'),
+            'port' => env('LIVE_DB_PORT', '4000'),
+            'database' => env('LIVE_DB_DATABASE', 'autovet'),
+            'username' => env('LIVE_DB_USERNAME'),
+            'password' => env('LIVE_DB_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                // TiDB Serverless requires TLS. Point this at a CA bundle; on
+                // Windows, cacert.pem from the PHP install works.
+                \PDO::MYSQL_ATTR_SSL_CA => env('LIVE_DB_SSL_CA'),
+                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('LIVE_DB_SSL_VERIFY', true),
+            ], fn($v) => $v !== null && $v !== '') : [],
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
