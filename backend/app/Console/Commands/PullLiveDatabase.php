@@ -95,7 +95,7 @@ class PullLiveDatabase extends Command
             return self::FAILURE;
         }
 
-        if (!$this->schemaMatches()) {
+        if (!$this->confirmSchemaDrift()) {
             return self::FAILURE;
         }
 
@@ -171,36 +171,53 @@ class PullLiveDatabase extends Command
     }
 
     /**
-     * A row copy only makes sense onto an identical schema. If local is behind
-     * or ahead of live, inserts fail halfway through on a missing column and
-     * leave the local database in a torn state — better to stop up front.
+     * The two sides drift whenever one has deployed a migration the other has
+     * not, which is the normal state between a merge and a deploy. That is not
+     * on its own a reason to refuse: the copy takes the intersection of each
+     * table's columns, so a column only one side has is simply left out.
+     *
+     * What does matter is a migration present on live but not locally, because
+     * it may carry a column holding data this copy would silently drop. So the
+     * drift is reported, and only that direction is treated as a real problem.
      */
-    private function schemaMatches(): bool
+    private function confirmSchemaDrift(): bool
     {
-        $liveCount = DB::connection('live')->table('migrations')->count();
-        $localCount = DB::table('migrations')->count();
+        $live = DB::connection('live')->table('migrations')->pluck('migration')->all();
+        $local = DB::table('migrations')->pluck('migration')->all();
 
-        if ($liveCount === $localCount) {
+        $liveOnly = array_diff($live, $local);
+        $localOnly = array_diff($local, $live);
+
+        if ($liveOnly === [] && $localOnly === []) {
+            $this->line('  Schema matches: ' . count($live) . ' migrations on both sides.');
+
             return true;
         }
 
         $this->newLine();
-        $this->error("Schema mismatch: live has {$liveCount} migrations, local has {$localCount}.");
+        $this->warn('  Schema drift between live and local:');
 
-        $live = DB::connection('live')->table('migrations')->pluck('migration')->all();
-        $local = DB::table('migrations')->pluck('migration')->all();
-
-        foreach (array_diff($live, $local) as $m) {
-            $this->line("  <fg=red>only on live</>  {$m}");
+        foreach ($liveOnly as $m) {
+            $this->line("    <fg=red>only on live</>   {$m}");
         }
-        foreach (array_diff($local, $live) as $m) {
-            $this->line("  <fg=yellow>only on local</> {$m}");
+        foreach ($localOnly as $m) {
+            $this->line("    <fg=yellow>only on local</>  {$m}");
         }
 
         $this->newLine();
-        $this->line('Run `php artisan migrate` on whichever side is behind, then try again.');
 
-        return false;
+        if ($liveOnly !== []) {
+            $this->error('  Live has migrations this database does not. Any column they added');
+            $this->error('  would be dropped from the copy. Run `php artisan migrate` first.');
+
+            return false;
+        }
+
+        $this->line('  Local is ahead, which is safe — the extra migrations add nothing');
+        $this->line('  live holds data in. Columns present only locally stay empty.');
+        $this->newLine();
+
+        return $this->option('force') || $this->confirm('  Continue?', true);
     }
 
     /** Tables present on both sides, in the order live reports them. */
