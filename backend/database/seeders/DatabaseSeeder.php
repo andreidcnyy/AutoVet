@@ -39,5 +39,10 @@ class DatabaseSeeder extends Seeder
             // on top of the reference and mock data the seeders above provide.
             ClinicOperationsSeeder::class,
         ]);
+
+        // Several seeders insert in bulk with DB::table()->insert(), which skips
+        // the Eloquent event that fills uuid and last_modified_locally_at. Fill
+        // them afterwards so a freshly seeded database has no empty sync ids.
+        $this->command->call('db:backfill-sync-uuids');
     }
 }
