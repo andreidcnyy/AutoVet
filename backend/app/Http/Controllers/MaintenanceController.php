@@ -23,7 +23,12 @@ class MaintenanceController extends Controller
      */
     public function status()
     {
-        return response()->json($this->window->state());
+        // Explicitly uncacheable. Clients poll this to decide whether the portal
+        // is up, so a proxy or browser serving a stored copy would show a window
+        // that has already opened or closed.
+        return response()->json($this->window->state())
+            ->header("Cache-Control", "no-store, no-cache, must-revalidate")
+            ->header("Pragma", "no-cache");
     }
 
     /**

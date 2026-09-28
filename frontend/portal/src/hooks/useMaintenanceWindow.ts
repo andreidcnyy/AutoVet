@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface MaintenanceState {
   enabled: boolean;
@@ -13,22 +13,39 @@ export interface MaintenanceState {
 }
 
 export interface MaintenanceWindow {
-  state: MaintenanceState | null;
+  /** Phase derived from the clock, not from whenever the last poll happened. */
+  enabled: boolean;
+  active: boolean;
+  upcoming: boolean;
+  message: string | null;
+  hasEndTime: boolean;
   /** Seconds left on whichever phase is running, or null when there is none. */
   remaining: number | null;
   refresh: () => void;
 }
 
+const parse = (value: string | null): number | null => {
+  if (!value) return null;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? null : ms;
+};
+
 /**
  * Tracks the scheduled maintenance window.
  *
- * The countdown runs against the server's clock rather than this device's. Each
- * response carries server_time, and the difference from the local clock is
- * applied to every tick — a phone a few minutes out would otherwise show a
- * different number from the clinic's admin screen, and could count to zero
- * while the portal was still working.
+ * The phase is worked out here from starts_at and ends_at rather than read off
+ * the last response. Polling alone meant the banner could appear, and the portal
+ * could go offline, up to a poll interval late — long enough to look broken.
+ * The schedule itself only changes when an admin changes it, so the timestamps
+ * are all the client needs to flip at the right second; the poll is just how a
+ * new or cancelled schedule is discovered.
+ *
+ * Countdowns run against the server's clock. Each response carries server_time
+ * and the difference from the local clock is applied to every tick, so a device
+ * a few minutes out cannot disagree with the clinic's screen or reach zero while
+ * the portal is still working.
  */
-export function useMaintenanceWindow(pollMs = 15000): MaintenanceWindow {
+export function useMaintenanceWindow(pollMs = 10000): MaintenanceWindow {
   const [state, setState] = useState<MaintenanceState | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const clockOffset = useRef(0);
@@ -37,12 +54,13 @@ export function useMaintenanceWindow(pollMs = 15000): MaintenanceWindow {
     try {
       const res = await fetch('/api/maintenance-status', {
         headers: { Accept: 'application/json' },
+        cache: 'no-store',
       });
       if (!res.ok) return;
 
       const data: MaintenanceState = await res.json();
       if (data.server_time) {
-        clockOffset.current = new Date(data.server_time).getTime() - Date.now();
+        clockOffset.current = Date.parse(data.server_time) - Date.now();
       }
       setState(data);
     } catch {
@@ -62,26 +80,54 @@ export function useMaintenanceWindow(pollMs = 15000): MaintenanceWindow {
     return () => clearInterval(id);
   }, []);
 
-  let remaining: number | null = null;
+  // Mirrors MaintenanceWindow::state() on the server, so both sides agree on
+  // which phase the window is in at any given moment.
+  const derived = useMemo(() => {
+    const serverNow = now + clockOffset.current;
+    const startsAt = parse(state?.starts_at ?? null);
+    const endsAt = parse(state?.ends_at ?? null);
+    const flagged = Boolean(state?.enabled);
 
-  if (state?.enabled) {
-    const target = state.active ? state.ends_at : state.starts_at;
-    if (target) {
-      remaining = Math.max(
-        0,
-        Math.ceil((new Date(target).getTime() - (now + clockOffset.current)) / 1000)
-      );
-    }
-  }
+    const started = flagged && (startsAt === null || serverNow >= startsAt);
+    const expired = flagged && endsAt !== null && serverNow >= endsAt;
+    const active = started && !expired;
+    const upcoming = flagged && !started && !expired;
 
-  // The phase changes between polls, so pick the new one up the moment a
-  // countdown runs out instead of waiting for the next interval.
-  const hitZero = remaining === 0;
+    const target = active ? endsAt : upcoming ? startsAt : null;
+
+    return {
+      enabled: flagged && !expired,
+      active,
+      upcoming,
+      message: state?.message ?? null,
+      hasEndTime: endsAt !== null,
+      remaining: target === null ? null : Math.max(0, Math.ceil((target - serverNow) / 1000)),
+      nextBoundary: target,
+    };
+  }, [state, now]);
+
+  // Refresh the moment the window changes phase rather than on the next poll,
+  // so a cancelled or extended window is picked up immediately afterwards.
+  const boundary = derived.nextBoundary;
   useEffect(() => {
-    if (hitZero) refresh();
-  }, [hitZero, refresh]);
+    if (boundary === null) return;
 
-  return { state, remaining, refresh };
+    const delay = boundary - (Date.now() + clockOffset.current);
+    if (delay <= 0) return;
+
+    const id = setTimeout(refresh, delay + 250);
+    return () => clearTimeout(id);
+  }, [boundary, refresh]);
+
+  return {
+    enabled: derived.enabled,
+    active: derived.active,
+    upcoming: derived.upcoming,
+    message: derived.message,
+    hasEndTime: derived.hasEndTime,
+    remaining: derived.remaining,
+    refresh,
+  };
 }
 
 /** 3671 -> "1:01:11", 154 -> "2:34". */

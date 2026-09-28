@@ -40,6 +40,7 @@ export default function MaintenanceModeCard() {
 
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [pendingScheduled, setPendingScheduled] = useState(false);
   const [startsIn, setStartsIn] = useState(5);
   const [startsInUnit, setStartsInUnit] = useState("minutes");
   const [lastsFor, setLastsFor] = useState(30);
@@ -52,8 +53,13 @@ export default function MaintenanceModeCard() {
 
   const loadStatus = useCallback(async () => {
     try {
+      // no-store because this is read on a timer to decide whether the portal is
+      // up: a cached copy would show a window that has already changed. The old
+      // toggle read maintenance_mode out of a 5-minute localStorage cache, which
+      // is why a change could appear to take minutes to show.
       const res = await fetch("/api/maintenance-status", {
         headers: { Accept: "application/json" },
+        cache: "no-store",
       });
       if (!res.ok) return;
 
@@ -70,7 +76,7 @@ export default function MaintenanceModeCard() {
 
   useEffect(() => {
     loadStatus();
-    const poll = setInterval(loadStatus, 15000);
+    const poll = setInterval(loadStatus, 10000);
     return () => clearInterval(poll);
   }, [loadStatus]);
 
@@ -83,23 +89,44 @@ export default function MaintenanceModeCard() {
 
   const serverNow = now + clockOffset.current;
 
-  const countdown = useMemo(() => {
-    if (!status?.enabled) return null;
+  // Worked out from the timestamps rather than read off the last response, so
+  // the card flips from Scheduled to Offline on the second it happens instead
+  // of whenever the next poll lands. Mirrors MaintenanceWindow::state().
+  const phase = useMemo(() => {
+    const flagged = Boolean(status?.enabled);
+    const startsAt = status?.starts_at ? Date.parse(status.starts_at) : null;
+    const endsAt = status?.ends_at ? Date.parse(status.ends_at) : null;
 
-    const target = status.active ? status.ends_at : status.starts_at;
-    if (!target) return null;
+    const started = flagged && (startsAt === null || serverNow >= startsAt);
+    const expired = flagged && endsAt !== null && serverNow >= endsAt;
+    const active = started && !expired;
+    const upcoming = flagged && !started && !expired;
+    const target = active ? endsAt : upcoming ? startsAt : null;
 
-    const remaining = (new Date(target).getTime() - serverNow) / 1000;
-    return { remaining, label: status.active ? "Back online in" : "Maintenance begins in" };
+    return {
+      scheduled: flagged && !expired,
+      active,
+      hasEndTime: endsAt !== null,
+      remaining: target === null ? null : Math.max(0, Math.ceil((target - serverNow) / 1000)),
+      boundary: target,
+    };
   }, [status, serverNow]);
 
-  // The window changes state between polls, so refresh as soon as a countdown
-  // runs out instead of waiting up to 15s for the next one.
+  // Re-read the window the instant it changes phase, rather than up to a poll
+  // interval later.
+  const boundary = phase.boundary;
   useEffect(() => {
-    if (countdown && countdown.remaining <= 0) loadStatus();
-  }, [countdown, loadStatus]);
+    if (boundary === null) return;
+
+    const delay = boundary - (Date.now() + clockOffset.current);
+    if (delay <= 0) return;
+
+    const id = setTimeout(loadStatus, delay + 250);
+    return () => clearTimeout(id);
+  }, [boundary, loadStatus]);
 
   const save = async (body) => {
+    setPendingScheduled(Boolean(body.enabled));
     setSaving(true);
     try {
       const res = await fetch("/api/maintenance", {
@@ -153,7 +180,11 @@ export default function MaintenanceModeCard() {
     }
   };
 
-  const scheduled = Boolean(status?.enabled);
+  // While a save is in flight, show the state being moved to rather than the one
+  // being left. The round trip is about a second, and without this the toggle
+  // sits still long enough to look like the click was missed — so people click
+  // again.
+  const scheduled = saving ? pendingScheduled : phase.scheduled;
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
@@ -251,37 +282,37 @@ export default function MaintenanceModeCard() {
         <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-dark-border">
           <div
             className={`rounded-lg p-4 ${
-              status.active
+              phase.active
                 ? "bg-red-50 dark:bg-red-900/20"
                 : "bg-amber-50 dark:bg-amber-900/20"
             }`}
           >
             <p
               className={`text-xs font-bold uppercase tracking-wide ${
-                status.active
+                phase.active
                   ? "text-red-600 dark:text-red-400"
                   : "text-amber-600 dark:text-amber-400"
               }`}
             >
-              {status.active ? "Portal is offline" : "Scheduled"}
+              {phase.active ? "Portal is offline" : "Scheduled"}
             </p>
 
-            {countdown && (
+            {phase.remaining !== null && (
               <p className="mt-1 text-2xl font-black tabular-nums text-zinc-800 dark:text-zinc-100">
-                {formatCountdown(countdown.remaining)}
+                {formatCountdown(phase.remaining)}
                 <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {countdown.label.replace(" in", "")}
+                  {phase.active ? "Back online" : "Until maintenance"}
                 </span>
               </p>
             )}
 
-            {status.active && !status.ends_at && (
+            {phase.active && !phase.hasEndTime && (
               <p className="mt-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                 Until switched off manually
               </p>
             )}
 
-            {status.message && (
+            {status?.message && (
               <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
                 “{status.message}”
               </p>
@@ -294,7 +325,7 @@ export default function MaintenanceModeCard() {
             disabled={saving}
             className="mt-3 w-full rounded-lg border-2 border-zinc-300 px-4 py-2 text-sm font-bold text-zinc-600 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-dark-border dark:text-zinc-300 dark:hover:bg-dark-card"
           >
-            {saving ? "Working…" : status.active ? "End maintenance now" : "Cancel scheduled maintenance"}
+            {saving ? "Working…" : phase.active ? "End maintenance now" : "Cancel scheduled maintenance"}
           </button>
         </div>
       )}

@@ -88,7 +88,8 @@ function ProtectedRoute({ children }: {
 
   // The scheduled window, polled directly. This is what lets the portal show a
   // countdown during the warning period, before any request has been refused.
-  const { state: maintenanceWindow, remaining, refresh: refreshMaintenance } = useMaintenanceWindow();
+  const maintenanceWindow = useMaintenanceWindow();
+  const { remaining, refresh: refreshMaintenance } = maintenanceWindow;
 
   useEffect(() => {
     const onMaintenance = () => setMaintenance(true);
@@ -143,9 +144,9 @@ function ProtectedRoute({ children }: {
   // without waiting for a request to be refused, and takes it away again the
   // moment the window closes.
   useEffect(() => {
-    if (maintenanceWindow?.active) setMaintenance(true);
-    else if (maintenanceWindow && !maintenanceWindow.active) setMaintenance(false);
-  }, [maintenanceWindow?.active]);
+    if (maintenanceWindow.active) setMaintenance(true);
+    else setMaintenance(false);
+  }, [maintenanceWindow.active]);
 
   // Guard against bfcache restoring a logged-out page
   useEffect(() => {
@@ -169,15 +170,15 @@ function ProtectedRoute({ children }: {
   if (maintenance) {
     return (
       <MaintenancePage
-        secondsRemaining={maintenanceWindow?.ends_at ? remaining : null}
-        message={maintenanceWindow?.message}
+        secondsRemaining={maintenanceWindow.hasEndTime ? remaining : null}
+        message={maintenanceWindow.message}
       />
     );
   }
 
   return (
     <>
-      {maintenanceWindow?.upcoming && remaining !== null && (
+      {maintenanceWindow.upcoming && remaining !== null && (
         <MaintenanceBanner
           secondsRemaining={remaining}
           message={maintenanceWindow.message}
