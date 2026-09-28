@@ -3,6 +3,8 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import Landing from './pages/Landing';
 
 import MaintenancePage from './pages/MaintenancePage';
+import MaintenanceBanner from './components/MaintenanceBanner';
+import { useMaintenanceWindow } from './hooks/useMaintenanceWindow';
 import PortalLayout from './components/PortalLayout';
 import { useAuth } from './context/AuthContext';
 import RouterErrorElement from './components/RouterErrorElement';
@@ -84,6 +86,10 @@ function ProtectedRoute({ children }: {
   const [maintenance, setMaintenance] = useState(false);
   const [blocked, setBlocked] = useState<{ status: 'suspended' | 'deactivated'; message?: string } | null>(null);
 
+  // The scheduled window, polled directly. This is what lets the portal show a
+  // countdown during the warning period, before any request has been refused.
+  const { state: maintenanceWindow, remaining, refresh: refreshMaintenance } = useMaintenanceWindow();
+
   useEffect(() => {
     const onMaintenance = () => setMaintenance(true);
     const onBlocked = (e: any) => setBlocked(e.detail);
@@ -123,12 +129,23 @@ function ProtectedRoute({ children }: {
         const res = await fetch('/api/profile', {
           headers: { Authorization: `Bearer ${user.token}`, Accept: 'application/json' },
         });
-        if (res.status !== 503) setMaintenance(false);
+        if (res.status !== 503) {
+          setMaintenance(false);
+          refreshMaintenance();
+        }
       } catch (_) {}
     };
     const id = setInterval(check, 15000);
     return () => clearInterval(id);
-  }, [maintenance, user]);
+  }, [maintenance, user, refreshMaintenance]);
+
+  // The window is authoritative: it turns the page on at the scheduled moment
+  // without waiting for a request to be refused, and takes it away again the
+  // moment the window closes.
+  useEffect(() => {
+    if (maintenanceWindow?.active) setMaintenance(true);
+    else if (maintenanceWindow && !maintenanceWindow.active) setMaintenance(false);
+  }, [maintenanceWindow?.active]);
 
   // Guard against bfcache restoring a logged-out page
   useEffect(() => {
@@ -149,10 +166,23 @@ function ProtectedRoute({ children }: {
 
   if (blocked) return <AccountBlockedPage status={blocked.status} message={blocked.message} />;
 
-  if (maintenance) return <MaintenancePage />;
+  if (maintenance) {
+    return (
+      <MaintenancePage
+        secondsRemaining={maintenanceWindow?.ends_at ? remaining : null}
+        message={maintenanceWindow?.message}
+      />
+    );
+  }
 
   return (
     <>
+      {maintenanceWindow?.upcoming && remaining !== null && (
+        <MaintenanceBanner
+          secondsRemaining={remaining}
+          message={maintenanceWindow.message}
+        />
+      )}
       <WarningPopup />
       <PortalLayout>{children}</PortalLayout>
     </>

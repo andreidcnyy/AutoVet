@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import Toggle from "./Toggle";
+import MaintenanceModeCard from "./MaintenanceModeCard";
 
 export default function SystemPreferencesTab() {
   const toast = useToast();
@@ -9,7 +10,6 @@ export default function SystemPreferencesTab() {
   const [aiForecasting, setAiForecasting] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [cloudSync, setCloudSync] = useState(false);
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,8 @@ export default function SystemPreferencesTab() {
     const CACHE_TTL = 5 * 60 * 1000;
 
     const applyData = (data) => {
-      setMaintenanceMode(data.maintenance_mode === 'true' || data.maintenance_mode === true);
+      // Maintenance is no longer a plain setting — MaintenanceModeCard owns it
+      // and reads the scheduled window from /api/maintenance-status.
       setAiForecasting(data.enable_ai_forecasting !== 'false' && data.enable_ai_forecasting !== false);
       setLowStockAlerts(data.enable_low_stock_alerts !== 'false' && data.enable_low_stock_alerts !== false);
       setCloudSync(data.enable_cloud_sync === 'true' || data.enable_cloud_sync === true);
@@ -72,12 +73,6 @@ export default function SystemPreferencesTab() {
     }
   };
 
-  const toggleMaintenance = () => {
-    const newValue = !maintenanceMode;
-    setMaintenanceMode(newValue);
-    updateSetting('maintenance_mode', newValue);
-  };
-
   const toggleAiForecasting = () => {
     const newValue = !aiForecasting;
     setAiForecasting(newValue);
@@ -115,13 +110,7 @@ export default function SystemPreferencesTab() {
           <Toggle checked={lowStockAlerts} onChange={toggleLowStockAlerts} />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
-          <div>
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">System Maintenance Mode</p>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Temporarily blocks users from accessing the clinic system.</p>
-          </div>
-          <Toggle checked={maintenanceMode} onChange={toggleMaintenance} />
-        </div>
+        <MaintenanceModeCard />
 
         <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
           <div>

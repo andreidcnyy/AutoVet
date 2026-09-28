@@ -2,8 +2,15 @@ import { FiTool, FiLogOut } from 'react-icons/fi';
 import logo from '../assets/logo.png';
 import { PawPrint } from './Landing';
 import { useAuth } from '../context/AuthContext';
+import { formatCountdown } from '../hooks/useMaintenanceWindow';
 
-export default function MaintenancePage() {
+interface Props {
+  /** Seconds until the window closes, or null when no end time was set. */
+  secondsRemaining?: number | null;
+  message?: string | null;
+}
+
+export default function MaintenancePage({ secondsRemaining = null, message = null }: Props) {
   const { logout } = useAuth();
 
   return (
@@ -36,9 +43,30 @@ export default function MaintenancePage() {
             System Under Maintenance
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
-            Our team is currently performing scheduled maintenance to improve your experience.
-            The portal will be back online shortly. We apologize for any inconvenience.
+            {message?.trim() ||
+              'Our team is currently performing scheduled maintenance to improve your experience. We apologize for any inconvenience.'}
           </p>
+
+          {secondsRemaining !== null && secondsRemaining > 0 && (
+            <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 py-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
+                Back online in
+              </p>
+              <p
+                className="mt-1 text-4xl font-black tabular-nums text-zinc-800 dark:text-zinc-100"
+                role="timer"
+                aria-live="off"
+              >
+                {formatCountdown(secondsRemaining)}
+              </p>
+            </div>
+          )}
+
+          {secondsRemaining === null && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+              The portal will be back online shortly.
+            </p>
+          )}
           <div className="pt-2 border-t border-zinc-100 dark:border-dark-border">
             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
               For urgent concerns, please contact us directly

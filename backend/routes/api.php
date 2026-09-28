@@ -75,6 +75,11 @@ Route::get('/status', function () {
     ]);
 });
 
+// Maintenance window — public so the portal can show its countdown during the
+// warning period, before anything is blocked, and on the maintenance page
+// itself where the session may already be gone.
+Route::get('/maintenance-status', [\App\Http\Controllers\MaintenanceController::class, 'status']);
+
 // Public system announcements (used by landing page — no auth required)
 Route::get('/public/system-announcements', function(\Illuminate\Http\Request $request) {
     $query = \App\Models\SystemAnnouncement::where('is_active', true)
@@ -281,6 +286,7 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('/settings', [SettingController::class, 'index']);
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
+        Route::put('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'update']);
     });
 
     // Content Management — read open to all authenticated, writes admin only
