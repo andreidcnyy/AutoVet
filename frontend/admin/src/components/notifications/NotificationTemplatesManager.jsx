@@ -136,72 +136,74 @@ export default function NotificationTemplatesManager() {
 
       {/* Table */}
       <div className="rounded-xl border border-zinc-700 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-700 bg-zinc-800/60 text-zinc-400 text-xs uppercase tracking-widest">
-              <th className="px-4 py-3 font-bold">Template Name</th>
-              <th className="px-4 py-3 font-bold">Sent Via</th>
-              <th className="px-4 py-3 font-bold">When It Sends</th>
-              <th className="px-4 py-3 font-bold text-center">Active?</th>
-              <th className="px-4 py-3 font-bold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm divide-y divide-zinc-700/50">
-            {templates.map(t => (
-              <tr key={t.id} className="hover:bg-zinc-800/40 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="font-semibold text-zinc-200">{t.name}</div>
-                  {t.subject && (
-                    <div className="text-xs text-zinc-500 mt-0.5">Subject: {t.subject}</div>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-700 text-zinc-300">
-                    {t.channel === 'email' ? <FiMail size={11} /> : <FiMessageSquare size={11} />}
-                    {t.channel === 'email' ? 'Email' : 'SMS'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-zinc-400">
-                  {eventLabel(t.event_key)}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                    t.is_active
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                      : 'bg-zinc-700/50 text-zinc-500 border border-zinc-600/30'
-                  }`}>
-                    {t.is_active ? 'Yes — Active' : 'No — Paused'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => openModal(t)}
-                      title="Edit this template"
-                      className="p-2 text-zinc-400 hover:text-emerald-400 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
-                    >
-                      <FiEdit2 size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(t.id)}
-                      title="Delete this template"
-                      className="p-2 text-zinc-400 hover:text-rose-400 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
-                    >
-                      <FiTrash2 size={15} />
-                    </button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-[640px] w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-700 bg-zinc-800/60 text-zinc-400 text-xs uppercase tracking-widest">
+                <th className="px-4 py-3 font-bold">Template Name</th>
+                <th className="px-4 py-3 font-bold">Sent Via</th>
+                <th className="px-4 py-3 font-bold">When It Sends</th>
+                <th className="px-4 py-3 font-bold text-center">Active?</th>
+                <th className="px-4 py-3 font-bold text-right">Actions</th>
               </tr>
-            ))}
-            {templates.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-zinc-500">
-                  No message templates yet. Click <strong>New Message Template</strong> to create one.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="text-sm divide-y divide-zinc-700/50">
+              {templates.map(t => (
+                <tr key={t.id} className="hover:bg-zinc-800/40 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-zinc-200">{t.name}</div>
+                    {t.subject && (
+                      <div className="text-xs text-zinc-500 mt-0.5">Subject: {t.subject}</div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-700 text-zinc-300">
+                      {t.channel === 'email' ? <FiMail size={11} /> : <FiMessageSquare size={11} />}
+                      {t.channel === 'email' ? 'Email' : 'SMS'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-zinc-400">
+                    {eventLabel(t.event_key)}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
+                      t.is_active
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                        : 'bg-zinc-700/50 text-zinc-500 border border-zinc-600/30'
+                    }`}>
+                      {t.is_active ? 'Yes — Active' : 'No — Paused'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => openModal(t)}
+                        title="Edit this template"
+                        className="p-2 text-zinc-400 hover:text-emerald-400 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                      >
+                        <FiEdit2 size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        title="Delete this template"
+                        className="p-2 text-zinc-400 hover:text-rose-400 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                      >
+                        <FiTrash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {templates.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-zinc-500">
+                    No message templates yet. Click <strong>New Message Template</strong> to create one.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (

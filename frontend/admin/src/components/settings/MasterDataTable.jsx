@@ -185,59 +185,61 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50/50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-dark-surface/50 dark:text-zinc-400">
-            <tr>
-              {columns.map(col => (
-                <th key={col.key} className="px-5 py-4 cursor-pointer hover:text-emerald-600 transition" onClick={() => {
-                  if (sortBy === col.key) setSortDir(sortDir === "asc" ? "desc" : "asc");
-                  else { setSortBy(col.key); setSortDir("asc"); }
-                }}>
-                  <div className="flex items-center gap-2">
-                    {col.label}
-                    {sortBy === col.key && (
-                      <span className="text-emerald-600">{sortDir === "asc" ? "↑" : "↓"}</span>
-                    )}
-                  </div>
-                </th>
-              ))}
-              <th className="px-5 py-4 text-right w-24">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-dark-border text-zinc-700 dark:text-zinc-300">
-            {loading ? (
-              <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-zinc-400">Loading...</td></tr>
-            ) : data.length === 0 ? (
-              <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-zinc-400">No data found</td></tr>
-            ) : data.map((item) => (
-              <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition">
+        <div className="overflow-x-auto">
+          <table className="min-w-[640px] w-full text-left text-sm">
+            <thead className="bg-zinc-50/50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-dark-surface/50 dark:text-zinc-400">
+              <tr>
                 {columns.map(col => (
-                  <td key={col.key} className="px-4 py-3">
-                    {col.render ? col.render(item[col.key], item) : item[col.key]}
-                  </td>
+                  <th key={col.key} className="px-5 py-4 cursor-pointer hover:text-emerald-600 transition" onClick={() => {
+                    if (sortBy === col.key) setSortDir(sortDir === "asc" ? "desc" : "asc");
+                    else { setSortBy(col.key); setSortDir("asc"); }
+                  }}>
+                    <div className="flex items-center gap-2">
+                      {col.label}
+                      {sortBy === col.key && (
+                        <span className="text-emerald-600">{sortDir === "asc" ? "↑" : "↓"}</span>
+                      )}
+                    </div>
+                  </th>
                 ))}
-                <td className="px-5 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={() => handleOpenModal(item)} 
-                      title="Edit"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-emerald-50 hover:text-emerald-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
-                    >
-                      <FiEdit2 size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(item.id)} 
-                      title="Delete"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                    >
-                      <FiTrash2 size={14} />
-                    </button>
-                  </div>
-                </td>
+                <th className="px-5 py-4 text-right w-24">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-dark-border text-zinc-700 dark:text-zinc-300">
+              {loading ? (
+                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-zinc-400">Loading...</td></tr>
+              ) : data.length === 0 ? (
+                <tr><td colSpan={columns.length + 1} className="px-4 py-8 text-center text-zinc-400">No data found</td></tr>
+              ) : data.map((item) => (
+                <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-dark-surface/50 transition">
+                  {columns.map(col => (
+                    <td key={col.key} className="px-4 py-3">
+                      {col.render ? col.render(item[col.key], item) : item[col.key]}
+                    </td>
+                  ))}
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleOpenModal(item)} 
+                        title="Edit"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-emerald-50 hover:text-emerald-600 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(item.id)} 
+                        title="Delete"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-all hover:bg-red-50 hover:text-red-500 dark:border-zinc-800 dark:bg-dark-surface dark:text-zinc-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         
         {meta.last_page > 1 && (
           <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-dark-border dark:bg-dark-surface/30">

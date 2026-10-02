@@ -86,7 +86,7 @@ function TopHeader({ title, user, onMenuToggle }) {
           <button
             type="button"
             onClick={onMenuToggle}
-            className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface md:hidden"
+            className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface lg:hidden"
             aria-label="Open menu"
           >
             <FiMenu className="h-5 w-5" />

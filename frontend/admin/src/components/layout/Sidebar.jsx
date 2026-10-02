@@ -44,14 +44,14 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
       <div
         onClick={onClose}
         className={clsx(
-          "fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-sm transition md:hidden",
+          "fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-sm transition lg:hidden",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       />
 
       <aside
         className={clsx(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-200 bg-white transition-all duration-300 md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-200 bg-white transition-all duration-300 lg:translate-x-0",
           "dark:border-dark-border dark:bg-dark-card",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -60,7 +60,7 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface md:hidden"
+          className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-dark-surface lg:hidden"
           aria-label="Close menu"
         >
           <FiX className="h-5 w-5" />

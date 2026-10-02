@@ -199,7 +199,7 @@ function AppLayoutInner() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="md:pl-64">
+      <div className="lg:pl-64">
         <TopHeader
           title={pageTitle}
           user={user}

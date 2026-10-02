@@ -430,39 +430,41 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 {isLoadingTx ? (
                     <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic animate-pulse">Loading transaction logs...</div>
                 ) : transactions.length > 0 ? (
-                    <table className="w-full text-left text-sm border-collapse">
-                        <thead className="sticky top-0 bg-zinc-50 dark:bg-dark-surface z-10">
-                            <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border">
-                                <th className="px-4 py-3">Type & Details</th>
-                                <th className="px-4 py-3">Timestamp</th>
-                                <th className="px-4 py-3 text-right">Adjustment</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-                            {transactions.map(tx => (
-                                <tr key={tx.id} className="group hover:bg-zinc-50/50 dark:hover:bg-dark-surface/40 transition-colors">
-                                    <td className="px-4 py-3">
-                                        <p className="font-bold text-zinc-800 dark:text-zinc-200">{tx.transaction_type}</p>
-                                        {tx.remarks && <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">"{tx.remarks}"</p>}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <p className="text-[10px] text-zinc-400">
-                                            {new Date(tx.created_at).toLocaleDateString()}
-                                        </p>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <p className={clsx(
-                                            "font-black",
-                                            tx.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                                        )}>
-                                            {tx.quantity > 0 ? '+' : ''}{tx.quantity}
-                                        </p>
-                                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Stock: {tx.new_stock}</p>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-[640px] w-full text-left text-sm border-collapse">
+                          <thead className="sticky top-0 bg-zinc-50 dark:bg-dark-surface z-10">
+                              <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border">
+                                  <th className="px-4 py-3">Type & Details</th>
+                                  <th className="px-4 py-3">Timestamp</th>
+                                  <th className="px-4 py-3 text-right">Adjustment</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+                              {transactions.map(tx => (
+                                  <tr key={tx.id} className="group hover:bg-zinc-50/50 dark:hover:bg-dark-surface/40 transition-colors">
+                                      <td className="px-4 py-3">
+                                          <p className="font-bold text-zinc-800 dark:text-zinc-200">{tx.transaction_type}</p>
+                                          {tx.remarks && <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">"{tx.remarks}"</p>}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                          <p className="text-[10px] text-zinc-400">
+                                              {new Date(tx.created_at).toLocaleDateString()}
+                                          </p>
+                                      </td>
+                                      <td className="px-4 py-3 text-right">
+                                          <p className={clsx(
+                                              "font-black",
+                                              tx.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                          )}>
+                                              {tx.quantity > 0 ? '+' : ''}{tx.quantity}
+                                          </p>
+                                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Stock: {tx.new_stock}</p>
+                                      </td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                    </div>
                 ) : (
                     <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No transactions recorded yet.</div>
                 )}

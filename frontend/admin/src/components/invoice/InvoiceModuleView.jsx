@@ -1696,12 +1696,9 @@ function InvoiceModuleView() {
       </div>
 
       {activeTab === "new" ? (
-        <div className={clsx(
-          "grid grid-cols-1 lg:h-[calc(100vh-16rem)]",
-          isPreviewMode ? "lg:grid-cols-1" : "lg:grid-cols-[620px_1fr]"
-        )}>
+        <div className="grid grid-cols-1 lg:h-[calc(100vh-16rem)]">
           {!isPreviewMode && (
-            <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0 lg:border-r lg:border-zinc-200 dark:border-dark-border">
+            <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0">
               <div className="shrink-0 border-b border-zinc-200 dark:border-dark-border p-5">
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
                 <div className="mt-2 flex items-center gap-3">
@@ -1714,6 +1711,15 @@ function InvoiceModuleView() {
                   )}>
                     {status}
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewMode(true)}
+                    className="ml-auto inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-dark-border dark:text-zinc-300 dark:hover:bg-dark-surface"
+                  >
+                    <FiEye className="h-4 w-4" />
+                    Preview
+                  </button>
                 </div>
               </div>
 
@@ -2199,6 +2205,7 @@ function InvoiceModuleView() {
             </aside>
           )}
 
+          {isPreviewMode && (
           <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
               <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
@@ -2511,6 +2518,7 @@ function InvoiceModuleView() {
               </article>
             </div>
           </section>
+          )}
         </div>
       ) : activeTab === "drafts" ? (
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">

@@ -99,86 +99,88 @@ export default function PortalUsersTab() {
       </div>
 
       <div className="rounded-2xl border border-zinc-200 dark:border-dark-border overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/50">
-              <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4">Email / Phone</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Joined</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
-            {loading && users.length === 0
-              ? Array(5).fill(0).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td colSpan={5} className="px-6 py-5"><div className="h-3 bg-zinc-100 rounded-full w-3/4" /></td>
-                </tr>
-              ))
-              : users.map(u => {
-                const status = u.deleted_at ? "deleted" : (u.status || "active");
-                return (
-                  <tr key={u.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30 transition-all">
-                    <td className="px-6 py-4">
-                      <p className="font-black">{u.name}</p>
-                      {u.owner?.name && <p className="text-xs text-zinc-400 font-bold">Owner: {u.owner.name}</p>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold">{u.email}</p>
-                      {u.phone && <p className="text-xs text-zinc-400">{u.phone}</p>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={clsx("px-3 py-1 rounded-xl text-[10px] font-black uppercase border", STATUS_BADGE[status] || STATUS_BADGE.active)}>
-                        {status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-bold text-zinc-400">
-                      {u.created_at ? new Date(u.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" }) : "—"}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {status === "active" && (
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openConfirm(u, "suspend")}
-                            disabled={!!actionLoading}
-                            className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-50"
-                          >Suspend</button>
-                          <button
-                            onClick={() => openConfirm(u, "deactivate")}
-                            disabled={!!actionLoading}
-                            className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all disabled:opacity-50"
-                          >Deactivate</button>
-                        </div>
-                      )}
-                      {(status === "suspended" || status === "deactivated") && (
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openConfirm(u, "reactivate")}
-                            disabled={!!actionLoading}
-                            className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50"
-                          >
-                            <FiUserCheck className="inline h-3 w-3 mr-1" />Reactivate
-                          </button>
-                          {status === "suspended" && (
+        <div className="overflow-x-auto">
+          <table className="min-w-[720px] w-full text-left">
+            <thead>
+              <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/50 dark:bg-dark-surface/50">
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Email / Phone</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Joined</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+              {loading && users.length === 0
+                ? Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={5} className="px-6 py-5"><div className="h-3 bg-zinc-100 rounded-full w-3/4" /></td>
+                  </tr>
+                ))
+                : users.map(u => {
+                  const status = u.deleted_at ? "deleted" : (u.status || "active");
+                  return (
+                    <tr key={u.id} className="hover:bg-zinc-50/50 dark:hover:bg-dark-surface/30 transition-all">
+                      <td className="px-6 py-4">
+                        <p className="font-black">{u.name}</p>
+                        {u.owner?.name && <p className="text-xs text-zinc-400 font-bold">Owner: {u.owner.name}</p>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold">{u.email}</p>
+                        {u.phone && <p className="text-xs text-zinc-400">{u.phone}</p>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={clsx("px-3 py-1 rounded-xl text-[10px] font-black uppercase border", STATUS_BADGE[status] || STATUS_BADGE.active)}>
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-zinc-400">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" }) : "—"}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {status === "active" && (
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => openConfirm(u, "suspend")}
+                              disabled={!!actionLoading}
+                              className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-50"
+                            >Suspend</button>
                             <button
                               onClick={() => openConfirm(u, "deactivate")}
                               disabled={!!actionLoading}
                               className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all disabled:opacity-50"
                             >Deactivate</button>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            }
-            {!loading && users.length === 0 && (
-              <tr><td colSpan={5} className="px-6 py-20 text-center text-zinc-400 font-black italic uppercase text-sm">No portal users found</td></tr>
-            )}
-          </tbody>
-        </table>
+                          </div>
+                        )}
+                        {(status === "suspended" || status === "deactivated") && (
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => openConfirm(u, "reactivate")}
+                              disabled={!!actionLoading}
+                              className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                            >
+                              <FiUserCheck className="inline h-3 w-3 mr-1" />Reactivate
+                            </button>
+                            {status === "suspended" && (
+                              <button
+                                onClick={() => openConfirm(u, "deactivate")}
+                                disabled={!!actionLoading}
+                                className="px-3 py-1.5 rounded-xl text-xs font-black uppercase border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all disabled:opacity-50"
+                              >Deactivate</button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              }
+              {!loading && users.length === 0 && (
+                <tr><td colSpan={5} className="px-6 py-20 text-center text-zinc-400 font-black italic uppercase text-sm">No portal users found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
