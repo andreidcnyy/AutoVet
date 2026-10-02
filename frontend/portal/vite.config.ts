@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  // See the note in the admin config; /portal/ for the offline build.
+  base: process.env.VITE_BASE_PATH || "/",
+
   plugins: [react()],
   server: {
     port: 5174,

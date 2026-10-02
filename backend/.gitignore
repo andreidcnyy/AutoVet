@@ -30,3 +30,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env.live
+
+# Built front ends, generated into the backend's public folder by
+# REBUILD-DEMO.bat for the offline demo. Build artefacts, not source.
+/public/clinic/
+/public/portal/
+/public/images/

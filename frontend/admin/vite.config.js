@@ -2,6 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  // Where the app is served from. Vercel serves it at the root, so the
+  // default is "/"; the offline build sets VITE_BASE_PATH=/clinic/ to sit
+  // under the backend's own origin, which removes the dev-server proxy and
+  // the extra process that went with it.
+  base: process.env.VITE_BASE_PATH || "/",
+
   plugins: [react()],
 
   server: {
