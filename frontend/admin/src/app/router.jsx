@@ -141,7 +141,7 @@ export const router = createBrowserRouter([
       {
         path: "analytics",
         element: (
-          <ProtectedRoute allowedRoles={CLINIC_STAFF_ROLES}>
+          <ProtectedRoute allowedRoles={VET_AND_ADMIN}>
             <AnalyticsPage />
           </ProtectedRoute>
         ),
