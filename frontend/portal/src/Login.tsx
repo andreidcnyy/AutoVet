@@ -6,6 +6,7 @@ import { useAuth } from "./context/AuthContext";
 import DarkModeToggle from "./components/DarkModeToggle";
 import { PawPrint, PawTrail, DogSilhouette, CatSilhouette } from "./pages/Landing";
 import logo from "./assets/logo.png";
+import { googleSignInEnabled } from './config/googleSignIn';
 
 const PERKS = [
   { icon: <FiCalendar />, text: "Book appointments online anytime"   },
@@ -241,14 +242,17 @@ function LoginPage() {
                 {loading ? "Signing in…" : <>Log In <span className="text-base group-hover:rotate-12 inline-block transition-transform duration-300">🐾</span></>}
               </button>
 
-              {/* Divider */}
+              {/* Divider — hidden with the Google button it introduces */}
+              {googleSignInEnabled && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-zinc-200 dark:bg-dark-border" />
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">or</span>
                 <div className="flex-1 h-px bg-zinc-200 dark:bg-dark-border" />
               </div>
+              )}
 
               {/* Google Button */}
+              {googleSignInEnabled && (
               <button
                 type="button"
                 onClick={() => googleLogin()}
@@ -269,6 +273,7 @@ function LoginPage() {
                 )}
                 Continue with Google
               </button>
+              )}
 
               <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
                 Don't have an account?{" "}

@@ -6,6 +6,10 @@ import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './index.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { loadGoogleScript } from './config/googleSignIn';
+
+// Fetches Google's client only when sign-in is configured.
+loadGoogleScript();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -199,18 +199,44 @@ class AnalyticsMockSeeder extends Seeder
                     $remaining -= $qty;
                     if ($qty <= 0) continue;
 
-                    $rows[] = [
-                        'clinic_id'       => $clinic->id,
-                        'inventory_id'    => $invId,
-                        'invoice_id'      => null,
-                        'invoice_item_id' => null,
-                        'quantity_used'   => $qty,
-                        'usage_date'      => $monthBase->copy()->addDays(rand(1, 27))->toDateString(),
-                        'source_type'     => 'retail_sale',
-                        'unit_price'      => rand(50, 500),
-                        'created_at'      => now(),
-                        'updated_at'      => now(),
-                    ];
+                    // Split the month's usage across several dates instead of
+                    // booking it all on one. A single row per item per month
+                    // means any 30-day window holds at most one point, and the
+                    // forecast needs a run of them to fit a trend — so the AI
+                    // panel reported "Insufficient Data" for every item however
+                    // much history there was. The monthly total is unchanged;
+                    // only the dates it lands on are.
+                    $parts = min($qty, rand(4, 8));
+                    $perPart = intdiv($qty, $parts);
+                    $leftover = $qty - ($perPart * $parts);
+
+                    for ($i = 0; $i < $parts; $i++) {
+                        $partQty = $perPart + ($i === 0 ? $leftover : 0);
+                        if ($partQty <= 0) continue;
+
+                        // Spread over the month, and never past today — a usage
+                        // date in the future would sit outside every window the
+                        // forecast looks back over.
+                        $day = $monthBase->copy()->addDays(
+                            (int) round(($i + 1) * (27 / ($parts + 1))) + rand(0, 2)
+                        );
+                        if ($day->isFuture()) {
+                            $day = Carbon::now()->subDays(rand(0, 3));
+                        }
+
+                        $rows[] = [
+                            'clinic_id'       => $clinic->id,
+                            'inventory_id'    => $invId,
+                            'invoice_id'      => null,
+                            'invoice_item_id' => null,
+                            'quantity_used'   => $partQty,
+                            'usage_date'      => $day->toDateString(),
+                            'source_type'     => 'retail_sale',
+                            'unit_price'      => rand(50, 500),
+                            'created_at'      => now(),
+                            'updated_at'      => now(),
+                        ];
+                    }
                 }
             }
         }

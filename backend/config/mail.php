@@ -38,37 +38,37 @@ return [
     'mailers' => [
 
         'brevo' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'smtp' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'invoice' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'appointment' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'reminder' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'forgot_password' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 
         'verification' => [
-            'transport' => 'brevo',
+            'transport' => env('MAIL_TRANSPORT', 'brevo'),
             'key' => env('BREVO_API_KEY'),
         ],
 

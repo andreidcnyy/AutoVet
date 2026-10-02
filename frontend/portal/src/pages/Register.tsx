@@ -9,6 +9,7 @@ import PhoneInput from "../components/PhoneInput";
 import { PH_LOCATION_DATA, City } from "../utils/phLocationData";
 import { PawPrint, PawTrail, CatSilhouette, DogSilhouette } from "./Landing";
 import logo from "../assets/logo.png";
+import { googleSignInEnabled } from '../config/googleSignIn';
 
 const PERKS = [
   { icon: <FiHeart />,  text: "Track your pet's health history"       },
@@ -268,8 +269,9 @@ export default function Register() {
               </p>
             </div>
 
-            {/* Google Sign-up */}
+            {/* Google Sign-up — hidden when no client id is configured */}
             <div className="space-y-3">
+              {googleSignInEnabled && (
               <button
                 type="button"
                 onClick={() => googleSignup()}
@@ -290,12 +292,15 @@ export default function Register() {
                 )}
                 Sign up with Google
               </button>
+              )}
 
+              {googleSignInEnabled && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-zinc-200 dark:bg-dark-border" />
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">or fill in manually</span>
                 <div className="flex-1 h-px bg-zinc-200 dark:bg-dark-border" />
               </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

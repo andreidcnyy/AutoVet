@@ -11,6 +11,18 @@ import clsx from 'clsx';
 import DarkModeToggle from '../components/DarkModeToggle';
 import logo from "../assets/logo.png";
 
+// Bundled locally so the landing page renders with no internet. These were
+// remote Unsplash URLs, which left the first screen full of broken images
+// whenever the venue wifi was down.
+import landingImg01 from '../assets/landing/landing-01.jpg';
+import landingImg02 from '../assets/landing/landing-02.jpg';
+import landingImg03 from '../assets/landing/landing-03.jpg';
+import landingImg04 from '../assets/landing/landing-04.jpg';
+import landingImg05 from '../assets/landing/landing-05.jpg';
+import landingImg06 from '../assets/landing/landing-06.jpg';
+import landingImg07 from '../assets/landing/landing-07.jpg';
+import landingImg08 from '../assets/landing/landing-08.jpg';
+
 /* ─────────────────────────────────────────
    Decorative SVG components
 ───────────────────────────────────────── */
@@ -85,10 +97,10 @@ export function CatSilhouette({ className = '' }: { className?: string }) {
    Data
 ───────────────────────────────────────── */
 const AVATAR_PET_IMAGES = [
-  "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=150&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=150&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1561037404-61cd46aa615b?q=80&w=150&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=150&auto=format&fit=crop",
+  landingImg01,
+  landingImg04,
+  landingImg02,
+  landingImg03,
 ];
 
 const FEATURES = [
@@ -103,25 +115,25 @@ const FEATURES = [
 const CLINIC_SERVICES = [
   {
     name: 'Consultations',
-    image: 'https://plus.unsplash.com/premium_photo-1661916447474-235409b19e16?q=80&w=800&auto=format&fit=crop',
+    image: landingImg06,
     description: 'Expert medical advice and thorough check-ups for your pets.',
     badge: 'from-rose-500 to-pink-600',
   },
   {
     name: 'Grooming',
-    image: 'https://plus.unsplash.com/premium_photo-1663036512129-8e236721f90d?q=80&w=800&auto=format&fit=crop',
+    image: landingImg08,
     description: 'Professional styling and hygiene services to keep pets looking their best.',
     badge: 'from-purple-500 to-violet-600',
   },
   {
     name: 'Vaccination',
-    image: 'https://plus.unsplash.com/premium_photo-1661942274165-00cc8d55a93f?q=80&w=800&auto=format&fit=crop',
+    image: landingImg07,
     description: 'Essential preventative care and immunization schedules for lifelong health.',
     badge: 'from-brand-500 to-emerald-600',
   },
   {
     name: 'Deworming',
-    image: 'https://images.unsplash.com/photo-1725409796872-8b41e8eca929?q=80&w=800&auto=format&fit=crop',
+    image: landingImg05,
     description: 'Safe and effective treatments to protect your pets from internal parasites.',
     badge: 'from-amber-500 to-orange-600',
   },

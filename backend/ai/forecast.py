@@ -88,10 +88,26 @@ def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=No
     except Exception as e:
         return {"error": f"Error reading CSV file: {e}"}
 
-    df['date'] = pd.to_datetime(df['date'], dayfirst=True, errors='coerce')
-    mask = df['date'].isna()
-    if mask.any():
-        df.loc[mask, 'date'] = pd.to_datetime(df.loc[mask, 'date'], errors='coerce')
+    # Parse the plain reading first, then fall back to day-first only for what
+    # it could not read.
+    #
+    # This used to run dayfirst=True first, which is wrong for the ISO dates
+    # ExportInventoryHistory writes: given 2026-09-13 it tries 13 as a month,
+    # fails, and returns NaT. Every day past the 12th was dropped, so a 31-day
+    # window arrived as a handful of rows and the forecast reported
+    # "Insufficient Data" for items that had plenty of history.
+    #
+    # The retry could not undo it either: it re-read df['date'], which had
+    # already been overwritten with the NaT values, so there was nothing left to
+    # parse. Keep the original text and retry against that.
+    raw = df['date'].astype(str)
+    parsed = pd.to_datetime(raw, errors='coerce')
+
+    retry = parsed.isna()
+    if retry.any():
+        parsed.loc[retry] = pd.to_datetime(raw[retry], dayfirst=True, errors='coerce')
+
+    df['date'] = parsed
     df = df.dropna(subset=['date'])
 
     df['stock_level'] = pd.to_numeric(df['stock_level'], errors='coerce')
