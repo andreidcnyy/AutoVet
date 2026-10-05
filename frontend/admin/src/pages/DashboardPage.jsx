@@ -336,7 +336,12 @@ function DashboardPage() {
          </div>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3 2xl:grid-cols-5">
+      {/* Five metric cards. The row only went to five columns at 2xl (1536px),
+          so a 15.6" laptop at 100% zoom sat in the three-column band and wrapped
+          them 3 + 2, leaving a gap beside the last two. Five across from xl
+          (1280px) covers the common laptop widths, and the steps below it keep
+          the cards from squeezing on smaller screens. */}
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
         {mappedMetrics.map((card) => (
           <MetricCard key={card.id || card.title} card={card} />
         ))}

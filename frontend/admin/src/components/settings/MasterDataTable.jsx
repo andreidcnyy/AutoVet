@@ -4,6 +4,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChev
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
+import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 
 export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
   const { success, error } = useToast();
@@ -17,6 +18,8 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [page, setPage] = useState(1);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useLockBodyScroll(isModalOpen);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
@@ -267,7 +270,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
       </div>
 
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 dark:bg-dark-card border dark:border-dark-border shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{editingItem ? `Edit ${title.slice(0, -1)}` : `Add ${title.slice(0, -1)}`}</h3>

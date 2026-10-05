@@ -3,6 +3,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiSave, FiChevronLeft, FiChev
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
+import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 
 export default function WeightRangesManager() {
   const { error, success } = useToast();
@@ -17,6 +18,7 @@ export default function WeightRangesManager() {
   
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  useLockBodyScroll(isModalOpen);
   const [editingItem, setEditingItem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -398,7 +400,7 @@ export default function WeightRangesManager() {
 
       {/* Modal - Customized for Weight Range */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-zinc-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
               <div>

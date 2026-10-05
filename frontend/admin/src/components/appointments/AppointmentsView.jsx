@@ -611,7 +611,11 @@ function AppointmentsView() {
             );
           })()}
           <div className="overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card">
-            <div className="flex flex-wrap items-center justify-between gap-6 border-b border-zinc-100 p-8 bg-zinc-50/30 dark:bg-dark-surface/30">
+            {/* items-end, not items-center: the left side is two rows (title
+                above, filters below) and centring floated the button between
+                them. Aligning to the bottom puts it on the filter row's
+                baseline, beside the search box. */}
+            <div className="flex flex-wrap items-end justify-between gap-6 border-b border-zinc-100 p-8 bg-zinc-50/30 dark:bg-dark-surface/30">
               <div className="flex-1 min-w-[300px]">
                 <h3 className="text-3xl font-black italic flex items-center gap-3">
                   <span className="text-emerald-600">/</span> {params.date ? formatDateLocal(params.date) : `${format(currentDate, "MMMM")} Appointments`}
@@ -633,9 +637,9 @@ function AppointmentsView() {
               
               <button 
                 onClick={handleAddAppointment}
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 text-white px-6 py-4 text-sm font-black uppercase tracking-widest hover:bg-emerald-700 hover:scale-105 transition-all shadow-xl shadow-emerald-600/20"
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700"
               >
-                <FiPlusCircle className="h-5 w-5" />
+                <FiPlusCircle className="h-4 w-4" />
                 Add Appointment
               </button>
             </div>

@@ -2,6 +2,7 @@
 import { FiPlus, FiTrash2, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 
 export default function SpeciesBreedsTab() {
   const toast = useToast();
@@ -16,6 +17,7 @@ export default function SpeciesBreedsTab() {
   // the list, and Add opens its own dialog.
   const [speciesSearch, setSpeciesSearch] = useState("");
   const [showAddSpecies, setShowAddSpecies] = useState(false);
+  useLockBodyScroll(showAddSpecies);
   const [newSpeciesName, setNewSpeciesName] = useState("");
   const [newBreedName, setNewBreedName] = useState("");
   const [newBreedDefaultSize, setNewBreedDefaultSize] = useState("");

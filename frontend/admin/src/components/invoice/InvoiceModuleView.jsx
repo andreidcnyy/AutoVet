@@ -1693,34 +1693,46 @@ function InvoiceModuleView() {
         >
           Invoice Reports
         </button>
+
+        {/* Preview sits with the tabs rather than inside the form, so the
+            working area below is free for line items. Only meaningful while an
+            invoice is open. */}
+        {activeTab === "new" && (
+          <button
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
+            className={clsx(
+              "ml-auto flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all",
+              isPreviewMode
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            )}
+          >
+            <FiEye className="h-4 w-4" />
+            {isPreviewMode ? "Exit Preview" : "Preview"}
+          </button>
+        )}
       </div>
 
       {activeTab === "new" ? (
         <div className="grid grid-cols-1 lg:h-[calc(100vh-16rem)]">
           {!isPreviewMode && (
             <aside className="flex h-full flex-col overflow-hidden border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card lg:border-b-0">
-              <div className="shrink-0 border-b border-zinc-200 dark:border-dark-border p-5">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">Invoice &gt; New Invoice</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <h2 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">New Invoice</h2>
-                  <span className={clsx(
-                    "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-                    (status === "Finalized" || status === "Paid")
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700"
-                      : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
-                  )}>
-                    {status}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPreviewMode(true)}
-                    className="ml-auto inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-dark-border dark:text-zinc-300 dark:hover:bg-dark-surface"
-                  >
-                    <FiEye className="h-4 w-4" />
-                    Preview
-                  </button>
-                </div>
+              {/* The big "New Invoice" heading block is gone: the tab above
+                  already says which screen this is, and it was spending a sixth
+                  of the working height repeating it. Only the status, which
+                  changes as the invoice is worked on, is kept — on one slim row. */}
+              <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-5 py-2.5 dark:border-dark-border">
+                <span className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+                  Draft invoice
+                </span>
+                <span className={clsx(
+                  "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+                  (status === "Finalized" || status === "Paid")
+                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700"
+                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-700"
+                )}>
+                  {status}
+                </span>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-6">
@@ -2206,25 +2218,17 @@ function InvoiceModuleView() {
           )}
 
           {isPreviewMode && (
-          <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+          <section className="flex h-full flex-col overflow-hidden bg-zinc-100 dark:bg-dark-bg">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card px-5 py-3 shrink-0">
+              {/* The toggle lives with the tabs now, so this toolbar only
+                  reports the status. */}
               <div className="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
-                <button
-                  onClick={() => setIsPreviewMode(!isPreviewMode)}
-                  className={clsx(
-                    "inline-flex items-center gap-2 font-semibold transition-colors px-3 py-1.5 rounded-lg",
-                    isPreviewMode ? "bg-emerald-600 text-white" : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-dark-surface"
-                  )}
-                >
-                  <FiEye className="h-4 w-4" />
-                  {isPreviewMode ? "Exit Preview" : "Preview Mode"}
-                </button>
                 <span>Invoice Status: <b className="text-zinc-700 dark:text-zinc-300">{status}</b></span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
+                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface"
                 >
                   <FiPrinter className="h-4 w-4" />
                 </button>
@@ -2246,7 +2250,7 @@ function InvoiceModuleView() {
                     };
                     generateInvoicePDF(invoiceData, patientDetails, clinicSettings);
                   }}
-                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface dark:bg-zinc-950"
+                  className="rounded-lg p-2 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface"
                 >
                   <FiDownload className="h-4 w-4" />
                 </button>
@@ -2521,7 +2525,7 @@ function InvoiceModuleView() {
           )}
         </div>
       ) : activeTab === "drafts" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-dark-bg">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
@@ -2654,7 +2658,7 @@ function InvoiceModuleView() {
           </div>
         </div>
       ) : activeTab === "history" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-dark-bg">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -2794,7 +2798,7 @@ function InvoiceModuleView() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50 dark:bg-dark-bg">
           <div className="max-w-7xl mx-auto pt-2">
             <InvoiceReportsPane
               inventory={inventory}
