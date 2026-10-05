@@ -11,6 +11,7 @@ import {
   FiCreditCard,
   FiDownload,
   FiEye,
+  FiAlertCircle,
   FiFileText,
   FiPlusCircle,
   FiPrinter,
@@ -2846,6 +2847,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
   const toast = useToast();
   const { setLaravelErrors, clearErrors, getError } = useFormErrors();
   const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
   const [selectedVetId, setSelectedVetId] = useState(() => {
     const vet = vets.find(v => v.role === 'veterinarian');
     return vet ? vet.id.toString() : "";
@@ -2857,10 +2859,20 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearErrors();
+    setFormError("");
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
     data.pet_id = petId;
-    data.appointment_id = appointmentId;
+
+    // An invoice raised without a visit carries no appointment, and that
+    // arrived here as 0. The id is nullable, but 0 is not null: it reached
+    // exists:appointments,id, matched nothing, and came back 422 "The selected
+    // appointment id is invalid" — with no field on this form to show it
+    // against, so all the vet saw was a toast outside the dialog. Send a real
+    // id or nothing at all.
+    const linkedId = Number(appointmentId);
+    data.appointment_id = Number.isFinite(linkedId) && linkedId > 0 ? linkedId : null;
+
     data.vet_id = selectedVetId || undefined;
 
     setIsSaving(true);
@@ -2878,7 +2890,15 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
         const errData = await res.json().catch(() => ({}));
         if (res.status === 422) {
           setLaravelErrors(errData);
-          toast.error("Validation error. Please check the fields.");
+          // Shown in the dialog rather than only as a toast: some of these
+          // fields (the linked appointment, the pet) have nowhere on this form
+          // to display an error against, so a toast on the far side of the
+          // screen was the only sign anything had gone wrong.
+          setFormError(
+            Object.values(errData.errors || {}).flat()[0] ||
+            errData.message ||
+            "Please check the fields below."
+          );
           return;
         }
         throw new Error(errData.message || "Failed to save medical record");
@@ -2886,7 +2906,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
       toast.success("Medical record saved successfully.");
       onDismiss();
     } catch (err) {
-      toast.error(err.message || "Failed to save medical record");
+      setFormError(err.message || "Failed to save medical record");
     } finally {
       setIsSaving(false);
     }
@@ -2904,6 +2924,15 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-6">
           <form id="post-invoice-med-form" onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300"
+              >
+                <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Attending Veterinarian</label>

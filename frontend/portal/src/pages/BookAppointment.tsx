@@ -93,6 +93,7 @@ export default function BookAppointment() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isViewMode, setIsViewMode] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState("");
   const [availability, setAvailability] = useState<any[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
@@ -357,6 +358,8 @@ export default function BookAppointment() {
   };
 
   const onBookingSubmit = async (data: BookingForm) => {
+
+    setBookingError("");
     if (selectedServiceIds.length === 0) { return; }
     try {
       const payload = { ...data, service_ids: selectedServiceIds };
@@ -385,7 +388,16 @@ export default function BookAppointment() {
       reset();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to book appointment.");
+
+      // A native alert() is a jarring way to tell someone their slot is taken,
+      // and on a phone it covers the form they are trying to correct. The
+      // message belongs in the drawer, next to the time they picked.
+      const message = err.response?.data?.message || "";
+      setBookingError(
+        /already has an appointment/i.test(message)
+          ? "That time has just been taken. Please choose another slot below."
+          : message || "We could not complete your booking. Please try again."
+      );
     }
   };
 
@@ -552,11 +564,17 @@ export default function BookAppointment() {
                   <FiCheckCircle className="w-10 h-10" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black italic uppercase tracking-tight text-zinc-800 dark:text-zinc-100">
-                    Appointment Requested!
+                  {/* Reads as a clinic confirming a request, not an app
+                      celebrating a tap: no exclamation mark, no italics, and it
+                      says plainly what happens next and that nothing is
+                      confirmed yet. */}
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100">
+                    Request received
                   </h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
-                    Your visit has been queued for approval. We'll notify you once the clinic confirms.
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    Pet Wellness Animal Clinic has your request and will confirm it shortly.
+                    You will be notified once it is approved, and it will appear in
+                    My&nbsp;Appointments marked <span className="font-semibold text-amber-600 dark:text-amber-400">Pending</span> until then.
                   </p>
                 </div>
                 <button
@@ -662,6 +680,15 @@ export default function BookAppointment() {
                 </div>
 
                 <form onSubmit={handleSubmit(onBookingSubmit)} className="space-y-5">
+                  {bookingError && (
+                    <div
+                      role="alert"
+                      className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200"
+                    >
+                      <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="font-medium leading-relaxed">{bookingError}</span>
+                    </div>
+                  )}
 
                   {/* Pet Selection */}
                   <div>
@@ -790,36 +817,57 @@ export default function BookAppointment() {
                         <>
                           {/* 3-col grid on mobile, 4-col on desktop */}
                           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                            {standardSlots.filter(slot => {
-                              const isBooked = availability.some((a: any) => {
+                            {standardSlots.map(slot => {
+                              // Only a booking that still stands holds its slot.
+                              // This must match SLOT_HOLDING_STATUSES on the
+                              // server: when the two disagreed, a slot shown as
+                              // free here was refused on submit with "this vet
+                              // already has an appointment at this time".
+                              const isTaken = availability.some((a: any) => {
                                 const t = a.time ? a.time.padStart(5, '0').substring(0, 5) : '';
-                                return t === slot && a.status !== 'cancelled' && a.status !== 'declined';
+                                const status = (a.status || '').toLowerCase();
+                                return t === slot && ['pending', 'approved', 'scheduled'].includes(status);
                               });
+
                               const todayStr = format(new Date(), "yyyy-MM-dd");
                               const nowTime = format(new Date(), "HH:mm");
-                              return !isBooked && !(selectedDate === todayStr && slot < nowTime);
-                            }).map(slot => {
+                              const isPast = selectedDate === todayStr && slot < nowTime;
+
+                              // Taken slots stay on screen, greyed out. Removing
+                              // them left gaps in the grid with no explanation,
+                              // so a full morning simply looked like missing
+                              // times rather than a busy clinic.
                               const isSelected = selectedTime === slot;
+                              const disabled = isTaken || isPast;
+
                               return (
                                 <button
                                   key={slot}
                                   type="button"
+                                  disabled={disabled}
+                                  aria-label={
+                                    isTaken ? `${formatTime(slot)} — already booked`
+                                    : isPast ? `${formatTime(slot)} — no longer available today`
+                                    : formatTime(slot)
+                                  }
                                   onClick={() => setValue("time", slot, { shouldValidate: true })}
                                   className={clsx(
-                                    "px-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all text-center w-full",
-                                    isSelected
-                                      ? "border-emerald-500 bg-emerald-500 text-white shadow-md"
-                                      : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-400"
+                                    "w-full rounded-xl border-2 px-1 py-2.5 text-center text-xs font-bold transition-all",
+                                    isSelected && "border-emerald-500 bg-emerald-500 text-white shadow-md",
+                                    !isSelected && !disabled && "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-emerald-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400",
+                                    disabled && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 line-through dark:border-dark-border/50 dark:bg-dark-surface/40 dark:text-zinc-600"
                                   )}
+                                  title={isTaken ? "Already booked" : isPast ? "This time has passed" : undefined}
                                 >
                                   {formatTime(slot)}
                                 </button>
                               );
                             })}
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-[9px] font-bold uppercase tracking-widest">
-                            <span className="flex items-center gap-1.5 text-zinc-500"><span className="w-2 h-2 rounded-full bg-zinc-400" />Available</span>
-                            <span className="flex items-center gap-1.5 text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-500" />Selected</span>
+                          <div className="mt-2 flex flex-wrap items-center gap-4 text-[9px] font-bold uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 text-zinc-500"><span className="h-2 w-2 rounded-full bg-zinc-400" />Available</span>
+                            <span className="flex items-center gap-1.5 text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" />Selected</span>
+                            <span className="flex items-center gap-1.5 text-zinc-400"><span className="h-2 w-2 rounded-full bg-zinc-200" />Unavailable</span>
                           </div>
                         </>
                       )

@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Traits\HasInternalNotifications;
 use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
@@ -189,6 +190,21 @@ class AppointmentController extends Controller
         return response()->json($query->get());
     }
 
+    /**
+     * Statuses that still occupy a slot.
+     *
+     * A cancelled or declined booking frees its time again, and a completed one
+     * is already in the past - none of them should stop anyone booking that
+     * slot. The double-booking checks matched on date and time alone, so every
+     * visit ever held at a given time blocked it permanently: on this database
+     * that is 349 completed, 14 declined and 12 cancelled appointments against
+     * 9 that are genuinely still pending or approved.
+     *
+     * Compared case-insensitively, because the column holds both "Approved"
+     * from bulk inserts and "approved" from the status controller.
+     */
+    private const SLOT_HOLDING_STATUSES = ['pending', 'approved', 'scheduled'];
+
     public function store(Request $request)
     {
         $this->authorize('create', Appointment::class);
@@ -290,6 +306,7 @@ class AppointmentController extends Controller
             $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
                                                 ->where('date', $validated['date'])
                                                 ->where('time', $validated['time'])
+                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
                                                 ->first();
             if ($existingVetAppointment) {
                 return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
@@ -300,6 +317,7 @@ class AppointmentController extends Controller
         $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
                                             ->where('date', $validated['date'])
                                             ->where('time', $validated['time'])
+                                            ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
                                             ->first();
         if ($existingPetAppointment) {
             return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
@@ -435,6 +453,7 @@ class AppointmentController extends Controller
                                                 ->where('date', $validated['date'])
                                                 ->where('time', $validated['time'])
                                                 ->where('id', '!=', $appointment->id)
+                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
                                                 ->first();
             if ($existingVetAppointment) {
                 return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
@@ -447,6 +466,7 @@ class AppointmentController extends Controller
                                                 ->where('date', $validated['date'])
                                                 ->where('time', $validated['time'])
                                                 ->where('id', '!=', $appointment->id)
+                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
                                                 ->first();
             if ($existingPetAppointment) {
                 return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
