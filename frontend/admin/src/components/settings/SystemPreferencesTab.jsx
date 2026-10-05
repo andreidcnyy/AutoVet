@@ -9,7 +9,6 @@ export default function SystemPreferencesTab() {
   const { user } = useAuth();
   const [aiForecasting, setAiForecasting] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
-  const [cloudSync, setCloudSync] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +22,6 @@ export default function SystemPreferencesTab() {
       // and reads the scheduled window from /api/maintenance-status.
       setAiForecasting(data.enable_ai_forecasting !== 'false' && data.enable_ai_forecasting !== false);
       setLowStockAlerts(data.enable_low_stock_alerts !== 'false' && data.enable_low_stock_alerts !== false);
-      setCloudSync(data.enable_cloud_sync === 'true' || data.enable_cloud_sync === true);
     };
 
     try {
@@ -85,13 +83,6 @@ export default function SystemPreferencesTab() {
     updateSetting('enable_low_stock_alerts', newValue);
   };
 
-  const toggleCloudSync = () => {
-    const newValue = !cloudSync;
-    setCloudSync(newValue);
-    updateSetting('enable_cloud_sync', newValue);
-  };
-
-
   if (loading) return <div className="p-6 text-zinc-500">Loading system preferences...</div>;
 
   return (
@@ -111,14 +102,6 @@ export default function SystemPreferencesTab() {
         </div>
 
         <MaintenanceModeCard />
-
-        <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-dark-border dark:bg-dark-surface">
-          <div>
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Auto-sync with Cloud Server</p>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Syncs offline local data when internet is available.</p>
-          </div>
-          <Toggle checked={cloudSync} onChange={toggleCloudSync} />
-        </div>
       </div>
 
     </section>

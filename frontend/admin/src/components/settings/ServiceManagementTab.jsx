@@ -321,7 +321,7 @@ export default function ServiceManagementTab() {
            while no ancestor has a transform, filter or containment of its own.
            my-auto inside a scrollable overlay keeps it centred when it fits and
            lets it scroll when it does not. */
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-zinc-950/50 p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-zinc-950/50 p-4 backdrop-blur-sm">
           <div className="my-auto flex w-full max-w-md flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingService ? "Edit Service" : "Add Service"}</h3>

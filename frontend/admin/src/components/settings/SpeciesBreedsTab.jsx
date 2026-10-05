@@ -10,6 +10,12 @@ export default function SpeciesBreedsTab() {
   const [loading, setLoading] = useState(true);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
 
+  // Searching and adding used to share one input, so typing a filter looked
+  // like the start of a new record and the Add button stayed greyed out until
+  // something was typed into the filter. They are separate now: the box filters
+  // the list, and Add opens its own dialog.
+  const [speciesSearch, setSpeciesSearch] = useState("");
+  const [showAddSpecies, setShowAddSpecies] = useState(false);
   const [newSpeciesName, setNewSpeciesName] = useState("");
   const [newBreedName, setNewBreedName] = useState("");
   const [newBreedDefaultSize, setNewBreedDefaultSize] = useState("");
@@ -249,8 +255,8 @@ export default function SpeciesBreedsTab() {
 
   const currentSpeciesData = species.find(s => s.id === selectedSpecies?.id);
 
-  const filteredSpecies = newSpeciesName.trim()
-    ? species.filter(s => s.name.toLowerCase().includes(newSpeciesName.toLowerCase()))
+  const filteredSpecies = speciesSearch.trim()
+    ? species.filter(s => s.name.toLowerCase().includes(speciesSearch.toLowerCase()))
     : species;
 
   // The size select narrows the list as well as supplying the default size for
@@ -270,25 +276,29 @@ export default function SpeciesBreedsTab() {
         <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Species</h3>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Manage base species (e.g., Canine, Feline).</p>
 
-        <form onSubmit={handleAddSpecies} className="mt-6 flex gap-2">
+        <div className="mt-6 flex gap-2">
           <div className="relative flex-1">
             <input
               type="text"
-              value={newSpeciesName}
-              onChange={(e) => setNewSpeciesName(e.target.value)}
-              placeholder="Search or add species..."
+              value={speciesSearch}
+              onChange={(e) => setSpeciesSearch(e.target.value)}
+              placeholder="Search species..."
               className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
             />
-            {newSpeciesName && (
-              <button type="button" onClick={() => setNewSpeciesName("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+            {speciesSearch && (
+              <button type="button" onClick={() => setSpeciesSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                 <FiX className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
-          <button type="submit" disabled={!newSpeciesName.trim()} className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
-            <FiPlus /> Add
+          <button
+            type="button"
+            onClick={() => { setNewSpeciesName(""); setShowAddSpecies(true); }}
+            className="flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+          >
+            <FiPlus /> Add Species
           </button>
-        </form>
+        </div>
 
         <ul className="mt-4 space-y-2">
           {filteredSpecies.map((s) => (
@@ -335,7 +345,7 @@ export default function SpeciesBreedsTab() {
               )}
             </li>
           ))}
-          {filteredSpecies.length === 0 && <p className="text-sm text-zinc-500">{newSpeciesName ? "No species match your search." : "No species found."}</p>}
+          {filteredSpecies.length === 0 && <p className="text-sm text-zinc-500">{speciesSearch ? "No species match your search." : "No species found."}</p>}
         </ul>
       </section>
 
@@ -444,6 +454,63 @@ export default function SpeciesBreedsTab() {
           </>
         )}
       </section>
+
+      {/* Adding a species has its own dialog, so the list filter stays a filter. */}
+      {showAddSpecies && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm"
+          onClick={() => setShowAddSpecies(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-dark-border dark:bg-dark-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Add Species</h4>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Breeds are added afterwards, from the species you select.
+            </p>
+
+            <form
+              onSubmit={async (e) => {
+                await handleAddSpecies(e);
+                setShowAddSpecies(false);
+              }}
+              className="mt-4 space-y-4"
+            >
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Species name
+                </span>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newSpeciesName}
+                  onChange={(e) => setNewSpeciesName(e.target.value)}
+                  placeholder="e.g. Canine"
+                  className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                />
+              </label>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSpecies(false)}
+                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-dark-border dark:text-zinc-300 dark:hover:bg-dark-surface"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newSpeciesName.trim()}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  Add Species
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
