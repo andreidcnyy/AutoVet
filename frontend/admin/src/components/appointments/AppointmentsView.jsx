@@ -548,7 +548,7 @@ function AppointmentsView() {
       setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
       toast.success("Declined.");
       setDeclineModal({ open: false, reason: "", error: "", submitting: false });
-    } catch (err) { setDeclineModal(prev => ({ ...prev, submitting: false, error: "Failed to decline." })); }
+    } catch (err) { setDeclineModal(prev => ({ ...prev, submitting: false, error: err?.message || "Failed to decline." })); }
   };
 
   const handlePrev = () => setCurrentDate(subMonths(currentDate, 1));

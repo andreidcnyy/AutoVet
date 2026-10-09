@@ -92,34 +92,51 @@ class AppointmentStatusController extends Controller
         $appointment->decline_reason = $validated['reason'];
         $appointment->save();
 
+        // The decline is saved at this point. Everything below only tells
+        // people about it, so a failure there is logged rather than turned
+        // into a 500 that leaves the screen showing "Failed to decline" for a
+        // decline that actually went through. \Throwable, not \Exception: a
+        // pet with no owner made sendFromTemplate() throw a TypeError, which
+        // \Exception does not catch.
+        $petName = $appointment->pet?->name ?? 'a patient';
+
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
-        // Broadcast status update
-        event(new \App\Events\AppointmentStatusUpdated($appointment));
-
-        // Internal admin notification
-        $this->createInternalNotification(
-            'AppointmentDeclined',
-            'Appointment Declined',
-            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been declined.",
-            ['appointment_id' => $appointment->id]
-        );
+        // Real-time update for the admin screens and the owner's portal
+        try {
+            event(new \App\Events\AppointmentStatusUpdated($appointment));
+        } catch (\Throwable $e) {
+            Log::error("Failed to broadcast appointment decline: " . $e->getMessage());
+        }
 
         try {
-            $owner = $appointment->pet->owner;
-            $this->notificationService->sendFromTemplate(
-                $owner,
-                'appointment_declined',
-                'email',
-                [
-                    'pet_name' => $appointment->pet->name,
-                    'date' => $appointment->date,
-                    'reason' => $appointment->decline_reason,
-                ],
-                'automated',
-                $appointment
+            $this->createInternalNotification(
+                'AppointmentDeclined',
+                'Appointment Declined',
+                "Appointment for {$petName} on " . date('M d, Y', strtotime($appointment->date)) . " has been declined.",
+                ['appointment_id' => $appointment->id]
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error("Failed to create decline notification: " . $e->getMessage());
+        }
+
+        try {
+            $owner = $appointment->pet?->owner;
+            if ($owner) {
+                $this->notificationService->sendFromTemplate(
+                    $owner,
+                    'appointment_declined',
+                    'email',
+                    [
+                        'pet_name' => $petName,
+                        'date' => $appointment->date,
+                        'reason' => $appointment->decline_reason,
+                    ],
+                    'automated',
+                    $appointment
+                );
+            }
+        } catch (\Throwable $e) {
             Log::error("Failed to send decline notification: " . $e->getMessage());
         }
 
