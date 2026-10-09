@@ -45,36 +45,12 @@ class AppointmentStatusController extends Controller
             ], 422);
         }
 
-        $this->invalidatePortalCache($appointment->pet?->owner_id);
-
-        // Broadcast status update
-        event(new \App\Events\AppointmentStatusUpdated($appointment));
-
-        // Internal admin notification
-        $this->createInternalNotification(
-            'AppointmentApproved',
-            'Appointment Approved',
-            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been approved.",
-            ['appointment_id' => $appointment->id]
-        );
-
-        try {
-            $owner = $appointment->pet->owner;
-            $this->notificationService->sendFromTemplate(
-                $owner,
-                'appointment_approved',
-                'email',
-                [
-                    'pet_name' => $appointment->pet->name,
-                    'date' => $appointment->date,
-                    'time' => date('g:i A', strtotime($appointment->time)),
-                ],
-                'automated',
-                $appointment
-            );
-        } catch (\Exception $e) {
-            Log::error("Failed to send approval notification: " . $e->getMessage());
-        }
+        $petName = $appointment->pet?->name ?? 'a patient';
+        $this->announceStatusChange($appointment, 'AppointmentApproved', 'Appointment Approved', 'has been approved', 'appointment_approved', [
+            'pet_name' => $petName,
+            'date' => $appointment->date,
+            'time' => date('g:i A', strtotime($appointment->time)),
+        ]);
 
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
@@ -92,53 +68,12 @@ class AppointmentStatusController extends Controller
         $appointment->decline_reason = $validated['reason'];
         $appointment->save();
 
-        // The decline is saved at this point. Everything below only tells
-        // people about it, so a failure there is logged rather than turned
-        // into a 500 that leaves the screen showing "Failed to decline" for a
-        // decline that actually went through. \Throwable, not \Exception: a
-        // pet with no owner made sendFromTemplate() throw a TypeError, which
-        // \Exception does not catch.
         $petName = $appointment->pet?->name ?? 'a patient';
-
-        $this->invalidatePortalCache($appointment->pet?->owner_id);
-
-        // Real-time update for the admin screens and the owner's portal
-        try {
-            event(new \App\Events\AppointmentStatusUpdated($appointment));
-        } catch (\Throwable $e) {
-            Log::error("Failed to broadcast appointment decline: " . $e->getMessage());
-        }
-
-        try {
-            $this->createInternalNotification(
-                'AppointmentDeclined',
-                'Appointment Declined',
-                "Appointment for {$petName} on " . date('M d, Y', strtotime($appointment->date)) . " has been declined.",
-                ['appointment_id' => $appointment->id]
-            );
-        } catch (\Throwable $e) {
-            Log::error("Failed to create decline notification: " . $e->getMessage());
-        }
-
-        try {
-            $owner = $appointment->pet?->owner;
-            if ($owner) {
-                $this->notificationService->sendFromTemplate(
-                    $owner,
-                    'appointment_declined',
-                    'email',
-                    [
-                        'pet_name' => $petName,
-                        'date' => $appointment->date,
-                        'reason' => $appointment->decline_reason,
-                    ],
-                    'automated',
-                    $appointment
-                );
-            }
-        } catch (\Throwable $e) {
-            Log::error("Failed to send decline notification: " . $e->getMessage());
-        }
+        $this->announceStatusChange($appointment, 'AppointmentDeclined', 'Appointment Declined', 'has been declined', 'appointment_declined', [
+            'pet_name' => $petName,
+            'date' => $appointment->date,
+            'reason' => $appointment->decline_reason,
+        ]);
 
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
@@ -148,16 +83,7 @@ class AppointmentStatusController extends Controller
         $appointment->status = 'completed';
         $appointment->save();
 
-        $this->invalidatePortalCache($appointment->pet?->owner_id);
-
-        event(new \App\Events\AppointmentStatusUpdated($appointment));
-
-        $this->createInternalNotification(
-            'AppointmentCompleted',
-            'Appointment Completed',
-            "Appointment for {$appointment->pet->name} on " . date('M d, Y', strtotime($appointment->date)) . " has been marked as completed.",
-            ['appointment_id' => $appointment->id]
-        );
+        $this->announceStatusChange($appointment, 'AppointmentCompleted', 'Appointment Completed', 'has been marked as completed');
 
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
     }
@@ -182,6 +108,57 @@ class AppointmentStatusController extends Controller
         } catch (\Exception $e) {
             Log::error("Failed to send reminder: " . $e->getMessage());
             return response()->json(['message' => 'Failed to send reminder: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Tells everyone about a status change that is already saved: the
+     * real-time update to admin screens and the owner's portal, the staff
+     * notification, and (when $emailKey is given) the owner's email.
+     *
+     * Each step is best-effort. The change has gone through by the time this
+     * runs, so a failure here is logged rather than turned into a 500 that
+     * makes the screen report a failure for something that succeeded.
+     * \Throwable, not \Exception: a pet whose owner is archived made
+     * sendFromTemplate() throw a TypeError, which \Exception does not catch,
+     * and an unreachable broadcaster throws from ShouldBroadcastNow.
+     */
+    private function announceStatusChange(Appointment $appointment, string $type, string $title, string $verb, ?string $emailKey = null, array $emailVars = []): void
+    {
+        $petName = $appointment->pet?->name ?? 'a patient';
+
+        try {
+            $this->invalidatePortalCache($appointment->pet?->owner_id);
+        } catch (\Throwable $e) {
+            Log::error("[{$type}] Failed to clear portal cache: " . $e->getMessage());
+        }
+
+        try {
+            event(new \App\Events\AppointmentStatusUpdated($appointment));
+        } catch (\Throwable $e) {
+            Log::error("[{$type}] Failed to broadcast status update: " . $e->getMessage());
+        }
+
+        try {
+            $this->createInternalNotification(
+                $type,
+                $title,
+                "Appointment for {$petName} on " . date('M d, Y', strtotime($appointment->date)) . " {$verb}.",
+                ['appointment_id' => $appointment->id]
+            );
+        } catch (\Throwable $e) {
+            Log::error("[{$type}] Failed to create staff notification: " . $e->getMessage());
+        }
+
+        if (!$emailKey) return;
+
+        try {
+            $owner = $appointment->pet?->owner;
+            if ($owner) {
+                $this->notificationService->sendFromTemplate($owner, $emailKey, 'email', $emailVars, 'automated', $appointment);
+            }
+        } catch (\Throwable $e) {
+            Log::error("[{$type}] Failed to email owner: " . $e->getMessage());
         }
     }
 }
