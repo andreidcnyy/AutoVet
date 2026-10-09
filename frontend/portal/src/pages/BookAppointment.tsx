@@ -21,6 +21,7 @@ import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, sta
 import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
 import { serviceMatchesSpecies, speciesNamedBy, petSpeciesName } from '../utils/serviceSpecies';
+import { getActualPetImageUrl, getPetImageUrl, onPetImageError } from '../utils/petImages';
 import echo from '../utils/echo';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
@@ -707,10 +708,16 @@ export default function BookAppointment() {
                           )}
                         >
                           <div className={clsx(
-                            "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                            selectedPetId === pet.id.toString() ? "bg-brand-500 text-white" : "bg-zinc-100 dark:bg-dark-surface text-zinc-400"
+                            "w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-zinc-100 dark:bg-dark-surface border-2",
+                            selectedPetId === pet.id.toString() ? "border-brand-500" : "border-transparent"
                           )}>
-                            <FiHeart className="w-4 h-4" />
+                            {/* The pet's own photo, or its species artwork when none is uploaded. */}
+                            <img
+                              src={getActualPetImageUrl(pet.photo) || getPetImageUrl(petSpeciesName(pet), pet.breed?.name)}
+                              alt={pet.name}
+                              className="w-full h-full object-cover"
+                              onError={onPetImageError(petSpeciesName(pet), pet.breed?.name)}
+                            />
                           </div>
                           <span className={clsx(
                             "font-bold text-sm truncate",
