@@ -33,6 +33,60 @@ class Appointment extends Model
 
     public const VISIBLE_STATUSES = [...self::ACTIVE_STATUSES, ...self::CANCELLED_STATUSES];
 
+    /**
+     * How many approved appointments one time slot can hold. Once a slot has
+     * this many, it disappears from the portal and cannot be booked, approved
+     * into, or rescheduled into.
+     */
+    public const SLOT_CAPACITY = 2;
+
+    /**
+     * The time column is a string holding "9:00", "09:00" and "09:00:00" alike,
+     * so slots are compared on a normalised HH:MM rather than the raw value.
+     */
+    public static function normaliseSlotTime($time): string
+    {
+        $ts = strtotime((string) $time);
+        return $ts === false ? (string) $time : date('H:i', $ts);
+    }
+
+    /**
+     * Approved appointments already holding the given date and time.
+     */
+    public static function approvedCountAt(string $date, $time, ?int $exceptId = null): int
+    {
+        $slot = self::normaliseSlotTime($time);
+
+        return self::whereDate('date', $date)
+            ->whereRaw('LOWER(status) = ?', ['approved'])
+            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
+            ->pluck('time')
+            ->filter(fn ($t) => self::normaliseSlotTime($t) === $slot)
+            ->count();
+    }
+
+    public static function slotIsFull(string $date, $time, ?int $exceptId = null): bool
+    {
+        return self::approvedCountAt($date, $time, $exceptId) >= self::SLOT_CAPACITY;
+    }
+
+    /**
+     * Runs $callback while holding a lock on one date and time, so two bookings
+     * or approvals made at the same moment cannot both squeeze into the last
+     * place in a slot.
+     */
+    public static function withSlotLock(string $date, $time, callable $callback)
+    {
+        $key = 'appointment-slot:' . date('Y-m-d', strtotime($date)) . ':' . self::normaliseSlotTime($time);
+
+        return \Illuminate\Support\Facades\Cache::lock($key, 10)->block(5, $callback);
+    }
+
+    public static function slotFullMessage(): string
+    {
+        return 'This time slot is already full (' . self::SLOT_CAPACITY . ' approved appointments). Please choose another time.';
+    }
+
     protected $fillable = [
         'clinic_id',
         'title',

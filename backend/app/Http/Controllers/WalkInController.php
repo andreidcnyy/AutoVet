@@ -50,8 +50,16 @@ class WalkInController extends Controller
             return response()->json(['message' => 'Please select at least one service.'], 422);
         }
 
+        // Ordinary walk-ins respect the per-slot limit like any booking. An
+        // emergency is never turned away, so it may go over the limit.
+        $isEmergency = $request->boolean('is_emergency');
+
         try {
-            $result = DB::transaction(function () use ($request, $serviceId) {
+            $result = Appointment::withSlotLock($request->date, $request->time, function () use ($request, $serviceId, $isEmergency) {
+                if (!$isEmergency && Appointment::slotIsFull($request->date, $request->time)) {
+                    return null;
+                }
+                return DB::transaction(function () use ($request, $serviceId) {
                 // Resolve or create owner
                 if ($request->filled('owner_id')) {
                     $owner = Owner::findOrFail($request->owner_id);
@@ -112,13 +120,20 @@ class WalkInController extends Controller
                 );
 
                 return $appointment->load(['pet.owner', 'service', 'services']);
+                });
             });
+
+            if (!$result) {
+                return response()->json(['message' => Appointment::slotFullMessage()], 422);
+            }
 
             // Broadcast AFTER the transaction commits so subscribers' refetch
             // sees the committed appointment row.
             event(new \App\Events\AppointmentCreated($result));
 
             return response()->json($result, 201);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            return response()->json(['message' => 'Another booking for this time is in progress. Please try again.'], 409);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

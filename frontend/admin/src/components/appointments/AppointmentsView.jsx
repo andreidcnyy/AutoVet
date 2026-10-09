@@ -36,6 +36,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/AuthContext";
 import { useNewItems } from "../../context/NewItemsContext";
 import ManualSendModal from "../notifications/ManualSendModal";
+import SlotFullDialog from "./SlotFullDialog";
+
+// The server refuses a booking or approval into a slot that already holds its
+// limit of approved appointments; its message always says the slot is full.
+const isSlotFullError = (err) => /slot (is )?already (full|has)|fully booked/i.test(err?.message || "");
 
 const APPT_STAMP_KEY = "lv_appointments";
 
@@ -138,6 +143,13 @@ function AppointmentsView() {
   });
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
   const [availability, setAvailability] = useState([]);
+  const [slotFullDialog, setSlotFullDialog] = useState({ open: false });
+  const openSlotFull = (date, time, canDecline = false) => setSlotFullDialog({
+    open: true,
+    dateLabel: date ? formatDateLocal(date, "MMM d, yyyy") : undefined,
+    timeLabel: time ? formatTime(time) : undefined,
+    canDecline,
+  });
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const watchDate = watch("date");
@@ -375,7 +387,10 @@ function AppointmentsView() {
       setIsWalkIn(false);
       fetchAppointments();
       refreshCounts();
-    } catch (err) { toast.error(err?.response?.data?.message || "Failed to schedule."); }
+    } catch (err) {
+      if (isSlotFullError(err)) { openSlotFull(data.date, data.time); return; }
+      toast.error(err?.message || "Failed to schedule.");
+    }
   };
 
   // Debounced duplicate check for walk-in owner phone
@@ -445,7 +460,8 @@ function AppointmentsView() {
       fetchAppointments();
       refreshCounts();
     } catch (err) {
-      const msg = err?.response?.data?.message || "Failed to register walk-in.";
+      if (isSlotFullError(err)) { openSlotFull(watchedDate, watchedTime); return; }
+      const msg = err?.message || "Failed to register walk-in.";
       const fieldErrors = err?.response?.data?.errors || {};
       if (fieldErrors.phone) setWalkInErrors(prev => ({ ...prev, ownerPhone: fieldErrors.phone[0] }));
       toast.error(msg);
@@ -509,7 +525,10 @@ function AppointmentsView() {
         setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
         toast.success(`Appointment ${newStatus}.`);
       }
-    } catch (err) { toast.error("Action failed."); }
+    } catch (err) {
+      if (isSlotFullError(err)) { openSlotFull(selectedAppointment?.date, selectedAppointment?.time, action === 'approve'); return; }
+      toast.error(err?.message || "Action failed.");
+    }
     finally { setActionSubmitting(false); }
   };
 
@@ -1139,6 +1158,13 @@ function AppointmentsView() {
       </div>,
       document.body
       )}
+      <SlotFullDialog
+        open={slotFullDialog.open}
+        dateLabel={slotFullDialog.dateLabel}
+        timeLabel={slotFullDialog.timeLabel}
+        onClose={() => setSlotFullDialog({ open: false })}
+        onDecline={slotFullDialog.canDecline ? () => { setSlotFullDialog({ open: false }); handleStatusAction('decline'); } : undefined}
+      />
       <ManualSendModal isOpen={isSendModalOpen} onClose={() => setIsSendModalOpen(false)} owner={Array.isArray(owners) ? owners.find(o => o.id === selectedAppointment?.pet?.owner_id) : null} relatedObject={selectedAppointment} relatedType="App\Models\Appointment" />
     </div>
   );

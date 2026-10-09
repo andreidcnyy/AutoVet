@@ -327,7 +327,22 @@ class AppointmentController extends Controller
             $validated['status'] = 'approved';
         }
 
-        $appointment = Appointment::create($validated);
+        // A slot with SLOT_CAPACITY approved visits takes no more bookings. The
+        // check and the insert share a lock so two people booking the last
+        // place at the same moment cannot both get in.
+        try {
+            $appointment = Appointment::withSlotLock($validated['date'], $validated['time'], function () use ($validated) {
+                if (Appointment::slotIsFull($validated['date'], $validated['time'])) {
+                    return null;
+                }
+                return Appointment::create($validated);
+            });
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            return response()->json(['message' => 'Many people are booking this time right now. Please try again.'], 409);
+        }
+        if (!$appointment) {
+            return response()->json(['message' => Appointment::slotFullMessage()], 422);
+        }
 
         // Sync additional services to pivot table
         $appointment->services()->sync($serviceIds);
@@ -481,7 +496,34 @@ class AppointmentController extends Controller
             $serviceIds = [$validated['service_id']];
         }
 
-        $appointment->update($validated);
+        // Moving into a slot, or becoming approved in one (an undone no-show,
+        // say), has to respect the slot limit just like a new booking.
+        $newDate    = $validated['date'] ?? $appointment->date;
+        $newTime    = $validated['time'] ?? $appointment->time;
+        $newStatus  = strtolower($validated['status'] ?? $appointment->status ?? '');
+        $slotMoved  = (isset($validated['date']) && date('Y-m-d', strtotime($validated['date'])) !== date('Y-m-d', strtotime($appointment->date)))
+                   || (isset($validated['time']) && Appointment::normaliseSlotTime($validated['time']) !== Appointment::normaliseSlotTime($appointment->time));
+        $nowApproved = $newStatus === 'approved' && strtolower($appointment->status ?? '') !== 'approved';
+        $needsSlot  = in_array($newStatus, ['pending', 'approved'], true) && ($slotMoved || $nowApproved);
+
+        if ($needsSlot) {
+            try {
+                $fits = Appointment::withSlotLock($newDate, $newTime, function () use ($appointment, $validated, $newDate, $newTime) {
+                    if (Appointment::slotIsFull($newDate, $newTime, $appointment->id)) {
+                        return false;
+                    }
+                    $appointment->update($validated);
+                    return true;
+                });
+            } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                return response()->json(['message' => 'Many people are booking this time right now. Please try again.'], 409);
+            }
+            if (!$fits) {
+                return response()->json(['message' => Appointment::slotFullMessage()], 422);
+            }
+        } else {
+            $appointment->update($validated);
+        }
 
         if ($serviceIds !== null) {
             $appointment->services()->sync($serviceIds);
@@ -499,20 +541,18 @@ class AppointmentController extends Controller
             'vet_id' => 'nullable|exists:admins,id'
         ]);
 
-        $query = Appointment::where('date', $request->date)
-            ->where('status', '!=', 'cancelled');
-
-        if ($request->vet_id) {
-            $query->where('vet_id', $request->vet_id);
-        }
-
-        $appointments = $query->get(['time', 'vet_id'])->map(function ($a) {
-            // Normalize to HH:MM so "9:00" becomes "09:00"
-            if ($a->time && strlen($a->time) < 5) {
-                $a->time = str_pad($a->time, 5, '0', STR_PAD_LEFT);
-            }
-            return $a;
-        });
+        // Every slot-holding visit that day, clinic-wide, with its status. The
+        // portal needs the whole day (not just one vet's) to tell when a slot
+        // has reached SLOT_CAPACITY approved visits; it applies the vet filter
+        // itself using vet_id.
+        $appointments = Appointment::whereDate('date', $request->date)
+            ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+            ->get(['time', 'vet_id', 'status'])
+            ->map(fn ($a) => [
+                'time'   => Appointment::normaliseSlotTime($a->time),
+                'vet_id' => $a->vet_id,
+                'status' => strtolower($a->status),
+            ]);
 
         return response()->json($appointments);
     }

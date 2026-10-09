@@ -22,6 +22,8 @@ import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../util
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
 import { serviceMatchesSpecies, speciesNamedBy, petSpeciesName } from '../utils/serviceSpecies';
 import { getActualPetImageUrl, getPetImageUrl, onPetImageError } from '../utils/petImages';
+import SlotFullModal, { SLOT_CAPACITY } from '../components/SlotFullModal';
+import { PawPrint } from './Landing';
 import echo from '../utils/echo';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
@@ -96,6 +98,7 @@ export default function BookAppointment() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [availability, setAvailability] = useState<any[]>([]);
+  const [slotFullModal, setSlotFullModal] = useState<{ open: boolean; timeLabel?: string }>({ open: false });
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const {
@@ -194,6 +197,7 @@ export default function BookAppointment() {
   };
   const standardSlots = generateSlots();
 
+  const [availabilityTick, setAvailabilityTick] = useState(0);
   useEffect(() => {
     if (selectedDate && !isViewMode) {
       const controller = new AbortController();
@@ -204,7 +208,7 @@ export default function BookAppointment() {
         .finally(() => setIsCheckingAvailability(false));
       return () => controller.abort();
     }
-  }, [selectedDate, selectedVetId, isViewMode]);
+  }, [selectedDate, selectedVetId, isViewMode, availabilityTick]);
 
   const CACHE_KEY = `portal_book_appointments_${user?.id}_cache`;
   const CACHE_TTL = 5 * 60 * 1000;
@@ -394,6 +398,15 @@ export default function BookAppointment() {
       // and on a phone it covers the form they are trying to correct. The
       // message belongs in the drawer, next to the time they picked.
       const message = err.response?.data?.message || "";
+
+      // Someone else filled the last place while this client was deciding.
+      if (/fully booked|already full/i.test(message)) {
+        setSlotFullModal({ open: true, timeLabel: data.time ? formatTime(data.time) : undefined });
+        setValue("time", "");
+        setAvailabilityTick(t => t + 1);
+        return;
+      }
+
       setBookingError(
         /already has an appointment/i.test(message)
           ? "That time has just been taken. Please choose another slot below."
@@ -830,11 +843,14 @@ export default function BookAppointment() {
                               // server: when the two disagreed, a slot shown as
                               // free here was refused on submit with "this vet
                               // already has an appointment at this time".
-                              const isTaken = availability.some((a: any) => {
-                                const t = a.time ? a.time.padStart(5, '0').substring(0, 5) : '';
-                                const status = (a.status || '').toLowerCase();
-                                return t === slot && ['pending', 'approved', 'scheduled'].includes(status);
-                              });
+                              // The server only returns slot-holding visits for
+                              // the whole day, with times already as HH:MM.
+                              const atSlot = availability.filter((a: any) => (a.time || '').padStart(5, '0').substring(0, 5) === slot);
+                              // A slot is full once it holds SLOT_CAPACITY
+                              // approved visits (Appointment::SLOT_CAPACITY).
+                              const isFull = atSlot.filter((a: any) => (a.status || '').toLowerCase() === 'approved').length >= SLOT_CAPACITY;
+                              // The chosen vet can only see one pet at a time.
+                              const isTaken = !!selectedVetId && atSlot.some((a: any) => String(a.vet_id) === String(selectedVetId));
 
                               const todayStr = format(new Date(), "yyyy-MM-dd");
                               const nowTime = format(new Date(), "HH:mm");
@@ -845,7 +861,10 @@ export default function BookAppointment() {
                               // so a full morning simply looked like missing
                               // times rather than a busy clinic.
                               const isSelected = selectedTime === slot;
-                              const disabled = isTaken || isPast;
+                              // Full slots stay tappable so the client is told
+                              // why, instead of the time silently refusing.
+                              const disabled = isPast || (isTaken && !isFull);
+                              const unavailable = isTaken || isPast || isFull;
 
                               return (
                                 <button
@@ -853,20 +872,27 @@ export default function BookAppointment() {
                                   type="button"
                                   disabled={disabled}
                                   aria-label={
-                                    isTaken ? `${formatTime(slot)} — already booked`
+                                    isFull ? `${formatTime(slot)} — fully booked`
+                                    : isTaken ? `${formatTime(slot)} — already booked`
                                     : isPast ? `${formatTime(slot)} — no longer available today`
                                     : formatTime(slot)
                                   }
-                                  onClick={() => setValue("time", slot, { shouldValidate: true })}
+                                  onClick={() => isFull
+                                    ? setSlotFullModal({ open: true, timeLabel: formatTime(slot) })
+                                    : setValue("time", slot, { shouldValidate: true })}
                                   className={clsx(
                                     "w-full rounded-xl border-2 px-1 py-2.5 text-center text-xs font-bold transition-all",
                                     isSelected && "border-emerald-500 bg-emerald-500 text-white shadow-md",
-                                    !isSelected && !disabled && "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-emerald-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400",
-                                    disabled && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 line-through dark:border-dark-border/50 dark:bg-dark-surface/40 dark:text-zinc-600"
+                                    !isSelected && !unavailable && "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-emerald-300 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-400",
+                                    disabled && "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300 line-through dark:border-dark-border/50 dark:bg-dark-surface/40 dark:text-zinc-600",
+                                    isFull && !isPast && "relative cursor-help border-amber-200 bg-amber-50 text-amber-400 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-600"
                                   )}
-                                  title={isTaken ? "Already booked" : isPast ? "This time has passed" : undefined}
+                                  title={isFull ? "Fully booked" : isTaken ? "Already booked" : isPast ? "This time has passed" : undefined}
                                 >
-                                  {formatTime(slot)}
+                                  <span className={clsx(isFull && "line-through")}>{formatTime(slot)}</span>
+                                  {isFull && !isPast && (
+                                    <span className="block text-[8px] font-black uppercase tracking-widest text-amber-500 no-underline">Full</span>
+                                  )}
                                 </button>
                               );
                             })}
@@ -874,7 +900,14 @@ export default function BookAppointment() {
                           <div className="mt-2 flex flex-wrap items-center gap-4 text-[9px] font-bold uppercase tracking-widest">
                             <span className="flex items-center gap-1.5 text-zinc-500"><span className="h-2 w-2 rounded-full bg-zinc-400" />Available</span>
                             <span className="flex items-center gap-1.5 text-emerald-600"><span className="h-2 w-2 rounded-full bg-emerald-500" />Selected</span>
+                            <span className="flex items-center gap-1.5 text-amber-500"><span className="h-2 w-2 rounded-full bg-amber-300" />Full</span>
                             <span className="flex items-center gap-1.5 text-zinc-400"><span className="h-2 w-2 rounded-full bg-zinc-200" />Unavailable</span>
+                          </div>
+                          <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-2.5 dark:border-brand-500/20 dark:bg-brand-500/10">
+                            <PawPrint className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                            <p className="text-[11px] leading-snug text-zinc-600 dark:text-zinc-300">
+                              We accept up to <span className="font-black text-brand-600 dark:text-brand-400">{SLOT_CAPACITY} appointments per time slot</span> so every pet gets enough time and care. Times marked <span className="font-black text-amber-500">Full</span> can no longer be booked.
+                            </p>
                           </div>
                         </>
                       )
@@ -971,6 +1004,11 @@ export default function BookAppointment() {
         </div>,
         document.body
       )}
+      <SlotFullModal
+        open={slotFullModal.open}
+        timeLabel={slotFullModal.timeLabel}
+        onClose={() => setSlotFullModal({ open: false })}
+      />
     </div>
   );
 }

@@ -24,8 +24,26 @@ class AppointmentStatusController extends Controller
 
     public function approve(Request $request, Appointment $appointment)
     {
-        $appointment->status = 'approved';
-        $appointment->save();
+        // Approving fills a place in the slot, so it is refused once the slot
+        // already holds SLOT_CAPACITY approved visits. Locked so two staff
+        // approving at the same moment cannot both take the last place.
+        try {
+            $approved = Appointment::withSlotLock($appointment->date, $appointment->time, function () use ($appointment) {
+                if (Appointment::slotIsFull($appointment->date, $appointment->time, $appointment->id)) {
+                    return false;
+                }
+                $appointment->status = 'approved';
+                $appointment->save();
+                return true;
+            });
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            return response()->json(['message' => 'Another approval for this time is in progress. Please try again.'], 409);
+        }
+        if (!$approved) {
+            return response()->json([
+                'message' => 'This time slot already has ' . Appointment::SLOT_CAPACITY . ' approved appointments. Decline this request or move it to another time.',
+            ], 422);
+        }
 
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
