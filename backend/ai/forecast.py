@@ -5,7 +5,7 @@ import sys
 import math
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -31,7 +31,7 @@ def _confidence_level(r2):
     return "Low"
 
 
-def _model_meta(slope, intercept, r2, test_r2=None):
+def _model_meta(slope, intercept, r2, test_r2=None, rmse=None, mae=None):
     return {
         "ml_algorithm": "scikit-learn LinearRegression",
         "regression_target": "cumulative_consumption_vs_day_index",
@@ -42,6 +42,8 @@ def _model_meta(slope, intercept, r2, test_r2=None):
         "confidence_level": _confidence_level(r2),
         "test_r2": round(float(test_r2), 4) if test_r2 is not None else None,
         "validation_method": "80/20 holdout" if test_r2 is not None else "in-sample (insufficient data for split)",
+        "rmse": round(float(rmse), 4) if rmse is not None else None,
+        "mae": round(float(mae), 4) if mae is not None else None,
     }
 
 
@@ -174,15 +176,19 @@ def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=No
         eval_model.fit(X[:split], y[:split])
         train_r2 = float(r2_score(y[:split], eval_model.predict(X[:split]))) if len(set(y[:split])) > 1 else 0.0
         test_r2  = float(r2_score(y[split:], eval_model.predict(X[split:]))) if len(set(y[split:])) > 1 else 0.0
+        rmse = math.sqrt(mean_squared_error(y[split:], eval_model.predict(X[split:])))
+        mae  = mean_absolute_error(y[split:], eval_model.predict(X[split:]))
         model.fit(X, y)
     else:
         model.fit(X, y)
         train_r2 = float(r2_score(y, model.predict(X))) if len(set(y)) > 1 else 0.0
         test_r2  = None
+        rmse = math.sqrt(mean_squared_error(y, model.predict(X)))
+        mae  = mean_absolute_error(y, model.predict(X))
 
     slope = float(model.coef_[0])
     intercept = float(model.intercept_)
-    meta = _model_meta(slope, intercept, train_r2, test_r2)
+    meta = _model_meta(slope, intercept, train_r2, test_r2, rmse, mae)
 
     base_date = datetime.now()
 

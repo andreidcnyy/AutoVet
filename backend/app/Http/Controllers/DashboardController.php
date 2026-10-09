@@ -218,10 +218,15 @@ class DashboardController extends Controller
                 $meanYTest = array_sum($yTest) / count($yTest);
                 $ssTotTest = array_sum(array_map(fn($yi) => pow($yi - $meanYTest, 2), $yTest));
                 $ssResTest = 0;
+                $absResTest = 0;
                 foreach ($xTest as $idx => $xi) {
-                    $ssResTest += pow($yTest[$idx] - ($evalM * $xi + $evalB), 2);
+                    $err = $yTest[$idx] - ($evalM * $xi + $evalB);
+                    $ssResTest += pow($err, 2);
+                    $absResTest += abs($err);
                 }
                 $testR2 = $ssTotTest > 0 ? round(1 - ($ssResTest / $ssTotTest), 4) : 0.0;
+                $rmse = round(sqrt($ssResTest / count($yTest)), 4);
+                $mae  = round($absResTest / count($yTest), 4);
                 $validationMethod = '80/20 holdout';
 
                 [$m, $b, $r2] = $fitLR($xValues, $yValues);
@@ -229,6 +234,17 @@ class DashboardController extends Controller
                 [$m, $b, $r2] = $fitLR($xValues, $yValues);
                 $testR2 = null;
                 $validationMethod = 'in-sample (insufficient data for split)';
+
+                // Error metrics in-sample when there is too little data for a holdout
+                $ssRes = 0;
+                $absRes = 0;
+                foreach ($xValues as $idx => $xi) {
+                    $err = $yValues[$idx] - ($m * $xi + $b);
+                    $ssRes += pow($err, 2);
+                    $absRes += abs($err);
+                }
+                $rmse = $n > 0 ? round(sqrt($ssRes / $n), 4) : null;
+                $mae  = $n > 0 ? round($absRes / $n, 4) : null;
             }
 
             // Forecast next 2 weeks
@@ -303,6 +319,8 @@ class DashboardController extends Controller
                     'intercept'         => round($b, 4),
                     'r2'                => $r2,
                     'test_r2'           => $testR2,
+                    'rmse'              => $rmse,
+                    'mae'               => $mae,
                     'validation_method' => $validationMethod,
                     'forecast_week_1'   => $forecastNext1,
                     'forecast_week_2'   => $forecastNext2,
