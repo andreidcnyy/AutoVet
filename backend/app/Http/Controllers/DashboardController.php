@@ -390,13 +390,7 @@ class DashboardController extends Controller
 
         $totalOwners = \App\Models\Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
 
-        $today = \Carbon\Carbon::now($tz)->toDateString();
-        $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
 
-        // Unified Confirmed Statuses (Confirmed Appointments)
-        // USER REQUEST: Only show APPROVED status for today.
-        $confirmedStatuses = ['Approved', 'approved'];
-        
         // Compared with where() rather than whereDate() throughout this file.
         // `date` is a DATE NOT NULL column, so DATE(date) is the value itself
         // and the two forms select exactly the same rows — but wrapping the
@@ -404,22 +398,10 @@ class DashboardController extends Controller
         // forces a scan. Only safe because the column is DATE: on a timestamp
         // like invoices.created_at the two are genuinely different, which is
         // why those call sites are left alone.
-        // Same filter as appointmentsToday(), so the card's number always
-        // matches the list it opens (pending, approved and completed alike).
-        $apptsToday = Appointment::where('date', $today)
-            ->whereRaw('LOWER(status) NOT IN (?, ?, ?, ?, ?)', ['cancelled', 'declined', 'declined (system)', 'rejected', 'rescheduled'])
-            ->whereHas('pet.owner', fn($q) => $q->realClients())
-            ->count();
-
-        $apptsUpcoming = Appointment::where('date', $tomorrow)
-            ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', fn($q) => $q->realClients())
-            ->count();
-
-        $cancelledDeclined = Appointment::where('date', $today)
-            ->whereIn('status', ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'])
-            ->whereHas('pet.owner', fn($q) => $q->realClients())
-            ->count();
+        // Each card counts exactly what its list shows: both come from trackerQuery().
+        $apptsToday        = $this->trackerQuery('today')->count();
+        $apptsUpcoming     = $this->trackerQuery('upcoming')->count();
+        $cancelledDeclined = $this->trackerQuery('cancelled')->count();
 
         return response()->json([
             [
@@ -952,26 +934,36 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * The single source of truth for the three appointment trackers. A stat
+     * card and the list it opens both start from this query, so their numbers
+     * match by construction instead of by keeping separate filters in sync.
+     *
+     *   today     - active bookings dated today (Manila)
+     *   upcoming  - active bookings dated tomorrow
+     *   cancelled - cancelled / declined bookings dated today
+     */
+    private function trackerQuery(string $tracker): \Illuminate\Database\Eloquent\Builder
+    {
+        [$dayOffset, $statuses] = match ($tracker) {
+            'today'     => [0, Appointment::ACTIVE_STATUSES],
+            'upcoming'  => [1, Appointment::ACTIVE_STATUSES],
+            'cancelled' => [0, Appointment::CANCELLED_STATUSES],
+        };
+
+        return Appointment::query()
+            ->where('date', \Carbon\Carbon::now('Asia/Manila')->addDays($dayOffset)->toDateString())
+            ->whereIn('status', $statuses)
+            ->whereHas('pet.owner', fn ($q) => $q->realClients());
+    }
+
     public function appointmentsToday(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $today = \Carbon\Carbon::now($tz)->toDateString();
         $perPage = $request->query('per_page', 10);
 
-        // Everything actually happening today, not just what has been approved.
-        // Restricting this to Approved meant a same-day booking — which the
-        // portal creates as 'pending' — was invisible to the front desk, so
-        // nobody knew to approve it and it never became billable either.
-        // Statuses are compared lower-cased because the column holds a mix of
-        // 'approved', 'Scheduled' and 'Completed'.
-        $hiddenStatuses = ['cancelled', 'declined', 'declined (system)', 'rejected', 'rescheduled'];
-
-        $appointments = Appointment::with(['pet.owner', 'service'])
-            ->where('date', $today)
-            ->whereRaw('LOWER(status) NOT IN (?, ?, ?, ?, ?)', $hiddenStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->realClients();
-            })
+        $appointments = $this->trackerQuery('today')
+            ->with(['pet.owner', 'service'])
             ->orderBy('time', 'asc')
             ->paginate($perPage);
 
@@ -1002,17 +994,9 @@ class DashboardController extends Controller
     public function appointmentsUpcoming(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $tomorrow = \Carbon\Carbon::now($tz)->addDay()->toDateString();
         $perPage = $request->query('per_page', 10);
-        // USER REQUEST: Only show APPROVED status for tomorrow
-        $confirmedStatuses = ['Approved', 'approved'];
-
-        $appointments = Appointment::with(['pet.owner', 'service'])
-            ->where('date', $tomorrow)
-            ->whereIn('status', $confirmedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->realClients();
-            })
+        $appointments = $this->trackerQuery('upcoming')
+            ->with(['pet.owner', 'service'])
             ->orderBy('date', 'asc')
             ->orderBy('time', 'asc')
             ->paginate($perPage);
@@ -1105,16 +1089,9 @@ class DashboardController extends Controller
     public function appointmentsCancelled(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $today = \Carbon\Carbon::now($tz)->toDateString();
         $perPage = $request->query('per_page', 10);
-        $cancelledDeclinedStatuses = ['cancelled', 'declined', 'Cancelled', 'Declined', 'Declined (System)', 'Rejected'];
-
-        $appointments = Appointment::with(['pet.owner', 'service'])
-            ->where('date', $today)
-            ->whereIn('status', $cancelledDeclinedStatuses)
-            ->whereHas('pet.owner', function($q) {
-                $q->where('email', '!=', 'dataset.seeder@autovet.ai');
-            })
+        $appointments = $this->trackerQuery('cancelled')
+            ->with(['pet.owner', 'service'])
             ->orderBy('updated_at', 'desc')
             ->paginate($perPage);
 

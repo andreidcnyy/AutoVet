@@ -21,11 +21,7 @@ class AppointmentController extends Controller
      * are hidden from the listing. Shared with the calendar summary so a day
      * cannot advertise a count the listing then refuses to show.
      */
-    public const DEFAULT_VISIBLE_STATUSES = [
-        'Pending', 'pending', 'Approved', 'approved',
-        'Cancelled', 'cancelled', 'Declined', 'declined',
-        'Declined (System)', 'Rejected', 'completed', 'no_show',
-    ];
+    public const DEFAULT_VISIBLE_STATUSES = Appointment::VISIBLE_STATUSES;
 
     protected $clientNotificationService;
 
