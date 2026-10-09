@@ -50,6 +50,7 @@ const Notifications = lazyPage(() => import('./pages/Notifications'));
 const Invoices = lazyPage(() => import('./pages/Invoices'));
 const AccountPendingDeletion = lazyPage(() => import('./pages/AccountPendingDeletion'));
 const AccountBlockedPage = lazyPage(() => import('./pages/AccountBlockedPage'));
+const NotFound = lazyPage(() => import('./pages/NotFound'));
 
 const schedule = (fn: () => void) =>
   typeof (window as any).requestIdleCallback === "function"
@@ -308,7 +309,7 @@ function AppContent() {
     },
     {
       path: "*",
-      element: <Navigate to="/" replace />
+      element: <NotFound />
     }
   ], { basename: import.meta.env.BASE_URL });
 

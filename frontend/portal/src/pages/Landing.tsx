@@ -191,9 +191,13 @@ export default function Landing() {
   }, []);
 
   const scrollTo = (id: string) => {
-    const el = document.querySelector(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
     setMobileMenuOpen(false);
+    const el = document.querySelector(id);
+    if (!el) return;
+    // Land the section just below the fixed navbar instead of underneath it.
+    const headerH = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerH;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   };
 
   return (
@@ -335,7 +339,7 @@ export default function Landing() {
 
         {/* Headline */}
         <h1 className="text-5xl md:text-7xl font-black text-zinc-900 dark:text-zinc-50 leading-[1.08] tracking-tight max-w-3xl opacity-0 animate-fade-in-scale delay-100">
-          Quality Care for Your<br />
+          Quality Care for Your{' '}<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
             Beloved Companions
           </span>

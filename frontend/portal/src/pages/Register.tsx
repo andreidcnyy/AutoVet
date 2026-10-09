@@ -17,6 +17,11 @@ const PERKS = [
   { icon: <FiUsers />,  text: "Connect directly with your vet online"  },
 ];
 
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="mt-1 ml-1 text-xs font-bold text-rose-500">{msg}</p>;
+}
+
 export default function Register() {
   const [name, setName]                             = useState("");
   const [email, setEmail]                           = useState("");
@@ -31,6 +36,7 @@ export default function Register() {
   const [showPassword, setShowPassword]             = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError]                           = useState("");
+  const [fieldErrors, setFieldErrors]               = useState<Record<string, string>>({});
   const [loading, setLoading]                       = useState(false);
   const [success, setSuccess]                       = useState(false);
   const [googleLoading, setGoogleLoading]           = useState(false);
@@ -116,8 +122,20 @@ export default function Register() {
     const normalizedPhone = phone.startsWith('+63')
       ? '0' + phone.slice(3).replace(/\D/g, '')
       : phone.replace(/\D/g, '');
-    if (normalizedPhone.length !== 11) { setError("Please enter a valid 11-digit contact number."); return; }
-    if (password !== passwordConfirmation) { setError("Passwords do not match."); return; }
+    // Check every field at once so the user sees all problems, not one at a time.
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = "Full name is required.";
+    if (!email.trim()) errs.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Enter a valid email address.";
+    if (!/^09\d{9}$/.test(normalizedPhone)) errs.phone = "Enter a valid 11-digit mobile number (e.g. 09123456789).";
+    if (!address.trim()) errs.address = "Street address is required.";
+    if (!province) errs.province = "Select a province.";
+    if (!city) errs.city = "Select a city or municipality.";
+    if (password.length < 8) errs.password = "Password must be at least 8 characters.";
+    if (!passwordConfirmation) errs.passwordConfirmation = "Please confirm your password.";
+    else if (password !== passwordConfirmation) errs.passwordConfirmation = "Passwords do not match.";
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) { setError("Please fix the highlighted fields."); return; }
 
     setLoading(true); setError("");
     try {
@@ -132,6 +150,9 @@ export default function Register() {
       } else {
         if (data.errors) {
           const first = Object.values(data.errors)[0] as string[];
+          setFieldErrors(Object.fromEntries(
+            Object.entries(data.errors as Record<string, string[]>).map(([k, v]) => [k === "password_confirmation" ? "passwordConfirmation" : k, v[0]])
+          ));
           setError(first[0] || "Registration failed.");
         } else {
           setError(data.message || data.error || "Registration failed.");
@@ -257,7 +278,7 @@ export default function Register() {
         <PawPrint className="absolute top-36   right-2  w-16 h-16 text-emerald-500 opacity-[0.08] dark:opacity-[0.04] -rotate-20 pointer-events-none" />
 
         <div className="flex-1 flex items-start justify-center px-6 py-10">
-          <form onSubmit={handleSubmit} className="w-full max-w-xl space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl space-y-5">
 
             <div className="text-center space-y-2 lg:text-left">
               <div className="flex items-center gap-3 justify-center lg:justify-start mb-1 lg:hidden">
@@ -310,8 +331,9 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Full Name</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400"><FiUser className="h-4 w-4" /></div>
-                  <input type="text" required className="input-field pl-10" placeholder="Juan Dela Cruz" value={name} onChange={e => setName(e.target.value)} />
+                  <input type="text" required className={clsx("input-field pl-10", fieldErrors.name && "!border-rose-500")} placeholder="Juan Dela Cruz" value={name} onChange={e => setName(e.target.value)} />
                 </div>
+                <FieldError msg={fieldErrors.name} />
               </div>
 
               {/* Email */}
@@ -319,14 +341,15 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Real Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400"><FiMail className="h-4 w-4" /></div>
-                  <input type="email" autoComplete="off" name="no-autofill-email" required className="input-field pl-10" placeholder="must be a real email" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input type="email" autoComplete="off" name="no-autofill-email" required className={clsx("input-field pl-10", fieldErrors.email && "!border-rose-500")} placeholder="must be a real email" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
+                <FieldError msg={fieldErrors.email} />
               </div>
 
               {/* Phone */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Contact Number</label>
-                <PhoneInput value={phone} onChange={setPhone} placeholder="09123456789" />
+                <PhoneInput value={phone} onChange={setPhone} placeholder="09123456789" error={fieldErrors.phone} />
               </div>
 
               {/* Street Address */}
@@ -334,32 +357,35 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Street Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400"><FiMapPin className="h-4 w-4" /></div>
-                  <input type="text" required className="input-field pl-10" placeholder="Unit #, Street Name" value={address} onChange={e => setAddress(e.target.value)} />
+                  <input type="text" required className={clsx("input-field pl-10", fieldErrors.address && "!border-rose-500")} placeholder="Unit #, Street Name" value={address} onChange={e => setAddress(e.target.value)} />
                 </div>
+                <FieldError msg={fieldErrors.address} />
               </div>
 
               {/* Province */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Province</label>
                 <div className="relative">
-                  <select required className="input-field appearance-none pr-10" value={province} onChange={e => setProvince(e.target.value)}>
+                  <select required className={clsx("input-field appearance-none pr-10", fieldErrors.province && "!border-rose-500")} value={province} onChange={e => setProvince(e.target.value)}>
                     <option value="">Select Province...</option>
                     {PH_LOCATION_DATA.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
                   </select>
                   <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
                 </div>
+                <FieldError msg={fieldErrors.province} />
               </div>
 
               {/* City */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">City / Municipality</label>
                 <div className="relative">
-                  <select required disabled={!province} className="input-field appearance-none pr-10 disabled:opacity-50" value={city} onChange={e => setCity(e.target.value)}>
+                  <select required disabled={!province} className={clsx("input-field appearance-none pr-10 disabled:opacity-50", fieldErrors.city && "!border-rose-500")} value={city} onChange={e => setCity(e.target.value)}>
                     <option value="">Select City...</option>
                     {availableCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                   <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
                 </div>
+                <FieldError msg={fieldErrors.city} />
               </div>
 
               {/* Zip (auto) */}
@@ -367,7 +393,7 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-emerald-600 mb-1.5">Zip Code (Auto)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-500"><FiMap className="h-4 w-4" /></div>
-                  <input type="text" readOnly className="input-field pl-10 bg-emerald-50/50 border-emerald-100 text-emerald-700 font-bold dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400 cursor-not-allowed" placeholder="Select city..." value={zip} />
+                  <input type="text" readOnly className="input-field pl-10 bg-emerald-50/50 border-emerald-100 text-emerald-700 font-bold dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400 cursor-not-allowed" placeholder="Auto-filled from city" value={zip} tabIndex={-1} aria-readonly="true" />
                 </div>
               </div>
 
@@ -378,11 +404,12 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400"><FiLock className="h-4 w-4" /></div>
-                  <input type={showPassword ? "text" : "password"} required className="input-field pl-10 pr-10" placeholder="Min. 8 chars" value={password} onChange={e => setPassword(e.target.value)} />
+                  <input type={showPassword ? "text" : "password"} required className={clsx("input-field pl-10 pr-10", fieldErrors.password && "!border-rose-500")} placeholder="Min. 8 chars" value={password} onChange={e => setPassword(e.target.value)} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-brand-500 transition-colors">
                     {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError msg={fieldErrors.password} />
               </div>
 
               {/* Confirm Password */}
@@ -390,11 +417,12 @@ export default function Register() {
                 <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-1.5">Confirm Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400"><FiLock className="h-4 w-4" /></div>
-                  <input type={showConfirmPassword ? "text" : "password"} required className="input-field pl-10 pr-10" placeholder="Repeat password" value={passwordConfirmation} onChange={e => setPasswordConfirmation(e.target.value)} />
+                  <input type={showConfirmPassword ? "text" : "password"} required className={clsx("input-field pl-10 pr-10", fieldErrors.passwordConfirmation && "!border-rose-500")} placeholder="Repeat password" value={passwordConfirmation} onChange={e => setPasswordConfirmation(e.target.value)} />
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-brand-500 transition-colors">
                     {showConfirmPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>
                 </div>
+                <FieldError msg={fieldErrors.passwordConfirmation} />
               </div>
             </div>
 
