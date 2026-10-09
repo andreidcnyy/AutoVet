@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { productKey, worstForecastStatus, isLowStockProduct } from "../../utils/inventoryProducts";
 import { Fragment, useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "../../context/ToastContext";
@@ -340,10 +341,7 @@ function InventoryView() {
     const groups = new Map();
 
     for (const row of inventoryRows) {
-      const code = row.code ? String(row.code).trim() : "";
-      // Rows predating the code backfill have no code to group on, so they
-      // stand alone rather than collapsing into one shared "" bucket.
-      const key = code !== "" ? `code:${code}` : `id:${row.id}`;
+      const key = productKey(row);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(row);
     }
@@ -356,15 +354,7 @@ function InventoryView() {
 
       const totalStock = batches.reduce((sum, b) => sum + Number(b.stock_level || 0), 0);
 
-      // A forecast is stored per batch. At product level report the most
-      // severe one, so a product is never shown as Safe while one of its
-      // batches is projected to run out.
-      const severity = { "Low Stock": 3, "Reorder Soon": 2, Safe: 1 };
-      const worstStatus = batches.reduce((worst, b) => {
-        const status = b.latest_forecast?.forecast_status;
-        if (!status) return worst;
-        return (severity[status] ?? 0) > (severity[worst] ?? 0) ? status : worst;
-      }, null);
+      const worstStatus = worstForecastStatus(batches);
       const worstForecast =
         batches.find((b) => b.latest_forecast?.forecast_status === worstStatus)?.latest_forecast ?? null;
 
@@ -398,7 +388,7 @@ function InventoryView() {
     if (selectedCategory !== "all" && p.primary.inventory_category?.name !== selectedCategory) return false;
 
     if (activeFilter === "All Items") return true;
-    if (activeFilter === "Low Stock") return p.worstStatus === "Low Stock" || p.totalStock <= 0;
+    if (activeFilter === "Low Stock") return isLowStockProduct(p);
     if (activeFilter === "Expiring") return p.hasExpiring;
     if (activeFilter === "Expired") return p.hasExpired;
     return true;
@@ -412,8 +402,8 @@ function InventoryView() {
   // off the shelf. The other two cards count products.
   const expiringCount = inventoryRows.filter(isBatchExpiringSoon).length;
   const expiredCount = inventoryRows.filter(isRowExpired).length;
-  // Same rule as the Low Stock filter below the cards and the Analytics page.
-  const lowStockAiCount = products.filter((p) => p.worstStatus === "Low Stock" || p.totalStock <= 0).length;
+  // Same rule as the Low Stock filter and the Analytics page (utils/inventoryProducts).
+  const lowStockAiCount = products.filter(isLowStockProduct).length;
   const distinctProductCount = products.length;
 
   const summaryCards = [

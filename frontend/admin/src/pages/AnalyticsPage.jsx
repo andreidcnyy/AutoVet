@@ -17,6 +17,7 @@ import clsx from "clsx";
 import { useAuth } from "../context/AuthContext";
 import html2canvas from "html2canvas";
 import { buildAnalyticsReport, analyticsReportFilename } from "../utils/analyticsReport";
+import { summarizeStock } from "../utils/inventoryProducts";
 
 const COLORS = [
   "#10b981", "#6366f1", "#f59e0b", "#3b82f6",
@@ -72,6 +73,10 @@ export default function AnalyticsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [trends, setTrends] = useState(null);
+  // Only months that have happened. The series also carries two projected
+  // months with no actual values, which drew nothing once the trend lines
+  // were removed.
+  const actualMonths = (trends?.series || []).filter((r) => r.actual_revenue !== null || r.actual_count !== null);
   const [stats, setStats] = useState(null);
   const [consumption, setConsumption] = useState([]);
   const [stock, setStock] = useState(null);
@@ -84,12 +89,14 @@ export default function AnalyticsPage() {
         api.get("/api/reports/analytics/transaction-trends?months=12"),
         api.get("/api/reports/analytics/transaction-stats?days=30"),
         api.get("/api/reports/analytics/inventory-consumption?months=6"),
-        api.get("/api/reports/analytics/inventory-stock"),
+        // The same rows the Inventory page reads, summarised by the same code,
+        // so the two Low Stock Alerts counts always match.
+        api.get("/api/inventory"),
       ]);
       setTrends(trendsRes);
       setStats(statsRes);
       setConsumption(consRes);
-      setStock(stockRes);
+      setStock(summarizeStock(stockRes));
     } catch (err) {
       console.error("Failed to load analytics:", err);
     } finally {
@@ -224,16 +231,16 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         
-        {/* Revenue Trend & Forecast */}
+        {/* Revenue Trend */}
         <div className="card-shell p-6">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-              <FiTrendingUp className="text-emerald-500" /> Revenue Trend & Forecast
+              <FiTrendingUp className="text-emerald-500" /> Revenue Trend
             </h3>
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trends?.series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={actualMonths} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -245,7 +252,6 @@ export default function AnalyticsPage() {
                 <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${v/1000}k`} />
                 <Tooltip content={<ChartTooltip prefix="₱" />} />
                 <Area isAnimationActive={false} name="Actual Revenue" type="monotone" dataKey="actual_revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                <Line isAnimationActive={false} name="Trend Line" type="monotone" dataKey="trend_revenue" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -260,13 +266,12 @@ export default function AnalyticsPage() {
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trends?.series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={actualMonths} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
                 <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar isAnimationActive={false} name="Actual Count" dataKey="actual_count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Line isAnimationActive={false} name="Trend" type="monotone" dataKey="trend_count" stroke="#f59e0b" strokeWidth={2} dot={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
