@@ -491,6 +491,13 @@ function AppointmentsView() {
         setSelectedAppointment(updated);
         setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
         toast.success("Marked as no-show.");
+      } else if (action === 'undo_no_show') {
+        // No-Show is only offered on approved appointments, so undo restores that.
+        await api.patch(`/api/appointments/${selectedAppointment.id}`, { status: 'approved' });
+        const updated = { ...selectedAppointment, status: 'approved' };
+        setSelectedAppointment(updated);
+        setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+        toast.success("No-show undone. Appointment is approved again.");
       } else {
         await api.post(`/api/appointments/${selectedAppointment.id}/${action}`);
         localStorage.removeItem('dashboard_stats_cache');
@@ -1108,6 +1115,11 @@ function AppointmentsView() {
                         {actionSubmitting ? "..." : "No-Show"}
                       </button>
                     </div>
+                  )}
+                  {selectedAppointment?.status === 'no_show' && (
+                    <button onClick={() => handleStatusAction('undo_no_show')} disabled={actionSubmitting} className="w-full h-12 rounded-2xl bg-amber-500 text-white font-black uppercase text-sm disabled:opacity-60 transition-all hover:bg-amber-600">
+                      {actionSubmitting ? "..." : "Undo No-Show"}
+                    </button>
                   )}
                 </div>
               </div>

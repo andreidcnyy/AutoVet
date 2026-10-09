@@ -16,7 +16,11 @@ async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
   });
 }
 
-export async function generateInvoicePDF(invoiceData: any, clinic: any) {
+export async function generateInvoicePDF(
+  invoiceData: any,
+  clinic: any,
+  mode: "download" | "preview" = "download",
+): Promise<{ blob: Blob; filename: string } | undefined> {
   if (!invoiceData) return;
 
   const doc = new jsPDF();
@@ -232,5 +236,10 @@ export async function generateInvoicePDF(invoiceData: any, clinic: any) {
   doc.setTextColor(148, 163, 184);
   doc.text("Powered by AutoVet Systems", pageW / 2, pageH - 10, { align: "center" });
 
-  doc.save(`${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`);
+  const filename = `${docTitle}_${invoiceData.invoice_number || "VB-2026-000"}.pdf`;
+  if (mode === "preview") {
+    // Hand back the file instead of saving it, so the caller can show it first.
+    return { blob: doc.output("blob"), filename };
+  }
+  doc.save(filename);
 }

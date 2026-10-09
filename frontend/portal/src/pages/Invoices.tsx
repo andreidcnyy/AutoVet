@@ -12,8 +12,10 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiDownload,
+  FiEye,
   FiX
 } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { generateInvoicePDF } from '../utils/invoicePdf';
@@ -42,6 +44,8 @@ export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPetId, setSelectedPetId] = useState<string>("all");
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<number | null>(null);
+  const [preview, setPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -91,7 +95,7 @@ export default function Invoices() {
     };
   }, [fetchInvoices, user?.id]);
 
-  const handleDownload = async (invoice: any) => {
+  const buildInvoiceForPdf = async (invoice: any) => {
     // The list payload is minimal (no items/totals/notes). Fetch the full
     // invoice so the PDF matches the admin format exactly.
     let full = invoice;
@@ -124,11 +128,35 @@ export default function Invoices() {
       photo: basePet.photo || listPet?.photo,
     };
 
-    const enrichedInvoice = {
+    return {
       ...full,
       pet: mergedPet ? { ...mergedPet, owner: ownerFromUser } : null,
     };
-    generateInvoicePDF(enrichedInvoice, clinicSettings);
+  };
+
+  const handleDownload = async (invoice: any) => {
+    generateInvoicePDF(await buildInvoiceForPdf(invoice), clinicSettings);
+  };
+
+  // Preview renders the same PDF in a window, so the client can just look at
+  // it and only download if they want to keep a copy.
+  const handlePreview = async (invoice: any) => {
+    setPreviewLoadingId(invoice.id);
+    try {
+      const result = await generateInvoicePDF(await buildInvoiceForPdf(invoice), clinicSettings, 'preview');
+      if (result) {
+        setPreview({ url: URL.createObjectURL(result.blob), filename: result.filename });
+      }
+    } catch (e) {
+      console.error('Failed to build invoice preview', e);
+    } finally {
+      setPreviewLoadingId(null);
+    }
+  };
+
+  const closePreview = () => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview(null);
   };
 
   const filteredInvoices = invoices.filter(inv => {
@@ -266,12 +294,21 @@ export default function Invoices() {
                            <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest text-lg">Total</div>
                            <div className="text-2xl font-black text-emerald-600">₱{parseFloat(invoice.total).toLocaleString()}</div>
                         </div>
-                        <button
-                          onClick={() => handleDownload(invoice)}
-                          className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
-                        >
-                          <FiDownload /> Download PDF Invoice
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            onClick={() => handlePreview(invoice)}
+                            disabled={previewLoadingId === invoice.id}
+                            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-dark-card text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-dark-border py-3 rounded-xl font-bold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-60"
+                          >
+                            <FiEye /> {previewLoadingId === invoice.id ? 'Opening...' : 'View Invoice'}
+                          </button>
+                          <button
+                            onClick={() => handleDownload(invoice)}
+                            className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                          >
+                            <FiDownload /> Download PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -285,6 +322,44 @@ export default function Invoices() {
           </div>
         )}
       </div>
+
+      {preview && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closePreview} />
+          <div className="relative w-full max-w-4xl h-[90vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-100 dark:border-dark-border">
+              <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100 truncate">{preview.filename}</div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={preview.url}
+                  download={preview.filename}
+                  className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-3 py-2 rounded-lg font-bold text-xs hover:opacity-90 transition-opacity"
+                >
+                  <FiDownload /> Download
+                </a>
+                <button
+                  onClick={closePreview}
+                  aria-label="Close preview"
+                  className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <iframe src={preview.url} title="Invoice preview" className="flex-1 w-full bg-zinc-100" />
+            {/* Phone browsers often cannot show a PDF inside a page. */}
+            <a
+              href={preview.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sm:hidden text-center text-xs font-bold text-brand-600 py-3 border-t border-zinc-100 dark:border-dark-border"
+            >
+              Can't see the invoice? Open it in a new tab
+            </a>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
