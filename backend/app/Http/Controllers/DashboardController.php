@@ -404,8 +404,10 @@ class DashboardController extends Controller
         // forces a scan. Only safe because the column is DATE: on a timestamp
         // like invoices.created_at the two are genuinely different, which is
         // why those call sites are left alone.
+        // Same filter as appointmentsToday(), so the card's number always
+        // matches the list it opens (pending, approved and completed alike).
         $apptsToday = Appointment::where('date', $today)
-            ->whereIn('status', $confirmedStatuses)
+            ->whereRaw('LOWER(status) NOT IN (?, ?, ?, ?, ?)', ['cancelled', 'declined', 'declined (system)', 'rejected', 'rescheduled'])
             ->whereHas('pet.owner', fn($q) => $q->realClients())
             ->count();
 
