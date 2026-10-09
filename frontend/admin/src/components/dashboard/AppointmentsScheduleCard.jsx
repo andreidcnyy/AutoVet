@@ -17,7 +17,9 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-function AppointmentsScheduleCard({ appointments, loading }) {
+function AppointmentsScheduleCard({ appointments, total, loading }) {
+  // The list is paginated server-side, so the true number is the API's count.
+  const count = total ?? appointments?.length ?? 0;
   const navigate = useNavigate();
 
   return (
@@ -82,7 +84,7 @@ function AppointmentsScheduleCard({ appointments, loading }) {
 
       <div className="p-4 bg-zinc-50/50 dark:bg-dark-surface/10 border-t border-zinc-100 dark:border-dark-border">
          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">
-            {appointments?.length || 0} confirmed session{appointments?.length === 1 ? '' : 's'} today
+            {count} appointment{count === 1 ? '' : 's'} today
          </p>
       </div>
     </div>

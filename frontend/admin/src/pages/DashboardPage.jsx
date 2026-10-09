@@ -208,7 +208,7 @@ function DashboardPage() {
 
   const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { ...liveOptions, cacheKey: 'dashboard_stats_cache' });
   const { data: notifications, isLoading: loadingNotifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { ...liveOptions, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
-  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today', liveOptions);
+  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today?per_page=100', liveOptions);
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
@@ -356,6 +356,7 @@ function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
             <AppointmentsScheduleCard 
               appointments={todayAppts?.appointments || []} 
+              total={todayAppts?.count}
               loading={loadingAppts} 
             />
             <RecentNotificationsCard 
