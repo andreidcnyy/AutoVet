@@ -248,47 +248,53 @@ class ReportAnalyticsController extends Controller
      */
     public function inventoryStockSummary(): JsonResponse
     {
-        $items = Inventory::with('inventoryCategory')
-            ->select('id', 'item_name', 'stock_level', 'min_stock_level',
+        $items = Inventory::with(['inventoryCategory', 'latestForecast'])
+            ->select('id', 'code', 'item_name', 'stock_level', 'min_stock_level',
                      'inventory_category_id', 'selling_price', 'supplier')
             ->get();
+
+        // Same rule as the Inventory page, so both show the same number:
+        // batches are grouped into products by code, the status is the live
+        // forecast, and a product is flagged when any batch is forecast as
+        // Low Stock or the product has nothing left at all.
+        Inventory::applyLiveForecasts($items);
+
+        $products = $items->groupBy(fn ($i) => trim((string) $i->code) !== '' ? 'code:' . trim($i->code) : 'id:' . $i->id);
 
         $inStock    = 0;
         $lowStock   = 0;
         $outOfStock = 0;
         $alertItems = [];
 
-        foreach ($items as $item) {
-            $stock = (int) $item->stock_level;
-            $min   = (int) $item->min_stock_level;
+        foreach ($products as $batches) {
+            $primary = $batches->sortBy('id')->first();
+            $stock   = (int) $batches->sum(fn ($b) => (int) $b->stock_level);
+            $min     = (int) $primary->min_stock_level;
+            $isLow   = $batches->contains(fn ($b) => $b->latestForecast?->forecast_status === 'Low Stock');
 
             if ($stock <= 0) {
                 $outOfStock++;
-                $alertItems[] = [
-                    'id'         => $item->id,
-                    'name'       => $item->item_name,
-                    'category'   => $item->inventoryCategory?->name ?? 'Uncategorized',
-                    'stock'      => $stock,
-                    'min_stock'  => $min,
-                    'deficit'    => $min + 1,
-                    'status'     => 'out_of_stock',
-                    'supplier'   => $item->supplier,
-                ];
-            } elseif ($stock <= $min) {
+                $status  = 'out_of_stock';
+                $deficit = $min + 1;
+            } elseif ($isLow) {
                 $lowStock++;
-                $alertItems[] = [
-                    'id'         => $item->id,
-                    'name'       => $item->item_name,
-                    'category'   => $item->inventoryCategory?->name ?? 'Uncategorized',
-                    'stock'      => $stock,
-                    'min_stock'  => $min,
-                    'deficit'    => max(0, $min - $stock + 1),
-                    'status'     => 'low_stock',
-                    'supplier'   => $item->supplier,
-                ];
+                $status  = 'low_stock';
+                $deficit = max(0, $min - $stock + 1);
             } else {
                 $inStock++;
+                continue;
             }
+
+            $alertItems[] = [
+                'id'         => $primary->id,
+                'name'       => $primary->item_name,
+                'category'   => $primary->inventoryCategory?->name ?? 'Uncategorized',
+                'stock'      => $stock,
+                'min_stock'  => $min,
+                'deficit'    => $deficit,
+                'status'     => $status,
+                'supplier'   => $primary->supplier,
+            ];
         }
 
         // Sort: out_of_stock first, then by deficit descending
@@ -296,7 +302,7 @@ class ReportAnalyticsController extends Controller
 
         return response()->json([
             'summary' => [
-                'total'       => $items->count(),
+                'total'       => $products->count(),
                 'in_stock'    => $inStock,
                 'low_stock'   => $lowStock,
                 'out_of_stock'=> $outOfStock,

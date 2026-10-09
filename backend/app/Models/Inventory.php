@@ -147,6 +147,38 @@ class Inventory extends Model
     }
 
     /**
+     * Recalculates each item's loaded latestForecast status against today's
+     * stock and this month's remaining need. The Inventory page and the
+     * Analytics low-stock count both go through here so they cannot disagree.
+     */
+    public static function applyLiveForecasts($items): void
+    {
+        $daysRemaining = now()->daysInMonth - now()->day + 1; // including today
+
+        foreach ($items as $item) {
+            $forecast = $item->latestForecast;
+            if (!$forecast) continue;
+
+            $avgDaily     = (float) ($forecast->average_daily_consumption ?? 0);
+            $currentStock = (float) $item->stock_level;
+            $minStock     = (float) ($item->min_stock_level ?? 0);
+            if ($avgDaily <= 0) continue;
+
+            $daysLeft = ($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0;
+            $forecast->days_until_stockout = (int) $daysLeft;
+
+            // Short of what the rest of the month needs, or under a week left.
+            if ($currentStock < $avgDaily * $daysRemaining || $daysLeft < 7) {
+                $forecast->forecast_status = 'Low Stock';
+            } elseif ($daysLeft < 14) {
+                $forecast->forecast_status = 'Reorder Soon';
+            } else {
+                $forecast->forecast_status = 'Safe';
+            }
+        }
+    }
+
+    /**
      * Determine if this inventory item has only its auto-created initial stock transaction.
      */
     public function hasOnlyInitialStockTransaction(): bool

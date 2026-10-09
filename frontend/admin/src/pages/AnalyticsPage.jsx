@@ -230,7 +230,6 @@ export default function AnalyticsPage() {
             <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
               <FiTrendingUp className="text-emerald-500" /> Revenue Trend & Forecast
             </h3>
-            <span className="text-[10px] font-black bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-widest">Linear Regression Model</span>
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">

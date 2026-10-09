@@ -23,35 +23,8 @@ class InventoryController extends Controller
     public function index()
     {
         $inventory = Inventory::with(['inventoryCategory', 'latestForecast'])->get();
-// Recalculate forecast days/status based on real-time stock and monthly needs
-$daysInMonth = \Carbon\Carbon::now()->daysInMonth;
-$dayOfMonth = \Carbon\Carbon::now()->day;
-$daysRemaining = $daysInMonth - $dayOfMonth + 1; // Remaining days including today
-
-$inventory->each(function ($item) use ($daysRemaining) {
-    if ($item->latestForecast) {
-        $avgDaily = (float) ($item->latestForecast->average_daily_consumption ?? 0);
-        $currentStock = (float) $item->stock_level;
-        $minStock = (float) ($item->min_stock_level ?? 0);
-
-        if ($avgDaily > 0) {
-            $daysLeft = ($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0;
-            $item->latestForecast->days_until_stockout = (int)$daysLeft;
-
-            // NEW PREDICTIVE LOGIC:
-            // If predicted needs for the rest of the month exceed current stock, mark as Critical
-            $projectedMonthlyNeed = $avgDaily * $daysRemaining;
-
-            if ($currentStock < $projectedMonthlyNeed || $daysLeft < 7) {
-                $item->latestForecast->forecast_status = 'Low Stock';
-            } elseif ($daysLeft < 14) {
-                $item->latestForecast->forecast_status = 'Reorder Soon';
-            } else {
-                $item->latestForecast->forecast_status = 'Safe';
-            }
-        }
-    }
-});
+        // Recalculate forecast days/status based on real-time stock and monthly needs
+        Inventory::applyLiveForecasts($inventory);
         return response()->json($inventory);
     }
 

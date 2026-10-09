@@ -412,7 +412,8 @@ function InventoryView() {
   // off the shelf. The other two cards count products.
   const expiringCount = inventoryRows.filter(isBatchExpiringSoon).length;
   const expiredCount = inventoryRows.filter(isRowExpired).length;
-  const lowStockAiCount = products.filter((p) => p.worstStatus === "Low Stock").length;
+  // Same rule as the Low Stock filter below the cards and the Analytics page.
+  const lowStockAiCount = products.filter((p) => p.worstStatus === "Low Stock" || p.totalStock <= 0).length;
   const distinctProductCount = products.length;
 
   const summaryCards = [
