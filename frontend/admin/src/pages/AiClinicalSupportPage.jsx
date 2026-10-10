@@ -25,7 +25,7 @@ function AiClinicalSupportPage() {
     if (query.length < 2) { setPetResults([]); return; }
     setSearching(true);
     try {
-      const data = await api.get(`/api/patients?search=${encodeURIComponent(query)}&per_page=8`);
+      const data = await api.get(`/api/pets?search=${encodeURIComponent(query)}&per_page=8`);
       setPetResults(data.data || data || []);
     } catch {
       setPetResults([]);
