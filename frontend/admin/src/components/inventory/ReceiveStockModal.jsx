@@ -8,6 +8,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import api from "../../api";
 
+const normalizeBatch = (value) => (value || "").trim().toLowerCase();
+
+/**
+ * Suggest BATCH-YYYYMMDD-NN using the next number not already taken today by
+ * this product's batches. The old random 3-digit suffix could repeat.
+ */
+function nextBatchNumber(batches) {
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const prefix = `BATCH-${stamp}-`;
+  const used = new Set((batches || []).map((b) => normalizeBatch(b.batch_number)));
+  let n = 1;
+  while (used.has(normalizeBatch(`${prefix}${String(n).padStart(2, "0")}`))) n++;
+  return `${prefix}${String(n).padStart(2, "0")}`;
+}
+
 const receiveSchema = z.object({
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   batch_number: z.string().min(1, "Batch number is required").max(100),
@@ -28,6 +44,9 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
     register,
     handleSubmit,
     reset,
+    setValue,
+    setError,
+    getFieldState,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(receiveSchema),
@@ -57,10 +76,9 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
 
   useEffect(() => {
     if (isOpen) {
-      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       reset({
         quantity: 1,
-        batch_number: `BATCH-${stamp}-${Math.floor(100 + Math.random() * 900)}`,
+        batch_number: nextBatchNumber([]),
         lot_number: "",
         expiration_date: "",
         price: "",
@@ -71,9 +89,23 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
     }
   }, [isOpen, product?.id, reset]);
 
+  // Once the existing batches arrive, move the suggestion past any number they
+  // already use — unless the user has started typing their own.
+  useEffect(() => {
+    if (isOpen && !getFieldState("batch_number").isDirty) {
+      setValue("batch_number", nextBatchNumber(batches));
+    }
+  }, [batches, isOpen, setValue, getFieldState]);
+
   if (!isOpen || !product) return null;
 
   const onSubmit = async (data) => {
+    // Same rule the backend enforces: one batch number per product.
+    const wanted = normalizeBatch(data.batch_number);
+    if (batches.some((b) => normalizeBatch(b.batch_number) === wanted)) {
+      setError("batch_number", { message: `Batch "${data.batch_number.trim()}" already exists for this item.` });
+      return;
+    }
     try {
       // Blank optional numerics must be omitted, not sent as "".
       const payload = { ...data };
@@ -86,7 +118,11 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
       onReceived?.(saved);
       onClose();
     } catch (err) {
-      toast.error(err.message || "Failed to receive stock.");
+      if (err.status === 422 && /batch number/i.test(err.message || "")) {
+        setError("batch_number", { message: err.message });
+      } else {
+        toast.error(err.message || "Failed to receive stock.");
+      }
     }
   };
 

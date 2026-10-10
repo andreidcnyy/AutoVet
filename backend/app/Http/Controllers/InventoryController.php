@@ -79,8 +79,15 @@ class InventoryController extends Controller
         $validatedData['sku'] = $this->skuGenerator->generate(
             $categoryRecord->name ?? 'UNK',
             $validatedData['item_name'],
-            $validatedData['sub_details']
+            $validatedData['sub_details'] ?? null
         );
+
+        if (!empty($validatedData['batch_number'])) {
+            $validatedData['batch_number'] = trim($validatedData['batch_number']);
+            if (!empty($validatedData['code'])) {
+                $this->assertBatchNumberFree($validatedData['code'], $validatedData['batch_number']);
+            }
+        }
 
         $item = Inventory::create($validatedData);
 
@@ -128,6 +135,14 @@ class InventoryController extends Controller
             'lot_number'      => 'nullable|string|max:100',
             'batch_number'    => 'nullable|string|max:100',
         ]);
+
+        if (!empty($validatedData['batch_number'])) {
+            $validatedData['batch_number'] = trim($validatedData['batch_number']);
+            $code = $validatedData['code'] ?? $inventory->code;
+            if (!empty($code)) {
+                $this->assertBatchNumberFree($code, $validatedData['batch_number'], $inventory->id);
+            }
+        }
 
         $oldStock = $inventory->stock_level;
         $newStock = $validatedData['stock_level'];
@@ -213,6 +228,10 @@ class InventoryController extends Controller
                 $product->save();
             }
 
+            // Checked under the product's row lock, so two deliveries submitted
+            // at the same moment cannot both claim the same batch number.
+            $this->assertBatchNumberFree($product->code, $validated['batch_number']);
+
             $categoryName = \App\Models\InventoryCategory::find($product->inventory_category_id)->name ?? 'UNK';
 
             $batch = Inventory::create([
@@ -236,7 +255,7 @@ class InventoryController extends Controller
                 'supplier'              => $validated['supplier']      ?? $product->supplier,
                 'expiration_date'       => $validated['expiration_date'] ?? null,
                 'lot_number'            => $validated['lot_number']      ?? null,
-                'batch_number'          => $validated['batch_number'],
+                'batch_number'          => trim($validated['batch_number']),
                 // Carry over the billing/consumption flags so the new batch is
                 // treated exactly like the stock it replenishes.
                 'is_billable'           => $product->is_billable,
@@ -270,6 +289,29 @@ class InventoryController extends Controller
         RefreshInventoryForecast::dispatch([$batch->id], 'manual');
 
         return response()->json($batch->load('inventoryCategory'), 201);
+    }
+
+    /**
+     * Reject a batch number another batch of the same product already uses.
+     *
+     * Scoped to the product (rows sharing its code) rather than the whole
+     * table: different suppliers legitimately reuse "001" on different items,
+     * but two deliveries of one item with the same number cannot be told apart
+     * in a recall or audit. Compared trimmed and case-insensitively, so
+     * "batch-001 " and "BATCH-001" count as the same number.
+     */
+    private function assertBatchNumberFree(string $code, string $batchNumber, ?int $ignoreId = null): void
+    {
+        $taken = Inventory::where('code', $code)
+            ->whereRaw('LOWER(TRIM(batch_number)) = ?', [mb_strtolower(trim($batchNumber))])
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists();
+
+        if ($taken) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'batch_number' => "Batch number \"" . trim($batchNumber) . "\" already exists for this item. Use a different batch number.",
+            ]);
+        }
     }
 
     /**
