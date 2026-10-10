@@ -181,16 +181,21 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
-    // Inventory — read open to all staff, writes restricted to admin roles
-    Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
-    Route::get('inventory/batch-lot-options',            [InventoryController::class, 'batchLotOptions']);
-    Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
-    Route::get('inventory/{inventory}/batches',          [InventoryController::class, 'batches']);
-    Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
-    Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
-    Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
-    Route::get('inventory',                              [InventoryController::class, 'index']);
-    Route::get('inventory/{inventory}',                  [InventoryController::class, 'show']);
+    // Inventory — read open to all clinic staff, writes restricted to admin
+    // roles. Portal owners hold Sanctum tokens too, so "logged in" alone is
+    // not enough: without the role check they could read every item, price
+    // and supplier.
+    Route::middleware('role:' . implode(',', Roles::dashboardRoles()))->group(function () {
+        Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
+        Route::get('inventory/batch-lot-options',            [InventoryController::class, 'batchLotOptions']);
+        Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
+        Route::get('inventory/{inventory}/batches',          [InventoryController::class, 'batches']);
+        Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
+        Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
+        Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
+        Route::get('inventory',                              [InventoryController::class, 'index']);
+        Route::get('inventory/{inventory}',                  [InventoryController::class, 'show']);
+    });
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
         Route::post('inventory',                             [InventoryController::class, 'store']);
@@ -217,8 +222,10 @@ Route::group(['middleware' => ['auth:sanctum', 'maintenance']], function () {
     Route::apiResource('owners', PatientOwnerController::class);
     Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
 
-    // Walk-in Registration — staff and admin
-    Route::post('/walk-in', [\App\Http\Controllers\WalkInController::class, 'register']);
+    // Walk-in Registration — clinic staff only. It creates an owner, a pet and
+    // an already-approved appointment, so a portal owner must not reach it.
+    Route::post('/walk-in', [\App\Http\Controllers\WalkInController::class, 'register'])
+        ->middleware('role:' . implode(',', Roles::dashboardRoles()));
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::post('vet-schedules/bulk',       [VetScheduleController::class, 'bulkStore']);
         Route::post('vet-schedules',            [VetScheduleController::class, 'store']);
