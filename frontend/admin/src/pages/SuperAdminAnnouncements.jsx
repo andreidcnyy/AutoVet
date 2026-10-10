@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { FiVolume2, FiPlus, FiTrash2, FiEdit2, FiClock, FiMonitor, FiGlobe, FiX, FiCheckCircle, FiAlertCircle, FiInfo, FiAlertTriangle } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
 import clsx from 'clsx';
@@ -231,14 +232,16 @@ export default function SuperAdminAnnouncements() {
       </div>
 
       {/* â”€â”€ Modal â”€â”€ */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={closeModal}>
+      {/* Portalled to <body> so the sidebar and header can't sit above it, and
+          capped at 90vh with a scrolling body so the footer is always reachable. */}
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={closeModal}>
           <div
-            className="w-full max-w-lg rounded-2xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border animate-in zoom-in-95 duration-200"
+            className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border">
+            <div className="shrink-0 flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-autovet-teal/10">
                   <FiVolume2 className="h-4 w-4 text-autovet-teal" />
@@ -254,7 +257,8 @@ export default function SuperAdminAnnouncements() {
             </div>
 
             {/* Modal body */}
-            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+            <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+              <div className="flex-1 overflow-y-auto slim-scroll px-6 py-5 space-y-5">
 
               {/* Title */}
               <div>
@@ -342,8 +346,10 @@ export default function SuperAdminAnnouncements() {
                 </div>
               </div>
 
+              </div>
+
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-zinc-100 dark:border-dark-border mt-2">
+              <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-100 dark:border-dark-border">
                 <button type="button" onClick={closeModal} className="px-4 py-2.5 text-sm font-bold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
                   Cancel
                 </button>
@@ -359,7 +365,8 @@ export default function SuperAdminAnnouncements() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
