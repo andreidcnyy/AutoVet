@@ -589,9 +589,6 @@ export default function SuperAdminDashboard() {
               <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-3.5 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
                 {selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}
               </button>
-              <button onClick={handleDeleteClinic} className="flex-1 rounded-2xl bg-rose-600 py-3.5 font-black uppercase text-xs tracking-widest text-white hover:bg-rose-700 transition-all shadow-lg flex items-center justify-center gap-2">
-                <FiTrash2 className="h-4 w-4" /> Permanent Delete
-              </button>
               <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-3.5 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
             </div>
 
