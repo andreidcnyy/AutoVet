@@ -26,17 +26,41 @@ class ArchiveController extends Controller
     }
 
     /**
+     * Account archives (staff and portal users) are account management, which
+     * belongs to managers. A veterinarian could otherwise restore a removed
+     * administrator or permanently delete one.
+     */
+    private const ACCOUNT_TYPES = ['admins', 'portal_users'];
+
+    private function denyAccountTypeUnlessManager(Request $request, string $type)
+    {
+        if (in_array(strtolower($type), self::ACCOUNT_TYPES, true)
+            && !in_array($request->user()->role, \App\Enums\Roles::managerRoles(), true)) {
+            return response()->json(['message' => 'Only an administrator can manage archived accounts.'], 403);
+        }
+
+        return null;
+    }
+
+    /**
      * List portal users with pending deletion (within 30-day grace period)
      */
     public function pendingDeletions(Request $request)
     {
-        // Include both new flow (deletion_requested_at set) and old flow (soft-deleted only)
-        $items = \App\Models\PortalUser::withoutGlobalScopes()
+        if ($denied = $this->denyAccountTypeUnlessManager($request, 'portal_users')) {
+            return $denied;
+        }
+
+        // Include both new flow (deletion_requested_at set) and old flow (soft-deleted only).
+        // withTrashed() rather than withoutGlobalScopes(): the latter also
+        // dropped the clinic scope and listed every clinic's clients.
+        $items = \App\Models\PortalUser::withTrashed()
             ->where(function ($q) {
                 $q->whereNotNull('deletion_requested_at')
                   ->orWhereNotNull('deleted_at');
             })
             ->orderByRaw('COALESCE(deletion_requested_at, deleted_at) DESC')
+            ->orderByDesc('id')
             ->paginate(20);
 
         $items->getCollection()->transform(function ($user) {
@@ -56,7 +80,11 @@ class ArchiveController extends Controller
      */
     public function cancelPendingDeletion(Request $request, $id)
     {
-        $user = \App\Models\PortalUser::withoutGlobalScopes()
+        if ($denied = $this->denyAccountTypeUnlessManager($request, 'portal_users')) {
+            return $denied;
+        }
+
+        $user = \App\Models\PortalUser::withTrashed()
             ->where(function ($q) {
                 $q->whereNotNull('deletion_requested_at')
                   ->orWhereNotNull('deleted_at');
@@ -82,6 +110,9 @@ class ArchiveController extends Controller
         if (!$modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
         }
+        if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
+            return $denied;
+        }
 
         $query = $modelClass::onlyTrashed();
 
@@ -90,18 +121,21 @@ class ArchiveController extends Controller
             $query->with('deleter:id,name,email');
         }
 
-        $items = $query->orderBy('deleted_at', 'desc')->paginate(20);
+        $items = $query->orderBy('deleted_at', 'desc')->orderByDesc('id')->paginate(20);
         return response()->json($items);
     }
 
     /**
      * Restore an archived item
      */
-    public function restore($type, $id)
+    public function restore(Request $request, $type, $id)
     {
         $modelClass = $this->getModelClass($type);
         if (!$modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
+        }
+        if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
+            return $denied;
         }
 
         $item = $modelClass::onlyTrashed()->findOrFail($id);
@@ -119,11 +153,14 @@ class ArchiveController extends Controller
     /**
      * Force delete an archived item
      */
-    public function forceDelete($type, $id)
+    public function forceDelete(Request $request, $type, $id)
     {
         $modelClass = $this->getModelClass($type);
         if (!$modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
+        }
+        if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
+            return $denied;
         }
 
         $item = $modelClass::onlyTrashed()->findOrFail($id);
@@ -137,11 +174,17 @@ class ArchiveController extends Controller
             
             return response()->json([
                 'message' => 'Cannot permanently delete this item because it is referenced in other database records.'
-            ], 422);
+            ], 409);
         } catch (\Exception $e) {
+            // preventPermanentDeletionIfReferenced() throws a plain Exception
+            // with a message written for the user; anything else is internal.
+            $userFacing = $e->getMessage() !== '' && str_starts_with($e->getMessage(), 'Cannot permanently delete');
+            if (!$userFacing) {
+                \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
+            }
             return response()->json([
-                'message' => $e->getMessage() ?: 'Cannot permanently delete this item due to existing dependencies.'
-            ], 422);
+                'message' => $userFacing ? $e->getMessage() : 'Cannot permanently delete this item due to existing dependencies.'
+            ], 409);
         }
     }
 }

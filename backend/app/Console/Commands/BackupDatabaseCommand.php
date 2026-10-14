@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class BackupDatabaseCommand extends Command
 {
-    protected $signature = 'db:backup';
+    protected $signature = 'db:backup {--clinic= : Export only the rows that belong to this clinic}';
     protected $description = 'Backup key clinic data as CSV files inside a tar.gz archive';
 
     private const TABLES = [
@@ -66,9 +66,30 @@ class BackupDatabaseCommand extends Command
         'deleted_at',
     ];
 
+    /**
+     * Tables that carry no clinic_id of their own, keyed to the parent that
+     * does: [foreign key, parent table]. A clinic-only backup keeps a child
+     * row when its parent belongs to the clinic.
+     */
+    private const CHILD_TABLES = [
+        'appointment_services'   => ['appointment_id', 'appointments'],
+        'service_prices'         => ['service_id', 'services'],
+        'invoice_items'          => ['invoice_id', 'invoices'],
+        'inventory_transactions' => ['inventory_id', 'inventories'],
+    ];
+
+    /** Where backups for one clinic (or, with null, the whole platform) are kept. */
+    public static function directoryFor(?int $clinicId): string
+    {
+        return $clinicId
+            ? storage_path("app/backups/clinic_{$clinicId}")
+            : storage_path('app/backups');
+    }
+
     public function handle()
     {
-        $backupPath = storage_path('app/backups');
+        $clinicId = $this->option('clinic') !== null ? (int) $this->option('clinic') : null;
+        $backupPath = self::directoryFor($clinicId);
         if (!is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);
         }
@@ -105,13 +126,27 @@ class BackupDatabaseCommand extends Command
                     $fh  = fopen($tmp, 'w');
                     fwrite($fh, implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n");
 
+                    $query = $this->scopedQuery($table, $clinicId);
+                    if ($query === null) {
+                        fclose($fh);
+                        $this->warn("  ! Skipped {$table}: cannot tell which clinic its rows belong to");
+                        continue;
+                    }
+
                     $count = 0;
-                    foreach (DB::table($table)->select($columns)->cursor() as $row) {
+                    foreach ($query->select($columns)->cursor() as $row) {
                         $row = (array) $row;
                         $values = array_map(function ($c) use ($row) {
                             $v = $row[$c] ?? null;
                             if ($v === null) return '';
-                            return '"' . str_replace('"', '""', (string) $v) . '"';
+                            $v = (string) $v;
+                            // A cell starting with = + - @ is run as a formula
+                            // when the CSV is opened in a spreadsheet, and
+                            // these cells hold client-typed text.
+                            if ($v !== '' && in_array($v[0], ['=', '+', '-', '@'], true) && !is_numeric($v)) {
+                                $v = "'" . $v;
+                            }
+                            return '"' . str_replace('"', '""', $v) . '"';
                         }, $columns);
                         fwrite($fh, implode(',', $values) . "\n");
                         $count++;
@@ -137,5 +172,37 @@ class BackupDatabaseCommand extends Command
 
         $this->info("Backup successfully created: {$basename}.tar.gz");
         return 0;
+    }
+
+    /**
+     * The rows of $table to export, limited to $clinicId when one is given.
+     * Returns null when the table has no way to tell which clinic a row
+     * belongs to, so a clinic-only backup leaves it out rather than leaking
+     * every clinic's rows into it.
+     */
+    private function scopedQuery(string $table, ?int $clinicId): ?\Illuminate\Database\Query\Builder
+    {
+        $query = DB::table($table);
+        if ($clinicId === null) {
+            return $query;
+        }
+
+        if ($table === 'clinics') {
+            return $query->where('id', $clinicId);
+        }
+
+        $schema = DB::connection()->getSchemaBuilder();
+        if ($schema->hasColumn($table, 'clinic_id')) {
+            return $query->where('clinic_id', $clinicId);
+        }
+
+        if (isset(self::CHILD_TABLES[$table])) {
+            [$foreignKey, $parent] = self::CHILD_TABLES[$table];
+            if ($schema->hasColumn($parent, 'clinic_id')) {
+                return $query->whereIn($foreignKey, DB::table($parent)->select('id')->where('clinic_id', $clinicId));
+            }
+        }
+
+        return null;
     }
 }

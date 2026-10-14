@@ -63,6 +63,47 @@ enum Roles: string
     }
 
     /**
+     * Roles that manage accounts and platform data (users, archives of
+     * accounts, backups of the whole platform).
+     */
+    public static function managerRoles(): array
+    {
+        return [self::SUPER_ADMIN->value, self::CLINIC_ADMIN->value];
+    }
+
+    /** Seniority used when one account acts on another. Higher outranks lower. */
+    public static function rank(?string $role): int
+    {
+        return match ($role) {
+            self::SUPER_ADMIN->value  => 4,
+            self::CLINIC_ADMIN->value => 3,
+            self::VETERINARIAN->value => 2,
+            self::STAFF->value        => 1,
+            default                   => 0,
+        };
+    }
+
+    /**
+     * Whether $actorRole may give an account $targetRole, or act on an account
+     * that already holds it. Managers may work up to their own rank (a clinic
+     * admin may add another clinic admin); everyone else only strictly below
+     * theirs, so a veterinarian manages staff and nothing above.
+     */
+    public static function canManage(?string $actorRole, ?string $targetRole): bool
+    {
+        $actor  = self::rank($actorRole);
+        $target = self::rank($targetRole);
+
+        if ($target === 0) {
+            return false;
+        }
+
+        return in_array($actorRole, self::managerRoles(), true)
+            ? $target <= $actor
+            : $target < $actor;
+    }
+
+    /**
      * Returns true if the given string matches this role (case-insensitive).
      */
     public function matches(string $role): bool

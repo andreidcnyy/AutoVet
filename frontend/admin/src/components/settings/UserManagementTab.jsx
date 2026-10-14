@@ -6,7 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import { getUserAvatarUrl } from "../../utils/userImages";
 import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
-import { ROLES } from "../../constants/roles";
+import { ROLES, canManageRole } from "../../constants/roles";
 import { displayUserName, roleLabel } from "../../utils/userDisplay";
 import echo from "../../utils/echo";
 
@@ -287,19 +287,23 @@ export default function UserManagementTab() {
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-2">
+                    {(member.id === user?.id || canManageRole(user?.role, member.role)) && (
                     <button
                       onClick={() => handleOpenModal(member)}
                       className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:border-dark-border dark:text-zinc-400 dark:hover:bg-dark-surface hover:bg-zinc-100"
                     >
                       Edit
                     </button>
+                    )}
+                    {member.id !== user?.id && canManageRole(user?.role, member.role) && (
                     <button
                       onClick={() => { setResetingUser(member); setShowTempPassword(false); setTempPassword(""); setResetModalOpen(true); }}
                       className="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:border-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/30 hover:bg-emerald-50"
                     >
                       Reset
                     </button>
-                    {(!isSuperAdmin(member.role) || isSuperAdmin(user?.role)) && (
+                    )}
+                    {member.id !== user?.id && canManageRole(user?.role, member.role) && (
                       <button
                         onClick={() => handleDelete(member.id)}
                         className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30 hover:bg-rose-50"
@@ -356,12 +360,18 @@ export default function UserManagementTab() {
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   >
-                    {isSuperAdmin(user?.role) && (
-                      <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
-                    )}
-                    <option value={ROLES.CLINIC_ADMIN}>Clinic Admin</option>
-                    <option value={ROLES.VETERINARIAN}>Veterinarian</option>
-                    <option value={ROLES.STAFF}>Staff</option>
+                    {[
+                      [ROLES.SUPER_ADMIN, "Super Admin"],
+                      [ROLES.CLINIC_ADMIN, "Clinic Admin"],
+                      [ROLES.VETERINARIAN, "Veterinarian"],
+                      [ROLES.STAFF, "Staff"],
+                    ]
+                      // Offer only roles this account may grant, plus the
+                      // role the edited account already has.
+                      .filter(([value]) => canManageRole(user?.role, value) || value === editingUser?.role)
+                      .map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
                   </select>
                 </div>
                 <div>

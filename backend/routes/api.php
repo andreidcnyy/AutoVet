@@ -217,7 +217,10 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
 
     Route::apiResource('medical-records', MedicalRecordController::class);
 
-    Route::get('/owners/check-duplicate', [PatientOwnerController::class, 'checkDuplicate']);
+    // Staff only: it answers "who owns this phone/email" for any client, which
+    // a portal user must not be able to ask.
+    Route::get('/owners/check-duplicate', [PatientOwnerController::class, 'checkDuplicate'])
+        ->middleware('role:' . implode(',', Roles::dashboardRoles()));
     Route::apiResource('owners', PatientOwnerController::class);
     Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
 
@@ -356,7 +359,6 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
         // Backup & Restore
         Route::get('/backups',                     [BackupController::class, 'index']);
         Route::post('/backups',                    [BackupController::class, 'create']);
-        Route::post('/backups/restore',            [BackupController::class, 'restore']);
         Route::get('/backups/download/{filename}', [BackupController::class, 'download']);
         Route::delete('/backups/{filename}',       [BackupController::class, 'destroy']);
 
