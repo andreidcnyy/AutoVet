@@ -8,11 +8,22 @@ use Illuminate\Http\Request;
 class SettingController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * The settings a portal client needs (the clinic's letterhead on their
+     * invoices). Everything else — feature switches, internal templates,
+     * anything added later — is staff-only.
      */
+    private const PORTAL_KEYS = [
+        'clinic_name', 'clinic_logo', 'address', 'phone_number', 'primary_email',
+        'currency', 'tax_rate', 'invoice_notes_template',
+    ];
+
     public function index()
     {
         $settings = Setting::all()->pluck('value', 'key');
+
+        if (($u = auth()->user()) && method_exists($u, 'isOwner') && $u->isOwner()) {
+            $settings = $settings->only(self::PORTAL_KEYS);
+        }
         return response()->json($settings->isEmpty() ? (object)[] : $settings);
     }
 

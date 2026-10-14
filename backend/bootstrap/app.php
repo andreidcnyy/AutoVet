@@ -26,9 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Ensure CORS is handled first, before any auth or route middleware
         $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
 
-        $middleware->api(prepend: [
-            \App\Http\Middleware\SecurityHeadersMiddleware::class,
-        ]);
+        // Every response, not just the api group: /media, /horizon and /
+        // went out without these headers.
+        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
 
         $middleware->alias([
             'auth'        => \App\Http\Middleware\Authenticate::class,

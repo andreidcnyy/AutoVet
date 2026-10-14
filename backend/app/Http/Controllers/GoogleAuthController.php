@@ -59,7 +59,8 @@ class GoogleAuthController extends Controller
             if (!$user->google_id) {
                 $user->update(['google_id' => $googleUser['sub']]);
             }
-            $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
+            // Lifetime comes from config('sanctum.expiration'), like every other sign-in.
+            $token = $user->createToken('portal-google')->plainTextToken;
             $profileComplete = !empty($user->phone) && !empty($user->address)
                             && !empty($user->province) && !empty($user->city);
             return response()->json(array_merge($this->userPayload($user), [
@@ -132,7 +133,7 @@ class GoogleAuthController extends Controller
             return $user;
         });
 
-        $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
+        $token = $user->createToken('portal-google')->plainTextToken;
 
         return response()->json(array_merge($this->userPayload($user), [
             'token'            => $token,

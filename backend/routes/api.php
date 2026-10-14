@@ -44,35 +44,21 @@ use App\Http\Controllers\ReviewController;
 // ---------------------------------------------------------------------------
 
 // Public reviews — landing page
-Route::get('/reviews/public', [ReviewController::class, 'publicIndex']);
+Route::get('/reviews/public', [ReviewController::class, 'publicIndex'])->middleware('throttle:60,1');
 
 Route::post('/auth/google',     [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
 Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
 Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/password/reset',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
-Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->name('registration.verify');
+Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:10,1')->name('registration.verify');
 
 
-// Test endpoint to check API status
+// Liveness only. It used to report whether the database was reachable (and
+// counted every staff account to find out), which is nobody else's business.
 Route::get('/status', function () {
-    $dbStatus = 'disconnected';
-    $userCount = 0;
-    try {
-        \Illuminate\Support\Facades\DB::connection()->getPdo();
-        $dbStatus = 'connected';
-        $userCount = \App\Models\Admin::withoutGlobalScopes()->withTrashed()->count();
-    } catch (\Exception $e) {
-        // Leave as disconnected
-    }
-
-    return response()->json([
-        'status'    => 'success',
-        'message'   => 'AutoVet Laravel API is up and running!',
-        'database'  => $dbStatus,
-        'timestamp' => now()->toIso8601String(),
-    ]);
-});
+    return response()->json(['status' => 'ok']);
+})->middleware('throttle:60,1');
 
 // Maintenance window — public so the portal can show its countdown during the
 // warning period, before anything is blocked, and on the maintenance page
@@ -80,22 +66,8 @@ Route::get('/status', function () {
 Route::get('/maintenance-status', [\App\Http\Controllers\MaintenanceController::class, 'status']);
 
 // Public system announcements (used by landing page — no auth required)
-Route::get('/public/system-announcements', function(\Illuminate\Http\Request $request) {
-    $query = \App\Models\SystemAnnouncement::where('is_active', true)
-        ->where(function($q) {
-            $q->whereNull('active_until')
-              ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
-        });
-
-    if ($request->filled('target')) {
-        $target = $request->input('target');
-        $query->where(function($q) use ($target) {
-            $q->where('target', $target)->orWhere('target', 'all');
-        });
-    }
-
-    return response()->json($query->orderBy('created_at', 'desc')->get());
-});
+Route::get('/public/system-announcements', [\App\Http\Controllers\SystemAnnouncementController::class, 'active'])
+    ->middleware('throttle:60,1');
 
 // ---------------------------------------------------------------------------
 // Authenticated routes — all require a valid Sanctum token
@@ -168,7 +140,9 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
         Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
         Route::get('/dashboard/analytics/services-by-category', [DashboardController::class, 'getServicesByCategory']);
     });
-    Route::post('/ai/clinical-support', [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions']);
+    // Each call is a paid request to the AI provider.
+    Route::post('/ai/clinical-support', [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions'])
+        ->middleware('throttle:10,1');
 
     // -----------------------------------------------------------------------
     // Core Modules
@@ -253,9 +227,13 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
         Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
         Route::get('/client-notifications',              [ClientNotificationController::class, 'index']);
-        Route::post('/client-notifications/send',        [ClientNotificationController::class, 'send']);
-        Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
-        Route::post('/owners/{ownerId}/warn',             [ClientNotificationController::class, 'sendWarning']);
+        // These send real email; a stuck button or a script should not be
+        // able to flood clients' inboxes.
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::post('/client-notifications/send',        [ClientNotificationController::class, 'send']);
+            Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
+            Route::post('/owners/{ownerId}/warn',             [ClientNotificationController::class, 'sendWarning']);
+        });
     });
 
     Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
@@ -307,22 +285,7 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // -----------------------------------------------------------------------
     // System Administration
     // -----------------------------------------------------------------------
-    Route::get('/system-announcements', function(\Illuminate\Http\Request $request) {
-        $query = \App\Models\SystemAnnouncement::where('is_active', true)
-            ->where(function($q) {
-                $q->whereNull('active_until')
-                  ->orWhere('active_until', '>=', \Carbon\Carbon::now('UTC'));
-            });
-
-        if ($request->filled('target')) {
-            $target = $request->input('target');
-            $query->where(function($q) use ($target) {
-                $q->where('target', $target)->orWhere('target', 'all');
-            });
-        }
-
-        return response()->json($query->orderBy('created_at', 'desc')->get());
-    });
+    Route::get('/system-announcements', [\App\Http\Controllers\SystemAnnouncementController::class, 'active']);
 
     Route::group(['middleware' => 'role:super_admin'], function () {
         Route::get('/super-admin/stats', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'stats']);

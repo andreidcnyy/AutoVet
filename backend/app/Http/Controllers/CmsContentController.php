@@ -33,7 +33,8 @@ class CmsContentController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->boolean('published_only')) {
+        // Clients only ever see published content; drafts are staff-only.
+        if ($request->boolean('published_only') || ($u = auth()->user()) && method_exists($u, 'isOwner') && $u->isOwner()) {
             $query->published();
         }
 
@@ -68,6 +69,10 @@ class CmsContentController extends Controller
      */
     public function show(CmsContent $cmsContent)
     {
+        if (!$cmsContent->is_published && ($u = auth()->user()) && method_exists($u, 'isOwner') && $u->isOwner()) {
+            abort(404);
+        }
+
         return response()->json($cmsContent);
     }
 

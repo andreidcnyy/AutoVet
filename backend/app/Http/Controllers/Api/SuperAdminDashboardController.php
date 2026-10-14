@@ -88,7 +88,9 @@ class SuperAdminDashboardController extends Controller
             'contact_number' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'address' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp,gif|max:8192',
+            // No SVG: it can carry script, and /media serves it from the API's
+            // own origin.
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:8192',
             'subscription_tier' => 'nullable|string|max:255',
             'subscription_expires_at' => 'nullable|date',
         ]);
@@ -122,7 +124,7 @@ class SuperAdminDashboardController extends Controller
             'contact_number' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'address' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp,gif|max:8192',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:8192',
             'subscription_tier' => 'nullable|string|max:255',
             'subscription_expires_at' => 'nullable|date',
         ]);
@@ -171,7 +173,8 @@ class SuperAdminDashboardController extends Controller
             ->where('clinic_id', $clinic->id)
             ->whereIn('role', [Roles::CLINIC_ADMIN->value, Roles::VETERINARIAN->value, Roles::STAFF->value])
             ->orderBy('name', 'asc')
-            ->paginate(5);
+            ->orderBy('id')
+            ->paginate(5, ['id', 'clinic_id', 'name', 'email', 'role', 'status', 'avatar', 'created_at']);
 
         return response()->json($admins);
     }
@@ -212,7 +215,8 @@ class SuperAdminDashboardController extends Controller
         $admins = Admin::withoutGlobalScopes()
             ->where('role', Roles::SUPER_ADMIN->value)
             ->orderBy('name', 'asc')
-            ->get();
+            ->orderBy('id')
+            ->get(['id', 'name', 'email', 'role', 'status', 'avatar', 'created_at']);
 
         return response()->json($admins);
     }
@@ -276,12 +280,32 @@ class SuperAdminDashboardController extends Controller
             return response()->json(['message' => 'No active clinic admin found for this clinic to impersonate.'], 404);
         }
 
-        $token = $admin->createToken('impersonation-token')->plainTextToken;
+        // Short-lived and on the record: an impersonation token acts with a
+        // clinic admin's full rights, so it expires after an hour and every
+        // use of the power is written to the audit log.
+        $token = $admin->createToken('impersonation-token', ['*'], now()->addHour())->plainTextToken;
+
+        try {
+            AuditLog::create([
+                'clinic_id'  => $clinic->id,
+                'user_id'    => auth()->id(),
+                'action'     => 'impersonated',
+                'model_type' => Admin::class,
+                'model_id'   => $admin->id,
+                'old_values' => null,
+                'new_values' => ['impersonated_admin' => $admin->email, 'expires_at' => now()->addHour()->toIso8601String()],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Impersonation audit failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Impersonation started',
             'token' => $token,
-            'admin' => $admin
+            'expires_at' => now()->addHour()->toIso8601String(),
+            'admin' => $admin->only(['id', 'clinic_id', 'name', 'email', 'role', 'status', 'avatar', 'must_change_password', 'ai_features_enabled']),
         ]);
     }
 

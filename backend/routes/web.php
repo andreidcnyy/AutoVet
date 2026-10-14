@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 
+// The API has no web pages. The stock Laravel welcome page advertised the
+// framework and linked to routes that do not exist here.
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json(['name' => 'AutoVet API']);
 });
 
 /*
@@ -35,8 +37,10 @@ Route::get('/media/{path}', function (string $path) {
     // longer matches how the bytes were keyed.
     $basename = basename(parse_url($path, PHP_URL_PATH) ?: $path);
     if ($basename !== '') {
+        // % and _ in the requested name are matched literally; as wildcards
+        // they let anyone list every stored image ("/media/%25").
         $file = \App\Models\StoredFile::where('path', $basename)
-            ->orWhere('path', 'like', '%/' . $basename)
+            ->orWhere('path', 'like', '%/' . addcslashes($basename, '%_\\'))
             ->first();
         if ($file) {
             return $serve($file);
