@@ -66,6 +66,63 @@ class DashboardController extends Controller
         }));
     }
 
+    /**
+     * Everything the dashboard shows, in one request.
+     *
+     * The dashboard used to make nine requests of its own, and two of its
+     * cards treated their requests as one: if any failed, the whole card went
+     * blank. Here each section is built on its own, so a failure costs only
+     * that section — it is left out of `data` and named in `errors`, and every
+     * other section is still returned. One request also spares the server
+     * nine near-simultaneous hits on every dashboard load and refresh.
+     *
+     * Sales figures are only included for roles that may read them (the same
+     * rule as /reports/sales/*); front-desk staff get the rest.
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $sub = function (array $query) use ($request) {
+            $r = Request::create($request->path(), 'GET', $query);
+            $r->setUserResolver(fn () => $request->user());
+            return $r;
+        };
+
+        $sections = [
+            'stats'                => fn () => $this->getStats(),
+            'notifications'        => fn () => $this->getNotifications($request),
+            'appointments_today'   => fn () => $this->appointmentsToday($sub(['per_page' => 100])),
+            'monthly_clients'      => fn () => $this->getMonthlyClients(),
+            'items_by_category'    => fn () => $this->getItemsByCategory(),
+            'services_by_category' => fn () => $this->getServicesByCategory(),
+        ];
+
+        if (in_array($user->role ?? null, \App\Enums\Roles::adminRoles(), true)) {
+            $sales = app(SalesReportController::class);
+            $sections['revenue_summary'] = fn () => $sales->getRevenueSummary($sub(['days' => 30]));
+            $sections['top_services']    = fn () => $sales->getTopServices($sub(['limit' => 5]));
+            $sections['recent_invoices'] = fn () => app(InvoiceController::class)->index($sub(['per_page' => 7, 'page' => 1]));
+        }
+
+        $data = [];
+        $errors = [];
+
+        foreach ($sections as $key => $build) {
+            try {
+                $response = $build();
+                $data[$key] = $response instanceof JsonResponse ? $response->getData(true) : $response;
+            } catch (\Throwable $e) {
+                Log::error("[dashboard-summary] {$key}: " . $e->getMessage(), ['exception' => get_class($e)]);
+                $errors[$key] = 'This section could not be loaded.';
+            }
+        }
+
+        return response()->json([
+            'data'   => (object) $data,
+            'errors' => (object) $errors,
+        ]);
+    }
+
     public function getOverview(Request $request)
     {
         $userId = $request->user()?->id;
@@ -75,9 +132,6 @@ class DashboardController extends Controller
         return response()->json(Cache::remember("dashboard_overview_staff_{$userId}_{$monthsToFetch}", 300, function () use ($request, $range, $monthsToFetch) {
             return [
                 'status' => [
-                    'message' => 'AutoVet Laravel API is up and running!',
-                    'database' => 'connected',
-                    'environment' => app()->environment(),
                     'timestamp' => now()->toIso8601String(),
                 ],
                 'stats' => $this->getStats()->original,

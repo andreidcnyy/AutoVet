@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import { FiUsers, FiPackage, FiRefreshCw, FiActivity } from "react-icons/fi";
 import clsx from "clsx";
-import { useApi, useQueryClient } from "../../hooks/useApi";
+import { useQueryClient } from "../../hooks/useApi";
 import echo from "../../utils/echo";
 import { adminChannel } from "../../utils/echo";
 
@@ -111,37 +111,20 @@ function SectionHeader({ icon: Icon, title, color }) {
 
 const asArray = (v) => (Array.isArray(v) ? v : []);
 
-export default function AnalyticsChartsCard() {
+export default function AnalyticsChartsCard({ summary, errors, loading }) {
   const queryClient = useQueryClient();
 
-  /**
-   * The three dashboard series, each cached under its own key.
-   *
-   * This was two effects that both listed the same three endpoints — one for
-   * the initial load, one for refreshing — plus a 15-second interval that
-   * re-fetched all three whether or not anything had changed. On the landing
-   * page that meant a steady four requests a minute per series against a
-   * backend that answers in 1-3s, and returning to the dashboard always
-   * started from an empty state because nothing was cached.
-   */
-  const clientsQuery = useApi(["dashboard", "monthly-clients"], "/dashboard/analytics/monthly-clients");
-  const categoriesQuery = useApi(["dashboard", "items-by-category"], "/dashboard/analytics/items-by-category");
-  const serviceCategoriesQuery = useApi(["dashboard", "services-by-category"], "/dashboard/analytics/services-by-category");
-
-  const clients = asArray(clientsQuery.data);
-  const categories = asArray(categoriesQuery.data);
-  const serviceCategories = asArray(serviceCategoriesQuery.data);
-
-  // Only the first load shows the spinner; refreshes keep the charts on screen.
-  const loading = clientsQuery.isLoading || categoriesQuery.isLoading || serviceCategoriesQuery.isLoading;
-  const error = clientsQuery.error || categoriesQuery.error || serviceCategoriesQuery.error;
+  // The three series arrive in the dashboard's single summary request (see
+  // DashboardPage). Each chart reads its own section and its own error, so
+  // one failed series no longer blanks the other two.
+  const clients = asArray(summary?.monthly_clients);
+  const categories = asArray(summary?.items_by_category);
+  const serviceCategories = asArray(summary?.services_by_category);
+  const failed = (key) => Boolean(errors?.all || errors?.[key]);
 
   useEffect(() => {
     const refreshAll = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    const refreshCategories = () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "items-by-category"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "services-by-category"] });
-    };
+    const refreshCategories = refreshAll;
 
     // The websocket already pushes the events that actually change these
     // numbers, so the poll is a slow backstop rather than the primary path.
@@ -175,14 +158,6 @@ export default function AnalyticsChartsCard() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="card-shell col-span-full flex items-center justify-center py-12 text-zinc-400">
-        <p className="text-sm font-semibold">Analytics unavailable</p>
-      </div>
-    );
-  }
-
   const noClientData = clients.length === 0 || clients.every((d) => d.total === 0);
   const noCategoryData = categories.length === 0;
   const noSvcCategoryData = serviceCategories.length === 0;
@@ -197,7 +172,11 @@ export default function AnalyticsChartsCard() {
           title="Monthly New Clients"
           color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
         />
-        {noClientData ? (
+        {failed("monthly_clients") ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
+            Client data unavailable right now
+          </div>
+        ) : noClientData ? (
           <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
             No client data available
           </div>
@@ -246,7 +225,11 @@ export default function AnalyticsChartsCard() {
           title="Products Sold per Category"
           color="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
         />
-        {noCategoryData ? (
+        {failed("items_by_category") ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
+            Product data unavailable right now
+          </div>
+        ) : noCategoryData ? (
           <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
             No product data available
           </div>
@@ -262,7 +245,11 @@ export default function AnalyticsChartsCard() {
           title="Services Rendered per Category"
           color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
         />
-        {noSvcCategoryData ? (
+        {failed("services_by_category") ? (
+          <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
+            Service data unavailable right now
+          </div>
+        ) : noSvcCategoryData ? (
           <div className="flex h-48 items-center justify-center text-sm text-zinc-400">
             No service data available
           </div>

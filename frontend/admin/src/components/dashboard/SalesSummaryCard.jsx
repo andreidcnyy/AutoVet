@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/fi";
 import clsx from "clsx";
 import echo from "../../utils/echo";
-import { useApi, useQueryClient } from "../../hooks/useApi";
+import { useQueryClient } from "../../hooks/useApi";
 import { adminChannel } from "../../utils/echo";
 
 const peso = (n) =>
@@ -21,7 +21,7 @@ const formatDate = (dateStr) => {
 };
 
 
-export default function SalesSummaryCard() {
+export default function SalesSummaryCard({ summary, errors, loading }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -33,20 +33,16 @@ export default function SalesSummaryCard() {
    * always started blank, and a burst of invoice updates meant a burst of
    * triple fetches.
    */
-  const revenueQuery = useApi(["sales", "revenue-summary", 30], "/api/reports/sales/revenue-summary?days=30");
-  const topItemsQuery = useApi(["sales", "top-services", 5], "/api/reports/sales/top-services?limit=5");
-  const recentQuery = useApi(["invoices", "recent"], "/api/invoices?per_page=7&page=1&search=");
-
-  const revenue = Array.isArray(revenueQuery.data) ? revenueQuery.data : [];
-  const topItems = Array.isArray(topItemsQuery.data) ? topItemsQuery.data : [];
-  const recent = Array.isArray(recentQuery.data?.data) ? recentQuery.data.data : [];
-
-  // Spinner only on the first load; later refreshes leave the figures up.
-  const loading = revenueQuery.isLoading || topItemsQuery.isLoading || recentQuery.isLoading;
+  // The three reads arrive in the dashboard's single summary request (see
+  // DashboardPage); each part checks its own error so one failure does not
+  // blank the card.
+  const revenue = Array.isArray(summary?.revenue_summary) ? summary.revenue_summary : [];
+  const topItems = Array.isArray(summary?.top_services) ? summary.top_services : [];
+  const recent = Array.isArray(summary?.recent_invoices?.data) ? summary.recent_invoices.data : [];
+  const failed = (key) => Boolean(errors?.all || errors?.[key]);
 
   const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["sales"] });
-    queryClient.invalidateQueries({ queryKey: ["invoices", "recent"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }, [queryClient]);
 
   useEffect(() => {
@@ -140,9 +136,11 @@ export default function SalesSummaryCard() {
               "text-2xl font-black tabular-nums",
               highlight ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-50"
             )}>
-              {peso(value)}
+              {failed("revenue_summary") ? "—" : peso(value)}
             </p>
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">{note}</p>
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">
+              {failed("revenue_summary") ? "unavailable right now" : note}
+            </p>
           </div>
         ))}
       </div>
@@ -158,7 +156,9 @@ export default function SalesSummaryCard() {
           </p>
         </div>
 
-        {topItems.length === 0 ? (
+        {failed("top_services") ? (
+          <p className="text-sm text-zinc-400 italic py-4 text-center">Revenue sources unavailable right now.</p>
+        ) : topItems.length === 0 ? (
           <p className="text-sm text-zinc-400 italic py-4 text-center">No sales data yet.</p>
         ) : (
           <div className="space-y-3">
@@ -206,7 +206,9 @@ export default function SalesSummaryCard() {
           </p>
         </div>
 
-        {recent.length === 0 ? (
+        {failed("recent_invoices") ? (
+          <p className="text-sm text-zinc-400 italic py-4 text-center">Recent transactions unavailable right now.</p>
+        ) : recent.length === 0 ? (
           <p className="text-sm text-zinc-400 italic py-4 text-center">No transactions yet.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-dark-border">

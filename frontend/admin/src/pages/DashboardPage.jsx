@@ -207,9 +207,30 @@ function DashboardPage() {
     refetchIntervalInBackground: false,
   };
 
-  const { data: stats, refetch: refetchStats } = useApi(['dashboard-stats'], '/api/dashboard/stats', { ...liveOptions, cacheKey: 'dashboard_stats_cache' });
-  const { data: notifications, isLoading: loadingNotifications, refetch: refetchNotifications } = useApi(['dashboard-notifications'], '/api/dashboard/notifications', { ...liveOptions, staleTime: 60 * 1000, cacheKey: 'dashboard_notifications_cache' });
-  const { data: todayAppts, isLoading: loadingAppts, refetch: refetchAppts } = useApi(['dashboard-appts-today'], '/api/dashboard/appointments/today?per_page=100', liveOptions);
+  /**
+   * Every dashboard figure in one request (/api/dashboard/summary).
+   *
+   * This page and its cards used to make nine requests between them, and a
+   * card treated its own requests as all-or-nothing: one failure blanked the
+   * whole card. The server now builds each section separately and reports a
+   * failed one in `errors`, so every card renders what it has and shows
+   * "unavailable" only for the part that failed.
+   */
+  const summaryQuery = useApi(['dashboard', 'summary'], '/api/dashboard/summary', { ...liveOptions, cacheKey: 'dashboard_summary_cache' });
+  const summary = summaryQuery.data?.data || {};
+  // A failed request (offline, server down) marks every section as failed.
+  const sectionErrors = summaryQuery.error && !summaryQuery.data
+    ? { all: summaryQuery.error.message || 'Could not reach the server.' }
+    : (summaryQuery.data?.errors || {});
+  const stats = summary.stats;
+  const notifications = summary.notifications;
+  const todayAppts = summary.appointments_today;
+  const loadingNotifications = summaryQuery.isLoading;
+  const loadingAppts = summaryQuery.isLoading;
+  const refetchSummary = summaryQuery.refetch;
+  const refetchStats = refetchSummary;
+  const refetchNotifications = refetchSummary;
+  const refetchAppts = refetchSummary;
 
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
@@ -259,6 +280,7 @@ function DashboardPage() {
       await api.post('/api/dashboard/notifications/mark-all-read', {});
       
       // Force clear persistent caches
+      localStorage.removeItem('dashboard_summary_cache');
       localStorage.removeItem('dashboard_stats_cache');
       localStorage.removeItem('dashboard_notifications_cache');
       api.invalidateCache();
@@ -278,6 +300,7 @@ function DashboardPage() {
       await api.post('/api/dashboard/notifications/clear-all', {});
       
       // Force clear persistent caches
+      localStorage.removeItem('dashboard_summary_cache');
       localStorage.removeItem('dashboard_stats_cache');
       localStorage.removeItem('dashboard_notifications_cache');
       api.invalidateCache();
@@ -346,12 +369,27 @@ function DashboardPage() {
         {mappedMetrics.map((card) => (
           <MetricCard key={card.id || card.title} card={card} />
         ))}
+        {(sectionErrors.all || sectionErrors.stats) && mappedMetrics.length === 0 && (
+          <div className="card-shell col-span-full py-6 text-center text-sm font-semibold text-zinc-400">
+            Quick metrics are unavailable right now. The rest of the dashboard is still current.
+          </div>
+        )}
       </section>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-          <AnalyticsChartsCard />
-          {!isStaff && <SalesSummaryCard />}
+          <AnalyticsChartsCard
+            summary={summary}
+            errors={sectionErrors}
+            loading={summaryQuery.isLoading}
+          />
+          {!isStaff && (
+            <SalesSummaryCard
+              summary={summary}
+              errors={sectionErrors}
+              loading={summaryQuery.isLoading}
+            />
+          )}
         </div>
         <div className="lg:col-span-5 xl:col-span-4 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">

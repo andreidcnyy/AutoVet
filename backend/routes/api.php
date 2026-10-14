@@ -125,6 +125,8 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // Read-only dashboard & metrics — includes front-desk staff, who are shown
     // the Dashboard and Analytics nav items and need these to render.
     Route::middleware('role:' . implode(',', Roles::dashboardRoles()))->group(function () {
+        // Everything the dashboard shows, one request, each section isolated.
+        Route::get('/dashboard/summary',               [DashboardController::class, 'summary']);
         Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
         Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
         Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
