@@ -427,7 +427,10 @@ function PatientsPage() {
           pagination={pagination}
           isLoading={isLoading}
           onPageChange={(page) => fetchOwners(page, searchQuery)}
-          onSearch={(q) => { setSearchQuery(q); setPage(1, { replace: true }); }}
+          // The view reports its (empty) search once on mount; only a real
+          // change of search text should send the list back to page 1,
+          // otherwise a refresh on ?page=3 jumped back to page 1.
+          onSearch={(q) => { if ((q ?? "") === searchQuery) return; setSearchQuery(q); setPage(1, { replace: true }); }}
           onFilter={(f) => { setFilterValue(f); setPage(1, { replace: true }); }}
           selectedOwnerId={selectedOwnerId}
           onSelectOwner={setSelectedOwnerId}
