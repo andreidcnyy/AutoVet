@@ -49,6 +49,7 @@ class SuperAdminDashboardController extends Controller
     {
         $clinic->status = $clinic->status === 'active' ? 'inactive' : 'active';
         $clinic->save();
+        \App\Support\AccountStatus::forgetClinic($clinic->id);
 
         return response()->json([
             'message' => "Clinic status updated to {$clinic->status}",

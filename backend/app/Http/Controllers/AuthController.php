@@ -14,37 +14,19 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Mail\PasswordResetMail;
+use App\Support\AccountStatus;
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
         try {
-            // Pre-flight: purge orphan / unverified PortalUser rows that would block a
-            // legitimate re-registration. An orphan is a portal_users row that either
-            // (a) has no linked Owner, or (b) was never email-verified. These rows can
-            // exist from earlier registration flows or abandoned verification attempts,
-            // and would otherwise make the unique-email check falsely reject a brand-new user.
-            $normalizedEmail = strtolower(trim((string) $request->input('email')));
-            if ($normalizedEmail !== '') {
-                $existing = PortalUser::where('email', $normalizedEmail)->first();
-                if ($existing) {
-                    $hasLinkedOwner = Owner::where('user_id', $existing->id)->exists();
-                    $neverVerified = is_null($existing->email_verified_at);
-
-                    if (!$hasLinkedOwner || $neverVerified) {
-                        \Log::info('Register: cleaning stale PortalUser before re-registration', [
-                            'email' => $normalizedEmail,
-                            'existing_id' => $existing->id,
-                            'has_linked_owner' => $hasLinkedOwner,
-                            'never_verified' => $neverVerified,
-                        ]);
-                        Owner::where('user_id', $existing->id)->forceDelete();
-                        $existing->forceDelete();
-                    }
-                }
-            }
-
+            // An unverified portal_users row (left by an older registration flow)
+            // must not block signing up again with the same address. It is no
+            // longer deleted here: this endpoint is unauthenticated, so deleting
+            // on request let anyone destroy someone else's account by email.
+            // The stale row is reclaimed in verifyRegistration() instead, once
+            // the caller has proven they own the mailbox.
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => [
@@ -52,7 +34,7 @@ class AuthController extends Controller
                     'string',
                     'email:rfc,dns',
                     'max:255',
-                    \Illuminate\Validation\Rule::unique('portal_users')->whereNull('deleted_at'),
+                    \Illuminate\Validation\Rule::unique('portal_users')->whereNull('deleted_at')->whereNotNull('email_verified_at'),
                     \Illuminate\Validation\Rule::unique('admins')->whereNull('deleted_at'),
                 ],
                 'phone' => 'required|string|size:11',
@@ -84,9 +66,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'Verification email sent. Please check your inbox.']);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Registration Validation Error', [
-                'errors' => $e->errors(),
-                'input' => $request->all()
+            // Field names only — the input holds the plaintext password.
+            \Log::info('Registration validation failed', [
+                'fields' => array_keys($e->errors()),
             ]);
             return response()->json([
                 'message' => 'The given data was invalid.',
@@ -101,7 +83,7 @@ class AuthController extends Controller
     public function verifyRegistration(Request $request)
     {
         if (! $request->hasValidSignature()) {
-            return response()->json(['error' => 'Invalid or expired verification link.'], 401);
+            return response()->json(['error' => 'Invalid or expired verification link.'], 403);
         }
 
         $pending = Cache::get('pending_reg_' . $request->query('token'));
@@ -118,14 +100,29 @@ class AuthController extends Controller
                 // an earlier register attempt), just make sure it's marked verified, ensure
                 // the Owner companion row exists, and send them to login.
                 $user = PortalUser::where('email', $email)->first();
+                $clinicId = config('app.default_clinic_id');
 
                 if ($user) {
+                    // A row that was never verified is left over from an
+                    // abandoned signup. Whoever clicked this link has just
+                    // proven they own the mailbox, so the details they
+                    // registered with replace the stale ones.
                     if (is_null($user->email_verified_at)) {
-                        $user->forceFill(['email_verified_at' => now()])->save();
+                        $user->forceFill([
+                            'name'              => $pending['name'],
+                            'phone'             => $pending['phone'],
+                            'password'          => $pending['password'],
+                            'address'           => $pending['address'],
+                            'city'              => $pending['city'],
+                            'province'          => $pending['province'],
+                            'zip'               => $pending['zip'],
+                            'email_verified_at' => now(),
+                        ])->save();
+                        $user->tokens()->delete();
                     }
                 } else {
                     $user = PortalUser::create([
-                        'clinic_id' => 1,
+                        'clinic_id'         => $clinicId,
                         'name'              => $pending['name'],
                         'email'             => $email,
                         'phone'             => $pending['phone'],
@@ -144,11 +141,11 @@ class AuthController extends Controller
                 // Find the canonical owner for this user: first by user_id, then by email.
                 // Must scope email fallback by clinic_id — ClinicScope is not active here (unauthenticated).
                 $owner = Owner::where('user_id', $user->id)->first()
-                    ?? Owner::where('email', $email)->where('clinic_id', 1)->first();
+                    ?? Owner::where('email', $email)->where('clinic_id', $clinicId)->first();
 
                 if (!$owner) {
                     Owner::create([
-                        'clinic_id' => 1,
+                        'clinic_id' => $clinicId,
                         'name'     => $pending['name'],
                         'email'    => $email,
                         'phone'    => $pending['phone'],
@@ -167,7 +164,7 @@ class AuthController extends Controller
 
                 \Log::info('User verified (idempotent)', ['user_id' => $user->id, 'email' => $email]);
 
-                return redirect(env('FRONTEND_PORTAL_URL', 'http://localhost:5174') . '/login?verified=true');
+                return redirect(config('app.portal_url') . '/login?verified=true');
             });
         } catch (\Exception $e) {
             \Log::error('Verification Error: ' . $e->getMessage(), [
@@ -187,49 +184,47 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        \Log::info('Login attempt', ['email' => $request->email]);
-
-        // Try Admin first - use withoutGlobalScopes to bypass ClinicScope 
-        // and withTrashed() to ensure we find the user even if soft-deleted
+        // Admins first, then portal users. Scopes are bypassed (no user is
+        // authenticated yet) and soft-deleted rows are included so a deleted
+        // account gets the right answer instead of looking unregistered.
         $user = Admin::withoutGlobalScopes()->withTrashed()->where('email', $request->email)->first();
         $is_admin = true;
 
         if (!$user) {
-            // Try PortalUser
             $user = PortalUser::withoutGlobalScopes()->withTrashed()->where('email', $request->email)->first();
             $is_admin = false;
         }
 
-        if (!$user) {
-            \Log::warning('Login failed: User not found in database', ['email' => $request->email]);
-            return response()->json(['error' => 'Invalid credentials'], 401);
+        // Nothing about the account is revealed until the password matches.
+        // Every branch below used to run first and answer differently
+        // (deactivated, unverified, Google-only, pending deletion), which told
+        // anyone with a list of emails who was registered and in what state —
+        // and the pending-deletion branch handed out a token with no password.
+        // A Google-only account has no password and can never match here; the
+        // message points those users at the Google button instead.
+        if (!$user || empty($user->password) || !Hash::check($request->password, $user->password)) {
+            \Log::warning('Login failed', ['reason' => $user ? 'password' : 'unknown_email']);
+            return response()->json([
+                'error' => 'Invalid credentials. If you signed up with Google, use "Continue with Google".',
+            ], 401);
         }
 
         // Block admin/staff/vet accounts from logging into the web portal
         if ($is_admin && $request->input('source') === 'portal') {
-            \Log::warning('Portal login blocked for admin account', ['email' => $request->email]);
             return response()->json(['error' => 'This login is for pet owners only. Please use the admin panel.'], 403);
         }
 
-        // Migrate old soft-deleted portal users into the new grace period flow
-        if ($user instanceof PortalUser && $user->deleted_at && !$user->deletion_requested_at) {
-            $user->restore();
-            $user->forceFill(['deletion_requested_at' => $user->deleted_at])->save();
-        }
-
-        // Check if user is soft-deleted (admin-deactivated, not self-deletion)
+        // A soft-deleted row without a deletion request was archived by the
+        // clinic. It used to be silently restored into the self-deletion grace
+        // flow here, which let an archived client sign straight back in.
         if ($user->deleted_at && !($user instanceof PortalUser && $user->deletion_requested_at)) {
-            \Log::warning('Login failed: User account is deactivated/deleted', ['email' => $request->email]);
+            \Log::warning('Login blocked: account archived', ['user_id' => $user->id]);
             return response()->json(['error' => 'This account has been deactivated.'], 403);
         }
 
-        // Block suspended or deactivated portal users
-        if ($user instanceof PortalUser && in_array($user->status, ['suspended', 'deactivated'])) {
-            $msg = $user->status === 'suspended'
-                ? 'Your account has been temporarily suspended. Please contact the clinic.'
-                : 'Your account has been deactivated. Please contact the clinic.';
-            \Log::warning("Login blocked: portal user status={$user->status}", ['email' => $request->email]);
-            return response()->json(['error' => $msg], 403);
+        if ($block = AccountStatus::blockReason($user)) {
+            \Log::warning('Login blocked', ['user_id' => $user->id, 'code' => $block['code']]);
+            return response()->json(['error' => $block['message'], 'code' => $block['code']], 403);
         }
 
         // Portal user self-deletion: 30-day grace period
@@ -243,46 +238,18 @@ class AuthController extends Controller
                 return response()->json(['error' => 'This account has been permanently deleted.'], 403);
             }
 
-            // Issue a token so they can recover from the portal
-            $token = $user->createToken('recovery')->plainTextToken;
-            return response()->json([
-                'account_pending_deletion' => true,
-                'days_remaining'           => $daysRemaining,
-                'deletion_requested_at'    => $user->deletion_requested_at,
-                'token'                    => $token,
-                'id'                       => $user->id,
-                'name'                     => $user->name,
-                'email'                    => $user->email,
-            ]);
+            return response()->json(self::recoveryResponse($user, $daysRemaining));
         }
 
         if (!$is_admin && !$user->hasVerifiedEmail()) {
-            \Log::info('Login attempt: Email not verified', ['email' => $request->email]);
             // Backfill: earlier versions of verifyRegistration() silently dropped
             // email_verified_at on create (field wasn't in $fillable). If this user
             // has a linked Owner, they completed verification — mark them verified now.
-            $hasLinkedOwner = Owner::where('user_id', $user->id)->exists();
-            if ($hasLinkedOwner && Hash::check($request->password, $user->password)) {
+            if (Owner::where('user_id', $user->id)->exists()) {
                 $user->forceFill(['email_verified_at' => now()])->save();
             } else {
                 return response()->json(['error' => 'Please verify your email before logging in.'], 403);
             }
-        }
-
-        // Google sign-up accounts have no password set — guide them instead of a
-        // confusing "Invalid credentials".
-        if (!$is_admin && empty($user->password)) {
-            \Log::info('Login attempt on passwordless (Google) account', ['email' => $request->email]);
-            return response()->json([
-                'error' => 'This account was created with Google. Continue with Google, or open Profile → Security to set a password for email login.',
-            ], 403);
-        }
-
-        if (!Hash::check($request->password, $user->password)) {
-            \Log::warning('Login failed: Password mismatch', ['email' => $request->email]);
-            return response()->json([
-                'error' => 'Invalid credentials',
-            ], 401);
         }
 
         $currentUserAgent = $request->userAgent();
@@ -349,6 +316,12 @@ class AuthController extends Controller
             'must_change_password' => false,
         ]);
 
+        // Sign out every other device: a password change is usually a
+        // response to a suspected leak, so sessions opened with the old one
+        // must not survive it. The current session stays signed in.
+        $currentId = $user->currentAccessToken()?->id;
+        $user->tokens()->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))->delete();
+
         return response()->json([
             'message' => $hasPassword
                 ? 'Password changed successfully'
@@ -384,12 +357,14 @@ class AuthController extends Controller
         );
 
         // Send email
-        $portalUrl = env('FRONTEND_PORTAL_URL', 'http://localhost:5174');
-        $resetUrl = "{$portalUrl}/reset-password?token={$token}&email={$request->email}";
+        $resetUrl = config('app.portal_url') . '/reset-password?' . http_build_query([
+            'token' => $token,
+            'email' => $request->email,
+        ]);
 
         try {
             Mail::mailer('forgot_password')->to($request->email)->send(new PasswordResetMail($resetUrl));
-            \Log::info("Password reset email sent to {$request->email}");
+            \Log::info('Password reset email sent', ['user_id' => $user->id]);
         } catch (\Exception $e) {
             \Log::error("Failed to send password reset email: " . $e->getMessage());
         }
@@ -424,6 +399,8 @@ class AuthController extends Controller
         }
 
         $user->update(['password' => Hash::make($request->password)]);
+        // Whoever held the old password may still hold a session made with it.
+        $user->tokens()->delete();
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
         return response()->json(['message' => 'Password reset successfully.']);
@@ -480,22 +457,26 @@ class AuthController extends Controller
         return "{$browser} on {$os}";
     }
 
-    public function checkPortalStatus(Request $request)
+    /**
+     * Response for a portal account inside its 30-day self-deletion window.
+     *
+     * The token carries only the `recover` ability. EnsureAccountActive turns
+     * it away from everything except recovering or signing out, so holding it
+     * does not open the account; recoverAccount() swaps it for a full token.
+     */
+    public static function recoveryResponse(PortalUser $user, int $daysRemaining): array
     {
-        $email = $request->query('email');
-        if (!$email) return response()->json(['status' => 'unknown']);
+        $token = $user->createToken('recovery', ['recover'], now()->addDay())->plainTextToken;
 
-        $user = PortalUser::where('email', $email)->first();
-        if (!$user) return response()->json(['status' => 'not_found']);
-
-        $messages = [
-            'suspended'   => 'Your account has been temporarily suspended. Please contact the clinic.',
-            'deactivated' => 'Your account has been deactivated. Please contact the clinic to restore access.',
+        return [
+            'account_pending_deletion' => true,
+            'days_remaining'           => $daysRemaining,
+            'deletion_requested_at'    => $user->deletion_requested_at,
+            'token'                    => $token,
+            'id'                       => $user->id,
+            'name'                     => $user->name,
+            'email'                    => $user->email,
+            'role'                     => Roles::OWNER->value,
         ];
-
-        return response()->json([
-            'status'  => $user->status ?? 'active',
-            'message' => $messages[$user->status] ?? null,
-        ]);
     }
 }

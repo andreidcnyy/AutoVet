@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Owner;
 use App\Models\PortalUser;
 use App\Models\Clinic;
+use App\Enums\Roles;
+use App\Support\AccountStatus;
 
 class GoogleAuthController extends Controller
 {
@@ -15,41 +18,34 @@ class GoogleAuthController extends Controller
     {
         $request->validate(['access_token' => 'required|string']);
 
-        $response = Http::get('https://www.googleapis.com/oauth2/v3/userinfo', [
-            'access_token' => $request->access_token,
-        ]);
-
-        if (!$response->ok()) {
-            return response()->json(['error' => 'Invalid Google token.'], 401);
-        }
-
-        $googleUser = $response->json();
-
-        if (empty($googleUser['sub']) || empty($googleUser['email'])) {
+        $googleUser = $this->verifiedGoogleUser($request->access_token);
+        if (!$googleUser) {
             return response()->json(['error' => 'Invalid Google token.'], 401);
         }
 
         $user = PortalUser::withoutGlobalScopes()
+            ->withTrashed()
             ->where(function ($q) use ($googleUser) {
                 $q->where('google_id', $googleUser['sub'])
                   ->orWhere('email', $googleUser['email']);
             })
             ->first();
 
-        // Existing user — check pending deletion first
         if ($user) {
-            // Support both new flow (deletion_requested_at) and old flow (deleted_at only)
-            $deletionDate = $user->deletion_requested_at ?? ($user->deleted_at ?: null);
+            // Archived by the clinic (soft-deleted without a deletion request).
+            // The password login refuses these, so Google must too.
+            if ($user->deleted_at && !$user->deletion_requested_at) {
+                return response()->json(['error' => 'This account has been deactivated.'], 403);
+            }
 
-            if ($deletionDate) {
-                // Migrate old soft-deleted accounts into the new grace period flow
-                if ($user->deleted_at && !$user->deletion_requested_at) {
-                    $user->restore();
-                    $user->forceFill(['deletion_requested_at' => $user->deleted_at])->save();
-                    $deletionDate = $user->deletion_requested_at;
-                }
+            // Suspension, deactivation and an inactive clinic used to be
+            // checked by the password login only, so Google was a way round.
+            if ($block = AccountStatus::blockReason($user)) {
+                return response()->json(['error' => $block['message'], 'code' => $block['code']], 403);
+            }
 
-                $deadline      = $deletionDate->copy()->addDays(30);
+            if ($user->deletion_requested_at) {
+                $deadline      = $user->deletion_requested_at->copy()->addDays(30);
                 $daysRemaining = max(0, (int) ceil(now()->diffInDays($deadline)));
 
                 if ($daysRemaining <= 0) {
@@ -57,16 +53,7 @@ class GoogleAuthController extends Controller
                     return response()->json(['error' => 'This account has been permanently deleted.'], 403);
                 }
 
-                $token = $user->createToken('recovery')->plainTextToken;
-                return response()->json([
-                    'account_pending_deletion' => true,
-                    'days_remaining'           => $daysRemaining,
-                    'deletion_requested_at'    => $deletionDate,
-                    'token'                    => $token,
-                    'id'                       => $user->id,
-                    'name'                     => $user->name,
-                    'email'                    => $user->email,
-                ]);
+                return response()->json(AuthController::recoveryResponse($user, $daysRemaining));
             }
 
             if (!$user->google_id) {
@@ -75,7 +62,7 @@ class GoogleAuthController extends Controller
             $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
             $profileComplete = !empty($user->phone) && !empty($user->address)
                             && !empty($user->province) && !empty($user->city);
-            return response()->json(array_merge($user->makeHidden(['password', 'remember_token'])->toArray(), [
+            return response()->json(array_merge($this->userPayload($user), [
                 'token'            => $token,
                 'profile_complete' => $profileComplete,
             ]));
@@ -93,13 +80,14 @@ class GoogleAuthController extends Controller
 
         // New user with profile data — create account
         $request->validate([
-            'phone'    => 'required|string',
-            'address'  => 'required|string',
-            'province' => 'required|string',
-            'city'     => 'required|string',
+            'phone'    => 'required|string|max:20',
+            'address'  => 'required|string|max:500',
+            'province' => 'required|string|max:255',
+            'city'     => 'required|string|max:255',
+            'zip'      => 'nullable|string|max:10',
         ]);
 
-        $clinic = Clinic::first();
+        $clinic = Clinic::find(config('app.default_clinic_id')) ?? Clinic::first();
         if (!$clinic) {
             return response()->json(['error' => 'No clinic configured.'], 500);
         }
@@ -146,9 +134,73 @@ class GoogleAuthController extends Controller
 
         $token = $user->createToken('portal-google', ['*'], now()->addDays(30))->plainTextToken;
 
-        return response()->json(array_merge($user->makeHidden(['password', 'remember_token'])->toArray(), [
+        return response()->json(array_merge($this->userPayload($user), [
             'token'            => $token,
             'profile_complete' => true,
         ]));
+    }
+
+    /**
+     * Resolves a Google access token to its profile, or null if it cannot be
+     * trusted.
+     *
+     * The userinfo endpoint alone accepts a token issued to any Google OAuth
+     * client, so a token another app obtained from a victim signed in as the
+     * victim here. tokeninfo reports which client the token was issued to; it
+     * must be ours, and Google must have verified the address.
+     */
+    private function verifiedGoogleUser(string $accessToken): ?array
+    {
+        $clientId = config('services.google.client_id');
+        if (!$clientId) {
+            Log::error('[google-auth] GOOGLE_CLIENT_ID is not configured; refusing Google sign-in.');
+            return null;
+        }
+
+        $info = Http::get('https://oauth2.googleapis.com/tokeninfo', ['access_token' => $accessToken]);
+        if (!$info->ok()) {
+            return null;
+        }
+
+        $audience = $info->json('aud') ?? $info->json('azp');
+        if ($audience !== $clientId) {
+            Log::warning('[google-auth] Token issued to a different client was rejected.');
+            return null;
+        }
+
+        $profile = Http::withToken($accessToken)->get('https://www.googleapis.com/oauth2/v3/userinfo');
+        if (!$profile->ok()) {
+            return null;
+        }
+
+        $googleUser = $profile->json();
+        $verified = filter_var($googleUser['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (empty($googleUser['sub']) || empty($googleUser['email']) || !$verified
+            || (string) $googleUser['sub'] !== (string) $info->json('sub')) {
+            return null;
+        }
+
+        $googleUser['email'] = strtolower(trim($googleUser['email']));
+        return $googleUser;
+    }
+
+    /** The same account fields the password login returns, plus contact details. */
+    private function userPayload(PortalUser $user): array
+    {
+        return [
+            'id'        => $user->id,
+            'clinic_id' => $user->clinic_id,
+            'name'      => $user->name,
+            'email'     => $user->email,
+            'role'      => Roles::OWNER->value,
+            'avatar'    => $user->avatar,
+            'status'    => $user->status,
+            'phone'     => $user->phone,
+            'address'   => $user->address,
+            'city'      => $user->city,
+            'province'  => $user->province,
+            'zip'       => $user->zip,
+        ];
     }
 }

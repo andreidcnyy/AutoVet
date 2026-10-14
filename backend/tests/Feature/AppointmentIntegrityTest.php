@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
+use App\Models\Admin;
 use App\Models\Owner;
 use App\Models\Species;
 use App\Models\Pet;
@@ -17,16 +17,16 @@ class AppointmentIntegrityTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected User $adminUser;
-    protected User $vetUser;
+    protected Admin $adminUser;
+    protected Admin $vetUser;
     protected $appointmentDate; // Store date for consistent testing
     protected $appointmentDayOfWeek; // Store day of week for consistent testing
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->adminUser = User::factory()->create(['role' => Roles::ADMIN->value]);
-        $this->vetUser = User::factory()->create(['role' => Roles::VETERINARIAN->value]);
+        $this->adminUser = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create();
+        $this->vetUser = Admin::factory()->role(Roles::VETERINARIAN->value)->create();
 
         // Define a fixed date for tests to ensure VetSchedule matching.
         // Using 2026-04-17, which is a Friday.

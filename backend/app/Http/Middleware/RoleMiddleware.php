@@ -29,9 +29,10 @@ class RoleMiddleware
         }
 
         if (!$userRole) {
+            // Identify the account only: the attribute dump this replaced
+            // wrote the password hash into the log.
             \Illuminate\Support\Facades\Log::warning("RoleMiddleware: Role not defined for user " . $user->id, [
                 'class' => get_class($user),
-                'attributes' => $user->getAttributes()
             ]);
             return response()->json(['message' => 'Unauthorized. Role not defined.'], 403);
         }

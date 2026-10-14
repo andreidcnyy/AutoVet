@@ -35,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth'        => \App\Http\Middleware\Authenticate::class,
             'role'        => \App\Http\Middleware\RoleMiddleware::class,
             'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+            'active'      => \App\Http\Middleware\EnsureAccountActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

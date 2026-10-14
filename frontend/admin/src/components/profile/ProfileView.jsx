@@ -21,6 +21,10 @@ function ProfileView({ user, setUser }) {
     const fileInputRef = useRef(null);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
+    // The server asks for the current password before the sign-in email can
+    // change, so the field appears only once the address has been edited.
+    const [originalEmail, setOriginalEmail] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
 
     const {
         register,
@@ -42,6 +46,8 @@ function ProfileView({ user, setUser }) {
     const avatarValue = watch("avatar");
     const nameValue = watch("name");
     const roleValue = watch("role");
+    const emailValue = watch("email");
+    const emailChanged = originalEmail !== "" && (emailValue || "").trim().toLowerCase() !== originalEmail.toLowerCase();
 
     // The server only accepts a role change from an administrator, so anyone
     // else gets a read-only field rather than a control that silently does
@@ -70,6 +76,7 @@ function ProfileView({ user, setUser }) {
                         email: data.email || "",
                         avatar: data.avatar || ""
                     });
+                    setOriginalEmail(data.email || "");
                 } else if (data.error) {
                     setFetchError(data.error);
                 }
@@ -104,13 +111,15 @@ function ProfileView({ user, setUser }) {
                 "Accept": "application/json",
                 "Authorization": `Bearer ${user?.token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(emailChanged ? { ...data, current_password: currentPassword } : data)
         })
             .then(async res => {
                 if (res.status === 401) throw new Error("Unauthorized. Please log in again.");
                 const response = await res.json();
                 if (res.ok && (response.status === "success" || response.message)) {
                     toast.success("Profile saved successfully!");
+                    setOriginalEmail(data.email || "");
+                    setCurrentPassword("");
                     if (response.user && setUser) {
                         setUser(response.user);
                         localStorage.setItem("user", JSON.stringify(response.user));
@@ -228,6 +237,20 @@ function ProfileView({ user, setUser }) {
                                 />
                                 {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
                             </div>
+                            {emailChanged && (
+                                <div className="lg:col-span-2">
+                                    <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Current Password *</label>
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        autoComplete="current-password"
+                                        className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500 dark:focus:bg-gray-800"
+                                        placeholder="Confirm your password to change the email"
+                                    />
+                                    <p className="mt-1 text-xs text-zinc-400">Changing your sign-in email requires your current password.</p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-4">

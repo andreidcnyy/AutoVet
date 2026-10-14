@@ -23,7 +23,7 @@ class ReviewRequestMail extends Mailable
         $this->invoice    = $invoice;
         $settings         = \App\Models\Setting::all()->pluck('value', 'key');
         $this->clinicName = $settings['clinic_name'] ?? config('app.name');
-        $this->portalUrl  = config('app.portal_url', env('PORTAL_URL', 'https://autovet-portal.vercel.app'));
+        $this->portalUrl  = config('app.portal_url');
     }
 
     public function envelope(): Envelope

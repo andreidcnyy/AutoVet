@@ -24,9 +24,16 @@ export default function AccountPendingDeletion() {
     setRecovering(true);
     setError('');
     try {
-      await recoverAccount();
-      // Clear the pending deletion flag from the user object
-      updateUser({ ...user, account_pending_deletion: false, days_remaining: undefined, deletion_requested_at: undefined });
+      const res = await recoverAccount();
+      // The sign-in only granted a recovery token; the server swaps it for a
+      // full session on recovery, so keep the new one.
+      updateUser({
+        ...user,
+        token: res.data?.token ?? user?.token,
+        account_pending_deletion: false,
+        days_remaining: undefined,
+        deletion_requested_at: undefined,
+      });
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to recover account. Please try again.');

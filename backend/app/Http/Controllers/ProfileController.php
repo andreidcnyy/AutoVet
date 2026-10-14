@@ -127,7 +127,15 @@ class ProfileController extends Controller
 
         $user->forceFill(['deletion_requested_at' => null])->save();
 
-        return response()->json(['message' => 'Your account has been recovered successfully.']);
+        // The caller holds a recovery-only token. Swap it for a full session
+        // so the portal can carry on without asking them to sign in again.
+        $user->currentAccessToken()?->delete();
+        $token = $user->createToken('portal')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Your account has been recovered successfully.',
+            'token'   => $token,
+        ]);
     }
 
     public function update(Request $request)
@@ -138,10 +146,19 @@ class ProfileController extends Controller
         }
 
         $table = ($user instanceof Admin) ? 'admins' : 'portal_users';
+        $otherTable = ($user instanceof Admin) ? 'portal_users' : 'admins';
+
+        // An address is one identity across both account tables: login checks
+        // admins first, so a portal user sharing a staff address could never
+        // sign in again.
+        $emailChanging = strcasecmp((string) $request->input('email'), (string) $user->email) !== 0;
 
         $rules = [
             'name'  => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:' . $table . ',email,' . $user->id,
+            'email' => ['required', 'email', 'max:255',
+                \Illuminate\Validation\Rule::unique($table, 'email')->ignore($user->id),
+                \Illuminate\Validation\Rule::unique($otherTable, 'email')->whereNull('deleted_at'),
+            ],
             'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i'],
         ];
 
@@ -155,11 +172,50 @@ class ProfileController extends Controller
             true
         );
 
+        // Portal clients edit their contact details on the same form. These
+        // were sent all along but never validated, so update() discarded them
+        // and the edit looked saved while nothing changed.
+        if ($user instanceof PortalUser) {
+            // The portal's phone widget sends +639XXXXXXXXX; store the local
+            // 09XXXXXXXXX form every other screen uses.
+            if ($request->filled('phone')) {
+                $digits = preg_replace('/\D/', '', (string) $request->input('phone'));
+                if (str_starts_with($digits, '63') && strlen($digits) === 12) {
+                    $digits = '0' . substr($digits, 2);
+                }
+                $request->merge(['phone' => $digits]);
+            }
+
+            $rules += [
+                'phone'    => 'sometimes|nullable|string|max:20',
+                'address'  => 'sometimes|nullable|string|max:500',
+                'city'     => 'sometimes|nullable|string|max:255',
+                'province' => 'sometimes|nullable|string|max:255',
+                'zip'      => 'sometimes|nullable|string|max:10',
+            ];
+        }
+
         if ($canManageRoles) {
             $rules['role'] = 'sometimes|string|in:clinic_admin,veterinarian,staff';
         }
 
+        // Changing the sign-in address takes the current password, so a
+        // borrowed or stolen session cannot quietly move the account (and the
+        // password-reset link) to an address the attacker controls.
+        if ($emailChanging && !empty($user->password)) {
+            $rules['current_password'] = 'required|string';
+        }
+
         $validated = $request->validate($rules);
+
+        if ($emailChanging && !empty($user->password)
+            && !\Illuminate\Support\Facades\Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'The current password is incorrect.',
+                'errors'  => ['current_password' => ['The current password is incorrect.']],
+            ], 422);
+        }
+        unset($validated['current_password']);
 
         // Belt and braces: never let a role survive from an unauthorised caller,
         // even if a future rule change reintroduces it.
@@ -173,10 +229,10 @@ class ProfileController extends Controller
         if ($user instanceof PortalUser) {
             $owner = Owner::where('user_id', $user->id)->first();
             if ($owner) {
-                $syncData = array_filter([
-                    'name'  => $validated['name']  ?? null,
-                    'email' => $validated['email'] ?? null,
-                ]);
+                $syncData = array_filter(
+                    array_intersect_key($validated, array_flip(['name', 'email', 'phone', 'address', 'city', 'province', 'zip'])),
+                    fn ($v) => $v !== null && $v !== ''
+                );
                 if ($syncData) $owner->update($syncData);
             }
             Cache::forget("portal_overview_{$user->id}");

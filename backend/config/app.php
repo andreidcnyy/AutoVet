@@ -54,6 +54,15 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Pet-owner portal origin, used in emailed links and post-verification
+    // redirects. FRONTEND_PORTAL_URL is the name the backend already reads;
+    // PORTAL_URL is the older name ReviewRequestMail used.
+    'portal_url' => env('FRONTEND_PORTAL_URL', env('PORTAL_URL',
+        env('APP_ENV') === 'production' ? 'https://autovet-portal.vercel.app' : 'http://localhost:5174')),
+
+    // Clinic that self-registered portal accounts (email or Google) join.
+    'default_clinic_id' => (int) env('DEFAULT_CLINIC_ID', 1),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

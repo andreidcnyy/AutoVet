@@ -30,27 +30,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Detect maintenance mode (503) and account suspension/deactivation (401) globally
+// Detect maintenance mode (503) and a blocked account globally. The server
+// now refuses a suspended or deactivated account on every request with a 403
+// and a code, so there is no need to ask a public status endpoint (which let
+// anyone look up whether an email was registered).
+const BLOCKED_CODES: Record<string, 'suspended' | 'deactivated'> = {
+  ACCOUNT_SUSPENDED: 'suspended',
+  ACCOUNT_DEACTIVATED: 'deactivated',
+  CLINIC_INACTIVE: 'deactivated',
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 503) {
       window.dispatchEvent(new CustomEvent('maintenance-mode'));
     }
-    if (error.response?.status === 401) {
-      const stored = localStorage.getItem('user');
-      if (stored) {
-        try {
-          const { email } = JSON.parse(stored);
-          if (email) {
-            const res = await fetch(`/api/portal/check-status?email=${encodeURIComponent(email)}`);
-            const data = await res.json();
-            if (data.status === 'suspended' || data.status === 'deactivated') {
-              window.dispatchEvent(new CustomEvent('portal-account-blocked', { detail: { status: data.status, message: data.message } }));
-            }
-          }
-        } catch (_) {}
-      }
+    const code = error.response?.data?.code;
+    if (error.response?.status === 403 && code && BLOCKED_CODES[code]) {
+      window.dispatchEvent(new CustomEvent('portal-account-blocked', {
+        detail: { status: BLOCKED_CODES[code], message: error.response.data.message },
+      }));
     }
     return Promise.reject(error);
   }
