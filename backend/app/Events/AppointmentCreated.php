@@ -21,7 +21,8 @@ class AppointmentCreated implements ShouldBroadcastNow
      */
     public function __construct(Appointment $appointment)
     {
-        $this->appointment = $appointment->load(['pet.owner', 'service', 'vet']);
+        // Only the vet's name: this payload also reaches the client's channel.
+        $this->appointment = $appointment->load(['pet.owner', 'service', 'vet:id,name']);
     }
 
     /**
@@ -32,7 +33,7 @@ class AppointmentCreated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [
-            new PrivateChannel('admin.appointments'),
+            \App\Support\Channels::admin('appointments', $this->appointment->clinic_id),
         ];
 
         if ($this->appointment->pet?->owner?->user_id) {

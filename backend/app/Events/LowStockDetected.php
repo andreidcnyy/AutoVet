@@ -33,7 +33,7 @@ class LowStockDetected implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('admin.inventory'),
+            \App\Support\Channels::admin('inventory', $this->inventoryItem->clinic_id),
         ];
     }
 

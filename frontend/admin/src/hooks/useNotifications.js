@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import echo from '../utils/echo';
 import api from '../api'; // Import the central API client
+import { adminChannel } from "../utils/echo";
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -42,7 +43,7 @@ export function useNotifications() {
         fetchNotifications();
       };
 
-      achnl.current = echo.private('admin.notifications');
+      achnl.current = echo.private(adminChannel('notifications'));
       achnl.current.listen('.notification.created', handleNewNotification);
 
       if (user.id) {
@@ -52,7 +53,7 @@ export function useNotifications() {
 
 
       return () => {
-        echo.leave('admin.notifications');
+        echo.leave(adminChannel('notifications'));
         if (user.id) {
           echo.leave(`notifications.${user.id}`);
         }

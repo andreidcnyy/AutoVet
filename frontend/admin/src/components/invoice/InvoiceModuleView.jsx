@@ -33,6 +33,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
 import api from "../../api";
+import { adminChannel } from "../../utils/echo";
 
 // The clinic prices VAT-inclusive: every line amount already contains this rate.
 const VAT_RATE = 0.12;
@@ -977,13 +978,13 @@ function InvoiceModuleView() {
   // Echo: refresh history/drafts counts when any invoice changes
   useEffect(() => {
     if (!user?.token) return;
-    const ch = echo.private('admin.invoices');
+    const ch = echo.private(adminChannel('invoices'));
     ch.listen('.invoice.updated', () => {
       if (activeTab === "history") fetchInvoices(1, searchQuery, null, true);
       if (activeTab === "drafts") fetchDrafts(true);
       fetchDrafts(true); // always keep draft badge live
     });
-    return () => echo.leave('admin.invoices');
+    return () => echo.leave(adminChannel('invoices'));
   }, [user?.token, activeTab, searchQuery]);
 
   // Auto-open an invoice when navigated here from the dashboard with a viewInvoiceId

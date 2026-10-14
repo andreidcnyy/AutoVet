@@ -4,6 +4,7 @@ import { FiTrendingUp, FiShoppingBag, FiClock, FiRefreshCw } from "react-icons/f
 import clsx from "clsx";
 import echo from "../../utils/echo";
 import { useApi, useQueryClient } from "../../hooks/useApi";
+import { adminChannel } from "../../utils/echo";
 
 const peso = (n) =>
   "₱" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -55,7 +56,7 @@ export default function SalesSummaryCard() {
     // different function reference than the one registered, leaking a listener
     // on every mount.
     window.addEventListener('inventory-forecast-refresh', refresh);
-    const ch = echo.private('admin.invoices');
+    const ch = echo.private(adminChannel('invoices'));
     ch.listen('.invoice.updated', refresh);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);

@@ -32,7 +32,7 @@ class AppointmentStatusUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [
-            new PrivateChannel('admin.appointments'),
+            \App\Support\Channels::admin('appointments', $this->appointment->clinic_id),
         ];
 
         // Also broadcast to the specific client if they have a portal user account

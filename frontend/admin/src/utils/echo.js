@@ -56,6 +56,19 @@ const noopEcho = new Proxy({}, {
   },
 });
 
+/**
+ * Name of a staff broadcast channel for the signed-in clinic. The server
+ * keeps one set per clinic ("admin.{clinicId}.{topic}") so one clinic's
+ * staff no longer receive another clinic's events.
+ */
+export function adminChannel(topic) {
+    let clinicId = 'none';
+    try {
+        clinicId = JSON.parse(localStorage.getItem('user') || '{}')?.clinic_id ?? 'none';
+    } catch (_) {}
+    return `admin.${clinicId}.${topic}`;
+}
+
 export function getEcho() {
     if (!realtimeEnabled) return noopEcho;
 

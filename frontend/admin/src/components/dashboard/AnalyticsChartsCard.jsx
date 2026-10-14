@@ -9,6 +9,7 @@ import { FiUsers, FiPackage, FiRefreshCw, FiActivity } from "react-icons/fi";
 import clsx from "clsx";
 import { useApi, useQueryClient } from "../../hooks/useApi";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 // One hue per measure, not one per bar. Bar length already encodes the value,
 // so colouring each category differently added a second, meaningless encoding
@@ -152,7 +153,7 @@ export default function AnalyticsChartsCard() {
     let echoInstance = null;
     import("../../utils/echo").then((mod) => {
       echoInstance = mod.default;
-      echoInstance.private('admin.inventory')
+      echoInstance.private(adminChannel('inventory'))
         .listen('.inventory.category.deleted', refreshCategories)
         .listen('.inventory.updated', refreshCategories)
         .listen('.invoice.finalized', refreshAll);
@@ -161,7 +162,7 @@ export default function AnalyticsChartsCard() {
     return () => {
       clearInterval(poll);
       document.removeEventListener('visibilitychange', onVisible);
-      if (echoInstance) echoInstance.leave('admin.inventory');
+      if (echoInstance) echoInstance.leave(adminChannel('inventory'));
     };
   }, [queryClient]);
 

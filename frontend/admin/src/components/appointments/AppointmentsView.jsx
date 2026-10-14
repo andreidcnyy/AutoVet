@@ -37,6 +37,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNewItems } from "../../context/NewItemsContext";
 import ManualSendModal from "../notifications/ManualSendModal";
 import SlotFullDialog from "./SlotFullDialog";
+import { adminChannel } from "../../utils/echo";
 
 // The server refuses a booking or approval into a slot that already holds its
 // limit of approved appointments; its message always says the slot is full.
@@ -346,7 +347,7 @@ function AppointmentsView() {
       fetchCalendarSummaries(undefined);
     };
 
-    const channel = echo.private('admin.appointments')
+    const channel = echo.private(adminChannel('appointments'))
       .listen('.appointment.created', (e) => {
         toast.info(`New Appointment: ${e.appointment.pet?.name || 'Unknown Pet'}`);
         refresh();
@@ -370,7 +371,7 @@ function AppointmentsView() {
       });
 
     return () => {
-      echo.leave('admin.appointments');
+      echo.leave(adminChannel('appointments'));
     };
   }, [user?.token, currentDate, fetchAppointments, fetchCalendarSummaries]);
 

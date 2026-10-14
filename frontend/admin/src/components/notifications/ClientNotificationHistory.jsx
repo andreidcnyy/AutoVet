@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import echo from '../../utils/echo';
+import { adminChannel } from "../../utils/echo";
 
 export default function ClientNotificationHistory() {
     const [history, setHistory] = useState([]);
@@ -21,7 +22,7 @@ export default function ClientNotificationHistory() {
         fetchHistory();
         const onVisible = () => { if (document.visibilityState === 'visible') fetchHistory(); };
         document.addEventListener('visibilitychange', onVisible);
-        const ch = echo.private('admin.notifications');
+        const ch = echo.private(adminChannel('notifications'));
         ch.listen('.notification.created', fetchHistory);
         return () => {
             document.removeEventListener('visibilitychange', onVisible);

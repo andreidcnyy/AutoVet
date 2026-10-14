@@ -5,6 +5,7 @@ import { FiTrash2, FiPlus, FiEdit2, FiX, FiSave } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 export default function ServiceManagementTab() {
   const toast = useToast();
@@ -107,7 +108,7 @@ export default function ServiceManagementTab() {
     document.addEventListener('visibilitychange', onVisible);
 
     // Real-time: refresh when any service/category changes elsewhere.
-    const rtChannel = echo.private('admin.notifications');
+    const rtChannel = echo.private(adminChannel('notifications'));
     rtChannel.listen('.entity.created', () => fetchServices());
 
     return () => {

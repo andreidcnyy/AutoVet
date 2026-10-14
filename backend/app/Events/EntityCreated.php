@@ -15,6 +15,7 @@ class EntityCreated implements ShouldBroadcastNow
 
     public $entityType;
     public $data;
+    protected $clinicId;
 
     /**
      * Create a new event instance.
@@ -26,6 +27,7 @@ class EntityCreated implements ShouldBroadcastNow
     {
         $this->entityType = $entityType;
         $this->data = $data;
+        $this->clinicId = auth()->user()?->clinic_id;
     }
 
     /**
@@ -34,7 +36,7 @@ class EntityCreated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('admin.notifications'),
+            \App\Support\Channels::admin('notifications', $this->clinicId),
         ];
     }
 

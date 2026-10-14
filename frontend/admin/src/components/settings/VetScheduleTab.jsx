@@ -11,6 +11,7 @@ import { FiPlus, FiTrash2, FiClock } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -81,7 +82,7 @@ export default function VetScheduleTab() {
     document.addEventListener('visibilitychange', onVisible);
 
     // Real-time: refresh when a vet schedule changes elsewhere.
-    const rtChannel = echo.private('admin.notifications');
+    const rtChannel = echo.private(adminChannel('notifications'));
     rtChannel.listen('.entity.created', () => fetchData());
 
     return () => {

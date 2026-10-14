@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { resolveMediaUrl } from '../utils/petImages';
+import { adminChannel } from "../utils/echo";
 
 const resolveLogoUrl = (logo) => {
   if (!logo || typeof logo !== 'string') return null;
@@ -134,9 +135,9 @@ export default function SuperAdminDashboard() {
     document.addEventListener('visibilitychange', onVisible);
     let apptCh, invCh, notifCh;
     import("../utils/echo").then(({ default: echo }) => {
-      apptCh = echo.private('admin.appointments');
-      invCh = echo.private('admin.invoices');
-      notifCh = echo.private('admin.notifications');
+      apptCh = echo.private(adminChannel('appointments'));
+      invCh = echo.private(adminChannel('invoices'));
+      notifCh = echo.private(adminChannel('notifications'));
       apptCh.listen('.appointment.created', fetchData).listen('.appointment.status.updated', fetchData);
       invCh.listen('.invoice.updated', fetchData);
       notifCh.listen('.entity.created', fetchData);

@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 use App\Traits\IdentifiesPortalOwner;
 use App\Models\ClientNotification;
+use App\Support\DashboardCache;
 
 class DashboardController extends Controller
 {
@@ -36,6 +37,11 @@ class DashboardController extends Controller
         $user = $request->user();
         if (!$user) {
             return response()->json(['pets' => [], 'appointments' => [], 'notifications' => []]);
+        }
+        // Clients only. Staff ids overlap portal ids, so a staff call used to
+        // cache clinic-wide data under the key a client with the same id reads.
+        if (!method_exists($user, 'isOwner') || !$user->isOwner()) {
+            return response()->json(['message' => 'The portal overview is for client accounts.'], 403);
         }
         $userId = $user->id;
 
@@ -66,7 +72,7 @@ class DashboardController extends Controller
         $range = $request->query('range', '6 Months');
         $monthsToFetch = $range == 'Year' ? 12 : 6;
 
-        return response()->json(Cache::remember("dashboard_overview_{$userId}_{$monthsToFetch}", 300, function () use ($request, $range, $monthsToFetch) {
+        return response()->json(Cache::remember("dashboard_overview_staff_{$userId}_{$monthsToFetch}", 300, function () use ($request, $range, $monthsToFetch) {
             return [
                 'status' => [
                     'message' => 'AutoVet Laravel API is up and running!',
@@ -88,7 +94,7 @@ class DashboardController extends Controller
      */
     public function getInventoryForecast()
     {
-        $data = \Illuminate\Support\Facades\Cache::remember('dashboard_inventory_forecast', 3600, function () {
+        $data = \Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_inventory_forecast'), 3600, function () {
             // Find the most critical inventory item based on highest risk saved forecast
             $savedForecast = \App\Models\InventoryForecast::with('inventory')
                 ->orderByRaw("FIELD(forecast_status, 'Critical', 'Reorder Soon', 'Safe', 'Insufficient Data')")
@@ -152,7 +158,7 @@ class DashboardController extends Controller
      */
     public function getAppointmentForecast()
     {
-        return response()->json(\Illuminate\Support\Facades\Cache::remember('dashboard_appointment_forecast', 300, function () {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_appointment_forecast'), 300, function () {
             // Fetch 16 weeks for training; chart displays the most recent 8
             $startDate = now()->startOfWeek()->subWeeks(15);
             $counts = \App\Models\Appointment::where('date', '>=', $startDate->toDateString())
@@ -338,7 +344,7 @@ class DashboardController extends Controller
 
     public function getPatientVisitPredictions()
     {
-        return response()->json(\Illuminate\Support\Facades\Cache::remember('dashboard_patient_visit_predictions', 300, function () {
+        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_patient_visit_predictions'), 300, function () {
             // Overdue follow-ups: follow_up_date is in the past, load pet + owner
             $overdue = \App\Models\MedicalRecord::with(['pet.owner'])
                 ->whereNotNull('follow_up_date')
@@ -475,9 +481,11 @@ class DashboardController extends Controller
      */
     public function getInventoryConsumption(Request $request)
     {
-        $range = $request->query('range', 6);
-        return response()->json(\Illuminate\Support\Facades\Cache::remember("dashboard_inventory_consumption_{$range}", 3600, function () use ($range) {
-            $monthsToFetch = $range == 'Year' ? 12 : 6;
+        // Only two windows exist. The raw query value used to be the cache
+        // key, so any string made a new entry — and "Year" never matched the
+        // _12 key the forecast refresh clears.
+        $monthsToFetch = in_array($request->query('range'), ['Year', '12'], true) ? 12 : 6;
+        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key("dashboard_inventory_consumption_{$monthsToFetch}"), 3600, function () use ($monthsToFetch) {
             $futureMonths = 2;
 
             $timeline = [];
@@ -630,9 +638,8 @@ class DashboardController extends Controller
         $user = $request->user();
         if (!$user) return response()->json([]);
         
-        $userId = $user->id;
         $showAll = $request->query('all') === '1';
-        $cacheKey = "dashboard_notifications_{$userId}";
+        $cacheKey = $this->notificationCacheKey($user, $showAll);
 
         return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($request, $user, $showAll) {
             if ($user->isOwner()) {
@@ -829,7 +836,7 @@ class DashboardController extends Controller
             
             // Clear cache
             if ($request->user()) {
-                \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$request->user()->id}");
+                $this->forgetNotificationCache($request->user());
             }
 
             return response()->json(['status' => 'success']);
@@ -837,6 +844,26 @@ class DashboardController extends Controller
             \Illuminate\Support\Facades\Log::error("Failed to dismiss notification: " . $e->getMessage());
             return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Notification cache key for one account.
+     *
+     * Staff and clients live in different tables with overlapping ids, and
+     * the key used to be the id alone: staff member 5 and client 5 shared one
+     * entry, so a client could be shown the clinic's internal alerts. The
+     * key also ignored ?all=1, serving the unread list for the full history.
+     */
+    private function notificationCacheKey($user, bool $all): string
+    {
+        $kind = (method_exists($user, 'isOwner') && $user->isOwner()) ? 'portal' : 'staff';
+        return "dashboard_notifications_{$kind}_{$user->id}" . ($all ? '_all' : '');
+    }
+
+    private function forgetNotificationCache($user): void
+    {
+        \Illuminate\Support\Facades\Cache::forget($this->notificationCacheKey($user, false));
+        \Illuminate\Support\Facades\Cache::forget($this->notificationCacheKey($user, true));
     }
 
     /**
@@ -901,16 +928,16 @@ class DashboardController extends Controller
             $userId = auth()->id();
             if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
 
-            \Illuminate\Support\Facades\DB::table('notifications')
+            // The model, not DB::table(), so the clinic scope applies and one
+            // clinic cannot mark another clinic's alerts as read.
+            \App\Models\Notification::query()
                 ->where(function($q) use ($userId) {
                     $q->where('user_id', $userId)->orWhereNull('user_id');
                 })
                 ->whereNull('read_at')
                 ->update(['read_at' => now()]);
             
-            // Clear caches
-            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}");
-            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}_all");
+            $this->forgetNotificationCache($u);
 
             return response()->json(['message' => 'All notifications marked as read.']);
         } catch (\Throwable $e) {
@@ -934,16 +961,16 @@ class DashboardController extends Controller
             if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
 
             // Mark both personal and system alerts as read
-            \Illuminate\Support\Facades\DB::table('notifications')
+            // The model, not DB::table(), so the clinic scope applies and one
+            // clinic cannot mark another clinic's alerts as read.
+            \App\Models\Notification::query()
                 ->where(function($q) use ($userId) {
                     $q->where('user_id', $userId)->orWhereNull('user_id');
                 })
                 ->whereNull('read_at')
                 ->update(['read_at' => now()]);
 
-            // Clear caches
-            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}");
-            \Illuminate\Support\Facades\Cache::forget("dashboard_notifications_{$userId}_all");
+            $this->forgetNotificationCache($u);
 
             return response()->json(['message' => 'Notifications cleared from dashboard. History preserved.']);
         } catch (\Throwable $e) {

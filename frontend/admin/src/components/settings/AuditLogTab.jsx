@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import api from "../../api";
 import clsx from "clsx";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
@@ -324,7 +325,7 @@ function AuditLogTab() {
     fetchLogs(1);
     const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(1); };
     document.addEventListener('visibilitychange', onVisible);
-    const ch = echo.private('admin.notifications');
+    const ch = echo.private(adminChannel('notifications'));
     ch.listen('.entity.created', () => fetchLogs(1)).listen('.notification.created', () => fetchLogs(1));
     return () => {
       if (controllerRef.current) controllerRef.current.abort();

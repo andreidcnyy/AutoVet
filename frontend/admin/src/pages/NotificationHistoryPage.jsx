@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import clsx from "clsx";
+import { adminChannel } from "../utils/echo";
 
 const iconToneStyles = {
   danger: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
@@ -57,12 +58,12 @@ function NotificationHistoryPage() {
     fetchNotifications();
     const onVisible = () => { if (document.visibilityState === 'visible') fetchNotifications(); };
     document.addEventListener('visibilitychange', onVisible);
-    echo.private('admin.notifications')
+    echo.private(adminChannel('notifications'))
       .listen('.notification.created', fetchNotifications)
       .listen('.entity.created', fetchNotifications);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      echo.leave('admin.notifications');
+      echo.leave(adminChannel('notifications'));
     };
   }, []);
 

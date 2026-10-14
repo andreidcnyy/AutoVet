@@ -16,16 +16,18 @@ class AppointmentDeleted implements ShouldBroadcastNow
 
     public $appointmentId;
     public $portalUserId;
+    protected $clinicId;
 
     public function __construct($appointmentId, $portalUserId = null)
     {
         $this->appointmentId = $appointmentId;
         $this->portalUserId  = $portalUserId;
+        $this->clinicId      = auth()->user()?->clinic_id;
     }
 
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('admin.appointments')];
+        $channels = [\App\Support\Channels::admin('appointments', $this->clinicId)];
         if ($this->portalUserId) {
             $channels[] = new PrivateChannel('client.appointments.' . $this->portalUserId);
         }

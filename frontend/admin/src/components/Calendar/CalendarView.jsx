@@ -4,6 +4,7 @@ import { format, addMonths, subMonths, isToday } from "date-fns";
 import { useAuth } from "../../context/AuthContext";
 import { generateCalendarGrid } from "../../utils/calendarUtils";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 const formatTime = (t) => {
   if (!t) return '';
@@ -54,7 +55,7 @@ function CalendarView() {
     fetchAppointments();
 
     const refresh = () => fetchAppointments();
-    echo.private('admin.appointments')
+    echo.private(adminChannel('appointments'))
       .listen('.appointment.created', refresh)
       .listen('.appointment.status.updated', refresh)
       .listen('.appointment.deleted', refresh);
@@ -62,7 +63,7 @@ function CalendarView() {
     const onVisible = () => { if (document.visibilityState === 'visible') fetchAppointments(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      echo.leave('admin.appointments');
+      echo.leave(adminChannel('appointments'));
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [user?.token]);

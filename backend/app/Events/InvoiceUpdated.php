@@ -24,7 +24,7 @@ class InvoiceUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [
-            new PrivateChannel('admin.invoices'),
+            \App\Support\Channels::admin('invoices', $this->invoice->clinic_id),
         ];
 
         if ($this->invoice->pet?->owner?->user_id) {

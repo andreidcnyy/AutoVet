@@ -17,6 +17,7 @@ import { useToast } from "../context/ToastContext";
 import clsx from "clsx";
 import jsPDF from "jspdf";
 import { brandedTable, drawClinicFooter, drawClinicLetterhead, drawSectionLabel } from "../utils/clinicPdf";
+import { adminChannel } from "../utils/echo";
 
 /** Peso amounts for the report. "P " matches the invoice PDF, whose built-in
  *  helvetica has no glyph for the peso sign. */
@@ -219,13 +220,13 @@ function DashboardPage() {
     import("../utils/echo").then(module => {
         echoInstance = module.default;
         const refresh = () => { refetchStats(); refetchNotifications(); refetchAppts(); setLastUpdate(Date.now()); };
-        echoInstance.private('admin.appointments')
+        echoInstance.private(adminChannel('appointments'))
             .listen('.appointment.created', refresh)
             .listen('.appointment.status.updated', refresh)
             .listen('.appointment.deleted', refresh);
     });
 
-    return () => { if (echoInstance) echoInstance.leave('admin.appointments'); };
+    return () => { if (echoInstance) echoInstance.leave(adminChannel('appointments')); };
   }, [enabled, refetchStats, refetchNotifications, refetchAppts]);
 
   // Real-time Modal Refresh

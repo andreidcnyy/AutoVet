@@ -12,6 +12,7 @@ import { useApi, useQueryClient } from "../hooks/useApi";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import clsx from "clsx";
+import { adminChannel } from "../utils/echo";
 
 function PatientsPage() {
   const toast = useToast();
@@ -134,7 +135,7 @@ function PatientsPage() {
     if (!user?.token) return;
     let channel;
     import("../utils/echo").then(({ default: echo }) => {
-      channel = echo.private("admin.notifications");
+      channel = echo.private(adminChannel("notifications"));
       channel.listen(".entity.created", (e) => {
         if (["pet", "owner"].includes(e.entityType)) {
           queryClient.invalidateQueries({ queryKey: ["owners"] });

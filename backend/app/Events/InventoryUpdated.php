@@ -32,7 +32,7 @@ class InventoryUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('admin.inventory'),
+            \App\Support\Channels::admin('inventory', $this->inventory->clinic_id),
         ];
     }
 

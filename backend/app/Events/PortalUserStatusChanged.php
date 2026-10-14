@@ -16,10 +16,12 @@ class PortalUserStatusChanged implements ShouldBroadcastNow
     public int $portalUserId;
     public string $status;
     public string $message;
+    protected $clinicId;
 
     public function __construct(PortalUser $portalUser, string $status, string $message)
     {
         $this->portalUserId = $portalUser->id;
+        $this->clinicId     = $portalUser->clinic_id;
         $this->status       = $status;
         $this->message      = $message;
     }
@@ -28,7 +30,7 @@ class PortalUserStatusChanged implements ShouldBroadcastNow
     {
         return [
             new PrivateChannel('client.portal.' . $this->portalUserId),
-            new PrivateChannel('admin.notifications'),
+            \App\Support\Channels::admin('notifications', $this->clinicId),
         ];
     }
 

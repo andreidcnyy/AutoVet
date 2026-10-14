@@ -37,6 +37,7 @@ import api from "../../api";
 import ManualSendModal from "../notifications/ManualSendModal";
 import EditPatientModal from "./EditPatientModal";
 import { FiEdit3, FiTrash2, FiEye } from "react-icons/fi";
+import { adminChannel } from "../../utils/echo";
 
 const invoiceStatusStyles = {
   Draft: "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
@@ -954,7 +955,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 
     const onVisible = () => { if (document.visibilityState === 'visible') { fetchRecords(); fetchAppointments(); } };
     document.addEventListener('visibilitychange', onVisible);
-    const ch = echo.private('admin.appointments');
+    const ch = echo.private(adminChannel('appointments'));
     ch.listen('.appointment.created', () => { fetchRecords(); fetchAppointments(); })
       .listen('.appointment.status.updated', () => { fetchRecords(); fetchAppointments(); });
 

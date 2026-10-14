@@ -29,6 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import { useApi, useQueryClient } from "../../hooks/useApi";
 import api from "../../api";
+import { adminChannel } from "../../utils/echo";
 
 // Expired is derived, never stored: the API sends is_expired computed against
 // the current date, and the date comparison is kept as a fallback for cached
@@ -241,7 +242,7 @@ function InventoryView() {
 
     handleForecast();
 
-    const channel = echo.private('admin.inventory')
+    const channel = echo.private(adminChannel('inventory'))
       .listen('.inventory.updated', (e) => {
         setInventoryRows(prev => prev.map(item => item.id === e.inventory.id ? { ...item, ...e.inventory } : item));
       })
@@ -255,7 +256,7 @@ function InventoryView() {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
-      echo.leave('admin.inventory');
+      echo.leave(adminChannel('inventory'));
     };
   }, [user?.token, fetchInventory, setInventoryRows]);
 

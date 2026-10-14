@@ -9,6 +9,7 @@ import { resolveMediaUrl, onUserImageError } from "../../utils/petImages";
 import { ROLES, canManageRole } from "../../constants/roles";
 import { displayUserName, roleLabel } from "../../utils/userDisplay";
 import echo from "../../utils/echo";
+import { adminChannel } from "../../utils/echo";
 
 const isSuperAdmin = (role) => role === ROLES.SUPER_ADMIN;
 
@@ -82,7 +83,7 @@ export default function UserManagementTab() {
     const onUsersUpdated = () => fetchUsers(undefined, true);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener(USERS_UPDATED_EVENT, onUsersUpdated);
-    const ch = echo.private('admin.notifications');
+    const ch = echo.private(adminChannel('notifications'));
     ch.listen('.entity.created', onUsersUpdated).listen('.portal.status.changed', onUsersUpdated);
 
     return () => {

@@ -414,10 +414,7 @@ class InventoryForecastService
         $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
         Log::info("[AI-BATCH-SUCCESS] API mode: processed {$totalItems} items, saved {$successCount} results.");
 
-        Cache::forget('dashboard_inventory_forecast');
-        Cache::forget('dashboard_stats');
-        Cache::forget('dashboard_inventory_consumption_6');
-        Cache::forget('dashboard_inventory_consumption_12');
+        \App\Support\DashboardCache::forgetEverywhere();
     }
 
     /**
@@ -513,10 +510,7 @@ class InventoryForecastService
         $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
         Log::info("[AI-BATCH-SUCCESS] Python mode: processed {$totalItems} items, saved {$successCount} results.");
 
-        Cache::forget('dashboard_inventory_forecast');
-        Cache::forget('dashboard_stats');
-        Cache::forget('dashboard_inventory_consumption_6');
-        Cache::forget('dashboard_inventory_consumption_12');
+        \App\Support\DashboardCache::forgetEverywhere();
     }
 
     /**

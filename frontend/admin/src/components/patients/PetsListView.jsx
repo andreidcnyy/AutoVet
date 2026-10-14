@@ -16,6 +16,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
+import { adminChannel } from "../../utils/echo";
 
 function PetsListView() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ function PetsListView() {
     fetchPets();
     const onVisible = () => { if (document.visibilityState === 'visible') fetchPets(); };
     document.addEventListener('visibilitychange', onVisible);
-    const ch = echo.private('admin.notifications');
+    const ch = echo.private(adminChannel('notifications'));
     ch.listen('.entity.created', fetchPets);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);

@@ -40,7 +40,7 @@ class NotificationCreated implements ShouldBroadcastNow
 
         // General admin notification channel
         return [
-            new PrivateChannel('admin.notifications'),
+            \App\Support\Channels::admin('notifications', $this->notification->clinic_id),
         ];
     }
 
