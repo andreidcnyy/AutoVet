@@ -333,7 +333,7 @@ class SuperAdminDashboardController extends Controller
             ...$validated,
             'type' => $validated['type'] ?? 'info',
             'target' => $validated['target'] ?? 'admin',
-            'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
+            'active_until' => !empty($validated['active_until']) ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
             'created_by' => auth()->id()
         ]);
 
@@ -358,7 +358,7 @@ class SuperAdminDashboardController extends Controller
             ...$validated,
             'type' => $validated['type'] ?? 'info',
             'target' => $validated['target'] ?? $announcement->target,
-            'active_until' => $validated['active_until'] ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
+            'active_until' => !empty($validated['active_until']) ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
         ]);
 
         return response()->json(['message' => 'Announcement updated successfully', 'announcement' => $announcement]);

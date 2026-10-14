@@ -165,19 +165,25 @@ class PatientOwnerController extends Controller
 
         $owner->update($validated);
 
-        // Sync with PortalUser if exists
+        // Sync with PortalUser if exists. The email is the client's sign-in,
+        // so it is only copied when present and not already someone else's
+        // login: copying a blank one locked the client out, and a taken one
+        // failed on the unique index after the owner had already been saved.
         if ($owner->user_id) {
             $user = \App\Models\PortalUser::find($owner->user_id);
             if ($user) {
-                $user->update([
-                    'name' => $validated['name'],
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'city' => $validated['city'],
-                    'province' => $validated['province'],
-                    'zip' => $validated['zip'],
-                ]);
+                $sync = array_intersect_key($validated, array_flip(['name', 'phone', 'address', 'city', 'province', 'zip']));
+
+                $email = $validated['email'] ?? null;
+                $emailTaken = $email && (
+                    \App\Models\PortalUser::withTrashed()->where('email', $email)->where('id', '!=', $user->id)->exists()
+                    || \App\Models\Admin::where('email', $email)->exists()
+                );
+                if ($email && !$emailTaken) {
+                    $sync['email'] = $email;
+                }
+
+                $user->update($sync);
             }
         }
 

@@ -206,13 +206,21 @@ class InvoiceController extends Controller
             throw ValidationException::withMessages(['subtotal' => 'Cannot finalize an invoice with 0 subtotal.']);
         }
 
+        // Numbering reads the latest number and adds one, so two invoices
+        // saved at the same moment could pick the same number and the second
+        // failed on the unique index. The lock serialises numbering until the
+        // row is committed.
+        $numberLock = \Illuminate\Support\Facades\Cache::lock('invoice-number', 30);
+        try {
+            $numberLock->block(10);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            return response()->json(['message' => 'Another invoice is being saved. Please try again.'], 409);
+        }
+
         DB::beginTransaction();
 
         try {
-            $monthYear = now()->format('Y-m');
-            $latestInvoice = Invoice::where('invoice_number', 'like', "VB-{$monthYear}-%")->latest('id')->first();
-            $nextNumber = $latestInvoice ? intval(substr($latestInvoice->invoice_number, -4)) + 1 : 1;
-            $invoiceNumber = "VB-{$monthYear}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $invoiceNumber = $this->nextInvoiceNumber();
 
             $pet = isset($validated['pet_id']) ? \App\Models\Pet::findOrFail($validated['pet_id']) : null;
 
@@ -362,7 +370,29 @@ class InvoiceController extends Controller
             return response()->json([
                 'message' => 'Failed to create report.',
             ], 500);
+        } finally {
+            $numberLock->release();
         }
+    }
+
+    /**
+     * Next number in this month's VB-YYYY-MM-NNNN sequence.
+     *
+     * Looks past the clinic scope and soft deletes: the unique index covers
+     * every row, so a number used by another clinic or by a deleted draft is
+     * still taken.
+     */
+    private function nextInvoiceNumber(): string
+    {
+        $prefix = 'VB-' . now()->format('Y-m') . '-';
+
+        $latest = Invoice::withoutGlobalScopes()
+            ->where('invoice_number', 'like', $prefix . '%')
+            ->orderByDesc('invoice_number')
+            ->value('invoice_number');
+
+        $next = $latest ? intval(substr($latest, -4)) + 1 : 1;
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -397,7 +427,7 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice)
     {
         if (in_array($invoice->status, ['Paid', 'Cancelled'])) {
-             return response()->json(['message' => 'Cannot modify a Paid or Cancelled invoice.'], 403);
+             return response()->json(['message' => 'Cannot modify a Paid or Cancelled invoice.'], 409);
         }
 
         $validated = $request->validate([
@@ -424,7 +454,14 @@ class InvoiceController extends Controller
             'items.*.inventory_id' => 'nullable|exists:inventories,id',
         ]);
 
-        if ($invoice->status === 'Finalized' && in_array($validated['status'], ['Draft', 'Finalized'])) {
+        // Finalizing deducts stock. Sending an invoice back to Draft left the
+        // deduction in place and made the invoice deletable, so the stock
+        // was gone with no invoice to show for it.
+        if ($invoice->status !== 'Draft' && $validated['status'] === 'Draft') {
+            return response()->json(['message' => 'A finalized invoice cannot be returned to Draft. Cancel it instead.'], 409);
+        }
+
+        if ($invoice->status === 'Finalized' && $validated['status'] === 'Finalized') {
              // If already finalized, only allow payment updates
              $apptId = $validated['appointment_id'] ?? $invoice->appointment_id;
              $invoice->update([
@@ -432,7 +469,6 @@ class InvoiceController extends Controller
                  'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
                  'appointment_id' => $apptId,
                  'service_date' => $invoice->service_date ?? $this->resolveServiceDate($apptId),
-                 'status' => $validated['status']
              ]);
              broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
              return response()->json($invoice->load('pet', 'items'));
@@ -603,7 +639,7 @@ class InvoiceController extends Controller
     public function destroy(Invoice $invoice)
     {
         if ($invoice->status !== 'Draft') {
-            return response()->json(['message' => 'Only Draft invoices can be deleted.'], 403);
+            return response()->json(['message' => 'Only Draft invoices can be deleted.'], 409);
         }
 
         $invoice->delete();

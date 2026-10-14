@@ -86,7 +86,11 @@ class AppointmentController extends Controller
             $query->where('service_id', $request->service_id);
         }
 
-        // Filtering by Status
+        // Filtering by Status. A list (?status[]=x) used to reach strtolower()
+        // and fail with a 500; only a single value is meaningful here.
+        if (is_array($request->input('status'))) {
+            return response()->json(['message' => 'The status filter must be a single value.'], 422);
+        }
         if ($request->has('status') && $request->status !== 'all') {
             $status = $request->status;
             if ($status === 'upcoming') {

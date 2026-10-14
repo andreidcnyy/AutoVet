@@ -49,7 +49,7 @@ class ClientNotificationController extends Controller
                 ->get();
             return response()->json($notifications);
         }
-        return response()->json([], 403);
+        return response()->json(['message' => 'Client notifications are only available to client accounts.'], 403);
     }
 
     public function markAsRead(Request $request, $id)
@@ -124,7 +124,7 @@ class ClientNotificationController extends Controller
                 ->get();
             return response()->json($warnings);
         }
-        return response()->json([], 403);
+        return response()->json(['message' => 'Client notifications are only available to client accounts.'], 403);
     }
 
     /** Logs an unexpected failure and returns the generic text to show instead. */
@@ -136,10 +136,13 @@ class ClientNotificationController extends Controller
 
     public function send(Request $request)
     {
+        // MedicalRecord is what the patient profile's "send" button passes;
+        // without it every send from that screen failed validation.
         $allowedTypes = [
             'App\\Models\\Appointment',
             'App\\Models\\Invoice',
             'App\\Models\\Pet',
+            'App\\Models\\MedicalRecord',
         ];
 
         $validated = $request->validate([
