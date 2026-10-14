@@ -30,7 +30,7 @@ class MedicalRecordController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = MedicalRecord::with(['pet', 'vet', 'appointment.service']);
+        $query = MedicalRecord::with(['pet', 'vet:id,name', 'appointment.service']);
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
@@ -77,15 +77,15 @@ class MedicalRecordController extends Controller
         }
 
         $record = MedicalRecord::create($validated);
-        $record->load(['pet.owner', 'vet', 'appointment.service']);
+        $record->load(['pet.owner', 'vet:id,name', 'appointment.service']);
         $this->clientNotificationService->notifyMedicalRecordUpdate($record);
 
-        return response()->json($record->load(['pet', 'vet', 'appointment.service']), 201);
+        return response()->json($record->load(['pet', 'vet:id,name', 'appointment.service']), 201);
     }
 
     public function show(MedicalRecord $medicalRecord)
     {
-        return response()->json($medicalRecord->load(['pet', 'vet', 'appointment.service']));
+        return response()->json($medicalRecord->load(['pet', 'vet:id,name', 'appointment.service']));
     }
 
     public function update(Request $request, MedicalRecord $medicalRecord)
@@ -112,10 +112,10 @@ class MedicalRecordController extends Controller
 
         $medicalRecord->update($validated);
 
-        $medicalRecord->load(['pet.owner', 'vet', 'appointment.service']);
+        $medicalRecord->load(['pet.owner', 'vet:id,name', 'appointment.service']);
         $this->clientNotificationService->notifyMedicalRecordUpdate($medicalRecord);
 
-        return response()->json($medicalRecord->load(['pet', 'vet', 'appointment.service']));
+        return response()->json($medicalRecord->load(['pet', 'vet:id,name', 'appointment.service']));
     }
 
     public function destroy(MedicalRecord $medicalRecord)

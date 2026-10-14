@@ -12,10 +12,15 @@ class ReviewController extends Controller
     // Public — landing page
     public function publicIndex()
     {
+        // Public, unauthenticated: only what the landing page shows. The
+        // whole row used to go out, internal ids (portal user, invoice,
+        // clinic) included.
         $reviews = Review::where('is_approved', true)
             ->orderByDesc('is_featured')
             ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get(['id', 'rating', 'title', 'body', 'reviewer_name', 'pet_name', 'pet_species', 'is_featured', 'created_at']);
 
         return response()->json($reviews);
     }
@@ -32,7 +37,7 @@ class ReviewController extends Controller
             ->whereIn('status', ['Finalized', 'Paid'])
             ->where('created_at', '>=', now()->subDays(30))
             ->whereDoesntHave('review')
-            ->with(['pet.species', 'appointment.service', 'appointment.vet'])
+            ->with(['pet.species', 'appointment.service', 'appointment.vet:id,name'])
             ->latest()
             ->get();
 

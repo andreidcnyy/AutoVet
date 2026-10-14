@@ -388,13 +388,13 @@ class AppointmentController extends Controller
             \Illuminate\Support\Facades\Log::warning("Failed to send automated appointment notification: " . $e->getMessage());
         }
 
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']), 201);
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']), 201);
     }
 
     public function show(Appointment $appointment)
     {
         $this->authorize('view', $appointment);
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
     public function update(Request $request, Appointment $appointment)
@@ -550,7 +550,7 @@ class AppointmentController extends Controller
 
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
     public function getAvailability(Request $request)

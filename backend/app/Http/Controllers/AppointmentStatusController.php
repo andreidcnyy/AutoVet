@@ -52,7 +52,7 @@ class AppointmentStatusController extends Controller
             'time' => date('g:i A', strtotime($appointment->time)),
         ]);
 
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
     public function decline(Request $request, Appointment $appointment)
@@ -75,7 +75,7 @@ class AppointmentStatusController extends Controller
             'reason' => $appointment->decline_reason,
         ]);
 
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
     public function complete(Request $request, Appointment $appointment)
@@ -85,7 +85,7 @@ class AppointmentStatusController extends Controller
 
         $this->announceStatusChange($appointment, 'AppointmentCompleted', 'Appointment Completed', 'has been marked as completed');
 
-        return response()->json($appointment->load(['pet', 'service', 'services', 'vet']));
+        return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
     public function remind(Request $request, Appointment $appointment)
