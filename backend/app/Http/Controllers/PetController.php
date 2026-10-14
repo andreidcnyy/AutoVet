@@ -158,17 +158,17 @@ class PetController extends Controller
         }
 
         $validated = $request->validate([
-            'owner_id' => 'required|exists:owners,id',
+            'owner_id' => 'required|clinic_exists:owners,id',
             'name' => 'required|string|max:255',
-            'species_id' => 'nullable|exists:species,id',
-            'breed_id' => 'nullable|exists:breeds,id',
+            'species_id' => 'nullable|clinic_exists:species,id',
+            'breed_id' => 'nullable|clinic_exists:breeds,id',
             'date_of_birth' => 'nullable|date',
             'age_group' => 'nullable|string',
             'sex' => 'nullable|string',
             'color' => 'nullable|string',
             'weight' => 'required|numeric|min:0.01',
-            'weight_unit' => 'nullable|string|exists:units_of_measure,abbreviation',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'weight_unit' => 'nullable|string|clinic_exists:units_of_measure,abbreviation',
+            'size_category_id' => 'nullable|clinic_exists:pet_size_categories,id',
             'status' => 'nullable|string',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
@@ -182,7 +182,7 @@ class PetController extends Controller
             'findings' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'treatment_plan' => 'nullable|string',
-            'vet_id' => 'nullable|exists:admins,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {
@@ -257,17 +257,17 @@ class PetController extends Controller
         }
 
         $validated = $request->validate([
-            'owner_id' => 'required|exists:owners,id',
+            'owner_id' => 'required|clinic_exists:owners,id',
             'name' => 'required|string|max:255',
-            'species_id' => 'nullable|exists:species,id',
-            'breed_id' => 'nullable|exists:breeds,id',
+            'species_id' => 'nullable|clinic_exists:species,id',
+            'breed_id' => 'nullable|clinic_exists:breeds,id',
             'date_of_birth' => 'nullable|date',
             'age_group' => 'nullable|string',
             'sex' => 'nullable|string',
             'color' => 'nullable|string',
             'weight' => 'required|numeric|min:0.01',
-            'weight_unit' => 'nullable|string|exists:units_of_measure,abbreviation',
-            'size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'weight_unit' => 'nullable|string|clinic_exists:units_of_measure,abbreviation',
+            'size_category_id' => 'nullable|clinic_exists:pet_size_categories,id',
             'status' => 'nullable|string',
             'allergies' => 'nullable|string',
             'medication' => 'nullable|string',
@@ -281,7 +281,7 @@ class PetController extends Controller
             'findings' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'treatment_plan' => 'nullable|string',
-            'vet_id' => 'nullable|exists:admins,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {

@@ -19,14 +19,14 @@ class WalkInController extends Controller
         $request->validate([
             'date'                => 'required|date',
             'time'                => 'required|date_format:H:i',
-            'service_id'          => 'nullable|exists:services,id',
+            'service_id'          => 'nullable|clinic_exists:services,id',
             'service_ids'         => 'nullable|array',
-            'service_ids.*'       => 'exists:services,id',
+            'service_ids.*'       => 'clinic_exists:services,id',
             'notes'               => 'nullable|string',
             'is_emergency'        => 'nullable|boolean',
 
             // Either new_owner OR owner_id must be provided
-            'owner_id'            => 'nullable|exists:owners,id',
+            'owner_id'            => 'nullable|clinic_exists:owners,id',
             'new_owner'           => 'nullable|array',
             'new_owner.name'      => 'required_with:new_owner|string|max:255',
             'new_owner.phone'     => 'required_with:new_owner|string|size:11',
@@ -37,8 +37,8 @@ class WalkInController extends Controller
             // New pet is always created fresh for walk-ins
             'new_pet'             => 'required|array',
             'new_pet.name'        => 'required|string|max:255',
-            'new_pet.species_id'  => 'required|exists:species,id',
-            'new_pet.breed_id'    => 'nullable|exists:breeds,id',
+            'new_pet.species_id'  => 'required|clinic_exists:species,id',
+            'new_pet.breed_id'    => 'nullable|clinic_exists:breeds,id',
         ]);
 
         if (empty($request->owner_id) && empty($request->new_owner)) {

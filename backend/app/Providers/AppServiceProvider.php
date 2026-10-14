@@ -30,6 +30,23 @@ class AppServiceProvider extends ServiceProvider
     {
         \Illuminate\Support\Facades\Schema::defaultStringLength(191);
 
+        // `exists`, limited to the caller's clinic for clinic-owned tables.
+        // Plain `exists` ignores the clinic scope, so staff could attach
+        // records to another clinic's pets, owners or services by id. Rows
+        // with no clinic (shared lookups) still count. Super admins and portal
+        // clients are not clinic-bound here; see App\Support\Tenant.
+        \Illuminate\Support\Facades\Validator::extend('clinic_exists', function ($attribute, $value, $parameters) {
+            [$table, $column] = [$parameters[0], $parameters[1] ?? 'id'];
+
+            $query = \Illuminate\Support\Facades\DB::table($table)->where($column, $value);
+
+            if (($clinicId = \App\Support\Tenant::clinicId()) !== null) {
+                $query->where(fn ($q) => $q->where("{$table}.clinic_id", $clinicId)->orWhereNull("{$table}.clinic_id"));
+            }
+
+            return $query->exists();
+        }, 'The selected :attribute is invalid.');
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
         });

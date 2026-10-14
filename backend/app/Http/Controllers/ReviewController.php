@@ -48,7 +48,7 @@ class ReviewController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'invoice_id' => 'required|exists:invoices,id',
+            'invoice_id' => 'required|clinic_exists:invoices,id',
             'rating'     => 'required|integer|min:1|max:5',
             'title'      => 'nullable|string|max:100',
             'body'       => 'required|string|min:10|max:1000',

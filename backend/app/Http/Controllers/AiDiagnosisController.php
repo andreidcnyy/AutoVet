@@ -21,7 +21,7 @@ class AiDiagnosisController extends Controller
         }
 
         $request->validate([
-            'pet_id'   => 'required|integer|exists:pets,id',
+            'pet_id'   => 'required|integer|clinic_exists:pets,id',
             'symptoms' => 'required|string|min:5|max:1000',
         ]);
 

@@ -57,9 +57,9 @@ class MedicalRecordController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'pet_id'          => 'required|exists:pets,id',
-            'appointment_id'  => 'nullable|exists:appointments,id',
-            'vet_id'          => 'nullable|exists:admins,id',
+            'pet_id'          => 'required|clinic_exists:pets,id',
+            'appointment_id'  => 'nullable|clinic_exists:appointments,id',
+            'vet_id'          => 'nullable|clinic_exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
             'diagnosis'       => 'nullable|string',
@@ -91,9 +91,9 @@ class MedicalRecordController extends Controller
     public function update(Request $request, MedicalRecord $medicalRecord)
     {
         $validated = $request->validate([
-            'pet_id'          => 'required|exists:pets,id',
-            'appointment_id'  => 'nullable|exists:appointments,id',
-            'vet_id'          => 'nullable|exists:admins,id',
+            'pet_id'          => 'required|clinic_exists:pets,id',
+            'appointment_id'  => 'nullable|clinic_exists:appointments,id',
+            'vet_id'          => 'nullable|clinic_exists:admins,id',
             'chief_complaint' => 'nullable|string',
             'findings'        => 'nullable|string',
             'diagnosis'       => 'nullable|string',

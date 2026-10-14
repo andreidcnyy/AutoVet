@@ -234,11 +234,11 @@ class AppointmentController extends Controller
             'notes'       => 'nullable|string',
             'status'      => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
             'is_walk_in'  => 'nullable|boolean',
-            'pet_id'      => 'required|exists:pets,id',
-            'service_id'  => 'nullable|exists:services,id',
+            'pet_id'      => 'required|clinic_exists:pets,id',
+            'service_id'  => 'nullable|clinic_exists:services,id',
             'service_ids' => 'nullable|array',
-            'service_ids.*' => 'exists:services,id',
-            'vet_id'      => 'nullable|exists:admins,id',
+            'service_ids.*' => 'clinic_exists:services,id',
+            'vet_id'      => 'nullable|clinic_exists:admins,id',
         ], [
             'pet_id.required' => 'A pet must be selected for the appointment.'
         ]);
@@ -430,11 +430,11 @@ class AppointmentController extends Controller
             'notes'         => 'nullable|string',
             'status'        => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
             'is_walk_in'    => 'nullable|boolean',
-            'pet_id'        => 'sometimes|required|exists:pets,id',
-            'service_id'    => 'nullable|exists:services,id',
+            'pet_id'        => 'sometimes|required|clinic_exists:pets,id',
+            'service_id'    => 'nullable|clinic_exists:services,id',
             'service_ids'   => 'nullable|array',
-            'service_ids.*' => 'exists:services,id',
-            'vet_id'        => 'nullable|exists:admins,id',
+            'service_ids.*' => 'clinic_exists:services,id',
+            'vet_id'        => 'nullable|clinic_exists:admins,id',
         ]);
 
         // A client may only cancel their own upcoming booking. Every other
@@ -578,7 +578,7 @@ class AppointmentController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'vet_id' => 'nullable|exists:admins,id'
+            'vet_id' => 'nullable|clinic_exists:admins,id'
         ]);
 
         // Every slot-holding visit that day, clinic-wide, with its status. The

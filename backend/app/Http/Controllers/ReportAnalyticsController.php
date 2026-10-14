@@ -172,7 +172,8 @@ class ReportAnalyticsController extends Controller
         $months = max(3, min(24, (int) $request->query('months', 12)));
         $start  = Carbon::now()->startOfMonth()->subMonths($months - 1);
 
-        $usageRows = DB::table('inventory_usage_history')
+        // DB::table() is not clinic-scoped; restrict it by hand.
+        $usageRows = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
             ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
             ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->where('inventory_usage_history.usage_date', '>=', $start->toDateString())

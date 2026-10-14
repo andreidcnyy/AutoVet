@@ -30,8 +30,8 @@ class BreedController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'species_id' => 'required|exists:species,id',
-            'default_size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'species_id' => 'required|clinic_exists:species,id',
+            'default_size_category_id' => 'nullable|clinic_exists:pet_size_categories,id',
             'name' => 'required|string',
             'status' => 'nullable|string'
         ]);
@@ -48,8 +48,8 @@ class BreedController extends Controller
     public function update(Request $request, Breed $breed)
     {
         $validated = $request->validate([
-            'species_id' => 'required|exists:species,id',
-            'default_size_category_id' => 'nullable|exists:pet_size_categories,id',
+            'species_id' => 'required|clinic_exists:species,id',
+            'default_size_category_id' => 'nullable|clinic_exists:pet_size_categories,id',
             'name' => 'required|string',
             'status' => 'nullable|string'
         ]);

@@ -187,8 +187,8 @@ class InvoiceController extends Controller
 
         $validated = $request->validate([
             'report_type' => 'nullable|in:transaction,inventory',
-            'pet_id' => $isInventoryReport ? 'nullable|exists:pets,id' : 'required|exists:pets,id',
-            'appointment_id' => $isInventoryReport ? 'nullable|exists:appointments,id' : 'required|exists:appointments,id',
+            'pet_id' => $isInventoryReport ? 'nullable|clinic_exists:pets,id' : 'required|clinic_exists:pets,id',
+            'appointment_id' => $isInventoryReport ? 'nullable|clinic_exists:appointments,id' : 'required|clinic_exists:appointments,id',
             'pet_weight' => 'nullable|numeric|min:0.01',
             'date' => 'nullable|date',
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
@@ -207,8 +207,8 @@ class InvoiceController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.amount' => 'required|numeric|min:0',
-            'items.*.service_id' => 'nullable|exists:services,id',
-            'items.*.inventory_id' => 'nullable|exists:inventories,id',
+            'items.*.service_id' => 'nullable|clinic_exists:services,id',
+            'items.*.inventory_id' => 'nullable|clinic_exists:inventories,id',
         ]);
 
         if ($validated['discount_value'] > $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
@@ -446,7 +446,7 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'pet_weight' => 'nullable|numeric|min:0.01',
-            'appointment_id' => 'nullable|exists:appointments,id',
+            'appointment_id' => 'nullable|clinic_exists:appointments,id',
             'subtotal' => 'required|numeric|min:0',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -456,15 +456,15 @@ class InvoiceController extends Controller
             'payment_method' => 'nullable|string',
             'notes_to_client' => 'nullable|string',
             'items' => 'sometimes|array',
-            'items.*.id' => 'nullable|exists:invoice_items,id',
+            'items.*.id' => 'nullable|clinic_exists:invoice_items,id',
             'items.*.item_type' => 'required_with:items|in:service,inventory',
             'items.*.name' => 'required_with:items|string',
             'items.*.notes' => 'nullable|string',
             'items.*.qty' => 'required_with:items|integer|min:1',
             'items.*.unit_price' => 'required_with:items|numeric|min:0',
             'items.*.amount' => 'required_with:items|numeric|min:0',
-            'items.*.service_id' => 'nullable|exists:services,id',
-            'items.*.inventory_id' => 'nullable|exists:inventories,id',
+            'items.*.service_id' => 'nullable|clinic_exists:services,id',
+            'items.*.inventory_id' => 'nullable|clinic_exists:inventories,id',
         ]);
 
         // Finalizing deducts stock. Sending an invoice back to Draft left the

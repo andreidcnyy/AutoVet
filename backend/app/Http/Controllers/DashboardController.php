@@ -1240,7 +1240,8 @@ class DashboardController extends Controller
      */
     public function getItemsByCategory(): JsonResponse
     {
-        $data = DB::table('inventory_usage_history')
+        // DB::table() is not clinic-scoped; restrict it by hand.
+        $data = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
             ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
             ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->select(
@@ -1256,7 +1257,7 @@ class DashboardController extends Controller
         }
 
         // Fallback: derive from invoice_items when usage history is not yet populated
-        $fallback = DB::table('invoice_items')
+        $fallback = \App\Support\Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
             ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
@@ -1278,7 +1279,7 @@ class DashboardController extends Controller
      */
     public function getServicesByCategory(): JsonResponse
     {
-        $data = DB::table('invoice_items')
+        $data = \App\Support\Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('services', 'invoice_items.service_id', '=', 'services.id')
             ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])

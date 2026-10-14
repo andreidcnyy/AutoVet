@@ -22,8 +22,8 @@ class ImportController extends Controller
     public function importAppointments(Request $request)
     {
         return $this->processImport($request, 'appointments', [
-            'pet_id' => 'required|exists:pets,id',
-            'service_id' => 'required|exists:services,id',
+            'pet_id' => 'required|clinic_exists:pets,id',
+            'service_id' => 'required|clinic_exists:services,id',
             'date' => 'required|date',
             'status' => 'required|string|in:pending,approved,completed,cancelled,declined',
         ], function($row) {
@@ -37,7 +37,7 @@ class ImportController extends Controller
     public function importInvoices(Request $request)
     {
         return $this->processImport($request, 'invoices', [
-            'pet_id' => 'required|exists:pets,id',
+            'pet_id' => 'required|clinic_exists:pets,id',
             'total' => 'required|numeric',
             'status' => 'required|string|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'created_at' => 'required|date',
@@ -52,7 +52,7 @@ class ImportController extends Controller
     public function importInventoryUsage(Request $request)
     {
         return $this->processImport($request, 'inventory_usage', [
-            'inventory_id' => 'required|exists:inventories,id',
+            'inventory_id' => 'required|clinic_exists:inventories,id',
             'quantity' => 'required|numeric',
             'transaction_type' => 'required|string',
             'created_at' => 'required|date',

@@ -49,6 +49,20 @@ class TenantIsolationTest extends TestCase
             ->assertOk()->assertJsonMissing(['title' => 'Internal stock alert']);
     }
 
+    public function test_staff_cannot_reference_another_clinics_pet(): void
+    {
+        $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['clinic_id' => 1]);
+        $owner = \App\Models\Owner::create(['clinic_id' => 2, 'name' => 'Other', 'phone' => '09222222222']);
+        $species = \App\Models\Species::create(['clinic_id' => 2, 'name' => 'Cat']);
+        $pet = \App\Models\Pet::create(['clinic_id' => 2, 'owner_id' => $owner->id, 'name' => 'Tom', 'species_id' => $species->id, 'weight' => 3, 'weight_unit' => 'kg']);
+        $service = \App\Models\Service::create(['clinic_id' => 1, 'name' => 'Consultation', 'base_price' => 500]);
+
+        $this->as($staff)->postJson('/api/appointments', [
+            'pet_id' => $pet->id, 'service_id' => $service->id,
+            'date' => now()->addDay()->toDateString(), 'time' => '10:00',
+        ])->assertStatus(422)->assertJsonValidationErrors('pet_id');
+    }
+
     public function test_staff_cannot_read_the_portal_overview(): void
     {
         $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create();

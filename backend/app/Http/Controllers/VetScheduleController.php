@@ -22,7 +22,7 @@ class VetScheduleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:admins,id',
+            'user_id' => 'required|clinic_exists:admins,id',
             'day_of_week' => 'required|string',
             'start_time' => 'required',
             'end_time' => 'required',
@@ -39,7 +39,7 @@ class VetScheduleController extends Controller
     public function bulkStore(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:admins,id',
+            'user_id' => 'required|clinic_exists:admins,id',
             'days' => 'required|array',
             'start_time' => 'required',
             'end_time' => 'required',
@@ -83,7 +83,7 @@ class VetScheduleController extends Controller
     public function update(Request $request, VetSchedule $vetSchedule)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:admins,id',
+            'user_id' => 'required|clinic_exists:admins,id',
             'day_of_week' => 'required|string',
             'start_time' => 'required',
             'end_time' => 'required',

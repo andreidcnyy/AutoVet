@@ -68,8 +68,8 @@ class ClientNotificationController extends Controller
     public function sendInvoice(Request $request)
     {
         $validated = $request->validate([
-            'owner_id' => 'required|exists:owners,id',
-            'invoice_id' => 'required|exists:invoices,id',
+            'owner_id' => 'required|clinic_exists:owners,id',
+            'invoice_id' => 'required|clinic_exists:invoices,id',
         ]);
 
         $owner = Owner::findOrFail($validated['owner_id']);
@@ -146,9 +146,9 @@ class ClientNotificationController extends Controller
         ];
 
         $validated = $request->validate([
-            'owner_id' => 'required|exists:owners,id',
+            'owner_id' => 'required|clinic_exists:owners,id',
             'channel' => 'required|in:email,sms',
-            'template_id' => 'nullable|exists:notification_templates,id',
+            'template_id' => 'nullable|clinic_exists:notification_templates,id',
             'custom_message' => 'nullable|string',
             'title' => 'nullable|string',
             'related_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in($allowedTypes)],

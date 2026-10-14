@@ -31,11 +31,11 @@ class WeightRangeController extends Controller
     {
         $validated = $request->validate([
             'label' => 'required|string',
-            'species_id' => 'required|exists:species,id',
+            'species_id' => 'required|clinic_exists:species,id',
             'min_weight' => 'required|numeric|min:0',
             'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'required|exists:pet_size_categories,id',
+            'size_category_id' => 'required|clinic_exists:pet_size_categories,id',
             'status' => 'required|string'
         ]);
 
@@ -72,11 +72,11 @@ class WeightRangeController extends Controller
 
         $validated = $request->validate([
             'label' => 'required|string',
-            'species_id' => 'required|exists:species,id',
+            'species_id' => 'required|clinic_exists:species,id',
             'min_weight' => 'required|numeric|min:0',
             'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
-            'size_category_id' => 'required|exists:pet_size_categories,id',
+            'size_category_id' => 'required|clinic_exists:pet_size_categories,id',
             'status' => 'required|string'
         ]);
 
