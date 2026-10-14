@@ -107,7 +107,9 @@ class AppointmentStatusController extends Controller
              return response()->json(['message' => 'Reminder sent successfully.']);
         } catch (\Exception $e) {
             Log::error("Failed to send reminder: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to send reminder: ' . $e->getMessage()], 500);
+            $message = $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : 'the email could not be sent.';
+            return response()->json(['message' => 'Failed to send reminder: ' . $message],
+                $e instanceof \App\Exceptions\UserFacingException ? 422 : 500);
         }
     }
 

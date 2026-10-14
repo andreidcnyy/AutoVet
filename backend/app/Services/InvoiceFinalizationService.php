@@ -46,7 +46,7 @@ class InvoiceFinalizationService
                     $originalItem = Inventory::where('id', $item->inventory_id)->lockForUpdate()->first();
 
                     if (!$originalItem) {
-                        throw new Exception("Inventory item not found for ID: {$item->inventory_id}");
+                        throw new \App\Exceptions\UserFacingException("Inventory item not found for ID: {$item->inventory_id}");
                     }
 
                     // For inventory type items, we only deduct if the flag is set
@@ -105,10 +105,10 @@ class InvoiceFinalizationService
                         }
 
                         if ($totalAvailable <= 0) {
-                            throw new Exception("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
+                            throw new \App\Exceptions\UserFacingException("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
                         }
 
-                        throw new Exception("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
+                        throw new \App\Exceptions\UserFacingException("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
                     }
 
                     // Perform FIFO Deduction

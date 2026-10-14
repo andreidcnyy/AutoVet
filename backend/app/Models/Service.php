@@ -56,10 +56,10 @@ class Service extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('invoice_items')->where('service_id', $this->id)->exists()) {
-            throw new \Exception("Cannot permanently delete this service because it is referenced in past invoices.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this service because it is referenced in past invoices.");
         }
         if (DB::table('appointments')->where('service_id', $this->id)->exists()) {
-            throw new \Exception("Cannot permanently delete this service because it is referenced in past appointments.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this service because it is referenced in past appointments.");
         }
     }
 }

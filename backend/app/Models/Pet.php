@@ -198,7 +198,7 @@ class Pet extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if ($this->medicalRecords()->exists() || $this->invoices()->exists()) {
-            throw new \Exception("Cannot permanently delete this pet because it is referenced by existing medical records or invoices.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this pet because it is referenced by existing medical records or invoices.");
         }
     }
 }

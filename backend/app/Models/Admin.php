@@ -87,10 +87,10 @@ class Admin extends Authenticatable
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('appointments')->where('vet_id', $this->id)->exists()) {
-            throw new \Exception("Cannot permanently delete this user because they are assigned to past or upcoming appointments.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this user because they are assigned to past or upcoming appointments.");
         }
         if (DB::table('vet_schedules')->where('user_id', $this->id)->exists()) {
-            throw new \Exception("Cannot permanently delete this user because they have recorded work schedules.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this user because they have recorded work schedules.");
         }
     }
 }

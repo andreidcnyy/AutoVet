@@ -194,7 +194,7 @@ class Inventory extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('invoice_items')->where('inventory_id', $this->id)->exists()) {
-            throw new \Exception("Cannot permanently delete this inventory item because it is referenced in past invoices.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this inventory item because it is referenced in past invoices.");
         }
         
         if (!$this->hasOnlyInitialStockTransaction()) {

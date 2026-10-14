@@ -29,7 +29,7 @@ class ClientNotificationService
             ->first();
 
         if (!$template) {
-            throw new \Exception("No active $channel template found for event '$eventKey'.");
+            throw new \App\Exceptions\UserFacingException("No active $channel template found for event '$eventKey'.");
         }
 
         $subject = $this->interpolateVariables($template->subject ?? '', $variables, $owner, $relatedModel);
@@ -58,7 +58,7 @@ class ClientNotificationService
         try {
             if ($channel === 'email') {
                 if (empty($owner->email)) {
-                    throw new \Exception("Owner has no email address.");
+                    throw new \App\Exceptions\UserFacingException("Owner has no email address.");
                 }
 
                 // Dynamically select mailer
@@ -82,11 +82,11 @@ class ClientNotificationService
                 Mail::mailer($mailer)->to($owner->email)->send(new ClientNotificationMail($title ?? 'Notification', $message));
             } elseif ($channel === 'sms') {
                 if (empty($owner->phone)) {
-                    throw new \Exception("Owner has no phone number.");
+                    throw new \App\Exceptions\UserFacingException("Owner has no phone number.");
                 }
                 $this->smsProvider->sendSms($owner->phone, $message);
             } else {
-                throw new \Exception("Unsupported notification channel: $channel");
+                throw new \App\Exceptions\UserFacingException("Unsupported notification channel: $channel");
             }
 
             $notification->update([

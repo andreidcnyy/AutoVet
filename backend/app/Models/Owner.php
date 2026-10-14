@@ -43,7 +43,7 @@ class Owner extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if ($this->pets()->exists()) {
-            throw new \Exception("Cannot permanently delete this owner because they still have registered pets.");
+            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this owner because they still have registered pets.");
         }
     }
 

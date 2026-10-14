@@ -428,9 +428,12 @@ Route::get('/cron/check-expiry', function (Illuminate\Http\Request $request) {
 
     try {
         \Illuminate\Support\Facades\Artisan::call('inventory:check-expiry');
-        $output = \Illuminate\Support\Facades\Artisan::output();
-        return response()->json(['message' => 'Expiry check completed.', 'output' => trim($output)]);
+        // The command output stays in the log; the caller only needs to know
+        // it ran.
+        \Illuminate\Support\Facades\Log::info('[cron] inventory:check-expiry', ['output' => trim(\Illuminate\Support\Facades\Artisan::output())]);
+        return response()->json(['message' => 'Expiry check completed.']);
     } catch (\Exception $e) {
-        return response()->json(['message' => 'Failed: ' . $e->getMessage()], 500);
+        \Illuminate\Support\Facades\Log::error('[cron] inventory:check-expiry failed: ' . $e->getMessage());
+        return response()->json(['message' => 'Expiry check failed.'], 500);
     }
 });

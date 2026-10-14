@@ -175,15 +175,14 @@ class ArchiveController extends Controller
             return response()->json([
                 'message' => 'Cannot permanently delete this item because it is referenced in other database records.'
             ], 409);
+        } catch (\App\Exceptions\UserFacingException $e) {
+            // preventPermanentDeletionIfReferenced() explains what still
+            // refers to the record.
+            return response()->json(['message' => $e->getMessage()], 409);
         } catch (\Exception $e) {
-            // preventPermanentDeletionIfReferenced() throws a plain Exception
-            // with a message written for the user; anything else is internal.
-            $userFacing = $e->getMessage() !== '' && str_starts_with($e->getMessage(), 'Cannot permanently delete');
-            if (!$userFacing) {
-                \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
-            }
+            \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
             return response()->json([
-                'message' => $userFacing ? $e->getMessage() : 'Cannot permanently delete this item due to existing dependencies.'
+                'message' => 'Cannot permanently delete this item due to existing dependencies.'
             ], 409);
         }
     }

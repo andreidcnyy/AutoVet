@@ -232,7 +232,7 @@ class InvoiceController extends Controller
                         try {
                             $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
                         } catch (\Throwable $e) {
-                            throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                            throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
                         }
                     }
                 } else {
@@ -320,7 +320,7 @@ class InvoiceController extends Controller
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
-                throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
@@ -354,13 +354,13 @@ class InvoiceController extends Controller
             throw $e;
         } catch (\Throwable $e) {
             DB::rollBack();
+            // No request payload in the log: it carries client details.
             \Illuminate\Support\Facades\Log::error("Invoice creation failed: " . $e->getMessage(), [
+                'exception' => get_class($e),
                 'stack' => $e->getTraceAsString(),
-                'payload' => $request->all()
             ]);
             return response()->json([
                 'message' => 'Failed to create report.',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -461,7 +461,7 @@ class InvoiceController extends Controller
                             try {
                                 $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
                             } catch (\Throwable $e) {
-                                throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
                             }
                         }
                     } else {
@@ -554,7 +554,7 @@ class InvoiceController extends Controller
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
-                throw ValidationException::withMessages(['items' => $e->getMessage()]);
+                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
@@ -584,9 +584,17 @@ class InvoiceController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             \Illuminate\Support\Facades\Log::error("Invoice update failed: " . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Failed to update report.', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to update report.'], 500);
         }
     }
+
+    /** Logs an unexpected failure and returns the generic text to show instead. */
+    private function logged(\Throwable $e, string $context, string $generic): string
+    {
+        \Illuminate\Support\Facades\Log::error("[{$context}] " . $e->getMessage(), ['exception' => get_class($e)]);
+        return $generic;
+    }
+
 
     /**
      * Remove the specified invoice.

@@ -45,14 +45,14 @@ class PricingService
                 }
             }
 
-            throw new \Exception("No pricing rule configured for service '{$service->name}' for pet size.");
+            throw new \App\Exceptions\UserFacingException("No pricing rule configured for service '{$service->name}' for pet size.");
         }
 
         if ($service->pricing_type === 'weight_based' && isset($pet)) {
             $petWeight = $weight ?? (float) $pet->weight;
             
             if ($petWeight === null || $petWeight <= 0) {
-                throw new \Exception("Pet weight is required for weight-based service '{$service->name}'.");
+                throw new \App\Exceptions\UserFacingException("Pet weight is required for weight-based service '{$service->name}'.");
             }
             
             $range = \App\Models\WeightRange::where('status', 'Active')
@@ -75,7 +75,7 @@ class PricingService
                 }
             }
 
-            throw new \Exception("No pricing rule configured for weight '{$petWeight}kg' (Species: {$pet->species_id}) for service '{$service->name}'.");
+            throw new \App\Exceptions\UserFacingException("No pricing rule configured for weight '{$petWeight}kg' (Species: {$pet->species_id}) for service '{$service->name}'.");
         }
 
         // Final fallback: Use base_price or legacy price

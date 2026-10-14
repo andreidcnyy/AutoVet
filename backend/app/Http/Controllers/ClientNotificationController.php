@@ -80,7 +80,7 @@ class ClientNotificationController extends Controller
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send invoice email: ' . $e->getMessage(),
+                'message' => 'Failed to send invoice email: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-invoice', 'the email could not be sent.')),
             ], 422);
         }
     }
@@ -109,7 +109,7 @@ class ClientNotificationController extends Controller
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send warning: ' . $e->getMessage(),
+                'message' => 'Failed to send warning: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-warning', 'the email could not be sent.')),
             ], 422);
         }
     }
@@ -125,6 +125,13 @@ class ClientNotificationController extends Controller
             return response()->json($warnings);
         }
         return response()->json([], 403);
+    }
+
+    /** Logs an unexpected failure and returns the generic text to show instead. */
+    private function logged(\Throwable $e, string $context, string $generic): string
+    {
+        \Illuminate\Support\Facades\Log::error("[{$context}] " . $e->getMessage(), ['exception' => get_class($e)]);
+        return $generic;
     }
 
     public function send(Request $request)
@@ -176,8 +183,7 @@ class ClientNotificationController extends Controller
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send notification: ' . $e->getMessage(),
-                'error' => $e->getMessage()
+                'message' => 'Failed to send notification: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-notification', 'the message could not be sent.')),
             ], 422);
         }
     }

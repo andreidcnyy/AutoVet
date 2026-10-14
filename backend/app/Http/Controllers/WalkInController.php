@@ -68,7 +68,7 @@ class WalkInController extends Controller
                     // Duplicate phone check
                     $existing = Owner::where('phone', $ownerData['phone'])->first();
                     if ($existing) {
-                        throw new \Exception("An owner with phone {$ownerData['phone']} already exists: {$existing->name}. Use 'Link Existing Owner' instead.");
+                        throw new \App\Exceptions\UserFacingException("An owner with phone {$ownerData['phone']} already exists: {$existing->name}. Use 'Link Existing Owner' instead.");
                     }
                     $owner = Owner::create([
                         'name'     => $ownerData['name'],
@@ -85,7 +85,7 @@ class WalkInController extends Controller
                 // Duplicate pet name check under same owner
                 $dupePet = Pet::where('owner_id', $owner->id)->where('name', $petData['name'])->first();
                 if ($dupePet) {
-                    throw new \Exception("A pet named '{$petData['name']}' already exists for this owner.");
+                    throw new \App\Exceptions\UserFacingException("A pet named '{$petData['name']}' already exists for this owner.");
                 }
 
                 $pet = Pet::create([
@@ -134,8 +134,11 @@ class WalkInController extends Controller
             return response()->json($result, 201);
         } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
             return response()->json(['message' => 'Another booking for this time is in progress. Please try again.'], 409);
-        } catch (\Exception $e) {
+        } catch (\App\Exceptions\UserFacingException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[walk-in] ' . $e->getMessage(), ['exception' => get_class($e)]);
+            return response()->json(['message' => 'The walk-in could not be registered. Please try again.'], 500);
         }
     }
 }

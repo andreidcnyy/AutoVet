@@ -125,6 +125,12 @@ class ImportController extends Controller
         try {
             while (($data = fgetcsv($handle)) !== FALSE) {
                 $rowNumber++;
+                // A row with more or fewer cells than the header made
+                // array_combine() throw and abort the whole import.
+                if (count($data) !== count($header)) {
+                    $errors[] = "Row {$rowNumber}: expected " . count($header) . " columns, found " . count($data) . ".";
+                    continue;
+                }
                 $row = array_combine($header, $data);
                 
                 $validator = Validator::make($row, $rules);
@@ -156,8 +162,7 @@ class ImportController extends Controller
             DB::rollBack();
             Log::error("Import Error ({$type}): " . $e->getMessage());
             return response()->json([
-                'message' => 'An error occurred during import.',
-                'error' => $e->getMessage()
+                'message' => 'An error occurred during import. No rows were saved.',
             ], 500);
         } finally {
             fclose($handle);

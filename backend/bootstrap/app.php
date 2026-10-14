@@ -19,7 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
-            'api/sync/receive',
             'api/login',
             'api/register',
         ]);
@@ -41,6 +40,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
+        });
+
+        // Messages written for the user (out of stock, no price rule, owner
+        // has no email). Anything else stays generic below.
+        $exceptions->render(function (\App\Exceptions\UserFacingException $e, Request $request) {
+            return response()->json(['message' => $e->getMessage()], 422);
         });
 
         $exceptions->render(function (\Throwable $e, Request $request) {

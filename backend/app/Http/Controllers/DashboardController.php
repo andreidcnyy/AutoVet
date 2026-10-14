@@ -842,7 +842,7 @@ class DashboardController extends Controller
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Failed to dismiss notification: " . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+            return response()->json(['message' => 'The notification could not be dismissed.'], 500);
         }
     }
 
@@ -906,7 +906,6 @@ class DashboardController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to initiate AI analysis.',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -942,7 +941,7 @@ class DashboardController extends Controller
             return response()->json(['message' => 'All notifications marked as read.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Failed to mark notifications as read: " . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Notifications could not be updated.'], 500);
         }
     }
 
@@ -975,7 +974,7 @@ class DashboardController extends Controller
             return response()->json(['message' => 'Notifications cleared from dashboard. History preserved.']);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Failed to clear notifications: " . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Notifications could not be updated.'], 500);
         }
     }
 

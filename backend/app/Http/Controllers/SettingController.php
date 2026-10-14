@@ -49,7 +49,7 @@ class SettingController extends Controller
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::error("Logo Upload FAILED: " . $e->getMessage());
                     return response()->json([
-                        'message' => 'Logo upload failed: ' . $e->getMessage(),
+                        'message' => 'Logo upload failed. Please use a JPG, PNG, GIF or WebP image.',
                     ], 500);
                 }
             }

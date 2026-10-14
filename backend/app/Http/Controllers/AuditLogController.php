@@ -78,7 +78,7 @@ class AuditLogController extends Controller
                 'user' => auth()->id(),
                 'request_keys' => array_keys($request->all())
             ]);
-            return response()->json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'The audit log could not be loaded.'], 500);
         }
     }
 }
