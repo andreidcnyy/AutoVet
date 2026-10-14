@@ -235,6 +235,13 @@ class AppointmentController extends Controller
             if (!$pet || $pet->owner_id != $ownerId) {
                 return response()->json(['message' => 'You can only book appointments for your own pets.'], 403);
             }
+
+            // A client's booking is a request: the clinic approves it. The
+            // status and walk-in flag were taken from the request as sent,
+            // so a client could book straight in as approved (or completed),
+            // bypassing approval and the slot queue.
+            $validated['status'] = 'pending';
+            $validated['is_walk_in'] = false;
         }
 
         // Max 2 active appointments per pet per day — portal users only
@@ -409,14 +416,26 @@ class AppointmentController extends Controller
             'vet_id'        => 'nullable|exists:admins,id',
         ]);
 
-        // Portal owners cannot reassign an appointment to a pet they don't own
-        if ($ownerId = $this->getPortalOwnerId()) {
-            if (isset($validated['pet_id'])) {
-                $pet = \App\Models\Pet::find($validated['pet_id']);
-                if (!$pet || $pet->owner_id != $ownerId) {
-                    return response()->json(['message' => 'You can only assign appointments to your own pets.'], 403);
-                }
+        // A client may only cancel their own upcoming booking. Every other
+        // field — status included — used to be accepted, so a client could
+        // approve, complete or reschedule their own appointment.
+        if ($this->getPortalOwnerId()) {
+            if (($validated['status'] ?? null) !== 'cancelled' || count($validated) !== 1) {
+                return response()->json(['message' => 'You can only cancel an appointment. Please contact the clinic to change it.'], 403);
             }
+            if (!in_array(strtolower((string) $appointment->status), ['pending', 'approved'], true)) {
+                return response()->json(['message' => 'This appointment can no longer be cancelled.'], 409);
+            }
+
+            $appointment->update(['status' => 'cancelled']);
+            $this->invalidatePortalCache($appointment->pet?->owner_id);
+            try {
+                event(new \App\Events\AppointmentStatusUpdated($appointment));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Cancel broadcast failed: ' . $e->getMessage());
+            }
+
+            return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
         }
 
         if (isset($validated['service_id'])) {

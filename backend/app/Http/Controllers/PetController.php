@@ -194,8 +194,10 @@ class PetController extends Controller
         $clinicalFields = ['chief_complaint', 'findings', 'diagnosis', 'treatment_plan', 'vet_id'];
         $pet = Pet::create(array_diff_key($validated, array_flip($clinicalFields)));
 
-        // Check for clinical fields to create an initial medical record
-        if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
+        // Check for clinical fields to create an initial medical record. Only
+        // clinicians write medical records; a portal client could otherwise
+        // file a diagnosis attributed to any vet by sending these fields.
+        if ($this->canWriteClinicalNotes() && $request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
             $recordVetId = $request->vet_id;
             if (!$recordVetId) {
                 $user = auth()->user();
@@ -222,14 +224,28 @@ class PetController extends Controller
         return response()->json($pet->load(['owner', 'species', 'breed', 'sizeCategory'])->append(['total_paid', 'total_due', 'last_visit', 'next_due']), 201);
     }
 
+    /** Medical records are written by clinical roles (vets, clinic admins) only. */
+    private function canWriteClinicalNotes(): bool
+    {
+        $user = auth()->user();
+        return $user && method_exists($user, 'isClinical') && $user->isClinical();
+    }
+
     public function show(Pet $pet)
     {
-        // Explicitly load relations and append attributes for the detail view
+        $user = auth()->user();
+        $isOwner = $user && method_exists($user, 'isOwner') && $user->isOwner();
+
+        // Explicitly load relations and append attributes for the detail view.
+        // The vet is reduced to a name (the whole staff row, email and
+        // status included, used to reach the client), and a client does not
+        // see invoices the clinic is still drafting.
         return response()->json($pet->load([
                 'owner',
                 'species' => $this->unscopedName(),
                 'breed' => $this->unscopedName(),
-                'sizeCategory', 'appointments.service', 'medicalRecords.vet', 'invoices',
+                'sizeCategory', 'appointments.service', 'medicalRecords.vet:id,name',
+                'invoices' => fn ($q) => $isOwner ? $q->whereRaw('LOWER(status) != ?', ['draft']) : $q,
             ])
             ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
@@ -287,7 +303,8 @@ class PetController extends Controller
         $pet->update(array_diff_key($validated, array_flip($clinicalFields)));
 
         // Check for clinical fields to create a NEW medical record entry
-        if ($request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
+        // (clinicians only — see store()).
+        if ($this->canWriteClinicalNotes() && $request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
             // Only create if at least one clinical field is not empty
             if ($request->chief_complaint || $request->findings || $request->diagnosis || $request->treatment_plan) {
                 $recordVetId = $request->vet_id;

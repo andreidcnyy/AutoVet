@@ -42,7 +42,10 @@ class InvoicePolicy
         }
 
         if (method_exists($user, 'isOwner') && $user->isOwner()) {
-            return $user->owner?->id === $invoice->pet?->owner_id;
+            // Drafts are the clinic's work in progress; the listing already
+            // hides them from clients, and opening one by id must too.
+            return $user->owner?->id === $invoice->pet?->owner_id
+                && strtolower((string) $invoice->status) !== 'draft';
         }
 
         return false;
