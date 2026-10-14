@@ -3,15 +3,21 @@ import clsx from "clsx";
 import { FiRefreshCcw, FiAlertTriangle } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { usePageParam } from "../../hooks/usePageParam";
+import { ROLES } from "../../constants/roles";
 
 const ARCHIVE_TYPES = [
   { id: "pets", label: "Pets" },
   { id: "owners", label: "Owners" },
   { id: "services", label: "Services" },
   { id: "inventories", label: "Inventory" },
-  { id: "admins", label: "Users" },
-  { id: "pending_deletions", label: "Pending Deletions", isPending: true },
+  // Account archives are restored or purged by administrators only; the
+  // server refuses them for other roles, so they are not offered.
+  { id: "admins", label: "Users", managersOnly: true },
+  { id: "pending_deletions", label: "Pending Deletions", isPending: true, managersOnly: true },
 ];
+
+const MANAGER_ROLES = [ROLES.SUPER_ADMIN, ROLES.CLINIC_ADMIN];
 
 export default function ArchiveRecoveryTab() {
   const [activeType, setActiveType] = useState("pets");
@@ -26,6 +32,10 @@ export default function ArchiveRecoveryTab() {
   const toast = useToast();
   const { user } = useAuth();
   const controllerRef = React.useRef(null);
+  const archiveTypes = ARCHIVE_TYPES.filter(t => !t.managersOnly || MANAGER_ROLES.includes(user?.role));
+  // In the URL, so Back steps through pages instead of leaving Settings.
+  const [page, setPage] = usePageParam("archivePage");
+  const lastType = React.useRef(activeType);
 
   const fetchArchives = async (type, page = 1) => {
     if (controllerRef.current) controllerRef.current.abort();
@@ -62,17 +72,22 @@ export default function ArchiveRecoveryTab() {
 
   useEffect(() => {
     if (!user?.token) return;
-    fetchArchives(activeType, 1);
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchArchives(activeType, 1); };
+    // Switching type starts again at page 1; the next run loads it.
+    if (lastType.current !== activeType) {
+      lastType.current = activeType;
+      if (page !== 1) { setPage(1, { replace: true }); return; }
+    }
+    fetchArchives(activeType, page);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchArchives(activeType, page); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [activeType, user?.token]);
+  }, [activeType, user?.token, page]);
 
-  const handlePageChange = (page) => {
-    fetchArchives(activeType, page);
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -191,7 +206,7 @@ export default function ArchiveRecoveryTab() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2 border-b border-zinc-200 pb-4 dark:border-dark-border">
-        {ARCHIVE_TYPES.map((t) => (
+        {archiveTypes.map((t) => (
           <button
             key={t.id}
             onClick={() => setActiveType(t.id)}

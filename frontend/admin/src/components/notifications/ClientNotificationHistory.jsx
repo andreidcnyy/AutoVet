@@ -4,11 +4,13 @@ import { FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import echo from '../../utils/echo';
 import { adminChannel } from "../../utils/echo";
+import { usePageParam } from "../../hooks/usePageParam";
 
 export default function ClientNotificationHistory() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
+    // In the URL, so Back steps through pages instead of leaving the screen.
+    const [page, setPage] = usePageParam("page");
     const [totalPages, setTotalPages] = useState(1);
     
     // Filters
@@ -65,7 +67,7 @@ export default function ClientNotificationHistory() {
                 <div className="flex gap-3">
                     <select 
                         value={channel} 
-                        onChange={e => { setChannel(e.target.value); setPage(1); }}
+                        onChange={e => { setChannel(e.target.value); setPage(1, { replace: true }); }}
                         className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     >
                         <option value="">All Channels</option>
@@ -74,7 +76,7 @@ export default function ClientNotificationHistory() {
                     </select>
                     <select 
                         value={status} 
-                        onChange={e => { setStatus(e.target.value); setPage(1); }}
+                        onChange={e => { setStatus(e.target.value); setPage(1, { replace: true }); }}
                         className="bg-[#1e1e2d] border border-gray-700 text-gray-300 rounded-lg p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     >
                         <option value="">All Statuses</option>

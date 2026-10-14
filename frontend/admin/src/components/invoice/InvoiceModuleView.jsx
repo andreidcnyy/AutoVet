@@ -35,6 +35,7 @@ import ManualSendModal from "../notifications/ManualSendModal";
 import api from "../../api";
 import { adminChannel } from "../../utils/echo";
 import { fetchAllPages } from "../../utils/fetchAllPages";
+import { usePageParam } from "../../hooks/usePageParam";
 
 // The clinic prices VAT-inclusive: every line amount already contains this rate.
 const VAT_RATE = 0.12;
@@ -745,6 +746,9 @@ function InvoiceModuleView() {
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftsSearch, setDraftsSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  // The history page lives in the URL, so Back steps through pages instead
+  // of leaving the screen, and a refresh stays on the same page.
+  const [historyPage, setHistoryPage] = usePageParam("page");
   const [pagination, setPagination] = useState({
     currentPage: 1,
     lastPage: 1,
@@ -970,7 +974,7 @@ function InvoiceModuleView() {
 
   useEffect(() => {
     if (activeTab === "history") {
-      fetchInvoices(1, searchQuery, null, true);
+      fetchInvoices(historyPage, searchQuery, null, true);
     }
     if (activeTab === "drafts") {
       fetchDrafts(false);
@@ -984,12 +988,12 @@ function InvoiceModuleView() {
     if (!user?.token) return;
     const ch = echo.private(adminChannel('invoices'));
     ch.listen('.invoice.updated', () => {
-      if (activeTab === "history") fetchInvoices(1, searchQuery, null, true);
+      if (activeTab === "history") fetchInvoices(historyPage, searchQuery, null, true);
       if (activeTab === "drafts") fetchDrafts(true);
       fetchDrafts(true); // always keep draft badge live
     });
     return () => echo.leave(adminChannel('invoices'));
-  }, [user?.token, activeTab, searchQuery]);
+  }, [user?.token, activeTab, searchQuery, historyPage]);
 
   // Auto-open an invoice when navigated here from the dashboard with a viewInvoiceId
   useEffect(() => {
@@ -999,20 +1003,25 @@ function InvoiceModuleView() {
     handleViewInvoiceDetails({ id });
   }, [location.state, user?.token, handleViewInvoiceDetails]);
 
-  // Debounced search effect
+  // Loads the page in the URL. Typing is debounced; a page change (including
+  // Back/Forward) loads at once. The search box resets the page to 1 itself.
+  const lastSearch = useRef(searchQuery);
   useEffect(() => {
     if (activeTab !== "history") return;
 
+    const searchChanged = lastSearch.current !== searchQuery;
+    lastSearch.current = searchQuery;
+
     const controller = new AbortController();
     const handler = setTimeout(() => {
-      fetchInvoices(1, searchQuery, controller.signal); // Always reset to page 1 on search
-    }, 500);
+      fetchInvoices(historyPage, searchQuery, controller.signal);
+    }, searchChanged ? 500 : 0);
 
     return () => {
       clearTimeout(handler);
       controller.abort();
     };
-  }, [searchQuery]);
+  }, [searchQuery, historyPage]);
 
   const filteredAppointments = useMemo(() => {
     // A booked or completed visit can be invoiced; cancelled, declined,
@@ -1593,7 +1602,7 @@ function InvoiceModuleView() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => fetchInvoices(pagination.currentPage - 1)}
+            onClick={() => setHistoryPage(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
           >
@@ -1619,7 +1628,7 @@ function InvoiceModuleView() {
               return (
                 <button
                   key={pageNum}
-                  onClick={() => fetchInvoices(pageNum)}
+                  onClick={() => setHistoryPage(pageNum)}
                   className={clsx(
                     "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black transition-all",
                     pagination.currentPage === pageNum
@@ -1634,7 +1643,7 @@ function InvoiceModuleView() {
           </div>
 
           <button
-            onClick={() => fetchInvoices(pagination.currentPage + 1)}
+            onClick={() => setHistoryPage(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.lastPage}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
           >
@@ -2678,7 +2687,7 @@ function InvoiceModuleView() {
                     type="text"
                     placeholder="Search invoice, patient, owner..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => { setSearchQuery(e.target.value); setHistoryPage(1, { replace: true }); }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         fetchInvoices(1);
@@ -2690,6 +2699,7 @@ function InvoiceModuleView() {
                     <button
                       onClick={() => {
                         setSearchQuery("");
+                        setHistoryPage(1, { replace: true });
                         fetchInvoices(1, "");
                       }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"

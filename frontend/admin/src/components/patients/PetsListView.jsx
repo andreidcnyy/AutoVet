@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo, useRef } from "react";
+import { usePageParam } from "../../hooks/usePageParam";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -28,7 +29,8 @@ function PetsListView() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  // In the URL (?petsPage=), so Back steps through pages instead of leaving.
+  const [currentPage, setCurrentPage] = usePageParam("petsPage");
   const itemsPerPage = 12;
 
   // Modal State
@@ -83,10 +85,14 @@ function PetsListView() {
     });
   }, [pets, searchQuery]);
 
-  // Reset to page 1 when filter changes
+  // Reset to page 1 when the search changes — not on first render, which
+  // would throw away a page number arriving in the URL.
+  const lastSearch = useRef(searchQuery);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+    if (lastSearch.current === searchQuery) return;
+    lastSearch.current = searchQuery;
+    setCurrentPage(1, { replace: true });
+  }, [searchQuery, setCurrentPage]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredPets.length / itemsPerPage);

@@ -28,6 +28,7 @@ import ReceiveStockModal from "./ReceiveStockModal";
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, VET_AND_ADMIN } from "../../constants/roles";
 import { useApi, useQueryClient } from "../../hooks/useApi";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../api";
 import { adminChannel } from "../../utils/echo";
 
@@ -172,7 +173,8 @@ function InventoryView() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
   // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
+  // In the URL, so Back steps through pages instead of leaving the screen.
+  const [currentPage, setCurrentPage] = usePageParam("page");
   const [showAiGuide, setShowAiGuide] = useState(false);
   // Which product rows have their batch list open. Keyed by product key, so it
   // survives a refetch that hands back new row objects.
@@ -456,12 +458,12 @@ function InventoryView() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1, { replace: true }); }}
                 placeholder="Search items or codes..."
                 className="w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 py-2 text-sm font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                <button onClick={() => { setSearchQuery(""); setCurrentPage(1, { replace: true }); }}className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                   <FiX className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -493,7 +495,7 @@ function InventoryView() {
             ].map(f => (
               <button
                 key={f.id}
-                onClick={() => { setActiveFilter(f.id); setCurrentPage(1); }}
+                onClick={() => { setActiveFilter(f.id); setCurrentPage(1, { replace: true }); }}
                 className={clsx(
                   "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
                   activeFilter === f.id ? f.active : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"

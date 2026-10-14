@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { usePageParam } from "../../hooks/usePageParam";
 import clsx from "clsx";
 import echo from "../../utils/echo";
 import { getPetImageUrl, getActualPetImageUrl, onPetImageError } from "../../utils/petImages";
@@ -573,6 +574,8 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Overview Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onChangePhoto, onRemovePhoto, onPhotoFileChange }) {
+  // "Book Appointment" below navigates; without this the click threw.
+  const navigate = useNavigate();
   const owner = patient.owner;
   const hasOwner = owner && typeof owner === 'object' && owner.id;
 
@@ -729,7 +732,8 @@ function InfoCard({ icon: Icon, iconColor, title, value }) {
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Appointments Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function AppointmentsTab({ appointments }) {
-  const [currentPage, setCurrentPage] = useState(1);
+  // Page numbers live in the URL so Back steps through them (see usePageParam).
+  const [currentPage, setCurrentPage] = usePageParam("visitsPage");
   const [selectedApt, setSelectedApt] = useState(null);
   const appointmentsPerPage = 5;
 
@@ -890,7 +894,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   const [sendingRecord, setSendingRecord] = useState(null);
 
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = usePageParam("recordsPage");
   const recordsPerPage = 5;
 
   const fetchRecords = () => {
@@ -1442,7 +1446,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Invoices Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function InvoiceTab({ invoices }) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = usePageParam("invoicesPage");
   const [selectedInv, setSelectedInv] = useState(null);
   const invoicesPerPage = 5;
 

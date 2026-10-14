@@ -4,6 +4,7 @@ import { FiSearch, FiRefreshCcw, FiUserCheck, FiUserX, FiAlertCircle, FiX } from
 import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api";
+import { usePageParam } from "../../hooks/usePageParam";
 
 const STATUS_BADGE = {
   active:      "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -19,7 +20,8 @@ export default function PortalUsersTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(1);
+  // In the URL, so Back steps through pages instead of leaving Settings.
+  const [page, setPage] = usePageParam("portalUsersPage");
   const [pagination, setPagination] = useState({ last_page: 1, total: 0 });
   const [actionLoading, setActionLoading] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { user, action }
@@ -72,19 +74,19 @@ export default function PortalUsersTab() {
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 h-4 w-4" />
             <input
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              onChange={e => { setSearch(e.target.value); setPage(1, { replace: true }); }}
               placeholder="Search name / email / phone..."
               className="h-10 pl-9 pr-9 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface dark:border-dark-border text-sm w-56"
             />
             {search && (
-              <button onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              <button onClick={() => { setSearch(""); setPage(1, { replace: true }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                 <FiX className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
           <select
             value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1, { replace: true }); }}
             className="h-10 px-3 rounded-xl border border-zinc-200 bg-white dark:bg-dark-surface dark:border-dark-border text-sm font-bold"
           >
             <option value="">All Statuses</option>

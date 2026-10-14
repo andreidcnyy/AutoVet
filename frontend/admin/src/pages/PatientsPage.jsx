@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNewItems } from "../context/NewItemsContext";
 import { PH_LOCATION_DATA } from "../utils/phLocationData";
 import { useApi, useQueryClient } from "../hooks/useApi";
+import { usePageParam } from "../hooks/usePageParam";
 import { FiChevronDown, FiUser, FiPhone, FiMail, FiMapPin, FiMap } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import clsx from "clsx";
@@ -24,7 +25,8 @@ function PatientsPage() {
   const [selectedOwnerId, setSelectedOwnerId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ownerToEdit, setOwnerToEdit] = useState(null);
-  const [page, setPage] = useState(1);
+  // In the URL, so Back steps through pages instead of leaving the screen.
+  const [page, setPage] = usePageParam("page");
 
   // Form States for New Owner Registration
   const [phoneValue, setPhoneValue] = useState("");
@@ -425,8 +427,8 @@ function PatientsPage() {
           pagination={pagination}
           isLoading={isLoading}
           onPageChange={(page) => fetchOwners(page, searchQuery)}
-          onSearch={(q) => { setSearchQuery(q); fetchOwners(1, q, filterValue); }}
-          onFilter={(f) => { setFilterValue(f); fetchOwners(1, searchQuery, f); }}
+          onSearch={(q) => { setSearchQuery(q); setPage(1, { replace: true }); }}
+          onFilter={(f) => { setFilterValue(f); setPage(1, { replace: true }); }}
           selectedOwnerId={selectedOwnerId}
           onSelectOwner={setSelectedOwnerId}
           onOpenAddPatient={() => {

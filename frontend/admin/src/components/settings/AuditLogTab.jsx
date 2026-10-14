@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiActivity, FiSearch, FiX, FiChevronRight } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../api";
 import clsx from "clsx";
 import echo from "../../utils/echo";
@@ -257,6 +258,9 @@ function AuditLogTab() {
     date_to: "",
   });
 
+  // In the URL, so Back steps through pages instead of leaving Settings.
+  const [page, setPage] = usePageParam("auditPage");
+
   const AUDIT_CACHE_KEY = "settings_audit_logs_cache";
   const AUDIT_CACHE_TTL = 5 * 60 * 1000;
 
@@ -321,21 +325,29 @@ function AuditLogTab() {
     }
   };
 
+  // A new filter starts again at page 1; the next run of this effect then
+  // loads it. Otherwise load the page in the URL (Back/Forward included).
+  const lastFilters = React.useRef(filters);
   useEffect(() => {
-    fetchLogs(1);
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(1); };
+    if (lastFilters.current !== filters) {
+      lastFilters.current = filters;
+      if (page !== 1) { setPage(1, { replace: true }); return; }
+    }
+
+    fetchLogs(page);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchLogs(page); };
     document.addEventListener('visibilitychange', onVisible);
     const ch = echo.private(adminChannel('notifications'));
-    ch.listen('.entity.created', () => fetchLogs(1)).listen('.notification.created', () => fetchLogs(1));
+    ch.listen('.entity.created', () => fetchLogs(page)).listen('.notification.created', () => fetchLogs(page));
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
       document.removeEventListener('visibilitychange', onVisible);
       ch.stopListening('.entity.created').stopListening('.notification.created');
     };
-  }, [filters]);
+  }, [filters, page]);
 
-  const handlePageChange = (page) => {
-    fetchLogs(page);
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

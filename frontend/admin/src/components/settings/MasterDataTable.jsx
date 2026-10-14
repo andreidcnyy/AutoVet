@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
+import { usePageParam } from "../../hooks/usePageParam";
 
 export default function MasterDataTable({ title, description, apiUrl, columns, initialForm, defaultSortBy = "name" }) {
   const { success, error } = useToast();
@@ -15,7 +16,9 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState(defaultSortBy);
   const [sortDir, setSortDir] = useState("asc");
-  const [page, setPage] = useState(1);
+  // In the URL, one key per table (e.g. ?speciesPage=2), so Back steps
+  // through pages instead of leaving Settings.
+  const [page, setPage] = usePageParam(`${apiUrl.split("/").filter(Boolean).pop().replace(/\W+/g, "_")}Page`);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -168,11 +171,11 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
               type="text"
               placeholder="Search..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); setPage(1, { replace: true }); }}
               className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-9 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
             />
             {search && (
-              <button onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+              <button onClick={() => { setSearch(""); setPage(1, { replace: true }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                 <FiX className="h-3.5 w-3.5" />
               </button>
             )}
