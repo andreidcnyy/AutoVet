@@ -1,0 +1,2 @@
+# PDFs are binary: line-ending conversion would corrupt them.
+*.pdf binary
