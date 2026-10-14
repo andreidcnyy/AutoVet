@@ -17,6 +17,7 @@ import {
 } from "react-icons/fi";
 import { LuPawPrint } from "react-icons/lu";
 import { adminChannel } from "../../utils/echo";
+import { fetchAllPages } from "../../utils/fetchAllPages";
 
 function PetsListView() {
   const navigate = useNavigate();
@@ -37,17 +38,20 @@ function PetsListView() {
   const fetchPets = async () => {
     if (!user?.token) return;
     try {
-      const response = await fetch("/api/pets?per_page=1000", {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        }
+      // The list is filtered and paged on this screen, so it needs every
+      // pet; the API serves at most 100 per page.
+      const all = await fetchAllPages(async (page) => {
+        const response = await fetch(`/api/pets?per_page=100&page=${page}`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${user.token}`
+          }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
       });
-      if (response.ok) {
-        const data = await response.json();
-        setPets(data.data || []);
-        setTotalCount(data.total ?? (data.data?.length ?? 0));
-      }
+      setPets(all.data);
+      setTotalCount(all.total);
     } catch (error) {
       console.error("Failed to fetch pets:", error);
       toast.error("Failed to load patient records.");

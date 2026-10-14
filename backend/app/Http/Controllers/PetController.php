@@ -104,22 +104,22 @@ class PetController extends Controller
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('name', 'like', \App\Support\ListQuery::contains($search))
                   ->orWhereHas('owner', function($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
+                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
                   })
                   ->orWhereHas('breed', function($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
+                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
                   })
                   ->orWhereHas('species', function($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
+                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
                   });
             });
         }
 
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-        $perPage = $request->get('per_page', 12);
+        $perPage = \App\Support\ListQuery::perPage($request, 12);
         return response()->json($query->paginate($perPage));
     }
 

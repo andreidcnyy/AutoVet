@@ -35,7 +35,8 @@ class PatientReportController extends Controller
      */
     public function getRegistrationTrends(Request $request)
     {
-        $months = $request->query('months', 6);
+        $request->validate(['months' => 'nullable|integer|min:1|max:60']);
+        $months = (int) $request->query('months', 6);
         $startDate = Carbon::now()->subMonths($months);
 
         $trends = Owner::where('created_at', '>=', $startDate)

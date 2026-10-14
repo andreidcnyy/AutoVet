@@ -1004,11 +1004,12 @@ class DashboardController extends Controller
     public function appointmentsToday(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = $request->query('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
 
         $appointments = $this->trackerQuery('today')
             ->with(['pet.owner', 'service'])
             ->orderBy('time', 'asc')
+            ->orderBy('id')
             ->paginate($perPage);
 
         $items = collect($appointments->items())->map(fn($a) => [
@@ -1038,11 +1039,12 @@ class DashboardController extends Controller
     public function appointmentsUpcoming(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = $request->query('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
         $appointments = $this->trackerQuery('upcoming')
             ->with(['pet.owner', 'service'])
             ->orderBy('date', 'asc')
             ->orderBy('time', 'asc')
+            ->orderBy('id')
             ->paginate($perPage);
 
         $items = collect($appointments->items())->map(fn($a) => [
@@ -1072,12 +1074,13 @@ class DashboardController extends Controller
 
     public function petsList(Request $request): JsonResponse
     {
-        $perPage = $request->query('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
         $pets = Pet::with(['owner', 'species', 'breed'])
             ->whereHas('owner', function($q) {
                 $q->where('email', '!=', 'dataset.seeder@autovet.ai');
             })
             ->orderBy('name', 'asc')
+            ->orderBy('id')
             ->paginate($perPage);
 
         $items = collect($pets->items())->map(fn($p) => [
@@ -1103,10 +1106,11 @@ class DashboardController extends Controller
 
     public function clientsList(Request $request): JsonResponse
     {
-        $perPage = $request->query('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
         $clients = Owner::withCount('pets')
             ->where('email', '!=', 'dataset.seeder@autovet.ai')
             ->orderBy('name', 'asc')
+            ->orderBy('id')
             ->paginate($perPage);
 
         $items = collect($clients->items())->map(fn($o) => [
@@ -1133,10 +1137,11 @@ class DashboardController extends Controller
     public function appointmentsCancelled(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = $request->query('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
         $appointments = $this->trackerQuery('cancelled')
             ->with(['pet.owner', 'service'])
             ->orderBy('updated_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage);
 
         $items = collect($appointments->items())->map(fn($a) => [

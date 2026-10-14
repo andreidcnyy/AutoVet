@@ -29,10 +29,10 @@ class PatientOwnerController extends Controller
             if ($request->filled('search')) {
                 $search = $request->get('search');
                 $query->where(function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhereHas('pets', fn($p) => $p->where('name', 'like', "%{$search}%"));
+                    $q->where('name', 'like', \App\Support\ListQuery::contains($search))
+                      ->orWhere('phone', 'like', \App\Support\ListQuery::contains($search))
+                      ->orWhere('email', 'like', \App\Support\ListQuery::contains($search))
+                      ->orWhereHas('pets', fn($p) => $p->where('name', 'like', \App\Support\ListQuery::contains($search)));
                 });
             }
             return response()->json($query->orderBy('name')->get());
@@ -63,14 +63,14 @@ class PatientOwnerController extends Controller
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%")
-                  ->orWhere('city', 'like', "%{$search}%")
-                  ->orWhere('province', 'like', "%{$search}%")
-                  ->orWhere('zip', 'like', "%{$search}%")
-                  ->orWhereHas('pets', fn($p) => $p->where('name', 'like', "%{$search}%"));
+                $q->where('name', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('phone', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('email', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('address', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('city', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('province', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('zip', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhereHas('pets', fn($p) => $p->where('name', 'like', \App\Support\ListQuery::contains($search)));
             });
         }
 
@@ -81,7 +81,7 @@ class PatientOwnerController extends Controller
 
         $query->orderBy('id', 'desc');
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = \App\Support\ListQuery::perPage($request, 10);
         $paginated = $query->paginate($perPage);
 
         return response()->json($paginated);

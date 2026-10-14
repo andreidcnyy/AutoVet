@@ -65,7 +65,7 @@ class AppointmentController extends Controller
         }
 
         // Filtering by Pet
-        if ($request->has('pet_id')) {
+        if ($request->filled('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }
 
@@ -115,11 +115,11 @@ class AppointmentController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
+                $q->where('title', 'like', \App\Support\ListQuery::contains($search))
                   ->orWhereHas('pet', function($pq) use ($search) {
-                      $pq->where('name', 'like', "%{$search}%")
+                      $pq->where('name', 'like', \App\Support\ListQuery::contains($search))
                         ->orWhereHas('owner', function($oq) use ($search) {
-                            $oq->where('name', 'like', "%{$search}%");
+                            $oq->where('name', 'like', \App\Support\ListQuery::contains($search));
                         });
                   });
             });
@@ -131,6 +131,17 @@ class AppointmentController extends Controller
         if (!$request->has('status') || $request->status === 'all') {
              $query->whereIn('status', self::DEFAULT_VISIBLE_STATUSES);
         }
+
+        $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to'   => 'nullable|date',
+            'date'      => 'nullable|date',
+            'pet_id'    => 'nullable|integer',
+            'owner_id'  => 'nullable|integer',
+            'vet_id'    => 'nullable|integer',
+            'service_id'=> 'nullable|integer',
+            'search'    => 'nullable|string|max:255',
+        ]);
 
         if ($request->filled('date_from')) {
             $query->where('date', '>=', $request->date_from);
@@ -148,7 +159,7 @@ class AppointmentController extends Controller
         // Default sort by newest request first
         $query->orderBy('id', 'desc');
 
-        $perPage = $request->get('per_page', 15);
+        $perPage = \App\Support\ListQuery::perPage($request, 15);
         
         return response()->json($query->paginate($perPage));
     }
@@ -160,8 +171,14 @@ class AppointmentController extends Controller
     {
         $request->validate([
             'date_from' => 'required|date',
-            'date_to' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
         ]);
+
+        // A calendar shows at most a few weeks; a year is generous. An
+        // unbounded range grouped every appointment ever made.
+        if (\Carbon\Carbon::parse($request->date_from)->diffInDays(\Carbon\Carbon::parse($request->date_to)) > 400) {
+            return response()->json(['message' => 'The date range can be at most 400 days.'], 422);
+        }
 
         $query = Appointment::select('date', \DB::raw('count(*) as count'))
             ->where('date', '>=', $request->date_from)

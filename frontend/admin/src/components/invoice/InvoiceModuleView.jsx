@@ -34,6 +34,7 @@ import autoTable from "jspdf-autotable";
 import ManualSendModal from "../notifications/ManualSendModal";
 import api from "../../api";
 import { adminChannel } from "../../utils/echo";
+import { fetchAllPages } from "../../utils/fetchAllPages";
 
 // The clinic prices VAT-inclusive: every line amount already contains this rate.
 const VAT_RATE = 0.12;
@@ -364,11 +365,14 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const params = { per_page: 500, with_items: 1, only_transactions: 1, date_from: dateFrom, date_to: dateTo };
+      const params = { per_page: 100, with_items: 1, only_transactions: 1, date_from: dateFrom, date_to: dateTo };
       if (selectedOwnerId) params.owner_id = selectedOwnerId;
 
-      const data = await api.get("/api/reports", { params });
-      const invoices = Array.isArray(data) ? data : (data?.data || []);
+      // Every invoice in the range, page by page (the API serves at most 100
+      // rows per page; a single 500-row page silently cut the report short).
+      const { data: invoices } = await fetchAllPages((page) =>
+        api.get("/api/reports", { params: { ...params, page } })
+      );
 
       const rows = [];
       invoices.forEach((inv) => {

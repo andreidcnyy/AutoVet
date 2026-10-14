@@ -15,7 +15,8 @@ class SalesReportController extends Controller
      */
     public function getRevenueSummary(Request $request)
     {
-        $days = $request->query('days', 30);
+        $request->validate(['days' => 'nullable|integer|min:1|max:366']);
+        $days = (int) $request->query('days', 30);
         $startDate = Carbon::now()->subDays($days);
 
         $revenue = Invoice::where('status', '!=', 'Cancelled')
@@ -36,7 +37,8 @@ class SalesReportController extends Controller
      */
     public function getTopServices(Request $request)
     {
-        $limit = $request->query('limit', 5);
+        $request->validate(['limit' => 'nullable|integer|min:1|max:50']);
+        $limit = (int) $request->query('limit', 5);
 
         $topServices = InvoiceItem::whereHas('invoice', function ($query) {
                 $query->where('status', '!=', 'Cancelled');
@@ -56,7 +58,8 @@ class SalesReportController extends Controller
      */
     public function getTransactionVolume(Request $request)
     {
-        $days = $request->query('days', 7);
+        $request->validate(['days' => 'nullable|integer|min:1|max:366']);
+        $days = (int) $request->query('days', 7);
         $startDate = Carbon::now()->subDays($days);
 
         $volume = Invoice::where('created_at', '>=', $startDate)

@@ -67,7 +67,7 @@ class AuditLogController extends Controller
             // Load user relation without scopes
             $result = $query->with(['user' => function($q) {
                 $q->withoutGlobalScopes();
-            }])->orderBy('created_at', 'desc')->paginate(20);
+            }])->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate(20);
 
             return response()->json($result);
         } catch (\Throwable $e) {

@@ -108,28 +108,41 @@ class InvoiceController extends Controller
             }
         }
 
-        // Date range filter
-        if ($request->has('date_from')) {
+        $request->validate([
+            'date_from'      => 'nullable|date',
+            'date_to'        => 'nullable|date',
+            'owner_id'       => 'nullable|integer',
+            'pet_id'         => 'nullable|integer',
+            'appointment_id' => 'nullable|integer',
+            'search'         => 'nullable|string|max:255',
+            'status'         => 'nullable|string|max:50',
+        ]);
+
+        // Date range filter. filled(), not has(): an empty ?date_from= used to
+        // become whereDate('created_at', '>=', null).
+        if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Filter to only transaction-type reports (exclude inventory snapshots)
-        if ($request->has('only_transactions')) {
+        // Filter to only transaction-type reports (exclude inventory snapshots).
+        // Read as a boolean: presence alone used to switch it on, so
+        // ?only_transactions=false filtered too.
+        if ($request->boolean('only_transactions')) {
             $query->where(function ($q) {
                 $q->where('report_type', 'transaction')->orWhereNull('report_type');
             });
         }
 
-        if ($request->has('owner_id')) {
+        if ($request->filled('owner_id')) {
             $query->whereHas('pet', function ($q) use ($request) {
                 $q->where('owner_id', $request->owner_id);
             });
         }
 
-        if ($request->has('pet_id')) {
+        if ($request->filled('pet_id')) {
             $query->where('pet_id', $request->pet_id);
         }
 
@@ -137,14 +150,14 @@ class InvoiceController extends Controller
             $query->where('appointment_id', $request->appointment_id);
         }
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('invoice_number', 'like', "%{$search}%")
+                $q->where('invoice_number', 'like', \App\Support\ListQuery::contains($search))
                   ->orWhereHas('pet', function ($pq) use ($search) {
-                      $pq->where('name', 'like', "%{$search}%")
+                      $pq->where('name', 'like', \App\Support\ListQuery::contains($search))
                         ->orWhereHas('owner', function ($oq) use ($search) {
-                            $oq->where('name', 'like', "%{$search}%");
+                            $oq->where('name', 'like', \App\Support\ListQuery::contains($search));
                         });
                   });
             });
@@ -154,10 +167,10 @@ class InvoiceController extends Controller
             $query->where('status', $request->status);
         }
 
-        $query->orderBy('updated_at', 'desc');
+        $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
 
         if ($request->has('per_page')) {
-            return response()->json($query->paginate($request->per_page));
+            return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 15)));
         }
 
         return response()->json($query->get());

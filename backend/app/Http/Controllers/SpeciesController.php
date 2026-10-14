@@ -12,14 +12,15 @@ class SpeciesController extends Controller
         $query = Species::with('breeds.defaultSizeCategory');
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', \App\Support\ListQuery::contains($request->search));
         }
 
-        $sortBy = $request->get('sort_by', 'name');
-        $sortDirection = $request->get('sort_direction', 'asc');
-        $query->orderBy($sortBy, $sortDirection);
+        [$sortBy, $sortDirection] = \App\Support\ListQuery::sort($request, ['id', 'name', 'status', 'created_at', 'updated_at'], 'name');
+        $query->orderBy($sortBy, $sortDirection)->orderBy('id');
 
-        return response()->json($query->paginate($request->get('per_page', 10)));
+        // Lookup table: screens load it whole into dropdowns, so the ceiling
+        // is higher than for paged lists, but there is one.
+        return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 10, \App\Support\ListQuery::MAX_LOOKUP_PER_PAGE)));
     }
 
     public function store(Request $request)

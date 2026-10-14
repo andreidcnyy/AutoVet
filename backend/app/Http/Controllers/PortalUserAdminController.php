@@ -13,14 +13,15 @@ class PortalUserAdminController extends Controller
     {
         $query = PortalUser::withTrashed()
             ->with('owner:id,name,user_id')
-            ->orderByDesc('created_at');
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                $q->where('name', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('email', 'like', \App\Support\ListQuery::contains($search))
+                  ->orWhere('phone', 'like', \App\Support\ListQuery::contains($search));
             });
         }
 
