@@ -553,18 +553,31 @@ class DashboardController extends Controller
                 $timeline[] = ['date' => $now->copy()->addMonths($i), 'is_future' => true];
             }
 
-            // Fetch actual inventory usage (quantity from invoice items)
-            $usage = InvoiceItem::whereHas('invoice', function($q) {
-                    $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
-                })
-                ->select(
-                    DB::raw('YEAR(created_at) as year'),
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('SUM(qty) as total_qty')
-                )
-                ->where('created_at', '>=', $startMonth)
+            // Actual usage from inventory_usage_history, the record the AI
+            // forecast learns from (invoice sales, service consumables and
+            // stock corrections). Invoice items only when it is empty.
+            // DB::table() is not clinic-scoped; restrict it by hand.
+            $usage = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
+                ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
+                ->whereIn('inventory_usage_history.source_type', \App\Models\InventoryUsageHistory::FORECASTING_SAFE_SOURCES)
+                ->where('inventory_usage_history.usage_date', '>=', $startMonth->toDateString())
+                ->selectRaw('YEAR(inventory_usage_history.usage_date) as year, MONTH(inventory_usage_history.usage_date) as month, SUM(inventory_usage_history.quantity_used) as total_qty')
                 ->groupBy('year', 'month')
                 ->get();
+
+            if ($usage->isEmpty()) {
+                $usage = InvoiceItem::whereHas('invoice', function($q) {
+                        $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
+                    })
+                    ->select(
+                        DB::raw('YEAR(created_at) as year'),
+                        DB::raw('MONTH(created_at) as month'),
+                        DB::raw('SUM(qty) as total_qty')
+                    )
+                    ->where('created_at', '>=', $startMonth)
+                    ->groupBy('year', 'month')
+                    ->get();
+            }
 
             $actualData = [];
             $isDataset = false;
