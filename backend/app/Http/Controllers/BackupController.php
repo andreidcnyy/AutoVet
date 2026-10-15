@@ -6,20 +6,25 @@ use App\Console\Commands\BackupDatabaseCommand;
 use App\Enums\Roles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * CSV backups.
  *
  * A super admin works with platform-wide backups; everyone else only ever
- * sees, creates and downloads backups of their own clinic. The command used
- * to export every clinic's rows, and any clinic's staff could download them.
+ * sees, creates and downloads backups of their own clinic. Files live on the
+ * "backups" disk: a local folder by default, or a private bucket when
+ * BACKUP_DISK=s3 (Render wipes its local disk on every redeploy).
  */
 class BackupController extends Controller
 {
     private const FILENAME_PATTERN = '/^backup_[\d_]+\.tar\.gz$/';
+
+    private function disk()
+    {
+        return Storage::disk('backups');
+    }
 
     /** The clinic whose backups the caller works with, or null for the platform. */
     private function clinicScope(Request $request): ?int
@@ -28,33 +33,35 @@ class BackupController extends Controller
         return $user->role === Roles::SUPER_ADMIN->value ? null : (int) $user->clinic_id;
     }
 
-    private function backupDirectory(Request $request): string
+    private function folder(Request $request): string
     {
-        $dir = BackupDatabaseCommand::directoryFor($this->clinicScope($request));
-        if (!File::exists($dir)) {
-            File::makeDirectory($dir, 0755, true);
-        }
-        return $dir;
+        return BackupDatabaseCommand::directoryFor($this->clinicScope($request));
     }
 
-    private function describe(\SplFileInfo $file): array
+    /** Backups in the caller's folder, newest first. */
+    private function listBackups(Request $request)
     {
-        return [
-            'filename'   => $file->getFilename(),
-            'size'       => $file->getSize(),
-            'created_at' => date('Y-m-d H:i:s', $file->getMTime()),
-        ];
+        $disk = $this->disk();
+
+        return collect($disk->files($this->folder($request)))
+            ->filter(fn ($path) => preg_match(self::FILENAME_PATTERN, basename($path)))
+            ->map(fn ($path) => [
+                'filename'   => basename($path),
+                'size'       => $disk->size($path),
+                'created_at' => date('Y-m-d H:i:s', $disk->lastModified($path)),
+            ])
+            ->sortByDesc('created_at')
+            ->values();
     }
 
     public function index(Request $request)
     {
-        $backups = collect(File::files($this->backupDirectory($request)))
-            ->filter(fn ($f) => preg_match(self::FILENAME_PATTERN, $f->getFilename()))
-            ->sortByDesc(fn ($f) => $f->getMTime())
-            ->map(fn ($f) => $this->describe($f))
-            ->values();
-
-        return response()->json(['data' => $backups]);
+        try {
+            return response()->json(['data' => $this->listBackups($request)]);
+        } catch (\Throwable $e) {
+            Log::error('Listing backups failed: ' . $e->getMessage(), ['exception' => get_class($e)]);
+            return response()->json(['message' => 'Backups could not be listed right now.'], 500);
+        }
     }
 
     public function create(Request $request)
@@ -85,14 +92,9 @@ class BackupController extends Controller
 
         // Return the newly created file's metadata so the frontend can prepend
         // it to the list without a second GET request.
-        $newest = collect(File::files($this->backupDirectory($request)))
-            ->filter(fn ($f) => preg_match(self::FILENAME_PATTERN, $f->getFilename()))
-            ->sortByDesc(fn ($f) => $f->getMTime())
-            ->first();
-
         return response()->json([
             'message' => 'CSV backup created successfully.',
-            'backup'  => $newest ? $this->describe($newest) : null,
+            'backup'  => $this->listBackups($request)->first(),
         ], 201);
     }
 
@@ -103,7 +105,7 @@ class BackupController extends Controller
             return response()->json(['message' => 'Backup file not found.'], 404);
         }
 
-        File::delete($path);
+        $this->disk()->delete($path);
         return response()->json(['message' => 'Backup deleted successfully.']);
     }
 
@@ -114,10 +116,10 @@ class BackupController extends Controller
             return response()->json(['message' => 'Backup file not found.'], 404);
         }
 
-        return Response::download($path);
+        return $this->disk()->download($path, basename($path));
     }
 
-    /** Full path of a backup the caller may touch, or null. */
+    /** Path on the backups disk of a backup the caller may touch, or null. */
     private function resolve(Request $request, $filename): ?string
     {
         $filename = basename((string) $filename);
@@ -125,7 +127,7 @@ class BackupController extends Controller
             return null;
         }
 
-        $path = $this->backupDirectory($request) . DIRECTORY_SEPARATOR . $filename;
-        return File::exists($path) ? $path : null;
+        $path = ltrim($this->folder($request) . '/' . $filename, '/');
+        return $this->disk()->exists($path) ? $path : null;
     }
 }

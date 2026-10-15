@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class BackupDatabaseCommand extends Command
 {
@@ -78,24 +79,28 @@ class BackupDatabaseCommand extends Command
         'inventory_transactions' => ['inventory_id', 'inventories'],
     ];
 
-    /** Where backups for one clinic (or, with null, the whole platform) are kept. */
+    /**
+     * Folder (on the "backups" disk) for one clinic's backups, or '' for the
+     * platform-wide ones. The disk is local storage by default and a private
+     * bucket when BACKUP_DISK=s3 (see config/filesystems.php).
+     */
     public static function directoryFor(?int $clinicId): string
     {
-        return $clinicId
-            ? storage_path("app/backups/clinic_{$clinicId}")
-            : storage_path('app/backups');
+        return $clinicId ? "clinic_{$clinicId}" : '';
     }
 
     public function handle()
     {
         $clinicId = $this->option('clinic') !== null ? (int) $this->option('clinic') : null;
-        $backupPath = self::directoryFor($clinicId);
-        if (!is_dir($backupPath)) {
-            mkdir($backupPath, 0755, true);
-        }
+        $folder = self::directoryFor($clinicId);
 
+        // The archive is built in the system temp folder and then handed to
+        // the backups disk, so the same code writes to a local folder or a
+        // private bucket.
         $basename = 'backup_' . date('Y_m_d_H_i_s');
-        $tarPath  = $backupPath . '/' . $basename . '.tar';
+        $workDir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'autovet_backup_' . bin2hex(random_bytes(4));
+        mkdir($workDir, 0700, true);
+        $tarPath  = $workDir . DIRECTORY_SEPARATOR . $basename . '.tar';
         $gzPath   = $tarPath . '.gz';
 
         $this->info("Creating CSV backup...");
@@ -163,11 +168,24 @@ class BackupDatabaseCommand extends Command
             }
 
             $phar->compress(\Phar::GZ);
-            unlink($tarPath);
+            unset($phar);
+            @unlink($tarPath);
+
+            $target = ltrim($folder . '/' . $basename . '.tar.gz', '/');
+            $stream = fopen($gzPath, 'rb');
+            try {
+                Storage::disk('backups')->writeStream($target, $stream);
+            } finally {
+                if (is_resource($stream)) fclose($stream);
+            }
         } catch (\Throwable $e) {
-            if (file_exists($tarPath)) unlink($tarPath);
             $this->error("Failed to create backup: " . $e->getMessage());
             return 1;
+        } finally {
+            foreach ([$tarPath, $gzPath] as $file) {
+                if (file_exists($file)) @unlink($file);
+            }
+            @rmdir($workDir);
         }
 
         $this->info("Backup successfully created: {$basename}.tar.gz");

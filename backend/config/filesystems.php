@@ -68,6 +68,32 @@ return [
             'report' => false,
         ],
 
+        // Database backups. On Render the local disk is wiped on every
+        // redeploy, so set BACKUP_DISK=s3 and point BACKUP_AWS_BUCKET at a
+        // PRIVATE bucket to keep them. Never reuse the public uploads bucket:
+        // backup names are dates, so anyone could guess and download them.
+        // The access keys default to the uploads ones (same Supabase project).
+        'backups' => env('BACKUP_DISK') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('BACKUP_AWS_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('BACKUP_AWS_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('BACKUP_AWS_DEFAULT_REGION', env('AWS_DEFAULT_REGION')),
+            'bucket' => env('BACKUP_AWS_BUCKET'),
+            'endpoint' => env('BACKUP_AWS_ENDPOINT', env('AWS_ENDPOINT')),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
+            'root' => 'backups',
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+            // Backups are larger than images; allow time to upload one.
+            'http' => ['connect_timeout' => 5, 'timeout' => 120],
+        ] : [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
