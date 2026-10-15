@@ -11,6 +11,28 @@ jobs:
     name: Backend (PHP 8.2)
     runs-on: ubuntu-latest
 
+    # The feature tests run against a real MySQL database (phpunit.xml points
+    # them at autovet_test), the same engine production uses.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: autovet_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
     steps:
       - uses: actions/checkout@v5
 
@@ -18,31 +40,34 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: phar, pdo, mbstring, xml, curl, zip
+          extensions: phar, pdo, pdo_mysql, mbstring, xml, curl, zip, pcntl, posix
           coverage: none
 
+      # Every step below fails the job on error. These used to carry
+      # continue-on-error, so a broken install still showed a green tick.
       - name: Validate composer.json
         working-directory: backend
-        run: |
-          composer validate 2>&1
-          echo "composer validate exit: $?"
-        continue-on-error: true
+        run: composer validate --no-check-publish
 
-      - name: Install dependencies
+      - name: Install dependencies (with dev tools for the tests)
         working-directory: backend
-        run: |
-          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist 2>&1
-          echo "composer install exit: $?"
-        continue-on-error: true
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Check PHP syntax
         working-directory: backend
         run: |
           error=0
           while IFS= read -r -d '' file; do
-            php -l "$file" || error=1
-          done < <(find app routes -name "*.php" -print0)
+            php -l "$file" > /dev/null || error=1
+          done < <(find app routes config bootstrap database tests -name "*.php" -print0)
           exit $error
+
+      - name: Generate an app key for the test run
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Run tests
+        working-directory: backend
+        run: php artisan test
 
   frontend-portal:
     name: Portal Frontend
@@ -61,6 +86,12 @@ jobs:
       - name: Install dependencies
         working-directory: frontend/portal
         run: npm ci
+
+      # Fails on a known high or critical vulnerability in a package the live
+      # app ships. Build-only tools are excluded (--omit=dev).
+      - name: Audit production dependencies
+        working-directory: frontend/portal
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Build
         working-directory: frontend/portal
@@ -83,6 +114,10 @@ jobs:
       - name: Install dependencies
         working-directory: frontend/admin
         run: npm ci
+
+      - name: Audit production dependencies
+        working-directory: frontend/admin
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Build
         working-directory: frontend/admin
