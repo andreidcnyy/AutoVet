@@ -30,6 +30,18 @@ class ForecastMetricsTest extends TestCase
         $this->assertEqualsWithDelta(1.92, $h['baseline_rmse'], 0.005);
     }
 
+    public function test_anchored_variant_starts_from_the_last_known_value(): void
+    {
+        // A perfectly steady series: both variants should be exact.
+        $x = range(0, 19);
+        $y = array_map(fn ($v) => 3 * $v + 5, $x);
+
+        $h = ForecastMetrics::holdout($x, $y);
+
+        $this->assertEqualsWithDelta(0.0, $h['anchored_mae'], 1e-9);
+        $this->assertEqualsWithDelta(1.0, $h['anchored_r2'], 1e-9);
+    }
+
     public function test_fewer_than_ten_points_are_scored_in_sample(): void
     {
         $h = ForecastMetrics::holdout([0, 1, 2, 3], [1, 3, 5, 7]);

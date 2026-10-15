@@ -15,9 +15,16 @@ use Illuminate\Support\Facades\Schema;
  * Nothing is invented from scratch: every parameter is learned from the
  * clinic's own real records in a reference period.
  *
- *   1. Usage rate per item:   λᵢ = Qᵢ / D
- *      Qᵢ = units of item i used in the reference period, D = days covered.
- *      An item never used there takes the median λ of its category.
+ *   1. Usage rate per item (Gamma–Poisson / empirical Bayes estimate):
+ *          λᵢ = (Qᵢ + k · m_c) / (D + k)
+ *      Qᵢ = units of item i used in the reference period, D = days covered,
+ *      m_c = average daily rate of the items in the same category that were
+ *      used, k = --prior-days (30): how many days' worth of weight that
+ *      category average gets. With a year of real sales the prior barely
+ *      moves λᵢ; an item never sold in a year comes out as the slow mover it
+ *      is (about one unit a month) instead of being given a typical rate.
+ *      Only sales and service usage count; one-off stock corrections
+ *      (manual_adjustment) are not demand and are left out of every parameter.
  *   2. Weekday pattern:       w_d = (appointments on weekday d) / (average per weekday)
  *   3. Growth:                g = b / ȳ, where b is the least-squares slope of
  *      the monthly usage totals and ȳ their mean (clamped to ±3% a month).
@@ -45,6 +52,7 @@ class SeedInventoryUsage extends Command
         {--seed=20261015 : Random seed (same seed = same rows)}
         {--batch=synthetic-2026-10 : Label stored on every generated row}
         {--gap-threshold=0.5 : Fill a week when its real total is below this share of the expected total}
+        {--prior-days=30 : Weight, in days, of the category average in the rate of each item}
         {--dry-run : Calculate and report, but write nothing}
         {--purge : Delete the rows of --batch instead of generating}
         {--report= : Write the parameters and results as JSON to this path}';
@@ -52,6 +60,9 @@ class SeedInventoryUsage extends Command
     protected $description = 'Fill gaps in inventory usage history with Poisson-distributed usage learned from real records';
 
     private const SAFE_SOURCES = ['retail_sale', 'service_consumable', 'manual_adjustment'];
+
+    /** What counts as demand when learning the parameters: real use, not stock corrections. */
+    private const DEMAND_SOURCES = ['retail_sale', 'service_consumable'];
 
     /** Categories whose items are used up during treatment rather than sold over the counter. */
     private const CONSUMED_IN_SERVICE = ['consumables', 'vaccines'];
@@ -118,7 +129,7 @@ class SeedInventoryUsage extends Command
 
         $real = fn () => $db->table('inventory_usage_history')
             ->whereNull('synthetic_batch')
-            ->whereIn('source_type', self::SAFE_SOURCES);
+            ->whereIn('source_type', self::DEMAND_SOURCES);
 
         // ----------------------------------------------------- reference period
         // The period actually covered by data: a database whose history starts
@@ -134,30 +145,31 @@ class SeedInventoryUsage extends Command
             ->selectRaw('inventory_id, SUM(quantity_used) AS total')
             ->pluck('total', 'inventory_id');
 
-        // λᵢ = Qᵢ / D
-        $rates = [];
-        foreach ($items as $item) {
-            $q = (float) ($refTotals[$item->id] ?? 0);
-            $rates[$item->id] = ['lambda' => $q / $days, 'quantity' => $q, 'source' => 'own history'];
-        }
-
-        // Items never used in the reference period: median λ of their category.
+        // m_c: average raw rate Q/D of the items in each category that were used.
         $byCategory = [];
         foreach ($items as $item) {
-            if ($rates[$item->id]['quantity'] > 0) {
-                $byCategory[$item->category ?? '-'][] = $rates[$item->id]['lambda'];
+            $q = (float) ($refTotals[$item->id] ?? 0);
+            if ($q > 0) {
+                $byCategory[$item->category ?? '-'][] = $q / $days;
             }
         }
         $allObserved = array_merge(...array_values($byCategory ?: [[0.0]]));
+        $categoryMean = fn ($category) => isset($byCategory[$category ?? '-'])
+            ? array_sum($byCategory[$category ?? '-']) / count($byCategory[$category ?? '-'])
+            : array_sum($allObserved) / max(1, count($allObserved));
+
+        // λᵢ = (Qᵢ + k·m_c) / (D + k)
+        $k = max(0.0, (float) $this->option('prior-days'));
+        $rates = [];
         foreach ($items as $item) {
-            if ($rates[$item->id]['quantity'] > 0) {
-                continue;
-            }
-            $pool = $byCategory[$item->category ?? '-'] ?? $allObserved;
-            $rates[$item->id]['lambda'] = self::median($pool);
-            $rates[$item->id]['source'] = isset($byCategory[$item->category ?? '-'])
-                ? 'median of category'
-                : 'median of all items';
+            $q = (float) ($refTotals[$item->id] ?? 0);
+            $prior = $categoryMean($item->category);
+            $rates[$item->id] = [
+                'lambda'         => ($q + $k * $prior) / ($days + $k),
+                'quantity'       => $q,
+                'category_mean'  => $prior,
+                'source'         => $q > 0 ? 'own history' : 'no sales in reference (category prior only)',
+            ];
         }
 
         // ------------------------------------------------------ weekday weights
@@ -214,7 +226,7 @@ class SeedInventoryUsage extends Command
         foreach ($existing as $row) {
             $date = substr((string) $row->usage_date, 0, 10);
             $hasRow[$row->inventory_id][$date] = true;
-            if ($row->synthetic_batch === null && in_array($row->source_type, self::SAFE_SOURCES, true)) {
+            if ($row->synthetic_batch === null && in_array($row->source_type, self::DEMAND_SOURCES, true)) {
                 $realByDay[$date] = ($realByDay[$date] ?? 0) + (float) $row->quantity_used;
             }
         }
@@ -292,6 +304,7 @@ class SeedInventoryUsage extends Command
                                   'thu' => $weights[5], 'fri' => $weights[6], 'sat' => $weights[7]],
             'appointments_by_weekday' => $byWeekday->all(),
             'gap_threshold'   => $threshold,
+            'prior_days'      => $k,
             'weeks'           => array_map(fn ($k, $w) => ['week_of' => $k, 'real' => $w['real'], 'expected' => round($w['expected'], 2), 'filled' => $w['gap']],
                                     array_keys($weeks), $weeks),
             'items'           => $items->map(function ($item) use ($rates, $perItem) {
@@ -302,6 +315,7 @@ class SeedInventoryUsage extends Command
                     'id' => $item->id, 'code' => $item->code, 'name' => $item->item_name, 'category' => $item->category,
                     'reference_quantity' => $rates[$item->id]['quantity'],
                     'lambda' => $rates[$item->id]['lambda'], 'lambda_source' => $rates[$item->id]['source'],
+                    'category_mean' => $rates[$item->id]['category_mean'],
                     'generated_days' => $s['days'], 'generated_units' => $s['sum'],
                     'generated_mean_per_day' => $mean, 'generated_variance' => $var,
                 ];
@@ -337,13 +351,4 @@ class SeedInventoryUsage extends Command
         return ($this->randState + 1) / 4294967297;
     }
 
-    private static function median(array $values): float
-    {
-        if (!$values) {
-            return 0.0;
-        }
-        sort($values);
-        $n = count($values);
-        return $n % 2 ? $values[intdiv($n, 2)] : ($values[$n / 2 - 1] + $values[$n / 2]) / 2;
-    }
 }

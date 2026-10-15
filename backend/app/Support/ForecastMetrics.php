@@ -123,7 +123,17 @@ class ForecastMetrics
             $testPred = self::predict($testX, $slope, $intercept);
             $testMean = array_fill(0, count($testY), array_sum($testY) / count($testY));
 
+            // Same learned slope, but the line starts from the last known
+            // total instead of the fitted intercept. Measured alongside the
+            // system's method as a possible improvement; not used by it.
+            $anchor = $trainY[count($trainY) - 1];
+            $anchorX = $trainX[count($trainX) - 1];
+            $anchoredPred = array_map(fn ($xi) => $anchor + $slope * ($xi - $anchorX), $testX);
+
             return [
+                'anchored_r2'   => self::r2($testY, $anchoredPred),
+                'anchored_rmse' => self::rmse($testY, $anchoredPred),
+                'anchored_mae'  => self::mae($testY, $anchoredPred),
                 'method'        => '80/20 holdout',
                 'train_points'  => $split,
                 'test_points'   => count($testX),
