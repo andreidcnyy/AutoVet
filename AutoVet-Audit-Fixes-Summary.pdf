@@ -68,7 +68,7 @@ BT
 20.6999999999999993 TL
 0.02 0.588 0.412 rg
 56.6929133858267775 632.1262204724408775 Td
-(14) Tj
+(16) Tj
 ET
 BT
 /F2 8.5 Tf
@@ -2080,7 +2080,7 @@ endobj
 endobj
 10 0 obj
 <<
-/Length 9407
+/Length 9810
 >>
 stream
 1.7007874015748032 w
@@ -2415,49 +2415,49 @@ BT
 11.5 TL
 0.094 0.094 0.106 rg
 62.3622047244094517 432.3440944881890005 Td
-(Make the automatic build checks on GitHub fail when tests fail, and add a full list of required settings) Tj
-T* (\(environment variables\).) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0.02 0.588 0.412 rg
-48.1889763779527627 404.281102362204706 Td
-(-) Tj
-ET
-BT
-/F1 10 Tf
-11.5 TL
-0.094 0.094 0.106 rg
-62.3622047244094517 404.281102362204706 Td
 (Clean-up of large code files \(the dashboard controller\) and duplicated code.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0.02 0.588 0.412 rg
-48.1889763779527627 388.1236220472441119 Td
+48.1889763779527627 416.1866141732284063 Td
 (-) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0.094 0.094 0.106 rg
-62.3622047244094517 388.1236220472441119 Td
+62.3622047244094517 416.1866141732284063 Td
 (Make sure GOOGLE_CLIENT_ID is set on Render, or Google sign-in will be refused.) Tj
 ET
 BT
 /F2 14 Tf
 16.0999999999999979 TL
 0.02 0.588 0.412 rg
-45.354330708661422 369.1314960629921984 Td
+45.354330708661422 397.1944881889764929 Td
 (How the fixes were checked) Tj
 ET
 0.02 0.59 0.41 RG
 1.7007874015748032 w
-45.354330708661422 363.4622047244095029 m
-96.3779527559055254 363.4622047244095029 l
+45.354330708661422 391.5251968503937974 m
+96.3779527559055254 391.5251968503937974 l
 S
+BT
+/F1 10 Tf
+11.5 TL
+0.02 0.588 0.412 rg
+48.1889763779527627 374.5173228346457677 Td
+(-) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.094 0.094 0.106 rg
+62.3622047244094517 374.5173228346457677 Td
+(GitHub now runs all 52 checks automatically on every update, plus a library safety check, and marks the) Tj
+T* (update as failed if anything breaks \(before, it showed a green tick even when the install failed\).) Tj
+ET
 BT
 /F1 10 Tf
 11.5 TL
@@ -2470,8 +2470,8 @@ BT
 11.5 TL
 0.094 0.094 0.106 rg
 62.3622047244094517 346.4543307086614732 Td
-(52 automated checks run against a real database, covering logins, roles, client limits, clinic separation, error) Tj
-T* (messages, pagination and the dashboard.) Tj
+(Every setting the system needs is now listed in one file per app \(.env.example\), with which ones are required) Tj
+T* (for the live site.) Tj
 ET
 BT
 /F1 10 Tf
@@ -2485,20 +2485,35 @@ BT
 11.5 TL
 0.094 0.094 0.106 rg
 62.3622047244094517 318.3913385826772355 Td
-(Both apps were built successfully after every change.) Tj
+(52 automated checks run against a real database, covering logins, roles, client limits, clinic separation, error) Tj
+T* (messages, pagination and the dashboard.) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0.02 0.588 0.412 rg
-48.1889763779527627 302.2338582677166414 Td
+48.1889763779527627 290.3283464566929979 Td
 (-) Tj
 ET
 BT
 /F1 10 Tf
 11.5 TL
 0.094 0.094 0.106 rg
-62.3622047244094517 302.2338582677166414 Td
+62.3622047244094517 290.3283464566929979 Td
+(Both apps were built successfully after every change.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.02 0.588 0.412 rg
+48.1889763779527627 274.1708661417322901 Td
+(-) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.094 0.094 0.106 rg
+62.3622047244094517 274.1708661417322901 Td
 (Checked live in the browser on production: the dashboard loads all cards from one request, Back steps) Tj
 T* (through Patients pages 3 to 2 to 1, and all 119 pets appear in the Pet Directory.) Tj
 ET
@@ -2688,7 +2703,7 @@ endobj
 25 0 obj
 <<
 /Producer (jsPDF 4.2.1)
-/CreationDate (D:20261014160510+08'00')
+/CreationDate (D:20261015143827+08'00')
 >>
 endobj
 26 0 obj
@@ -2702,8 +2717,8 @@ endobj
 xref
 0 27
 0000000000 65535 f 
-0000056468 00000 n 
-0000058308 00000 n 
+0000056871 00000 n 
+0000058711 00000 n 
 0000000015 00000 n 
 0000000152 00000 n 
 0000016174 00000 n 
@@ -2712,29 +2727,29 @@ xref
 0000035119 00000 n 
 0000046870 00000 n 
 0000047008 00000 n 
-0000056543 00000 n 
-0000056669 00000 n 
-0000056800 00000 n 
-0000056934 00000 n 
+0000056946 00000 n 
 0000057072 00000 n 
-0000057196 00000 n 
-0000057325 00000 n 
-0000057457 00000 n 
-0000057593 00000 n 
-0000057721 00000 n 
-0000057848 00000 n 
-0000057977 00000 n 
-0000058110 00000 n 
-0000058212 00000 n 
-0000058561 00000 n 
-0000058647 00000 n 
+0000057203 00000 n 
+0000057337 00000 n 
+0000057475 00000 n 
+0000057599 00000 n 
+0000057728 00000 n 
+0000057860 00000 n 
+0000057996 00000 n 
+0000058124 00000 n 
+0000058251 00000 n 
+0000058380 00000 n 
+0000058513 00000 n 
+0000058615 00000 n 
+0000058964 00000 n 
+0000059050 00000 n 
 trailer
 <<
 /Size 27
 /Root 26 0 R
 /Info 25 0 R
-/ID [ <BAFD6541250C44F5E63F01230779B5ED> <BAFD6541250C44F5E63F01230779B5ED> ]
+/ID [ <329118B69109D11CE4F8D1ECB0469CC3> <329118B69109D11CE4F8D1ECB0469CC3> ]
 >>
 startxref
-58751
+59154
 %%EOF
