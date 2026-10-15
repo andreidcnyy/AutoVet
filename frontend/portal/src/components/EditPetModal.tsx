@@ -219,10 +219,10 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-10005 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-300"
         onClick={onClose}
       />
       

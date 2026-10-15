@@ -183,7 +183,7 @@ export default function Invoices() {
       </div>
 
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
         <div className="relative z-10">
@@ -235,7 +235,7 @@ export default function Invoices() {
         {filteredInvoices.length > 0 ? (
           <div className="space-y-3">
             {filteredInvoices.map(invoice => (
-              <div key={invoice.id} className="card-shell card-shell-hover bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-sm">
+              <div key={invoice.id} className="card-shell card-shell-hover bg-white dark:bg-dark-card overflow-hidden transition-all group border-none shadow-xs">
                 <div
                   className="p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 cursor-pointer"
                   onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}
@@ -324,8 +324,8 @@ export default function Invoices() {
       </div>
 
       {preview && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closePreview} />
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-3 sm:p-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={closePreview} />
           <div className="relative w-full max-w-4xl h-[90vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-100 dark:border-dark-border">
               <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100 truncate">{preview.filename}</div>

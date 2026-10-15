@@ -181,8 +181,8 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={onClose} />
       
       <div className="relative w-full max-w-2xl bg-white dark:bg-dark-card rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="p-8 border-b border-zinc-100 dark:border-dark-border flex justify-between items-center bg-zinc-50/50 dark:bg-dark-surface/30">
@@ -344,7 +344,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                       placeholder="Current password"
                       value={pwCurrent}
                       onChange={(e) => setPwCurrent(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                      className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-hidden"
                     />
                   )}
                   <input
@@ -352,14 +352,14 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: Props) 
                     placeholder="New password (min 8 characters)"
                     value={pwNew}
                     onChange={(e) => setPwNew(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-hidden"
                   />
                   <input
                     type="password"
                     placeholder="Confirm new password"
                     value={pwConfirm}
                     onChange={(e) => setPwConfirm(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-none"
+                    className="w-full h-11 px-4 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm focus:border-brand-400 focus:outline-hidden"
                   />
                   <button
                     type="button"

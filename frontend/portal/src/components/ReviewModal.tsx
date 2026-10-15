@@ -59,9 +59,9 @@ export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }
   const bodyNearLimit = bodyLen >= 900;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs animate-in fade-in duration-200"
         onClick={handleClose}
       />
 
@@ -70,7 +70,7 @@ export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }
         "animate-in fade-in zoom-in-95 duration-300"
       )}>
         {/* Animated green top bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 to-teal-500" />
+        <div className="h-1.5 w-full bg-linear-to-r from-emerald-400 to-teal-500" />
 
         {/* Close */}
         <button
@@ -177,7 +177,7 @@ export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Excellent service!"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow duration-150"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-400 transition-shadow duration-150"
                 />
               </div>
               <div>
@@ -190,7 +190,7 @@ export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Tell us about your experience with our clinic…"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-shadow duration-150 resize-none"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface px-4 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-400 transition-shadow duration-150 resize-none"
                 />
                 <p className={clsx(
                   "text-[10px] mt-0.5 text-right transition-colors duration-150",

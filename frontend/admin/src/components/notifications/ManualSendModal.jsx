@@ -140,10 +140,10 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
     const filteredTemplates = templates.filter(t => t.channel === channel && t.is_active);
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div className="fixed inset-0 z-100 flex items-center justify-center">
             {/* Backdrop with blur */}
             <div 
-                className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-zinc-900/50 backdrop-blur-xs transition-opacity"
                 onClick={onClose}
             />
             
@@ -184,9 +184,9 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                 )}
 
                 <div className="relative flex items-center mb-6">
-                    <div className="flex-grow border-t border-zinc-100 dark:border-dark-border"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-black uppercase text-zinc-300 dark:text-zinc-600 tracking-widest">OR</span>
-                    <div className="flex-grow border-t border-zinc-100 dark:border-dark-border"></div>
+                    <div className="grow border-t border-zinc-100 dark:border-dark-border"></div>
+                    <span className="shrink mx-4 text-[10px] font-black uppercase text-zinc-300 dark:text-zinc-600 tracking-widest">OR</span>
+                    <div className="grow border-t border-zinc-100 dark:border-dark-border"></div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -196,7 +196,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                             <select 
                                 value={channel} 
                                 onChange={(e) => setChannel(e.target.value)}
-                                className="h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                                className="h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                             >
                                 <option value="email">Email System</option>
                                 <option value="sms">SMS Gateway</option>
@@ -215,7 +215,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                             <select 
                                 value={selectedTemplate} 
                                 onChange={(e) => setSelectedTemplate(e.target.value)}
-                                className="h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                                className="h-12 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                             >
                                 <option value="">-- Custom Manual Entry --</option>
                                 {filteredTemplates.map(t => (
@@ -239,7 +239,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                                         type="text" 
                                         value={title} 
                                         onChange={(e) => setTitle(e.target.value)} 
-                                        className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                                        className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-bold text-zinc-700 placeholder:text-zinc-400 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                                         placeholder="Communication Subject"
                                         required
                                     />
@@ -253,7 +253,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                                 <textarea 
                                     value={customMessage} 
                                     onChange={(e) => setCustomMessage(e.target.value)} 
-                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-bold text-zinc-700 placeholder:text-zinc-400 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 min-h-[120px]"
+                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-bold text-zinc-700 placeholder:text-zinc-400 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 min-h-[120px]"
                                     placeholder="Enter your message here..."
                                     required
                                 />
@@ -266,7 +266,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                                         type="checkbox" 
                                         checked={saveAsTemplate}
                                         onChange={(e) => setSaveAsTemplate(e.target.checked)}
-                                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                                        className="w-4 h-4 rounded-sm text-emerald-600 focus:ring-emerald-500"
                                     />
                                     <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-400 tracking-wider">Save as reusable template?</span>
                                 </label>
@@ -276,7 +276,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                                         placeholder="Enter Template Name..."
                                         value={newTemplateName}
                                         onChange={(e) => setNewTemplateName(e.target.value)}
-                                        className="mt-3 h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-inner"
+                                        className="mt-3 h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-inner"
                                         required
                                     />
                                 )}
@@ -295,7 +295,7 @@ export default function ManualSendModal({ isOpen, onClose, owner, relatedObject,
                         <button 
                             type="submit" 
                             disabled={loading} 
-                            className="flex-[2] h-12 rounded-xl bg-emerald-600 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 disabled:opacity-50 transition-all active:scale-95"
+                            className="flex-2 h-12 rounded-xl bg-emerald-600 text-xs font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 disabled:opacity-50 transition-all active:scale-95"
                         >
                             {loading ? 'Processing...' : 'Dispatch Message'}
                         </button>

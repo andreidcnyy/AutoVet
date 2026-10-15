@@ -138,7 +138,7 @@ function InventoryChartCard({ initialData }) {
             className={clsx(
               "rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
               activeRange === "6 Months"
-                ? "bg-white text-zinc-700 shadow-sm dark:bg-dark-card dark:text-zinc-100"
+                ? "bg-white text-zinc-700 shadow-xs dark:bg-dark-card dark:text-zinc-100"
                 : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
             )}
           >
@@ -149,7 +149,7 @@ function InventoryChartCard({ initialData }) {
             className={clsx(
               "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
               activeRange === "Year"
-                ? "bg-white text-zinc-700 shadow-sm dark:bg-dark-card dark:text-zinc-100"
+                ? "bg-white text-zinc-700 shadow-xs dark:bg-dark-card dark:text-zinc-100"
                 : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
             )}
           >

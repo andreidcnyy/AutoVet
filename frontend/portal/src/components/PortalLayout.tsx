@@ -70,7 +70,7 @@ export default function PortalLayout({ children }: LayoutProps) {
       {/* Mobile backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-xs md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -115,7 +115,7 @@ export default function PortalLayout({ children }: LayoutProps) {
                 {item.name}
               </div>
               {item.badge !== undefined && item.badge > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg shadow-sm">
+                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg shadow-xs">
                   {item.badge}
                 </span>
               )}

@@ -154,7 +154,7 @@ function CalendarView() {
                   >
                     <p
                       className={clsx(
-                        "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium",
+                        "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-medium",
                         isTodayDate && "bg-emerald-600 font-bold text-white",
                         !isTodayDate && entry.inMonth && "text-zinc-700 dark:text-zinc-300",
                         !isTodayDate && !entry.inMonth && "text-zinc-400 dark:text-zinc-500"
@@ -235,13 +235,13 @@ function CalendarView() {
                         <li
                           key={event.id}
                           className={clsx(
-                            "rounded-xl border border-l-4 bg-white dark:bg-dark-card p-4 shadow-sm",
+                            "rounded-xl border border-l-4 bg-white dark:bg-dark-card p-4 shadow-xs",
                             panelAccentStyles[statusTone] || panelAccentStyles.zinc
                           )}
                         >
                         <p className="text-base font-bold text-zinc-800 dark:text-zinc-200">{event.title}</p>
                         <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-                          <FiClock className="h-3.5 w-3.5 flex-shrink-0" />
+                          <FiClock className="h-3.5 w-3.5 shrink-0" />
                           <span>{formatTime(event.time)}</span>
                         </div>
                         {event.pet_owner && (

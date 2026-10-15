@@ -119,7 +119,7 @@ export default function DataImportTab() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="card-shell p-6 bg-gradient-to-r from-zinc-900 to-zinc-800 text-white relative overflow-hidden">
+            <div className="card-shell p-6 bg-linear-to-r from-zinc-900 to-zinc-800 text-white relative overflow-hidden">
                 <LuSparkles className="absolute -top-6 -right-6 w-32 h-32 opacity-10 rotate-12" />
                 <div className="relative z-10">
                     <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function DataImportTab() {
                                     className={clsx(
                                         "flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-200",
                                         active 
-                                            ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 ring-2 ring-emerald-500/20 shadow-sm" 
+                                            ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 ring-2 ring-emerald-500/20 shadow-xs" 
                                             : "border-zinc-100 bg-white hover:bg-zinc-50 dark:border-dark-border dark:bg-dark-card"
                                     )}
                                 >

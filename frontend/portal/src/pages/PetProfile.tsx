@@ -127,7 +127,7 @@ function PetProfile() {
       </div>
 
       {/* Hero Section */}
-      <div className="rounded-2xl p-5 sm:p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 overflow-hidden relative text-white shadow-xl">
+      <div className="rounded-2xl p-5 sm:p-8 bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 overflow-hidden relative text-white shadow-xl">
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-25 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 left-4 w-16 h-16 text-white opacity-20 -rotate-6 pointer-events-none" />
         
@@ -167,7 +167,7 @@ function PetProfile() {
             className={clsx(
               "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none justify-center",
               activeTab === tab.id
-              ? "bg-white dark:bg-dark-card text-brand-600 shadow-sm"
+              ? "bg-white dark:bg-dark-card text-brand-600 shadow-xs"
               : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300"
             )}
           >

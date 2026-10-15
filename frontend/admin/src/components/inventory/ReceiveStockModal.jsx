@@ -127,7 +127,7 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
   };
 
   const inputBase =
-    "w-full rounded-xl border bg-zinc-50 px-4 py-2.5 text-sm text-zinc-800 transition-colors focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500";
+    "w-full rounded-xl border bg-zinc-50 px-4 py-2.5 text-sm text-zinc-800 transition-colors focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500";
   const getInputClass = (error) =>
     clsx(
       inputBase,
@@ -139,7 +139,7 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
   const totalStock = batches.reduce((sum, b) => sum + Number(b.stock_level || 0), 0);
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-xs dark:bg-zinc-950/70 overflow-y-auto">
       <div className="my-auto flex w-full max-w-3xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card">
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <div className="flex items-center gap-3">

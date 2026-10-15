@@ -149,7 +149,7 @@ export default function ClinicProfileTab() {
     toast.error("Please check the form for errors.");
   };
 
-  const inputBase = "w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 dark:bg-dark-surface dark:text-zinc-200 focus:outline-none";
+  const inputBase = "w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden";
   const getInputClass = (error, isTextarea = false) => clsx(inputBase, isTextarea ? "py-2.5" : "h-11", error ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-500 dark:border-dark-border");
 
   if (loading) {
@@ -165,7 +165,7 @@ export default function ClinicProfileTab() {
         <div className="mt-6">
           <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Clinic Logo</label>
           <div className="flex items-center gap-4">
-            <div className="h-32 w-32 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface shrink-0 shadow-sm">
+            <div className="h-32 w-32 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface shrink-0 shadow-xs">
               {logoValue ? (
                 <img src={logoValue} alt="Clinic Logo" className="h-full w-full object-contain" />
               ) : (

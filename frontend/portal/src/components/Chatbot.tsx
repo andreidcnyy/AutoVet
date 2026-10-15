@@ -212,7 +212,7 @@ export default function Chatbot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] font-sans">
+    <div className="fixed bottom-6 right-6 z-9999 font-sans">
       {/* Chat Button */}
       {!isOpen && (
         <button
@@ -230,7 +230,7 @@ export default function Chatbot() {
           {/* Header */}
           <div className="bg-brand-500 p-4 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-xs">
                 <Bot className="w-6 h-6" />
               </div>
               <div>
@@ -271,7 +271,7 @@ export default function Chatbot() {
                 <div className={clsx(
                   "p-3 rounded-2xl text-sm leading-relaxed",
                   msg.type === 'bot' 
-                    ? "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-sm rounded-tl-none border border-zinc-100 dark:border-zinc-700" 
+                    ? "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-xs rounded-tl-none border border-zinc-100 dark:border-zinc-700" 
                     : "bg-brand-500 text-white rounded-tr-none shadow-md shadow-brand-500/20"
                 )}>
                   {msg.text.split('\n').map((line, i) => (

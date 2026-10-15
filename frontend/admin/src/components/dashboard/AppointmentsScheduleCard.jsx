@@ -23,7 +23,7 @@ function AppointmentsScheduleCard({ appointments, total, loading }) {
   const navigate = useNavigate();
 
   return (
-    <div className="card-shell overflow-hidden flex flex-col h-full bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-sm">
+    <div className="card-shell overflow-hidden flex flex-col h-full bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-xs">
       <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/10">
         <h3 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2 uppercase">
           <FiCalendar className="text-autovet-teal" />
@@ -71,7 +71,7 @@ function AppointmentsScheduleCard({ appointments, total, loading }) {
                       <FiUser className="h-2 w-2" /> {appt.owner_name}
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Service</p>
                     <p className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase truncate max-w-[120px]">{appt.service}</p>
                   </div>

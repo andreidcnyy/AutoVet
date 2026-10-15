@@ -84,8 +84,8 @@ export default function WarnUserModal({ owner, onClose, onSent }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
         {/* Header */}
@@ -116,7 +116,7 @@ export default function WarnUserModal({ owner, onClose, onSent }) {
               <select
                 value={selectedTemplate}
                 onChange={(e) => handleTemplateChange(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm font-semibold text-zinc-800 dark:text-zinc-200 px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all"
+                className="w-full appearance-none rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm font-semibold text-zinc-800 dark:text-zinc-200 px-4 py-3 pr-10 focus:outline-hidden focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all"
               >
                 {TEMPLATES.map((t) => (
                   <option key={t.id} value={t.id}>{t.label}</option>
@@ -135,7 +135,7 @@ export default function WarnUserModal({ owner, onClose, onSent }) {
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-zinc-800 dark:text-zinc-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all"
+              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-zinc-800 dark:text-zinc-200 px-4 py-3 focus:outline-hidden focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all"
               placeholder="Warning subject..."
             />
           </div>
@@ -149,7 +149,7 @@ export default function WarnUserModal({ owner, onClose, onSent }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={9}
-              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-zinc-800 dark:text-zinc-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all resize-none leading-relaxed"
+              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-zinc-800 dark:text-zinc-200 px-4 py-3 focus:outline-hidden focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all resize-none leading-relaxed"
               placeholder="Type your warning message..."
             />
           </div>

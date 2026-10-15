@@ -29,19 +29,19 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, error, classNa
         placeholder={placeholder}
         className="w-full"
         inputClassName={clsx(
-          "!h-12 !w-full !rounded-xl !border !bg-zinc-50 !pl-4 !text-base !text-zinc-700 !placeholder-zinc-400 !transition-all focus:!bg-white focus:!outline-none",
-          "dark:!border-dark-border dark:!bg-dark-surface dark:!text-zinc-200 dark:!placeholder-zinc-500 dark:focus:!bg-zinc-800 dark:focus:!border-brand-500",
-          error ? "!border-rose-500 focus:!border-rose-600" : "!border-zinc-200 focus:!border-brand-500 dark:!border-dark-border"
+          "h-12! w-full! rounded-xl! border! bg-zinc-50! pl-4! text-base! text-zinc-700! placeholder-zinc-400! transition-all! focus:bg-white! focus:outline-hidden!",
+          "dark:border-dark-border! dark:bg-dark-surface! dark:text-zinc-200! dark:placeholder-zinc-500! dark:focus:bg-zinc-800! dark:focus:border-brand-500!",
+          error ? "border-rose-500! focus:border-rose-600!" : "border-zinc-200! focus:border-brand-500! dark:border-dark-border!"
         )}
         countrySelectorStyleProps={{
           buttonClassName: clsx(
-            "!h-12 !rounded-xl !border !border-r-0 !rounded-r-none !bg-zinc-50 !px-3 !transition-all",
-            "dark:!border-dark-border dark:!bg-dark-surface",
-            error ? "!border-rose-500" : "!border-zinc-200"
+            "h-12! rounded-xl! border! border-r-0! rounded-r-none! bg-zinc-50! px-3! transition-all!",
+            "dark:border-dark-border! dark:bg-dark-surface!",
+            error ? "border-rose-500!" : "border-zinc-200!"
           ),
           dropdownStyleProps: {
-            className: "!bg-white dark:!bg-dark-card !border-zinc-200 dark:!border-dark-border !rounded-xl !shadow-xl !mt-2 !max-h-64 !overflow-y-auto slim-scroll",
-            listItemClassName: "!text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-100 dark:hover:!bg-dark-surface",
+            className: "bg-white! dark:bg-dark-card! border-zinc-200! dark:border-dark-border! rounded-xl! shadow-xl! mt-2! max-h-64! overflow-y-auto! slim-scroll",
+            listItemClassName: "text-zinc-700! dark:text-zinc-300! hover:bg-zinc-100! dark:hover:bg-dark-surface!",
           }
         }}
       />

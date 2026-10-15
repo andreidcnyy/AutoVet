@@ -62,7 +62,7 @@ function StatBox({ title, value, icon: Icon, trend, color, prefix = "" }) {
           </div>
         )}
       </div>
-      <div className={clsx("h-12 w-12 flex-none rounded-2xl flex items-center justify-center text-xl shadow-sm", color)}>
+      <div className={clsx("h-12 w-12 flex-none rounded-2xl flex items-center justify-center text-xl shadow-xs", color)}>
         <Icon />
       </div>
     </div>
@@ -185,14 +185,14 @@ export default function AnalyticsPage() {
           <button 
             onClick={downloadPDF}
             disabled={isExporting}
-            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-sm text-sm uppercase tracking-widest disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-xs text-sm uppercase tracking-widest disabled:opacity-50"
           >
             {isExporting ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiPrinter className="h-4 w-4" />}
             {isExporting ? "Exporting..." : "Download PDF"}
           </button>
           <button 
             onClick={fetchData}
-            className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-5 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm text-sm uppercase tracking-widest"
+            className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-5 py-2.5 font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-xs text-sm uppercase tracking-widest"
           >
             <FiRefreshCw className={clsx(loading && "animate-spin")} /> Refresh Data
           </button>

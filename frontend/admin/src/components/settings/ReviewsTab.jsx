@@ -23,10 +23,10 @@ const RATING_LABELS = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"];
 function ReviewDetailModal({ review, busy, onClose, onApprove, onFeature, onDelete }) {
   if (!review) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-200 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 to-teal-500" />
+        <div className="h-1.5 w-full bg-linear-to-r from-emerald-400 to-teal-500" />
 
         <button
           onClick={onClose}
@@ -297,9 +297,9 @@ export default function ReviewsTab() {
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
         <div key={i} className="card-shell p-5 animate-pulse">
-          <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-1/3 mb-3" />
-          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-full mb-2" />
-          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-2/3" />
+          <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded-sm w-1/3 mb-3" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded-sm w-full mb-2" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded-sm w-2/3" />
         </div>
       ))}
     </div>

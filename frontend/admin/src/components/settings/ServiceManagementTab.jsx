@@ -265,7 +265,7 @@ export default function ServiceManagementTab() {
                 </td>
                 <td className="px-4 py-4 text-sm text-zinc-700 dark:text-zinc-300">{svc.category || "-"}</td>
                 <td className="px-4 py-4">
-                  <span className="capitalize text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-dark-surface px-2 py-1 rounded">
+                  <span className="capitalize text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-dark-surface px-2 py-1 rounded-sm">
                     {svc.pricing_type?.replace('_', ' ') || 'Fixed'}
                   </span>
                 </td>
@@ -322,7 +322,7 @@ export default function ServiceManagementTab() {
            while no ancestor has a transform, filter or containment of its own.
            my-auto inside a scrollable overlay keeps it centred when it fits and
            lets it scroll when it does not. */
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-zinc-950/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center overflow-y-auto bg-zinc-950/50 p-4 backdrop-blur-xs">
           <div className="my-auto flex w-full max-w-md flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{editingService ? "Edit Service" : "Add Service"}</h3>
@@ -332,11 +332,11 @@ export default function ServiceManagementTab() {
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Service Name *</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
-                <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-1">
@@ -350,7 +350,7 @@ export default function ServiceManagementTab() {
                       if (type === 'weight_based') basis = 'weight';
                       setFormData({...formData, pricing_type: type, measurement_basis: basis});
                     }}
-                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   >
                     <option value="fixed">Fixed Price</option>
                     <option value="size_based">Size Based</option>
@@ -359,7 +359,7 @@ export default function ServiceManagementTab() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
-                  <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" />
+                  <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" />
                 </div>
               </div>
 
@@ -387,7 +387,7 @@ export default function ServiceManagementTab() {
                                   pricing_rules: [...otherRules, { basis_type: 'size', reference_id: size.id, price: newPrice }]
                                 });
                               }}
-                              className="w-32 rounded-xl border border-zinc-200 py-2 pl-7 pr-3 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
+                              className="w-32 rounded-xl border border-zinc-200 py-2 pl-7 pr-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" 
                             />
                           </div>
                         </div>
@@ -423,7 +423,7 @@ export default function ServiceManagementTab() {
                                   pricing_rules: [...otherRules, { basis_type: 'size', reference_id: size.id, price: newPrice }]
                                 });
                               }}
-                              className="w-32 rounded-xl border border-zinc-200 py-2 pl-7 pr-3 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white" 
+                              className="w-32 rounded-xl border border-zinc-200 py-2 pl-7 pr-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" 
                             />
                           </div>
                         </div>
@@ -437,7 +437,7 @@ export default function ServiceManagementTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
+                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white">
                     <option value="">Select Category</option>
                     {serviceCategories.map(c => (
                       <option key={c.id || c} value={c.name || c}>{c.name || c}</option>
@@ -454,13 +454,13 @@ export default function ServiceManagementTab() {
                 <div className="relative shrink-0">
                   <input type="checkbox" className="sr-only" checked={formData.requires_doctor} onChange={e => setFormData({...formData, requires_doctor: e.target.checked})} />
                   <div className={clsx("w-10 h-6 rounded-full transition-colors", formData.requires_doctor ? "bg-sky-500" : "bg-zinc-300 dark:bg-zinc-600")} />
-                  <div className={clsx("absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform", formData.requires_doctor ? "left-5" : "left-1")} />
+                  <div className={clsx("absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform", formData.requires_doctor ? "left-5" : "left-1")} />
                 </div>
               </label>
 
               <div>
                 <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
-                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white">
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>

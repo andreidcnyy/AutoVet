@@ -12,9 +12,9 @@ import { getAgeGroup } from "../../utils/petAgeGroups";
 import { PH_LOCATION_DATA } from "../../utils/phLocationData";
 
 const inputBase =
-    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
 const selectBase =
-    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:bg-white focus:outline-hidden appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
 const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
@@ -334,7 +334,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
     if (!isOpen || !patient) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
             <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
                 <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border">
                     <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Edit Profile</h2>
@@ -346,7 +346,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                 <div className="overflow-y-auto p-6">
                     {error && (
                         <div className="mb-6 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                            <FiAlertCircle className="h-5 w-5 flex-shrink-0" />
+                            <FiAlertCircle className="h-5 w-5 shrink-0" />
                             <span>{error}</span>
                         </div>
                     )}
@@ -358,7 +358,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                 <button
                                     type="button"
                                     onClick={() => photoInputRef.current?.click()}
-                                    className="group relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 hover:border-emerald-400 dark:border-dark-border dark:bg-dark-surface"
+                                    className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 hover:border-emerald-400 dark:border-dark-border dark:bg-dark-surface"
                                 >
                                     {photoValue ? (
                                         <img src={getActualPetImageUrl(photoValue)} alt="Pet" className="h-full w-full object-cover" />
@@ -369,7 +369,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         "absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity",
                                         photoValue ? "opacity-0 group-hover:opacity-100" : "opacity-100 group-hover:bg-black/30"
                                     )}>
-                                        <FiCamera className="h-5 w-5 text-white shadow-sm" />
+                                        <FiCamera className="h-5 w-5 text-white shadow-xs" />
                                     </div>
                                 </button>
                                 <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
@@ -404,7 +404,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Weight ({watch("weight_unit") || "kg"})</label>
                                         <div className="flex gap-1">
                                             <input type="number" step="any" {...register("weight")} className={getInputClass(errors.weight)} placeholder="0.0" />
-                                            <select {...register("weight_unit")} className="w-16 rounded border border-zinc-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
+                                            <select {...register("weight_unit")} className="w-16 rounded-sm border border-zinc-200 bg-white/50 p-1 text-xs dark:border-white/10 dark:bg-zinc-800">
                                                 <option value="kg">kg</option>
                                                 <option value="lbs">lbs</option>
                                             </select>
@@ -415,7 +415,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                         <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Size Category</label>
                                         {weightValue ? (
                                             <div className={clsx(
-                                                "flex flex-col justify-center rounded border px-3 py-1 text-xs font-medium transition-colors min-h-[34px]",
+                                                "flex flex-col justify-center rounded-sm border px-3 py-1 text-xs font-medium transition-colors min-h-[34px]",
                                                 isMismatch ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20" : "border-zinc-200 bg-zinc-50 dark:border-dark-border dark:bg-dark-surface"
                                             )}>
                                                 <div className="flex items-center justify-between">
@@ -427,7 +427,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                             </div>
                                         ) : (
                                             <div className="relative">
-                                                <select {...register("size_category_id")} className="h-[34px] w-full rounded border bg-zinc-50 px-2 text-[11px] text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-6 dark:bg-dark-surface dark:text-zinc-200">
+                                                <select {...register("size_category_id")} className="h-[34px] w-full rounded-sm border bg-zinc-50 px-2 text-[11px] text-zinc-700 focus:bg-white focus:outline-hidden appearance-none pr-6 dark:bg-dark-surface dark:text-zinc-200">
                                                     <option value="">Manual Fallback...</option>
                                                     {sizeCategories.map(cat => (
                                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -589,22 +589,22 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
 
                                         <div>
                                             <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Clinical Findings</label>
-                                            <textarea {...register("findings")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                                            <textarea {...register("findings")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div>
                                             <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Diagnosis</label>
-                                            <textarea {...register("diagnosis")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                                            <textarea {...register("diagnosis")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div className="sm:col-span-2">
                                             <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Treatment Plan</label>
-                                            <textarea {...register("treatment_plan")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                                            <textarea {...register("treatment_plan")} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                                         </div>
 
                                         <div className="sm:col-span-2">
                                             <label className="mb-1 block text-xs font-semibold text-zinc-400 dark:text-zinc-500">Additional Notes / Status</label>
-                                            <textarea {...register("notes")} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm text-zinc-400 focus:outline-none dark:border-dark-border dark:bg-zinc-800 dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none"></textarea>
+                                            <textarea {...register("notes")} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm text-zinc-400 focus:outline-hidden dark:border-dark-border dark:bg-zinc-800 dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none"></textarea>
                                         </div>
                                     </div>
                                 </section>

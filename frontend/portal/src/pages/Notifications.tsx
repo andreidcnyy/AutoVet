@@ -106,7 +106,7 @@ export default function Notifications() {
         </button>
 
         {/* Hero Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-8 text-white shadow-xl">
           <PawPrint className="absolute -top-4 -right-4 w-36 h-36 text-white opacity-30 rotate-12 pointer-events-none" />
           <PawPrint className="absolute bottom-2 right-16 w-16 h-16 text-white opacity-20 -rotate-20 pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -131,7 +131,7 @@ export default function Notifications() {
         <div className="space-y-3">
           {loading ? (
             Array(3).fill(0).map((_, i) => (
-              <div key={i} className="h-24 rounded-[2rem] bg-zinc-100 dark:bg-dark-surface animate-pulse" />
+              <div key={i} className="h-24 rounded-4xl bg-zinc-100 dark:bg-dark-surface animate-pulse" />
             ))
           ) : notifications.length > 0 ? (
             <div className="grid gap-3">
@@ -140,10 +140,10 @@ export default function Notifications() {
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   className={clsx(
-                    "group relative p-6 rounded-[2rem] border-2 transition-all cursor-pointer overflow-hidden",
+                    "group relative p-6 rounded-4xl border-2 transition-all cursor-pointer overflow-hidden",
                     notification.read_at
                     ? "bg-white dark:bg-dark-card/50 border-zinc-100 dark:border-dark-border opacity-70"
-                    : "bg-white dark:bg-dark-card border-brand-100 dark:border-brand-500/30 shadow-sm hover:shadow-md"
+                    : "bg-white dark:bg-dark-card border-brand-100 dark:border-brand-500/30 shadow-xs hover:shadow-md"
                   )}
                 >
                   {!notification.read_at && (
@@ -186,7 +186,7 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="card-shell p-16 text-center space-y-4 bg-zinc-50/50 border-dashed">
-              <div className="w-20 h-20 bg-zinc-100 dark:bg-dark-surface rounded-[2rem] mx-auto flex items-center justify-center text-zinc-300">
+              <div className="w-20 h-20 bg-zinc-100 dark:bg-dark-surface rounded-4xl mx-auto flex items-center justify-center text-zinc-300">
                 <FiBell className="w-10 h-10" />
               </div>
               <div>
@@ -200,8 +200,8 @@ export default function Notifications() {
 
       {/* Notification Detail Modal — rendered via portal into document.body to escape any CSS containment */}
       {isModalOpen && selectedNotification && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={() => setIsModalOpen(false)} />
 
           <div className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-zinc-100 dark:border-dark-border flex justify-between items-center bg-zinc-50/50 dark:bg-dark-surface/30">

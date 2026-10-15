@@ -102,7 +102,7 @@ function AiClinicalSupportPage() {
               value={petSearch}
               onChange={(e) => { setPetSearch(e.target.value); searchPets(e.target.value); }}
               placeholder="Search patient by name..."
-              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 py-2.5 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
             />
             {selectedPet && (
               <button type="button" onClick={clearPet} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-rose-500">
@@ -139,7 +139,7 @@ function AiClinicalSupportPage() {
             onChange={(e) => setSymptoms(e.target.value)}
             rows={4}
             placeholder="Describe the symptoms observed by the owner or staff (e.g. vomiting for 2 days, loss of appetite, pale gums)..."
-            className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-4 py-3 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-4 py-3 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 resize-none"
           />
           <p className="mt-1 text-[11px] text-zinc-400">{symptoms.length}/1000</p>
         </div>

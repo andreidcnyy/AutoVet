@@ -103,7 +103,7 @@ function PatientRecordsView({
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenAddPatient}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             <FiPlus className="h-4 w-4" />
             Add New Owner
@@ -120,7 +120,7 @@ function PatientRecordsView({
             placeholder="Search by name, phone, email, address, city, pet..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-xs transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
           {searchQuery && (
             <button
@@ -131,7 +131,7 @@ function PatientRecordsView({
             </button>
           )}
         </div>
-        <div className="flex rounded-xl border border-zinc-200 bg-white p-1 dark:border-dark-border dark:bg-dark-card shadow-sm">
+        <div className="flex rounded-xl border border-zinc-200 bg-white p-1 dark:border-dark-border dark:bg-dark-card shadow-xs">
           {["All", "With Pets"].map((f) => (
             <button
               key={f}
@@ -186,7 +186,7 @@ function PatientRecordsView({
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-100 to-zinc-200 text-lg shadow-sm group-hover:scale-105 transition-transform dark:from-zinc-800 dark:to-zinc-900">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-zinc-100 to-zinc-200 text-lg shadow-xs group-hover:scale-105 transition-transform dark:from-zinc-800 dark:to-zinc-900">
                           👤
                         </div>
                         <div>
@@ -212,7 +212,7 @@ function PatientRecordsView({
                     </td>
                     <td className="px-6 py-5 text-center">
                       <div className="inline-flex flex-col items-center">
-                        <span className="flex h-7 min-w-[28px] items-center justify-center rounded-lg bg-emerald-100 px-2 text-[11px] font-black text-emerald-700 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-300">
+                        <span className="flex h-7 min-w-[28px] items-center justify-center rounded-lg bg-emerald-100 px-2 text-[11px] font-black text-emerald-700 shadow-xs dark:bg-emerald-900/40 dark:text-emerald-300">
                           {owner.pets?.length || 0}
                         </span>
                       </div>
@@ -284,7 +284,7 @@ function PatientRecordsView({
                 <button
                   onClick={() => onPageChange(Math.max(pagination.current_page - 1, 1))}
                   disabled={pagination.current_page === 1}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-xs"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -294,7 +294,7 @@ function PatientRecordsView({
                 <button
                   onClick={() => onPageChange(Math.min(pagination.current_page + 1, pagination.last_page))}
                   disabled={pagination.current_page === pagination.last_page}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-xs"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -310,7 +310,7 @@ function PatientRecordsView({
           {selectedOwner ? (
             <div className="card-shell overflow-hidden border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-2xl">
                {/* Header Gradient */}
-               <div className="h-32 bg-gradient-to-br from-emerald-600 to-indigo-700 p-6 relative">
+               <div className="h-32 bg-linear-to-br from-emerald-600 to-indigo-700 p-6 relative">
                   <div className="absolute -bottom-6 left-6">
                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-4xl shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
                        👤
@@ -388,13 +388,13 @@ function PatientRecordsView({
                                 src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)}
                                 onError={onPetImageError(pet.species?.name, pet.breed?.name)} 
                                 alt={pet.name} 
-                                className="h-14 w-14 rounded-xl object-cover shadow-sm bg-white dark:bg-dark-card" 
+                                className="h-14 w-14 rounded-xl object-cover shadow-xs bg-white dark:bg-dark-card" 
                              />
                              <div className="min-w-0 flex-1">
                                 <p className="font-black text-zinc-900 dark:text-zinc-50">{pet.name}</p>
                                 {pet.breed?.name && <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500">{pet.breed.name}</p>}
                              </div>
-                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-300 shadow-sm dark:bg-dark-card">
+                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-300 shadow-xs dark:bg-dark-card">
                                 <FiChevronRight className="h-4 w-4" />
                              </div>
                           </div>
@@ -485,7 +485,7 @@ function PatientRecordsView({
 
     {/* Portal account action confirmation modal */}
     {portalModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
         <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-dark-card p-8 shadow-2xl">
           <div className={clsx("flex items-center gap-3 mb-4",
             portalModal.action === "reactivate" ? "text-emerald-600" :

@@ -172,7 +172,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
               placeholder="Search..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1, { replace: true }); }}
-              className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-9 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+              className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-10 pr-9 text-sm transition-all focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
             />
             {search && (
               <button onClick={() => { setSearch(""); setPage(1, { replace: true }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
@@ -190,7 +190,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="min-w-[640px] w-full text-left text-sm">
             <thead className="bg-zinc-50/50 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:bg-dark-surface/50 dark:text-zinc-400">
@@ -256,14 +256,14 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
               <button 
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="rounded border border-zinc-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
+                className="rounded-sm border border-zinc-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
               >
                 <FiChevronLeft size={16} />
               </button>
               <button 
                 disabled={page === meta.last_page}
                 onClick={() => setPage(page + 1)}
-                className="rounded border border-zinc-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
+                className="rounded-sm border border-zinc-200 p-1 hover:bg-white disabled:opacity-30 dark:border-dark-border dark:hover:bg-dark-surface"
               >
                 <FiChevronRight size={16} />
               </button>
@@ -273,7 +273,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
       </div>
 
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 dark:bg-dark-card border dark:border-dark-border shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{editingItem ? `Edit ${title.slice(0, -1)}` : `Add ${title.slice(0, -1)}`}</h3>
@@ -287,7 +287,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
                     <select 
                       value={formData[key]} 
                       onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                      className="w-full rounded-lg border border-zinc-200 p-2 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-lg border border-zinc-200 p-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
@@ -298,7 +298,7 @@ export default function MasterDataTable({ title, description, apiUrl, columns, i
                       type="text" 
                       value={formData[key]} 
                       onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                      className="w-full rounded-lg border border-zinc-200 p-2 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                      className="w-full rounded-lg border border-zinc-200 p-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     />
                   )}
                 </div>

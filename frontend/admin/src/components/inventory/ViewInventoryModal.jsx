@@ -198,10 +198,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const displayProduct = freshProduct ?? product;
 
   const inputClass =
-    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-sm";
+    "mt-1 w-full font-semibold border-b px-1 py-0.5 text-zinc-900 dark:text-zinc-50 dark:bg-dark-card dark:border-zinc-600 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 rounded-xs";
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm dark:bg-zinc-950/70 p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-zinc-900/60 backdrop-blur-xs dark:bg-zinc-950/70 p-4">
       <div className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl dark:bg-dark-card flex flex-col" style={{ maxHeight: '90vh' }}>
         
         {/* Header */}
@@ -209,7 +209,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
           <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-50">Product Details</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-hidden dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -345,7 +345,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <span className={clsx(
-                      "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm border",
+                      "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm shadow-xs border",
                       (product.stock_level <= 0) 
                         ? "bg-rose-50 text-rose-700 border-rose-200" 
                         : (aiForecastData.prediction_status.toLowerCase().includes("dataset") 
@@ -354,7 +354,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                     )}>
                       {product.stock_level <= 0 ? "Stockout Alert" : aiForecastData.prediction_status}
                     </span>
-                    <span className="text-[9px] font-black uppercase tracking-tighter bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                    <span className="text-[9px] font-black uppercase tracking-tighter bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-sm dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
                         Dynamic Prediction
                     </span>
                   </div>
@@ -478,7 +478,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             <>
               <button
                 onClick={() => onDeleteRequest(product)}
-                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-none dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
+                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 focus:outline-hidden dark:border-rose-900/40 dark:text-rose-400 dark:hover:bg-rose-900/30"
               >
                 <FiTrash2 className="h-4 w-4" />
                 Delete
@@ -488,7 +488,7 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                 disabled={isSaving}
                 className={clsx(
-                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none transition-all",
+                  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-hidden transition-all",
                   isEditing
                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                     : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-dark-surface dark:text-zinc-300 dark:hover:bg-zinc-800"

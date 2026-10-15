@@ -64,7 +64,7 @@ export default function AccountPendingDeletion() {
         <div className="bg-white dark:bg-dark-card rounded-3xl shadow-2xl overflow-hidden border border-rose-100 dark:border-rose-900/30">
 
           {/* Red top band */}
-          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-8 py-6 text-white">
+          <div className="bg-linear-to-r from-rose-500 to-rose-600 px-8 py-6 text-white">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                 <FiAlertTriangle className="w-5 h-5" />

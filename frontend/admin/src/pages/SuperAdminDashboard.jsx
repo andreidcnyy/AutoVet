@@ -46,7 +46,7 @@ const MapPreview = ({ address }) => {
         style={{ border: 0 }}
         src={mapUrl}
       ></iframe>
-      <div className="absolute top-3 left-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm pointer-events-none transition-opacity group-hover:opacity-0">
+      <div className="absolute top-3 left-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-xs pointer-events-none transition-opacity group-hover:opacity-0">
          <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
            <FiMapPin className="text-autovet-teal" /> Live Location Preview
          </p>
@@ -404,7 +404,7 @@ export default function SuperAdminDashboard() {
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
                       {resolveLogoUrl(clinic.logo) ? (
-                        <img src={resolveLogoUrl(clinic.logo)} className="h-12 w-12 rounded-2xl object-cover shadow-sm bg-white" alt="logo" />
+                        <img src={resolveLogoUrl(clinic.logo)} className="h-12 w-12 rounded-2xl object-cover shadow-xs bg-white" alt="logo" />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-lg dark:bg-zinc-800 group-hover:scale-110 transition-transform text-2xl">🏥</div>
                       )}
@@ -430,7 +430,7 @@ export default function SuperAdminDashboard() {
                      {clinic.subscription_expires_at && <p className="mt-1 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Exp: {new Date(clinic.subscription_expires_at).toLocaleDateString()}</p>}
                   </td>
                   <td className="px-6 py-5 text-center">
-                    <span className={clsx("inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm", clinic.status === 'active' ? "bg-autovet-teal/10 text-autovet-teal border border-autovet-teal/20" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400")}>{clinic.status}</span>
+                    <span className={clsx("inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-xs", clinic.status === 'active' ? "bg-autovet-teal/10 text-autovet-teal border border-autovet-teal/20" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400")}>{clinic.status}</span>
                   </td>
                   <td className="px-6 py-5 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -458,11 +458,11 @@ export default function SuperAdminDashboard() {
 
       {/* Clinic Details Modal */}
       {selectedClinic && !isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-autovet-navy/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-autovet-navy/40 backdrop-blur-xs">
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
 
             {/* Fixed header */}
-            <div className="h-32 bg-gradient-to-br from-autovet-navy to-autovet-teal p-8 relative shrink-0 rounded-t-3xl">
+            <div className="h-32 bg-linear-to-br from-autovet-navy to-autovet-teal p-8 relative shrink-0 rounded-t-3xl">
                <div className="absolute -bottom-8 left-8">
                   <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white overflow-hidden shadow-xl dark:bg-dark-surface border-4 border-white dark:border-dark-card">
                     {resolveLogoUrl(selectedClinic.logo) ? <img src={resolveLogoUrl(selectedClinic.logo)} className="h-full w-full object-cover" alt="logo" /> : <span className="text-5xl text-zinc-300">🏥</span>}
@@ -514,14 +514,14 @@ export default function SuperAdminDashboard() {
                   {activeTab === 'subscription' && (
                     <div className="space-y-6 animate-in fade-in duration-300">
                        <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
-                          <div className="h-16 w-16 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl shadow-sm"><FiStar /></div>
+                          <div className="h-16 w-16 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-2xl shadow-xs"><FiStar /></div>
                           <div>
                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Current Plan</p>
                              <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">{selectedClinic.subscription_tier || 'Free Trial'}</p>
                           </div>
                        </div>
                        <div className="flex items-center gap-6 p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface/50">
-                          <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-sm"><FiCalendar /></div>
+                          <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-xs"><FiCalendar /></div>
                           <div>
                              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Expiration Date</p>
                              <p className="text-2xl font-black text-zinc-900 dark:text-white uppercase">
@@ -553,14 +553,14 @@ export default function SuperAdminDashboard() {
                        ) : (
                           <div className="space-y-4">
                              {clinicAdminsData.data.map(admin => (
-                                <div key={admin.id} className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm">
+                                <div key={admin.id} className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-xs">
                                    <div className="flex items-center gap-4">
                                       <div className="h-10 w-10 rounded-full bg-autovet-navy text-white flex items-center justify-center font-black">
                                          {admin.name.charAt(0).toUpperCase()}
                                       </div>
                                       <div>
                                          <p className="font-black text-zinc-900 dark:text-white uppercase text-xs">{admin.name}</p>
-                                         <p className="text-[10px] font-bold text-zinc-500 tracking-tight">{admin.email} <span className={clsx("ml-2 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-autovet-teal text-[9px]", admin.role === 'veterinarian' ? "text-amber-600" : "text-autovet-teal")}>{admin.role.toUpperCase()}</span></p>
+                                         <p className="text-[10px] font-bold text-zinc-500 tracking-tight">{admin.email} <span className={clsx("ml-2 px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-autovet-teal text-[9px]", admin.role === 'veterinarian' ? "text-amber-600" : "text-autovet-teal")}>{admin.role.toUpperCase()}</span></p>
                                       </div>
                                    </div>
                                    <button
@@ -587,7 +587,7 @@ export default function SuperAdminDashboard() {
 
             {/* Fixed footer */}
             <div className="shrink-0 flex gap-3 px-8 py-5 border-t border-zinc-100 dark:border-dark-border rounded-b-3xl bg-white dark:bg-dark-card">
-              <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-3.5 font-black uppercase text-xs tracking-widest transition-all shadow-sm", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
+              <button onClick={(e) => handleToggleStatus(e, selectedClinic)} className={clsx("flex-1 rounded-2xl py-3.5 font-black uppercase text-xs tracking-widest transition-all shadow-xs", selectedClinic.status === 'active' ? "bg-rose-50 text-rose-600 hover:bg-rose-100" : "bg-autovet-teal/10 text-autovet-teal hover:bg-autovet-teal/20")}>
                 {selectedClinic.status === 'active' ? 'Deactivate Clinic' : 'Activate Clinic'}
               </button>
               <button onClick={() => setSelectedClinic(null)} className="flex-1 rounded-2xl bg-autovet-navy py-3.5 font-black uppercase text-xs tracking-widest text-white hover:opacity-90 transition-all shadow-lg">Close View</button>
@@ -598,7 +598,7 @@ export default function SuperAdminDashboard() {
       , document.body)}
 
       {addUserModalOpen && selectedClinic && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-autovet-navy/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-autovet-navy/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -640,7 +640,7 @@ export default function SuperAdminDashboard() {
       , document.body)}
 
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-autovet-navy/40 p-4 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-autovet-navy/40 p-4 backdrop-blur-xs overflow-y-auto">
           <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in zoom-in-95 duration-200 my-8">
             <h3 className="text-2xl font-black text-autovet-navy dark:text-zinc-50 mb-6 uppercase tracking-tight">{editMode ? 'Edit Clinic Details' : 'Register New Clinic'}</h3>
             <form onSubmit={handleSubmitClinic} className="space-y-6">

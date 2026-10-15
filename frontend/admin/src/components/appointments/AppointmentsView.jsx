@@ -556,7 +556,7 @@ function AppointmentsView() {
   const handleNext = () => setCurrentDate(addMonths(currentDate, 1));
 
   const calendarDays = generateCalendarGrid(currentDate);
-  const qInputBase = "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:border-dark-border";
+  const qInputBase = "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:border-dark-border";
 
   const monthAppointments = useMemo(() => {
     return appointments.filter(a => isSameMonth(new Date(a.date.replace(/-/g, '/')), currentDate));
@@ -586,7 +586,7 @@ function AppointmentsView() {
                     {summary && summary.count > 0 && (
                       <div className={clsx(
                         "mt-1 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black border",
-                        isSelected ? "bg-white text-emerald-600 border-white" : "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20"
+                        isSelected ? "bg-white text-emerald-600 border-white" : "bg-emerald-500 text-white border-emerald-500 shadow-xs shadow-emerald-500/20"
                       )}>
                         {summary.count}
                       </div>
@@ -598,7 +598,7 @@ function AppointmentsView() {
           </section>
 
           {format(currentDate, "MMMM yyyy") === "April 2026" && (
-            <section className="rounded-[2.5rem] border border-emerald-100 bg-emerald-50/30 p-8 dark:border-emerald-600/20 dark:bg-emerald-600/5 shadow-sm">
+            <section className="rounded-[2.5rem] border border-emerald-100 bg-emerald-50/30 p-8 dark:border-emerald-600/20 dark:bg-emerald-600/5 shadow-xs">
               <div className="mb-4 inline-flex items-center gap-3 text-emerald-700 dark:text-emerald-400">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xl shadow-emerald-500/40"><LuSparkles className="h-5 w-5" /></div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] italic">April Performance Matrix</p>
@@ -714,8 +714,8 @@ function AppointmentsView() {
       </div>
 
       {createPortal(
-      <div className={clsx("fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
-        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
+      <div className={clsx("fixed inset-0 z-60 flex items-center justify-center p-4 transition-opacity duration-300", isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none")}>
+        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-xs" onClick={() => setIsDrawerOpen(false)} />
         <aside className={clsx("relative z-10 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden bg-white dark:bg-dark-card shadow-2xl rounded-3xl transition-all duration-300", isDrawerOpen ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
           {activePanel === "booking" ? (
             <>
@@ -741,7 +741,7 @@ function AppointmentsView() {
                     </div>
 
                     {/* Owner section */}
-                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-4">
+                    <div className="rounded-4xl border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-4">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-[10px] font-black uppercase text-zinc-400">Owner Information</p>
                         <div className="flex gap-1">
@@ -858,7 +858,7 @@ function AppointmentsView() {
                     </div>
 
                     {/* Pet section */}
-                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
+                    <div className="rounded-4xl border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
                       <p className="text-[10px] font-black uppercase text-zinc-400 mb-2">Pet Information</p>
                       <div>
                         <label className="mb-1.5 block text-[10px] font-black uppercase text-zinc-400">Pet Name <span className="text-rose-500">*</span></label>
@@ -885,7 +885,7 @@ function AppointmentsView() {
                     </div>
 
                     {/* Services */}
-                    <div className="rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
+                    <div className="rounded-4xl border-2 border-zinc-100 bg-zinc-50/30 p-6 dark:border-dark-border space-y-3">
                       <p className="text-[10px] font-black uppercase text-zinc-400 mb-2">Reason / Services <span className="text-rose-500">*</span></p>
                       {walkInErrors.service && <p className="text-xs text-rose-500">{walkInErrors.service}</p>}
                       <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto pr-1">
@@ -894,7 +894,7 @@ function AppointmentsView() {
                           return (
                             <label key={s.id} className={clsx("flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-sm font-bold", checked ? "bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-600 dark:text-emerald-400" : "bg-white border-zinc-200 text-zinc-700 dark:bg-dark-surface dark:border-dark-border dark:text-zinc-300 hover:border-emerald-300")}>
                               <input type="checkbox" className="sr-only" checked={checked} onChange={() => setSelectedServiceIds(prev => checked ? prev.filter(id => id !== String(s.id)) : [...prev, String(s.id)])} />
-                              <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
+                              <span className={clsx("w-4 h-4 rounded-sm shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
                               {s.name}
                             </label>
                           );
@@ -929,7 +929,7 @@ function AppointmentsView() {
                 ) : (
                   /* â”€â”€ Regular Scheduling Form â”€â”€ */
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="space-y-5 rounded-[2rem] border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
+                    <div className="space-y-5 rounded-4xl border-2 border-zinc-100 bg-zinc-50/30 p-8 dark:border-dark-border">
                       <div className="relative">
                         <label className="mb-3 block text-[10px] font-black uppercase text-zinc-400">Client / Owner</label>
                         <div className="relative">
@@ -1020,7 +1020,7 @@ function AppointmentsView() {
                                   setSelectedServiceIds(nextIds);
                                   setValue("service_id", nextIds[0] || "");
                                 }} />
-                                <span className={clsx("w-4 h-4 rounded shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
+                                <span className={clsx("w-4 h-4 rounded-sm shrink-0 border flex items-center justify-center", checked ? "bg-emerald-500 border-emerald-500" : "border-zinc-300")}>{checked && <FiCheckCircle className="w-3 h-3 text-white" />}</span>
                                 {s.name}
                               </label>
                             );
@@ -1052,7 +1052,7 @@ function AppointmentsView() {
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-8 space-y-10">
                 <div className="flex items-start gap-6">
-                  <div className="h-20 w-20 flex items-center justify-center rounded-[2rem] bg-emerald-50 text-emerald-600 shadow-xl"><FiInfo className="h-10 w-10" /></div>
+                  <div className="h-20 w-20 flex items-center justify-center rounded-4xl bg-emerald-50 text-emerald-600 shadow-xl"><FiInfo className="h-10 w-10" /></div>
                   <div><h4 className="text-3xl font-black italic leading-tight">{selectedAppointment?.title}</h4>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className={clsx("inline-flex items-center gap-2 rounded-full px-5 py-2 text-xs font-black uppercase shadow-lg",
@@ -1150,7 +1150,7 @@ function AppointmentsView() {
       document.body
       )}
       {createPortal(
-      <div className={clsx("fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-200", declineModal.open ? "opacity-100" : "opacity-0 pointer-events-none")}>
+      <div className={clsx("fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 transition-opacity duration-200", declineModal.open ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-dark-card p-8">
           <h3 className="text-xl font-black text-rose-600 mb-2">Decline Appointment</h3>
           <textarea value={declineModal.reason} onChange={(e) => setDeclineModal(prev => ({ ...prev, reason: e.target.value }))} rows={5} className="w-full rounded-xl border dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 p-3" placeholder="Reason (min 10 chars)..." />

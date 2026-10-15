@@ -45,7 +45,7 @@ function DarkModeToggle() {
             className={`
         relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full
         border-2 border-transparent p-0.5
-        transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2
+        transition-colors duration-300 ease-in-out focus:outline-hidden focus-visible:ring-2
         focus-visible:ring-emerald-500 focus-visible:ring-offset-2
         ${isDark
                     ? "bg-emerald-600"

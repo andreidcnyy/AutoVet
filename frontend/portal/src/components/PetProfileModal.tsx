@@ -122,10 +122,10 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-3 sm:p-6">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-300"
         onClick={onClose}
       />
 
@@ -137,7 +137,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="flex absolute right-3 top-3 z-[10001] h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors"
+          className="flex absolute right-3 top-3 z-10001 h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-md transition-colors"
         >
           <FiX className="h-3 w-3" />
         </button>
@@ -157,7 +157,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
           ) : (
             <div className="space-y-4 sm:space-y-6 pb-6 sm:pb-8">
               {/* Hero Section — compact on mobile */}
-              <div className="p-4 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-[2rem]">
+              <div className="p-4 sm:p-8 bg-brand-600 dark:bg-brand-900/40 text-white overflow-hidden relative rounded-b-4xl">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                   <LuPawPrint className="w-48 h-48" />
                 </div>
@@ -232,7 +232,7 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
                       className={clsx(
                         "flex items-center justify-center gap-1.5 sm:gap-2 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all",
                         activeTab === tab.id
-                        ? "bg-white dark:bg-dark-card text-brand-600 shadow-sm"
+                        ? "bg-white dark:bg-dark-card text-brand-600 shadow-xs"
                         : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300"
                       )}
                     >
@@ -400,9 +400,9 @@ export default function PetProfileModal({ isOpen, onClose, petId }: PetProfileMo
 
       {/* Details Sub-Modal */}
       {viewingRecord && (
-        <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" onClick={() => setViewingRecord(null)} />
-          <div className="relative w-full max-w-2xl bg-white dark:bg-dark-card rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-zinc-100 dark:border-dark-border">
+        <div className="fixed inset-0 z-10002 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-xs" onClick={() => setViewingRecord(null)} />
+          <div className="relative w-full max-w-2xl bg-white dark:bg-dark-card rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-zinc-100 dark:border-dark-border">
             <div className="flex items-center justify-between px-6 sm:px-8 py-5 sm:py-6 border-b border-zinc-100 dark:border-dark-border">
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100 uppercase italic tracking-tight">Clinical Summary</h3>

@@ -119,7 +119,7 @@ function ChangePasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-xl bg-emerald-600 text-white font-semibold text-lg transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
+            className="w-full h-12 rounded-xl bg-emerald-600 text-white font-semibold text-lg transition hover:bg-emerald-700 focus:outline-hidden disabled:opacity-60"
           >
             {loading ? "Updating..." : "Update Password"}
           </button>

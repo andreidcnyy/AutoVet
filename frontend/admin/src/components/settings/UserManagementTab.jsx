@@ -322,7 +322,7 @@ export default function UserManagementTab() {
 
       {/* Add / Edit User Modal */}
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-zinc-950/50 p-4">
+        <div className="fixed inset-0 z-10200 flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
@@ -340,7 +340,7 @@ export default function UserManagementTab() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                  className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                 />
               </div>
               <div>
@@ -350,7 +350,7 @@ export default function UserManagementTab() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                  className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -359,7 +359,7 @@ export default function UserManagementTab() {
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   >
                     {[
                       [ROLES.SUPER_ADMIN, "Super Admin"],
@@ -380,7 +380,7 @@ export default function UserManagementTab() {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -400,12 +400,12 @@ export default function UserManagementTab() {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-none dark:hover:text-zinc-300"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-hidden dark:hover:text-zinc-300"
                   >
                     {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>
@@ -435,7 +435,7 @@ export default function UserManagementTab() {
 
       {/* Reset Password Modal */}
       {resetModalOpen && createPortal(
-        <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-zinc-950/50 p-4">
+        <div className="fixed inset-0 z-10200 flex items-center justify-center bg-zinc-950/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-card border dark:border-dark-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Reset Password</h3>
@@ -460,13 +460,13 @@ export default function UserManagementTab() {
                     type={showTempPassword ? "text" : "password"}
                     value={tempPassword}
                     onChange={(e) => setTempPassword(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:bg-dark-surface dark:border-dark-border dark:text-white"
+                    className="w-full rounded-xl border border-zinc-200 p-2.5 pr-10 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white"
                     placeholder="Min. 8 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowTempPassword((p) => !p)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-none dark:hover:text-zinc-300"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 focus:outline-hidden dark:hover:text-zinc-300"
                   >
                     {showTempPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
                   </button>

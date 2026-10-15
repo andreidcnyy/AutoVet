@@ -52,15 +52,15 @@ export default function WarningPopup() {
   if (!current) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" />
       <div className={clsx(
         "relative w-full max-w-md bg-white dark:bg-dark-card rounded-3xl shadow-2xl flex flex-col overflow-hidden",
         "animate-in fade-in zoom-in-95 duration-300"
       )}>
 
         {/* Amber top bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-orange-500" />
+        <div className="h-1.5 w-full bg-linear-to-r from-amber-400 to-orange-500" />
 
         {/* Header */}
         <div className="flex items-start gap-4 px-7 pt-6 pb-4">

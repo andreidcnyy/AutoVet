@@ -453,7 +453,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
           {!isModal && (
             <button
               onClick={() => navigate("/patients")}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-700 shadow-xs hover:border-zinc-400 dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 dark:hover:border-zinc-500"
             >
               <FiArrowLeft className="h-4 w-4" />
               Back
@@ -472,7 +472,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
           {isVet && (
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-600 shadow-sm hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-600 shadow-xs hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30 transition"
             >
               <FiEdit3 className="h-4 w-4" />
               Edit Profile
@@ -481,7 +481,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
           {isVet && (
             <button
               onClick={() => setIsArchiveModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-600 shadow-sm hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/30 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-semibold text-rose-600 shadow-xs hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/30 transition"
             >
               <FiTrash2 className="h-4 w-4" />
               Archive
@@ -500,7 +500,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={clsx(
-                  "inline-flex flex-shrink-0 items-center gap-2 border-b-2 px-6 py-4 text-sm font-semibold transition",
+                  "inline-flex shrink-0 items-center gap-2 border-b-2 px-6 py-4 text-sm font-semibold transition",
                   activeTab === tab.key
                     ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
                     : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -539,7 +539,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
 
       {/* Archive Confirmation Modal */}
       {isArchiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-card border dark:border-dark-border">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
               <FiTrash2 className="h-6 w-6" />
@@ -559,7 +559,7 @@ function ViewPatientProfile({ patient, onRefresh, isModal = false }) {
               <button
                 disabled={isArchiving}
                 onClick={handleArchive}
-                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-rose-700 disabled:opacity-50 transition-colors"
               >
                 {isArchiving ? "Archiving..." : "Archive Patient"}
               </button>
@@ -604,7 +604,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
              {hasOwner && (
              <button
               onClick={() => onOpenOwner(owner.id)}
-              className="rounded-xl bg-white px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-sm transition-all hover:bg-emerald-50 active:scale-95"
+              className="rounded-xl bg-white px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-xs transition-all hover:bg-emerald-50 active:scale-95"
              >
               View Owner Profile
              </button>
@@ -620,7 +620,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
                                 onError={onPetImageError(patient.species?.name, patient.breed?.name)}
             alt={patient.name}
             className={clsx(
-              "h-40 w-40 rounded-2xl border-2 border-zinc-100 object-cover shadow-sm dark:border-dark-border bg-zinc-100 transition-all duration-200",
+              "h-40 w-40 rounded-2xl border-2 border-zinc-100 object-cover shadow-xs dark:border-dark-border bg-zinc-100 transition-all duration-200",
               photoUpdating && "opacity-50"
             )}
           />
@@ -630,7 +630,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
             <button
               onClick={onChangePhoto}
               disabled={photoUpdating}
-              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-zinc-800 text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
+              className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-zinc-800 text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow-sm"
             >
               <FiCamera className="h-3.5 w-3.5" />
               Change
@@ -639,7 +639,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
               <button
                 onClick={onRemovePhoto}
                 disabled={photoUpdating}
-                className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow"
+                className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 text-white text-[11px] font-black px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow-sm"
               >
                 <FiTrash className="h-3.5 w-3.5" />
                 Remove
@@ -698,7 +698,7 @@ function OverviewTab({ patient, onOpenOwner, photoUpdating, photoInputRef, onCha
       <div className="flex gap-3">
         <button
           onClick={() => generatePatientPDF(patient)}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700 transition"
         >
           <FiDownload className="h-4 w-4" />
           Download Summary (PDF)
@@ -838,7 +838,7 @@ function DetailViewModal({ title, onClose, data }) {
   // view opened as a pane inside the pet's own window instead of over it.
   return createPortal(
     <div
-      className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-10050 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
       onClick={onClose}
     >
       <div
@@ -1263,7 +1263,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[10100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-10100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <h2 className={clsx("text-xl font-bold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-800 dark:text-zinc-100")}>
@@ -1281,7 +1281,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                    value={selectedVetId}
                    onChange={(e) => setSelectedVetId(e.target.value)}
                    className={clsx(
-                     "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-none focus:border-emerald-400 dark:text-zinc-200",
+                     "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface focus:outline-hidden focus:border-emerald-400 dark:text-zinc-200",
                      isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white",
                      getError("vet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
                    )}
@@ -1304,7 +1304,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                       disabled={isViewOnly}
                       onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
                       className={clsx(
-                        "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                        "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-hidden disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
                         isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
                       )}
                     >
@@ -1321,7 +1321,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                     </button>
 
                     {isApptDropdownOpen && !isViewOnly && (
-                      <div className="absolute left-0 top-full z-[70] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
+                      <div className="absolute left-0 top-full z-70 mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
                         <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
                           <div className="relative">
                             <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -1331,7 +1331,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                               value={apptSearch}
                               onChange={(e) => setApptSearch(e.target.value)}
                               autoFocus
-                              className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                              className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-hidden focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
                             />
                           </div>
                         </div>
@@ -1376,7 +1376,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                  readOnly={isViewOnly}
                  defaultValue={record?.chief_complaint || ""} 
                  className={clsx(
-                   "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400",
+                   "w-full rounded-xl border px-3 py-2.5 text-sm dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400",
                    isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white",
                    getError("chief_complaint") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border"
                  )} 
@@ -1385,7 +1385,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
              </div>
              <div>
                <label className={clsx("mb-1 block text-sm font-semibold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-600 dark:text-zinc-300")}>Findings</label>
-               <textarea name="findings" rows={2} readOnly={isViewOnly} defaultValue={record?.findings || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
+               <textarea name="findings" rows={2} readOnly={isViewOnly} defaultValue={record?.findings || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
              </div>
              <div>
                <label className={clsx("mb-1 block text-sm font-semibold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-600 dark:text-zinc-300")}>Diagnosis</label>
@@ -1395,7 +1395,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                  readOnly={isViewOnly}
                  defaultValue={record?.diagnosis || ""} 
                  className={clsx(
-                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
+                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
                    isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none italic" : "bg-white"
                  )}
                ></textarea>
@@ -1408,7 +1408,7 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
                  readOnly={isViewOnly}
                  defaultValue={record?.treatment_plan || ""} 
                  className={clsx(
-                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
+                   "w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200",
                    isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none italic" : "bg-white"
                  )}
                ></textarea>
@@ -1416,16 +1416,16 @@ function MedicalRecordsTab({ patient, isStaff, isVet }) {
              <div className="grid grid-cols-2 gap-4">
                <div>
                  <label className={clsx("mb-1 block text-sm font-semibold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-600 dark:text-zinc-300")}>Follow-up Date</label>
-                 <input type="date" name="follow_up_date" readOnly={isViewOnly} defaultValue={record?.follow_up_date?.split('T')[0] || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
+                 <input type="date" name="follow_up_date" readOnly={isViewOnly} defaultValue={record?.follow_up_date?.split('T')[0] || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
                </div>
                <div>
                  <label className={clsx("mb-1 block text-sm font-semibold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-600 dark:text-zinc-300")}>Follow-up Time</label>
-                 <input type="time" name="follow_up_time" readOnly={isViewOnly} defaultValue={record?.follow_up_time || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
+                 <input type="time" name="follow_up_time" readOnly={isViewOnly} defaultValue={record?.follow_up_time || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")} />
                </div>
              </div>
              <div>
                <label className={clsx("mb-1 block text-sm font-semibold", isViewOnly ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-600 dark:text-zinc-300")}>Private Notes</label>
-               <textarea name="notes" rows={2} readOnly={isViewOnly} defaultValue={record?.notes || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
+               <textarea name="notes" rows={2} readOnly={isViewOnly} defaultValue={record?.notes || ""} className={clsx("w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400", isViewOnly ? "bg-zinc-200 dark:bg-zinc-800 opacity-60 text-zinc-500 cursor-not-allowed pointer-events-none select-none" : "bg-white")}></textarea>
              </div>
           </form>
         </div>

@@ -33,10 +33,10 @@ export default function Toast({ message, type = "info", onClose, isExiting }) {
 
     return (
         <div
-            className={`flex w-full items-start gap-4 rounded-xl border p-4 shadow-lg drop-shadow-sm transition-all duration-300 ${bg} ${border} ${animationClass}`}
+            className={`flex w-full items-start gap-4 rounded-xl border p-4 shadow-lg drop-shadow-xs transition-all duration-300 ${bg} ${border} ${animationClass}`}
             role="alert"
         >
-            <Icon className={`mt-0.5 h-5 w-5 flex-shrink-0 ${iconColor}`} />
+            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconColor}`} />
             <div className="flex-1">
                 <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100 leading-snug">
                     {message}
@@ -44,7 +44,7 @@ export default function Toast({ message, type = "info", onClose, isExiting }) {
             </div>
             <button
                 onClick={onClose}
-                className="inline-flex flex-shrink-0 rounded-lg p-1 -mr-2 -mt-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200"
+                className="inline-flex shrink-0 rounded-lg p-1 -mr-2 -mt-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-hidden dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200"
                 aria-label="Close"
             >
                 <FiX className="h-4 w-4" />

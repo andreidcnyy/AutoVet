@@ -21,12 +21,12 @@ export default function SlotFullModal({ open, timeLabel, onClose }: Props) {
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10050] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="slot-full-title">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-10050 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="slot-full-title">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={onClose} />
 
       <div className="relative w-full max-w-sm bg-white dark:bg-dark-card rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* Brand header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 px-6 pt-6 pb-10 text-center text-white">
+        <div className="relative overflow-hidden bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 px-6 pt-6 pb-10 text-center text-white">
           <PawPrint className="absolute -top-3 -right-3 w-24 h-24 text-white opacity-20 rotate-12 pointer-events-none" />
           <PawPrint className="absolute bottom-1 left-3 w-10 h-10 text-white opacity-20 -rotate-12 pointer-events-none" />
           <div className="relative mx-auto w-14 h-14 rounded-2xl bg-white shadow-lg flex items-center justify-center">

@@ -60,7 +60,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
              </div>
 
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="bg-zinc-50 dark:bg-dark-surface/50 p-5 rounded-[1.5rem] border border-zinc-100 dark:border-dark-border">
+               <div className="bg-zinc-50 dark:bg-dark-surface/50 p-5 rounded-3xl border border-zinc-100 dark:border-dark-border">
                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                     <FiInfo className="w-3 h-3 text-brand-500" /> Chief Complaint
                   </p>
@@ -68,7 +68,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
                     {latestRecord.chief_complaint || 'N/A'}
                   </p>
                </div>
-               <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-5 rounded-[1.5rem] border border-emerald-100 dark:border-emerald-900/20">
+               <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-5 rounded-3xl border border-emerald-100 dark:border-emerald-900/20">
                   <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Treatment Plan</p>
                   <p className="text-sm text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed italic">
                     {latestRecord.treatment_plan || 'N/A'}
@@ -100,7 +100,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
         </div>
 
         {/* Clinical Statistics */}
-        <div className="lg:col-span-4 card-shell p-8 bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 text-white flex flex-col justify-between relative overflow-hidden group shadow-lg">
+        <div className="lg:col-span-4 card-shell p-8 bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 text-white flex flex-col justify-between relative overflow-hidden group shadow-lg">
            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700">
               <FiActivity className="w-32 h-32 text-white" />
            </div>
@@ -141,7 +141,7 @@ export default function MedicalSummaryCard({ records, petName }: MedicalSummaryC
             {records.slice(0, 5).map((record, idx) => (
               <div key={record.id} className="relative">
                  <span className={clsx(
-                   "absolute -left-[2.6rem] top-0 w-5 h-5 rounded-full border-4 border-white dark:border-dark-card shadow-lg transition-colors",
+                   "absolute left-[-2.6rem] top-0 w-5 h-5 rounded-full border-4 border-white dark:border-dark-card shadow-lg transition-colors",
                    idx === 0 ? "bg-brand-500" : "bg-zinc-200 dark:bg-zinc-800"
                  )} />
                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

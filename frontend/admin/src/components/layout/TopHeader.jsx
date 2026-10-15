@@ -80,7 +80,7 @@ function TopHeader({ title, user, onMenuToggle }) {
 
   return (
     <>
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur transition-colors duration-300 dark:border-dark-border dark:bg-dark-card/95">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur-sm transition-colors duration-300 dark:border-dark-border dark:bg-dark-card/95">
       <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3 shrink-0">
           <button
@@ -256,7 +256,7 @@ function TopHeader({ title, user, onMenuToggle }) {
         const Icon = iconMap[selectedNotif.iconName] || FiBell;
         return createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedNotif(null)}>
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" />
             <div
               className="relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-dark-border dark:bg-dark-card"
               onClick={(e) => e.stopPropagation()}

@@ -9,9 +9,9 @@ import { useAuth } from "../../context/AuthContext";
 import { PH_LOCATION_DATA } from "../../utils/phLocationData";
 
 const inputBase =
-    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
 const selectBase =
-    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
+    "h-11 w-full rounded-xl border bg-zinc-50 px-3 text-sm text-zinc-700 focus:bg-white focus:outline-hidden appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
 const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
@@ -129,7 +129,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
             <div className="flex max-h-[95vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border">
                     <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Edit Owner Details</h2>
@@ -141,7 +141,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
                 <div className="overflow-y-auto p-6">
                     {error && (
                         <div className="mb-6 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                            <FiAlertCircle className="h-5 w-5 flex-shrink-0" />
+                            <FiAlertCircle className="h-5 w-5 shrink-0" />
                             <span>{error}</span>
                         </div>
                     )}

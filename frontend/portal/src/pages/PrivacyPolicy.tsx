@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
 
       {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-dark-card/80 backdrop-blur border-b border-zinc-200 dark:border-dark-border">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-dark-card/80 backdrop-blur-sm border-b border-zinc-200 dark:border-dark-border">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
           </div>
           <div className="flex items-center gap-3">
             <Link to="/register"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-sm active:scale-95 text-sm">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-xs active:scale-95 text-sm">
               <FiArrowLeft className="h-4 w-4" /> Back
             </Link>
             <DarkModeToggle />

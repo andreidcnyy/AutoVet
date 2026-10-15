@@ -37,7 +37,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-xs dark:bg-zinc-950/70">
       <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
         <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <h3 className="text-xl font-bold flex items-center gap-2 text-zinc-800 dark:text-zinc-50">
@@ -46,7 +46,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-hidden dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -79,7 +79,7 @@ export default function OwnerProfileModal({ ownerId, onClose, isOpen }) {
                         key={pet.id}
                         to={`/patients/${pet.id}`}
                         onClick={onClose}
-                        className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition dark:border-dark-border dark:bg-dark-card dark:hover:border-emerald-500/50"
+                        className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:border-emerald-300 hover:shadow-xs transition dark:border-dark-border dark:bg-dark-card dark:hover:border-emerald-500/50"
                       >
                         <img 
                           src={pet.photo ? getActualPetImageUrl(pet.photo) : getPetImageUrl(pet.species?.name, pet.breed?.name)}

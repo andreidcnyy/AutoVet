@@ -41,10 +41,10 @@ function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-10000 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-300"
         onClick={onClose}
       />
       
@@ -53,7 +53,7 @@ function ViewPatientModal({ isOpen, onClose, patientId, onRefresh }) {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-6 top-6 z-[10001] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 transition-colors dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+          className="absolute right-6 top-6 z-10001 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 transition-colors dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
         >
           <FiX className="h-5 w-5" />
         </button>

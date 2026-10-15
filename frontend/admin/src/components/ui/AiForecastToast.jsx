@@ -34,7 +34,7 @@ export default function AiForecastToast({ data, isExiting, onClose }) {
     return (
         <div
             className={clsx(
-                "relative overflow-hidden rounded-xl border p-4 shadow-lg backdrop-blur-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col gap-2",
+                "relative overflow-hidden rounded-xl border p-4 shadow-lg backdrop-blur-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col gap-2",
                 statusTheme,
                 isVisible && !isExiting ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
             )}
@@ -64,12 +64,12 @@ export default function AiForecastToast({ data, isExiting, onClose }) {
                 </p>
                 
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="rounded border border-black/5 bg-white/50 p-2 dark:border-white/5 dark:bg-black/20">
+                    <div className="rounded-sm border border-black/5 bg-white/50 p-2 dark:border-white/5 dark:bg-black/20">
                         <p className="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Prediction</p>
                         <p className={`text-xs font-black ${iconTheme}`}>{status}</p>
                     </div>
                     {days !== null && days !== undefined && (
-                        <div className="rounded border border-black/5 bg-white/50 p-2 dark:border-white/5 dark:bg-black/20">
+                        <div className="rounded-sm border border-black/5 bg-white/50 p-2 dark:border-white/5 dark:bg-black/20">
                             <p className="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Est. Stockout</p>
                             <p className="text-xs font-black text-rose-600 dark:text-rose-400">{days} days</p>
                         </div>

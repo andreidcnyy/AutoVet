@@ -14,9 +14,9 @@ import { getAgeGroup } from "../../utils/petAgeGroups";
 import { PH_LOCATION_DATA } from "../../utils/phLocationData";
 
 const inputBase =
-  "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
+  "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-gray-500 dark:focus:bg-gray-800";
 const selectBase =
-  "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 focus:bg-white focus:outline-none appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
+  "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 focus:bg-white focus:outline-hidden appearance-none pr-10 dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800";
 
 const getInputClass = (error) => clsx(inputBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
 const getSelectClass = (error) => clsx(selectBase, error ? "border-red-400 focus:border-red-500" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border");
@@ -267,7 +267,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
       <section className="card-shell overflow-hidden">
         {error && (
           <div className="mx-6 mt-5 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-200">
-            <FiAlertCircle className="h-5 w-5 flex-shrink-0" />
+            <FiAlertCircle className="h-5 w-5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -354,9 +354,9 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
             {fields.map((field, index) => {
               const photoValue = petsWatch[index]?.photo;
               return (
-                <div key={field.id} className="relative rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm dark:border-dark-border dark:bg-dark-surface/30 space-y-4">
+                <div key={field.id} className="relative rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-xs dark:border-dark-border dark:bg-dark-surface/30 space-y-4">
                   {fields.length > 1 && (
-                    <button type="button" onClick={() => remove(index)} className="absolute right-4 top-4 rounded-xl bg-white p-2 text-zinc-400 hover:text-red-500 shadow-sm transition-colors dark:bg-dark-card dark:hover:text-red-400">
+                    <button type="button" onClick={() => remove(index)} className="absolute right-4 top-4 rounded-xl bg-white p-2 text-zinc-400 hover:text-red-500 shadow-xs transition-colors dark:bg-dark-card dark:hover:text-red-400">
                       <FiTrash2 className="h-5 w-5" />
                     </button>
                   )}
@@ -461,22 +461,22 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                         
                         <div>
                           <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Clinical Findings</label>
-                          <textarea {...register(`pets.${index}.findings`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                          <textarea {...register(`pets.${index}.findings`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div>
                           <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Diagnosis</label>
-                          <textarea {...register(`pets.${index}.diagnosis`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                          <textarea {...register(`pets.${index}.diagnosis`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div className="lg:col-span-2">
                           <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Treatment Plan</label>
-                          <textarea {...register(`pets.${index}.treatment_plan`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                          <textarea {...register(`pets.${index}.treatment_plan`)} readOnly rows="2" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
 
                         <div className="lg:col-span-2">
                           <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-400">Notes</label>
-                          <textarea {...register(`pets.${index}.notes`)} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-none dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
+                          <textarea {...register(`pets.${index}.notes`)} readOnly rows="3" className="w-full rounded-xl border border-zinc-200 bg-zinc-200 px-4 py-3 text-sm focus:outline-hidden dark:bg-zinc-800 dark:border-dark-border dark:text-zinc-400 opacity-60 cursor-not-allowed pointer-events-none select-none" placeholder="None"></textarea>
                         </div>
                       </div>
                     </div>

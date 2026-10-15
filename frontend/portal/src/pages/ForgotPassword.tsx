@@ -51,7 +51,7 @@ export default function ForgotPassword() {
       <div className="absolute top-8 left-8">
         <Link 
           to="/login" 
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-sm active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-xs active:scale-95"
         >
           <FiArrowLeft /> Back to Login
         </Link>

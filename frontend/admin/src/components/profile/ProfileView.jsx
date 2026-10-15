@@ -170,7 +170,7 @@ function ProfileView({ user, setUser }) {
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group overflow-hidden rounded-full">
                             <img src={resolveMediaUrl(avatarValue) || getUserAvatarUrl(roleValue, nameValue)}
-                                 onError={onUserImageError(getUserAvatarUrl, roleValue, nameValue)} alt="Avatar" className="h-32 w-32 object-cover shadow-sm transition group-hover:blur-sm bg-zinc-100 dark:bg-dark-surface" />
+                                 onError={onUserImageError(getUserAvatarUrl, roleValue, nameValue)} alt="Avatar" className="h-32 w-32 object-cover shadow-xs transition group-hover:blur-xs bg-zinc-100 dark:bg-dark-surface" />
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
@@ -196,7 +196,7 @@ function ProfileView({ user, setUser }) {
                                 <input
                                     {...register("name")}
                                     className={clsx(
-                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
                                         errors.name ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border dark:focus:border-emerald-500"
                                     )}
                                     placeholder="e.g. Dr. Sarah Jenkins"
@@ -209,7 +209,7 @@ function ProfileView({ user, setUser }) {
                                     {...register("role")}
                                     disabled={!canEditRole}
                                     className={clsx(
-                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
                                         !canEditRole && "cursor-not-allowed opacity-60",
                                         errors.role ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border dark:focus:border-emerald-500"
                                     )}
@@ -230,7 +230,7 @@ function ProfileView({ user, setUser }) {
                                     {...register("email")}
                                     type="email"
                                     className={clsx(
-                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-none dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
+                                        "h-12 w-full rounded-xl border bg-zinc-50 px-4 text-base text-zinc-700 placeholder:text-zinc-400 focus:bg-white focus:outline-hidden dark:bg-dark-surface dark:text-zinc-200 dark:focus:bg-gray-800",
                                         errors.email ? "border-red-400 focus:border-red-500 dark:border-red-500/50" : "border-zinc-200 focus:border-emerald-300 dark:border-dark-border dark:focus:border-emerald-500"
                                     )}
                                     placeholder="vet@example.com"
@@ -245,7 +245,7 @@ function ProfileView({ user, setUser }) {
                                         value={currentPassword}
                                         onChange={(e) => setCurrentPassword(e.target.value)}
                                         autoComplete="current-password"
-                                        className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500 dark:focus:bg-gray-800"
+                                        className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-base text-zinc-700 focus:border-emerald-300 focus:bg-white focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500 dark:focus:bg-gray-800"
                                         placeholder="Confirm your password to change the email"
                                     />
                                     <p className="mt-1 text-xs text-zinc-400">Changing your sign-in email requires your current password.</p>

@@ -44,7 +44,7 @@ function Sidebar({ items, bottomItems, clinic, isOpen, onClose }) {
       <div
         onClick={onClose}
         className={clsx(
-          "fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-sm transition lg:hidden",
+          "fixed inset-0 z-30 bg-zinc-950/40 backdrop-blur-xs transition lg:hidden",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       />

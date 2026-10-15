@@ -138,7 +138,7 @@ function PetsListView() {
             placeholder="Search by pet name, breed, or owner..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-sm transition-all focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200 shadow-xs transition-all focus:ring-4 focus:ring-emerald-500/10"
           />
           {searchQuery && (
             <button
@@ -178,7 +178,7 @@ function PetsListView() {
                                     className="h-20 w-20 rounded-2xl object-cover shadow-lg border-2 border-white dark:border-dark-surface" 
                                 />
                                 <span className={clsx(
-                                    "absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg text-[10px] shadow-sm",
+                                    "absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg text-[10px] shadow-xs",
                                     pet.sex?.startsWith("Male") ? "bg-blue-100 text-blue-600" : "bg-pink-100 text-pink-600"
                                 )}>
                                     {pet.sex?.startsWith("Male") ? "♂" : "♀"}
@@ -246,7 +246,7 @@ function PetsListView() {
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-sm"
+            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-xs"
           >
             Previous
           </button>
@@ -271,7 +271,7 @@ function PetsListView() {
           <button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-sm"
+            className="flex h-12 px-6 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-widest text-zinc-500 transition-all hover:bg-zinc-50 hover:text-emerald-600 disabled:opacity-30 dark:border-dark-border dark:bg-dark-card shadow-xs"
           >
             Next
           </button>

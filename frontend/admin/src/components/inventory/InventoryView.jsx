@@ -59,12 +59,12 @@ const statusStyles = {
 
 function AiGuideModal({ onClose }) {
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border bg-gradient-to-r from-emerald-50 to-zinc-50 dark:from-emerald-900/10 dark:to-dark-surface">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border bg-linear-to-r from-emerald-50 to-zinc-50 dark:from-emerald-900/10 dark:to-dark-surface">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
               <LuSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -460,7 +460,7 @@ function InventoryView() {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1, { replace: true }); }}
                 placeholder="Search items or codes..."
-                className="w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 py-2 text-sm font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                className="w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-9 py-2 text-sm font-bold text-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
               />
               {searchQuery && (
                 <button onClick={() => { setSearchQuery(""); setCurrentPage(1, { replace: true }); }}className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
@@ -471,7 +471,7 @@ function InventoryView() {
             <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-300"
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-300"
             >
                 <option value="all">Categories</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -543,7 +543,7 @@ function InventoryView() {
                             onClick={() => toggleProduct(key)}
                             aria-expanded={isExpanded}
                             aria-label={isExpanded ? `Hide batches of ${primary.item_name}` : `Show batches of ${primary.item_name}`}
-                            className="mt-0.5 rounded-md p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                            className="mt-0.5 rounded-md p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                           >
                             <FiChevronRight className={clsx("h-4 w-4 transition-transform", isExpanded && "rotate-90")} />
                           </button>
@@ -552,12 +552,12 @@ function InventoryView() {
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{primary.code || primary.sku}</span>
                                 {product.hasExpired && (
-                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-xs bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
                                         Has expired batch
                                     </span>
                                 )}
                                 {!product.hasExpired && product.hasExpiring && (
-                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-sm bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                                    <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-xs bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
                                         Expiring soon
                                     </span>
                                 )}

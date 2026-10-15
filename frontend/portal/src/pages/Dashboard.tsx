@@ -174,7 +174,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 dark:from-emerald-500 dark:via-emerald-400 dark:to-teal-400 p-5 sm:p-8 text-white shadow-xl">
         {/* Paw decoratives */}
         <PawPrint className="absolute -top-4 -right-4 w-40 h-40 text-white opacity-30 rotate-12 pointer-events-none" />
         <PawPrint className="absolute bottom-2 right-1/4 w-20 h-20 text-white opacity-20 -rotate-20 pointer-events-none" />
@@ -330,10 +330,10 @@ export default function Dashboard() {
 
       {/* Appointment Details Drawer */}
       <div className={clsx(
-        "fixed inset-0 z-[60] transition-opacity duration-500",
+        "fixed inset-0 z-60 transition-opacity duration-500",
         isDetailsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
-        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)} />
+        <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-xs" onClick={() => setIsDetailsOpen(false)} />
         
         <aside className={clsx(
           "absolute inset-y-0 right-0 w-full max-w-md bg-white dark:bg-dark-card shadow-2xl transition-transform duration-500 p-5 sm:p-8 overflow-y-auto",
@@ -362,7 +362,7 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-6">
-                <div className="p-6 rounded-[2rem] bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
+                <div className="p-6 rounded-4xl bg-zinc-50/50 dark:bg-dark-surface/30 border-2 border-zinc-50 dark:border-dark-border space-y-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
                       <FiHeart className="w-6 h-6" />
@@ -423,21 +423,21 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Notes</p>
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">{selectedAppointment.notes}</p>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed wrap-break-word">{selectedAppointment.notes}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {(selectedAppointment.status === 'declined' || selectedAppointment.status === 'cancelled') && (
-                  <div className="p-5 rounded-[1.5rem] bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
+                  <div className="p-5 rounded-3xl bg-rose-50 border-2 border-rose-100 dark:bg-rose-900/10 dark:border-rose-900/30">
                     <div className="flex items-start gap-3">
                       <FiXCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-[10px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">
                           {selectedAppointment.status === 'declined' ? 'Reason for Decline' : 'Cancellation Reason'}
                         </p>
-                        <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed break-words">
+                        <p className="text-sm font-medium text-rose-800 dark:text-rose-300 mt-1 leading-relaxed wrap-break-word">
                           {selectedAppointment.decline_reason || selectedAppointment.cancellation_reason || "No reason provided"}
                         </p>
                       </div>
@@ -483,13 +483,13 @@ export default function Dashboard() {
 
       {/* To Review Panel */}
       {isReviewPanelOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs animate-in fade-in duration-200"
             onClick={() => setIsReviewPanelOpen(false)}
           />
           <div className="relative w-full max-w-md bg-white dark:bg-dark-card rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 max-h-[85vh]">
-            <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-orange-400 shrink-0" />
+            <div className="h-1.5 w-full bg-linear-to-r from-amber-400 to-orange-400 shrink-0" />
             <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-dark-border shrink-0">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-0.5">Pending Reviews</p>

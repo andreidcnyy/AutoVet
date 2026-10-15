@@ -307,7 +307,7 @@ export default function AddPet() {
                 id="registerAnother"
                 checked={registerAnother}
                 onChange={(e) => setRegisterAnother(e.target.checked)}
-                className="w-5 h-5 rounded border-zinc-300 text-brand-500 focus:ring-brand-500"
+                className="w-5 h-5 rounded-sm border-zinc-300 text-brand-500 focus:ring-brand-500"
               />
               <label htmlFor="registerAnother" className="text-sm font-bold text-zinc-600 dark:text-zinc-400 cursor-pointer">
                 Register another pet after this one
@@ -317,7 +317,7 @@ export default function AddPet() {
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 rounded-[2rem] bg-brand-500 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center gap-3 px-8 py-5 rounded-4xl bg-brand-500 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
             >
               <FiCheckCircle className="w-6 h-6" />
               {isSubmitting ? "Syncing Pet Data..." : "Register New Pet"}

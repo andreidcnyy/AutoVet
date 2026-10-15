@@ -145,8 +145,8 @@ function DetailModal({ log, onClose }) {
   }[log.action] ?? { label: capitalize(log.action), color: "text-zinc-500", bg: "bg-zinc-50 border-zinc-100" };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-xs" onClick={onClose} />
       <div className="relative w-full max-w-lg max-h-[85vh] flex flex-col bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
         {/* Header */}
@@ -419,7 +419,7 @@ function AuditLogTab() {
           <select
             value={filters.user_id}
             onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
           >
             <option value="">All Users</option>
             {users.map((u) => (
@@ -440,7 +440,7 @@ function AuditLogTab() {
                 placeholder={placeholder}
                 value={filters[key]}
                 onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
               />
               {filters[key] && (
                 <button
@@ -459,7 +459,7 @@ function AuditLogTab() {
           <select
             value={filters.action_type}
             onChange={(e) => setFilters({ ...filters, action_type: e.target.value })}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
           >
             <option value="">All Actions</option>
             <option value="created">Created</option>

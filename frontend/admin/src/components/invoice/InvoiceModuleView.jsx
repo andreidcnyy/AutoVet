@@ -337,7 +337,7 @@ function CatBadge({ type, size = "sm" }) {
     Food: "bg-amber-950/80 text-amber-400",
   };
   return (
-    <span className={clsx("rounded font-bold uppercase tracking-wide shrink-0", base, map[type] ?? map.Sup)}>
+    <span className={clsx("rounded-sm font-bold uppercase tracking-wide shrink-0", base, map[type] ?? map.Sup)}>
       {type}
     </span>
   );
@@ -510,8 +510,8 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
       <div className="card-shell p-4 space-y-3 h-fit sticky top-0">
         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Filter</p>
         {[
-          { label: "Date Start", el: <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" /> },
-          { label: "Date End",   el: <input type="date" value={dateTo}   onChange={(e) => setDateTo(e.target.value)}   className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none" /> },
+          { label: "Date Start", el: <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 w-full rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden" /> },
+          { label: "Date End",   el: <input type="date" value={dateTo}   onChange={(e) => setDateTo(e.target.value)}   className="h-8 w-full rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden" /> },
         ].map(({ label, el }) => (
           <div key={label} className="space-y-1"><label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{label}</label>{el}</div>
         ))}
@@ -526,10 +526,10 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
               onChange={(e) => { setOwnerSearch(e.target.value); setSelectedOwnerId(""); setIsOwnerDropdownOpen(true); }}
               onFocus={() => setIsOwnerDropdownOpen(true)}
               onBlur={() => setTimeout(() => setIsOwnerDropdownOpen(false), 150)}
-              className="h-8 w-full rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
+              className="h-8 w-full rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:border-emerald-400"
             />
             {ownerSearch && (
-              <button type="button" onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); setIsOwnerDropdownOpen(false); }} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600">
+              <button type="button" onClick={() => { setOwnerSearch(""); setSelectedOwnerId(""); setIsOwnerDropdownOpen(false); }} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm text-zinc-400 hover:text-zinc-600">
                 <FiX className="h-3 w-3" />
               </button>
             )}
@@ -553,7 +553,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
           <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Product Type</label>
           <div className="relative">
             <select value={itemTypeFilter} onChange={(e) => { setItemTypeFilter(e.target.value); setSelectedServiceId(""); setSelectedInventoryId(""); }}
-              className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+              className="h-8 w-full appearance-none rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden">
               <option value="all">All</option>
               <option value="service">Services only</option>
               <option value="inventory">Inventory only</option>
@@ -566,7 +566,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
             <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Service</label>
             <div className="relative">
               <select value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)}
-                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                className="h-8 w-full appearance-none rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden">
                 <option value="">All services</option>
                 {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -579,7 +579,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
             <label className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">Inventory Item</label>
             <div className="relative">
               <select value={selectedInventoryId} onChange={(e) => setSelectedInventoryId(e.target.value)}
-                className="h-8 w-full appearance-none rounded border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none">
+                className="h-8 w-full appearance-none rounded-sm border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-2 pr-6 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-hidden">
                 <option value="">All items</option>
                 {inventory.map((i) => <option key={i.id} value={i.id}>{i.item_name}</option>)}
               </select>
@@ -588,9 +588,9 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
           </div>
         )}
         <div className="flex gap-1.5 pt-1">
-          <button onClick={handleReset} className="flex-1 h-8 rounded border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">Clear</button>
+          <button onClick={handleReset} className="flex-1 h-8 rounded-sm border border-zinc-200 dark:border-dark-border text-xs font-semibold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors">Clear</button>
           <button onClick={handleGenerate} disabled={loading}
-            className="flex-1 h-8 rounded bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1">
+            className="flex-1 h-8 rounded-sm bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1">
             {loading ? <FiRefreshCw className="h-3 w-3 animate-spin" /> : null} Search
           </button>
         </div>
@@ -633,7 +633,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
           </div>
         ) : reportView === "summary" ? (
           <>
-            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+            <div className="overflow-x-auto rounded-sm border border-zinc-200 dark:border-dark-border mb-4">
               <table className="w-full text-xs" style={{ minWidth: 400 }}>
                 <thead>
                   <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
@@ -676,7 +676,7 @@ function InvoiceReportsPane({ inventory, services, owners, setReportRows, setGen
           </>
         ) : (
           <>
-            <div className="overflow-x-auto rounded border border-zinc-200 dark:border-dark-border mb-4">
+            <div className="overflow-x-auto rounded-sm border border-zinc-200 dark:border-dark-border mb-4">
               <table className="w-full text-xs" style={{ minWidth: 480 }}>
                 <thead>
                   <tr className="border-b border-zinc-300 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface">
@@ -1595,7 +1595,7 @@ function InvoiceModuleView() {
   const Pagination = () => {
     if (pagination.lastPage <= 1) return null;
     return (
-      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 mb-6 dark:border-dark-border dark:bg-dark-card shadow-sm">
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-6 py-4 mb-6 dark:border-dark-border dark:bg-dark-card shadow-xs">
         <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
           Showing <span className="text-zinc-900 dark:text-zinc-50">{Math.min((pagination.currentPage - 1) * pagination.perPage + 1, pagination.total)}-{Math.min(pagination.currentPage * pagination.perPage, pagination.total)}</span> of <span className="text-zinc-900 dark:text-zinc-50">{pagination.total}</span> invoices
         </div>
@@ -1604,7 +1604,7 @@ function InvoiceModuleView() {
           <button
             onClick={() => setHistoryPage(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-xs"
           >
             <FiChevronLeft className="h-5 w-5" />
           </button>
@@ -1645,7 +1645,7 @@ function InvoiceModuleView() {
           <button
             onClick={() => setHistoryPage(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.lastPage}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-sm"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:hover:bg-dark-surface shadow-xs"
           >
             <FiChevronRight className="h-5 w-5" />
           </button>
@@ -1655,7 +1655,7 @@ function InvoiceModuleView() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-dark-border">
+    <div className="flex flex-col h-full bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-xs border border-zinc-200 dark:border-dark-border">
       {/* Tab Switcher */}
       <div className="flex items-center gap-4 border-b border-zinc-200 dark:border-dark-border px-6 py-4 bg-zinc-50/50 dark:bg-dark-surface/30">
         <button
@@ -1772,13 +1772,13 @@ function InvoiceModuleView() {
                         }}
                         onFocus={() => setIsOwnerDropdownOpen(true)}
                         onBlur={() => setTimeout(() => setIsOwnerDropdownOpen(false), 150)}
-                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-4 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400 disabled:opacity-50"
+                        className="h-11 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-10 pr-4 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:border-emerald-400 disabled:opacity-50"
                       />
                       {ownerSearchText && (
                         <button
                           type="button"
                           onClick={() => { setOwnerSearchText(""); setSelectedOwnerId(""); setSelectedPatientId(""); setPatientDetails(null); }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-zinc-400 hover:text-zinc-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-sm text-zinc-400 hover:text-zinc-600"
                         >
                           <FiX className="h-3.5 w-3.5" />
                         </button>
@@ -1825,7 +1825,7 @@ function InvoiceModuleView() {
                         onChange={handlePatientSelect}
                         disabled={!selectedOwnerId || status === "Finalized"}
                         className={clsx(
-                          "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                          "h-11 w-full appearance-none rounded-xl border pl-4 pr-8 text-sm focus:outline-hidden disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
                           getError("pet_id") ? "border-rose-500 bg-rose-50/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
                         )}
                       >
@@ -1848,7 +1848,7 @@ function InvoiceModuleView() {
                           onClick={() => setIsApptDropdownOpen(!isApptDropdownOpen)}
                           disabled={!selectedPatientId || status === "Finalized"}
                           className={clsx(
-                            "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-none disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
+                            "flex h-11 w-full items-center justify-between rounded-xl border px-4 text-sm transition-all focus:outline-hidden disabled:opacity-50 dark:bg-dark-surface dark:text-zinc-300",
                             isApptDropdownOpen ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-zinc-200 dark:border-dark-border bg-zinc-50"
                           )}
                         >
@@ -1867,7 +1867,7 @@ function InvoiceModuleView() {
                         </button>
 
                         {isApptDropdownOpen && (
-                          <div className="absolute left-0 top-full z-[60] mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
+                          <div className="absolute left-0 top-full z-60 mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:border-dark-border dark:bg-dark-card">
                             <div className="p-2 border-b border-zinc-100 dark:border-dark-border">
                               <div className="relative">
                                 <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -1877,7 +1877,7 @@ function InvoiceModuleView() {
                                   value={appointmentSearch}
                                   onChange={(e) => setAppointmentSearch(e.target.value)}
                                   autoFocus
-                                  className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-none focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
+                                  className="h-9 w-full rounded-lg border border-zinc-100 bg-zinc-50 pl-9 pr-8 text-xs text-zinc-700 focus:outline-hidden focus:border-emerald-500 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-300"
                                 />
                                 {appointmentSearch && (
                                   <button
@@ -1937,7 +1937,7 @@ function InvoiceModuleView() {
                               // Force price recalculation for items in the list?
                               // For simplicity, we just update the state and newly added items will use it.
                             }}
-                            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-none dark:bg-dark-card dark:border-dark-border"
+                            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-center font-bold text-emerald-600 focus:outline-hidden dark:bg-dark-card dark:border-dark-border"
                           />
                         </div>
                         <p className="text-zinc-500 dark:text-zinc-400"><strong className="text-zinc-700 dark:text-zinc-300">Owner:</strong> {patientDetails.owner?.name}</p>
@@ -1982,7 +1982,7 @@ function InvoiceModuleView() {
                         />
                         {serviceInput && (
                           <button onClick={() => { setServiceInput(""); setSelectedService(null); setIsServiceDropdownOpen(false); }}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-zinc-400 hover:text-zinc-600">
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm text-zinc-400 hover:text-zinc-600">
                             <FiX className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -1994,7 +1994,7 @@ function InvoiceModuleView() {
                                 onClick={() => selectItemFromDropdown(item)}
                                 className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-dark-surface transition-colors border-b border-zinc-50 dark:border-dark-border last:border-b-0">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className={clsx("shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase",
+                                  <span className={clsx("shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-black uppercase",
                                     item.type === 'inventory' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")}>
                                     {item.type === 'inventory' ? 'ITEM' : 'SRVC'}
                                   </span>
@@ -2014,7 +2014,7 @@ function InvoiceModuleView() {
                     </button>
 
                     {isItemModalOpen && createPortal(
-                      <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                      <div className="fixed inset-0 z-10200 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
                         <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border">
                           <div className="flex items-center justify-between border-b border-zinc-100 dark:border-dark-border px-5 py-4 shrink-0">
                             <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100">Services &amp; Items</h3>
@@ -2031,7 +2031,7 @@ function InvoiceModuleView() {
                                 placeholder="Search services or inventory..."
                                 value={itemModalSearch}
                                 onChange={(e) => setItemModalSearch(e.target.value)}
-                                className="h-10 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-emerald-400"
+                                className="h-10 w-full rounded-xl border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-9 pr-9 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:border-emerald-400"
                               />
                               {itemModalSearch && (
                                 <button onClick={() => setItemModalSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
@@ -2067,10 +2067,10 @@ function InvoiceModuleView() {
                                               <p className="truncate font-bold text-sm text-zinc-900 dark:text-zinc-100">{item.name}</p>
                                               <div className="flex items-center gap-2 mt-0.5">
                                                 {item.sku && item.sku !== 'N/A' && (
-                                                  <span className="text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-dark-surface dark:text-zinc-500 px-1.5 py-0.5 rounded">{item.sku}</span>
+                                                  <span className="text-[10px] font-medium text-zinc-400 bg-zinc-100 dark:bg-dark-surface dark:text-zinc-500 px-1.5 py-0.5 rounded-sm">{item.sku}</span>
                                                 )}
                                                 {item.type === 'inventory' && (
-                                                  <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded", item.stock > 10 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50")}>
+                                                  <span className={clsx("text-[10px] font-bold px-1.5 py-0.5 rounded-sm", item.stock > 10 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50")}>
                                                     Stock: {item.stock}
                                                   </span>
                                                 )}
@@ -2152,7 +2152,7 @@ function InvoiceModuleView() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span className={clsx(
-                              "shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider",
+                              "shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm tracking-wider",
                               item.item_type === 'inventory' ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
                             )}>
                               {item.item_type === 'inventory' ? 'Item' : 'Srvc'}
@@ -2208,7 +2208,7 @@ function InvoiceModuleView() {
                       onChange={(e) => setNotes(e.target.value)}
                       disabled={status === "Finalized"}
                       placeholder="Visible on the invoice..."
-                      className="w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-none"
+                      className="w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:text-zinc-500 disabled:opacity-50 focus:outline-hidden"
                     />
                   </div>
                 </section>
@@ -2303,7 +2303,7 @@ function InvoiceModuleView() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 text-left">
-              <article className="mx-auto max-w-4xl rounded-sm bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
+              <article className="mx-auto max-w-4xl rounded-xs bg-white dark:bg-dark-card p-6 sm:p-8 md:p-12 shadow-md printable-invoice">
                 <header className="flex flex-row items-start justify-between gap-4 sm:gap-6">
                   <div className="flex-1 min-w-0 pr-2 sm:pr-4">
                     <p className="inline-flex items-center gap-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -2399,7 +2399,7 @@ function InvoiceModuleView() {
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{item.name}</p>
                             <span className={clsx(
-                              "text-[8px] uppercase px-1.5 py-0.5 rounded-sm font-black border tracking-wider",
+                              "text-[8px] uppercase px-1.5 py-0.5 rounded-xs font-black border tracking-wider",
                               item.item_type === 'inventory' ? "border-amber-200 text-amber-600 bg-amber-50" : "border-emerald-200 text-emerald-600 bg-emerald-50"
                             )}>
                               {item.item_type === 'inventory' ? 'PROD' : 'SERV'}
@@ -2416,7 +2416,7 @@ function InvoiceModuleView() {
                           value={item.qty}
                           onChange={(e) => updateItem(item.id, "qty", e.target.value)}
                           disabled={status !== "Draft"}
-                          className="w-full bg-transparent text-right text-sm font-bold text-zinc-700 focus:outline-none focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
+                          className="w-full bg-transparent text-right text-sm font-bold text-zinc-700 focus:outline-hidden focus:border-b focus:border-emerald-500 disabled:opacity-50 dark:text-zinc-300"
                         />
                         <div className="text-right">
                           <p className="text-sm text-zinc-700 dark:text-zinc-300">{currency(item.unitPrice)}</p>
@@ -2427,7 +2427,7 @@ function InvoiceModuleView() {
                           {status === "Draft" ? (
                             <button
                               onClick={() => removeItem(item.id)}
-                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-sm"
+                              className="p-1.5 rounded-lg text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all shadow-xs"
                               title="Remove item"
                             >
                               <FiX className="w-3.5 h-3.5" />
@@ -2470,7 +2470,7 @@ function InvoiceModuleView() {
                           <select
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                            className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface px-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/10"
                           >
                             <option value="">Select Method...</option>
                             <option value="Cash">Cash</option>
@@ -2484,7 +2484,7 @@ function InvoiceModuleView() {
                               value={amountPaid}
                               onChange={(e) => setAmountPaid(Number(e.target.value))}
                               placeholder="Amount Paid"
-                              className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                              className="h-9 w-full rounded-lg border border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface pl-7 pr-3 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/10"
                             />
                           </div>
                         </div>
@@ -2555,7 +2555,7 @@ function InvoiceModuleView() {
                     placeholder="Search patient or owner..."
                     value={draftsSearch}
                     onChange={(e) => setDraftsSearch(e.target.value)}
-                    className="w-full pl-10 pr-8 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    className="w-full pl-10 pr-8 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 transition-all"
                   />
                   {draftsSearch && (
                     <button
@@ -2693,7 +2693,7 @@ function InvoiceModuleView() {
                         fetchInvoices(1);
                       }
                     }}
-                    className="w-full pl-10 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    className="w-full pl-10 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                   {searchQuery && (
                     <button
@@ -2928,7 +2928,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-10200 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-dark-card border dark:border-dark-border">
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-dark-border shrink-0">
           <div>
@@ -2954,7 +2954,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
                 <select
                   value={selectedVetId}
                   onChange={(e) => setSelectedVetId(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400"
                 >
                   <option value="">Select veterinarian...</option>
                   {vets.map(vet => (
@@ -2982,7 +2982,7 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
               <input
                 name="chief_complaint"
                 className={clsx(
-                  "w-full rounded-xl border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400",
+                  "w-full rounded-xl border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400",
                   getError("chief_complaint") ? "border-rose-500" : "border-zinc-200 dark:border-dark-border"
                 )}
               />
@@ -2990,29 +2990,29 @@ function PostInvoiceMedRecordModal({ petId, appointmentId, appointments, vets, t
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Findings</label>
-              <textarea name="findings" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              <textarea name="findings" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Diagnosis</label>
-              <textarea name="diagnosis" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              <textarea name="diagnosis" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Treatment Plan</label>
-              <textarea name="treatment_plan" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              <textarea name="treatment_plan" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Date</label>
-                <input type="date" name="follow_up_date" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+                <input type="date" name="follow_up_date" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Follow-up Time</label>
-                <input type="time" name="follow_up_time" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+                <input type="time" name="follow_up_time" className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
               </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Private Notes</label>
-              <textarea name="notes" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-none focus:border-emerald-400" />
+              <textarea name="notes" rows={2} className="w-full rounded-xl border border-zinc-200 dark:border-dark-border px-3 py-2.5 text-sm bg-white dark:bg-dark-surface dark:text-zinc-200 focus:outline-hidden focus:border-emerald-400" />
             </div>
           </form>
         </div>

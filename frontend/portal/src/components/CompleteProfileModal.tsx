@@ -90,11 +90,11 @@ export default function CompleteProfileModal({ token, onComplete, onRegister, pr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
       <div className="w-full max-w-lg bg-white dark:bg-dark-card rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-brand-500 to-emerald-600 px-6 py-5">
+        <div className="bg-linear-to-r from-brand-500 to-emerald-600 px-6 py-5">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-black text-white">Complete Your Profile 🐾</h2>

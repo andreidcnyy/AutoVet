@@ -196,7 +196,7 @@ export default function PortalUsersTab() {
 
       {/* Confirm modal */}
       {confirmModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-dark-card p-8 shadow-2xl">
             <div className={clsx("flex items-center gap-3 mb-4", confirmModal.action === "reactivate" ? "text-emerald-600" : confirmModal.action === "suspend" ? "text-amber-600" : "text-rose-600")}>
               {confirmModal.action === "reactivate" ? <FiUserCheck className="h-6 w-6" /> : <FiUserX className="h-6 w-6" />}

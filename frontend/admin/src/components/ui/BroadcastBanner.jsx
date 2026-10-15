@@ -21,7 +21,7 @@ export default function BroadcastBanner({ announcements }) {
         <div
           key={a.id}
           className={clsx(
-            'rounded-2xl p-4 shadow-sm border-l-4 relative group',
+            'rounded-2xl p-4 shadow-xs border-l-4 relative group',
             TYPE_CLASSES[a.type] ?? TYPE_CLASSES.info
           )}
         >

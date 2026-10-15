@@ -276,7 +276,7 @@ function PatientsPage() {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Full Name *</label>
                   <div className="relative">
                     <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input name="name" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="e.g. Maria Clara" />
+                    <input name="name" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="e.g. Maria Clara" />
                   </div>
                 </div>
 
@@ -284,7 +284,7 @@ function PatientsPage() {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Email Address</label>
                   <div className="relative">
                     <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input name="email" type="email" className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="email@example.com" />
+                    <input name="email" type="email" className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="email@example.com" />
                   </div>
                 </div>
 
@@ -301,7 +301,7 @@ function PatientsPage() {
                         value={phoneValue}
                         onChange={(e) => setPhoneValue(e.target.value.replace(/\D/g, "").slice(0, 11))}
                         maxLength={11}
-                        className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" 
+                        className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" 
                         placeholder="09123456789" 
                       />
                     </div>
@@ -312,7 +312,7 @@ function PatientsPage() {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Street Address *</label>
                   <div className="relative">
                     <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input name="address" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="123 Street, Brgy..." />
+                    <input name="address" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="123 Street, Brgy..." />
                   </div>
                 </div>
 
@@ -323,7 +323,7 @@ function PatientsPage() {
                       required 
                       value={province} 
                       onChange={(e) => setProvince(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-none appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all"
+                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-hidden appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all"
                     >
                       <option value="">Select Province...</option>
                       {PH_LOCATION_DATA.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
@@ -341,7 +341,7 @@ function PatientsPage() {
                       disabled={!province}
                       value={city} 
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-none appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 disabled:opacity-50 transition-all"
+                      className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm focus:bg-white focus:outline-hidden appearance-none focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 disabled:opacity-50 transition-all"
                     >
                       <option value="">Select City...</option>
                       {availableCities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}

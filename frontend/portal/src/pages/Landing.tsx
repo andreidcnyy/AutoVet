@@ -216,8 +216,8 @@ export default function Landing() {
       <header className={clsx(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled
-          ? "bg-white/95 dark:bg-dark-card/95 backdrop-blur-md shadow-sm border-b border-zinc-200/80 dark:border-dark-border"
-          : "bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm border-b border-transparent"
+          ? "bg-white/95 dark:bg-dark-card/95 backdrop-blur-md shadow-xs border-b border-zinc-200/80 dark:border-dark-border"
+          : "bg-white/90 dark:bg-dark-card/90 backdrop-blur-xs border-b border-transparent"
       )}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
 
@@ -266,7 +266,7 @@ export default function Landing() {
             </div>
             <Link
               to="/register"
-              className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-bold px-5 py-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm"
+              className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-700 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-bold px-5 py-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-xs"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               Register
@@ -340,7 +340,7 @@ export default function Landing() {
         {/* Headline */}
         <h1 className="text-5xl md:text-7xl font-black text-zinc-900 dark:text-zinc-50 leading-[1.08] tracking-tight max-w-3xl opacity-0 animate-fade-in-scale delay-100">
           Quality Care for Your{' '}<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-500 to-emerald-600">
             Beloved Companions
           </span>
         </h1>
@@ -362,7 +362,7 @@ export default function Landing() {
         </div>
 
         {/* Live indicator */}
-        <div className="flex items-center justify-center gap-2 mt-4 text-sm text-zinc-400 dark:text-zinc-500 opacity-0 animate-fade-in-scale delay-[400ms]">
+        <div className="flex items-center justify-center gap-2 mt-4 text-sm text-zinc-400 dark:text-zinc-500 opacity-0 animate-fade-in-scale delay-400">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span>500+ happy pet owners and counting</span>
         </div>
@@ -382,7 +382,7 @@ export default function Landing() {
             <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">See Us in Action</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               Meet{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Pet Wellness Clinic</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-500 to-emerald-600">Pet Wellness Clinic</span>
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
               A warm, professional environment where every pet is treated like family.
@@ -400,15 +400,15 @@ export default function Landing() {
               className="w-full aspect-video object-cover"
             />
             {/* Subtle gradient overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-zinc-900/60 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-zinc-900/60 to-transparent pointer-events-none" />
             <div className="absolute bottom-5 left-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="text-white text-xs font-bold drop-shadow">Pet Wellness Animal Clinic</span>
+              <span className="text-white text-xs font-bold drop-shadow-sm">Pet Wellness Animal Clinic</span>
             </div>
             {/* Mute / Unmute toggle */}
             <button
               onClick={toggleMute}
-              className="absolute bottom-4 right-5 flex items-center gap-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 active:scale-95"
+              className="absolute bottom-4 right-5 flex items-center gap-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 active:scale-95"
             >
               {isMuted ? <FiVolumeX className="h-3.5 w-3.5" /> : <FiVolume2 className="h-3.5 w-3.5" />}
               {isMuted ? 'Unmute' : 'Mute'}
@@ -453,7 +453,7 @@ export default function Landing() {
             <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Why Choose Us</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               Everything Your Pet <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Deserves</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-500 to-emerald-600">Deserves</span>
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
               Our portal is designed to make veterinary care simple, transparent, and accessible for every pet owner.
@@ -463,7 +463,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((feature) => (
               <div key={feature.title}
-                className="relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm overflow-hidden">
+                className="relative p-6 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-xs overflow-hidden">
                 <PawPrint className="absolute bottom-2 right-3 w-12 h-12 text-brand-500 dark:text-emerald-400 opacity-[0.14] dark:opacity-25 rotate-12 pointer-events-none" />
                 <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 text-2xl mb-4">
                   {feature.icon}
@@ -489,7 +489,7 @@ export default function Landing() {
             <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Our Services</span>
             <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
               Comprehensive{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Veterinary Care</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-500 to-emerald-600">Veterinary Care</span>
             </h2>
             <p className="text-zinc-500 dark:text-zinc-400 mt-4 text-lg max-w-2xl mx-auto">
               Professional veterinary care tailored to every pet's unique needs.
@@ -506,9 +506,9 @@ export default function Landing() {
                     alt={service.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
                   <span className={clsx(
-                    "absolute bottom-3 left-3 px-3 py-1 rounded-full text-white text-xs font-black bg-gradient-to-r",
+                    "absolute bottom-3 left-3 px-3 py-1 rounded-full text-white text-xs font-black bg-linear-to-r",
                     service.badge
                   )}>
                     {service.name}
@@ -545,13 +545,13 @@ export default function Landing() {
               <span className="inline-block px-4 py-1.5 bg-brand-500/10 text-brand-500 text-sm font-bold rounded-full mb-4">Testimonials</span>
               <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
                 What Pet Owners{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-emerald-600">Are Saying</span>
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-500 to-emerald-600">Are Saying</span>
               </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {reviews.map((t, idx) => (
-                <div key={t.id ?? idx} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div key={t.id ?? idx} className="relative p-8 rounded-2xl border border-zinc-100 dark:border-dark-border bg-zinc-50 dark:bg-dark-surface shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden">
                   <PawPrint className="absolute bottom-3 right-4 w-16 h-16 text-brand-500 dark:text-emerald-400 opacity-[0.15] dark:opacity-25 rotate-12 pointer-events-none" />
                   <div className="flex gap-1 mb-4">
                     {Array.from({ length: t.rating }).map((_, i) => (
@@ -577,7 +577,7 @@ export default function Landing() {
       {/* ══════════════════════════════════════
           CTA BANNER
       ══════════════════════════════════════ */}
-      <section className="relative py-24 px-6 bg-gradient-to-br from-brand-500 to-emerald-600 overflow-hidden">
+      <section className="relative py-24 px-6 bg-linear-to-br from-brand-500 to-emerald-600 overflow-hidden">
         <PawPrint      className="absolute top-4    left-8    w-24 h-24 text-white opacity-25 -rotate-12 pointer-events-none" />
         <PawPrint      className="absolute top-8    right-16  w-20 h-20 text-white opacity-20  rotate-20  pointer-events-none" />
         <PawPrint      className="absolute bottom-4 left-1/4  w-14 h-14 text-white opacity-20  rotate-6   pointer-events-none" />

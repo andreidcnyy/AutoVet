@@ -345,7 +345,7 @@ function DashboardPage() {
             <button 
               onClick={downloadPDF}
               disabled={isExporting}
-              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-sm text-sm uppercase tracking-widest disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 border border-purple-600 px-5 py-2.5 font-bold text-white hover:bg-purple-700 transition-all shadow-xs text-sm uppercase tracking-widest disabled:opacity-50"
             >
               {isExporting ? (
                 <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -410,9 +410,9 @@ function DashboardPage() {
       </section>
 
       {modal.open && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-300" onClick={closeModal}>
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[32px] shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
               <div>
                 <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">{modal.title}</h2>
                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">{modal.loading ? 'Updating records...' : (modal.data?.date ?? `System record as of ${new Date().toLocaleDateString()}`)}</p>
@@ -430,9 +430,9 @@ function DashboardPage() {
                     <div className="px-8 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 flex items-center justify-between">
                       <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Showing <span>{(modal.pagination.current_page - 1) * modal.pagination.per_page + 1}-{Math.min(modal.pagination.current_page * modal.pagination.per_page, modal.pagination.total)}</span> of <span>{modal.pagination.total}</span> records</div>
                       <div className="flex items-center gap-2">
-                        <button disabled={modal.pagination.current_page === 1 || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page - 1)} className="h-8 px-3 rounded-lg bg-white border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase disabled:opacity-50 shadow-sm">Prev</button>
+                        <button disabled={modal.pagination.current_page === 1 || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page - 1)} className="h-8 px-3 rounded-lg bg-white border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase disabled:opacity-50 shadow-xs">Prev</button>
                         <span className="text-[10px] font-black text-zinc-400 px-1">{modal.pagination.current_page} / {modal.pagination.last_page}</span>
-                        <button disabled={modal.pagination.current_page === modal.pagination.last_page || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page + 1)} className="h-8 px-3 rounded-lg bg-white border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase disabled:opacity-50 shadow-sm">Next</button>
+                        <button disabled={modal.pagination.current_page === modal.pagination.last_page || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page + 1)} className="h-8 px-3 rounded-lg bg-white border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase disabled:opacity-50 shadow-xs">Next</button>
                       </div>
                     </div>
                   )}
@@ -445,7 +445,7 @@ function DashboardPage() {
                   {modal.type === 'clients' && (
                     <table className="w-full text-left border-collapse">
                       <thead><tr className="bg-zinc-50/50 dark:bg-zinc-800/30"><th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase">Name</th><th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase">Email</th><th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase text-right">Pets</th></tr></thead>
-                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">{modal.data?.clients?.map(c => (<tr key={c.id} className="hover:bg-zinc-50/50 transition-colors"><td className="px-8 py-5 text-sm font-black text-zinc-900 dark:text-zinc-100">{c.name}</td><td className="px-8 py-5 text-sm text-zinc-600 dark:text-zinc-400">{c.email}</td><td className="px-8 py-5 text-right"><span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-xs font-bold text-zinc-500">{c.pet_count}</span></td></tr>))}</tbody>
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">{modal.data?.clients?.map(c => (<tr key={c.id} className="hover:bg-zinc-50/50 transition-colors"><td className="px-8 py-5 text-sm font-black text-zinc-900 dark:text-zinc-100">{c.name}</td><td className="px-8 py-5 text-sm text-zinc-600 dark:text-zinc-400">{c.email}</td><td className="px-8 py-5 text-right"><span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-sm text-xs font-bold text-zinc-500">{c.pet_count}</span></td></tr>))}</tbody>
                     </table>
                   )}
                   {(modal.type === 'today' || modal.type === 'upcoming' || modal.type === 'cancelled') && (
@@ -460,7 +460,7 @@ function DashboardPage() {
                 </div>
               )}
             </div>
-            <div className="px-8 py-6 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between flex-shrink-0">
+            <div className="px-8 py-6 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">{modal.pagination && modal.pagination.last_page > 1 && (<div className="flex items-center gap-2"><button disabled={modal.pagination.current_page === 1 || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page - 1)} className="h-9 px-4 rounded-xl bg-zinc-100 text-zinc-600 text-[10px] font-black uppercase hover:bg-zinc-200 disabled:opacity-50 transition-colors">Previous</button><span className="text-[10px] font-black text-zinc-400 px-2">Page {modal.pagination.current_page} of {modal.pagination.last_page}</span><button disabled={modal.pagination.current_page === modal.pagination.last_page || modal.loading} onClick={() => openModal(modal.type, modal.title, modal.pagination.current_page + 1)} className="h-8 px-3 rounded-lg bg-white border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase hover:bg-zinc-200 disabled:opacity-50 transition-colors">Next</button></div>)}</div>
               <button onClick={closeModal} className="px-6 py-2.5 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-black uppercase hover:scale-105 transition-transform">Close</button>
             </div>

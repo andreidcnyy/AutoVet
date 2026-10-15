@@ -241,11 +241,11 @@ export default function VetScheduleTab() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Start Time</label>
-                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">End Time</label>
-                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                   </div>
                 </div>
               </div>
@@ -259,23 +259,23 @@ export default function VetScheduleTab() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="flex flex-col">
                   <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break Start (Opt)</label>
-                  <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                 </div>
 
                 <div className="flex flex-col">
                   <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Break End (Opt)</label>
-                  <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                 </div>
 
                 <div className="flex flex-col">
                   <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Max Appointments (per shift)</label>
-                  <input type="number" min="1" max="100" value={maxAppointments} onChange={e => setMaxAppointments(parseInt(e.target.value))} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
+                  <input type="number" min="1" max="100" value={maxAppointments} onChange={e => setMaxAppointments(parseInt(e.target.value))} className="mt-auto h-10 w-full rounded-lg border border-zinc-300 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200" />
                 </div>
 
                 <div className="flex flex-col">
                   <span aria-hidden="true" className="mb-1 hidden text-xs font-semibold sm:block">&nbsp;</span>
                   <div className="mt-auto flex h-10 items-center gap-2">
-                    <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
+                    <input type="checkbox" id="isAvail" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} className="h-4 w-4 rounded-sm border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
                     <label htmlFor="isAvail" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Available</label>
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export default function VetScheduleTab() {
                               {formatTime(schedule.start_time)} – {formatTime(schedule.end_time)}
                             </span>
                             {schedule.break_start && (
-                              <span className="text-[11px] text-amber-700 bg-amber-100 px-2 py-1 rounded dark:bg-amber-900/30 dark:text-amber-400">
+                              <span className="text-[11px] text-amber-700 bg-amber-100 px-2 py-1 rounded-sm dark:bg-amber-900/30 dark:text-amber-400">
                                 Break: {formatTime(schedule.break_start)} – {formatTime(schedule.break_end)}
                               </span>
                             )}

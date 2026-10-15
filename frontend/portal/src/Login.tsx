@@ -105,7 +105,7 @@ function LoginPage() {
     <div className="flex min-h-screen bg-zinc-50 dark:bg-dark-bg transition-colors duration-300">
 
       {/* ── Left decorative panel ── */}
-      <div className="hidden lg:flex lg:w-5/12 relative flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-500 via-emerald-600 to-emerald-700 p-12">
+      <div className="hidden lg:flex lg:w-5/12 relative flex-col justify-between overflow-hidden bg-linear-to-br from-brand-500 via-emerald-600 to-emerald-700 p-12">
 
         {/* Scattered paws */}
         <PawPrint className="absolute top-8    right-8   w-32 h-32 text-white opacity-20 rotate-12  pointer-events-none" />
@@ -167,7 +167,7 @@ function LoginPage() {
         {/* Top bar */}
         <div className="flex items-center justify-between px-8 pt-8">
           <Link to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-sm active:scale-95 text-sm">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border text-zinc-600 dark:text-zinc-400 font-bold hover:text-brand-500 transition-all shadow-xs active:scale-95 text-sm">
             <FiArrowLeft /> Back
           </Link>
           <DarkModeToggle />
@@ -258,7 +258,7 @@ function LoginPage() {
                 onClick={() => googleLogin()}
                 disabled={loading || googleLoading}
                 className={clsx(
-                  "w-full h-12 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-zinc-700 dark:text-zinc-200 font-bold text-sm transition-all hover:border-brand-400 hover:bg-zinc-50 dark:hover:bg-dark-border active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm",
+                  "w-full h-12 rounded-xl border-2 border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-card text-zinc-700 dark:text-zinc-200 font-bold text-sm transition-all hover:border-brand-400 hover:bg-zinc-50 dark:hover:bg-dark-border active:scale-[0.98] flex items-center justify-center gap-3 shadow-xs",
                   (loading || googleLoading) && "opacity-60 cursor-not-allowed"
                 )}>
                 {googleLoading ? (

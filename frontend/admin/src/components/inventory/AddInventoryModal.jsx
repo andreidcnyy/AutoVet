@@ -206,7 +206,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
   };
 
   const inputBase =
-    "w-full rounded-xl border bg-zinc-50 px-4 py-2.5 text-sm text-zinc-800 transition-colors focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-dark-surface/80 dark:focus:border-emerald-500";
+    "w-full rounded-xl border bg-zinc-50 px-4 py-2.5 text-sm text-zinc-800 transition-colors focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500 dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:bg-dark-surface/80 dark:focus:border-emerald-500";
   const getInputClass = (error) =>
     clsx(
       inputBase,
@@ -225,7 +225,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm dark:bg-zinc-950/70 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-xs dark:bg-zinc-950/70 overflow-y-auto">
       <div className="my-auto flex w-full max-w-5xl flex-col max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-card dark:shadow-dark-soft">
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-dark-border">
           <div>
@@ -239,7 +239,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
+            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 focus:outline-hidden dark:text-zinc-500 dark:hover:bg-dark-surface dark:hover:text-zinc-300"
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -295,7 +295,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                     <input 
                       type="checkbox" 
                       {...register("has_expiry")} 
-                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                      className="h-4 w-4 rounded-sm border-zinc-300 text-emerald-600 focus:ring-emerald-500"
                     />
                   </div>
 

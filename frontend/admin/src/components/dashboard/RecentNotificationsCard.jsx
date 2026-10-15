@@ -18,7 +18,7 @@ function RecentNotificationsCard({ items, loading, onMarkAllRead, onClearAll, on
   const unreadCount = items?.filter(item => !item.read_at).length || 0;
 
   return (
-    <aside className="card-shell overflow-hidden flex flex-col h-full bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-sm">
+    <aside className="card-shell overflow-hidden flex flex-col h-full bg-white dark:bg-dark-card border border-zinc-200 dark:border-dark-border shadow-xs">
       <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5 dark:border-dark-border bg-zinc-50/30 dark:bg-dark-surface/10">
         <h3 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2 uppercase">
           <FiBell className="text-brand-500" />

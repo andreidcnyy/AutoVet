@@ -248,8 +248,8 @@ function TemplateFormModal({ template, onClose, onSave }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={onClose} />
 
       <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
         {/* Header */}
@@ -273,7 +273,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
               placeholder="e.g. Appointment Confirmed — Email"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors placeholder:text-zinc-600"
+              className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden transition-colors placeholder:text-zinc-600"
             />
           </div>
 
@@ -286,7 +286,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
               <select
                 value={formData.channel}
                 onChange={e => setFormData({ ...formData, channel: e.target.value })}
-                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors"
+                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden transition-colors"
               >
                 <option value="email">📧 Email</option>
                 <option value="sms">💬 SMS (Text Message)</option>
@@ -299,7 +299,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
               <select
                 value={formData.event_key}
                 onChange={e => setFormData({ ...formData, event_key: e.target.value })}
-                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors"
+                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden transition-colors"
               >
                 {EVENT_OPTIONS.map(o => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -319,7 +319,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                 placeholder="e.g. Your appointment has been confirmed!"
                 value={formData.subject}
                 onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-colors placeholder:text-zinc-600"
+                className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden transition-colors placeholder:text-zinc-600"
               />
             </div>
           )}
@@ -351,7 +351,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
               placeholder={`e.g. Hi [Client's Name], your appointment for [Pet's Name] on [Appointment Date] at [Appointment Time] is confirmed. See you soon!`}
               value={formData.body}
               onChange={e => setFormData({ ...formData, body: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none transition-colors resize-none placeholder:text-zinc-600"
+              className="w-full bg-zinc-800 border border-zinc-600 text-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:outline-hidden transition-colors resize-none placeholder:text-zinc-600"
             />
           </div>
 
@@ -365,7 +365,7 @@ function TemplateFormModal({ template, onClose, onSave }) {
                 onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
               />
               <div className={`w-10 h-6 rounded-full transition-colors ${formData.is_active ? 'bg-emerald-500' : 'bg-zinc-600'}`} />
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.is_active ? 'left-5' : 'left-1'}`} />
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${formData.is_active ? 'left-5' : 'left-1'}`} />
             </div>
             <div>
               <span className="text-sm font-bold text-zinc-200">

@@ -13,8 +13,8 @@ export default function SlotFullDialog({ open, timeLabel, dateLabel, onClose, on
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10050] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="slot-full-title">
-      <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-10050 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="slot-full-title">
+      <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-xs" onClick={onClose} />
 
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-dark-card animate-in fade-in zoom-in-95 duration-200">
         <button
@@ -27,7 +27,7 @@ export default function SlotFullDialog({ open, timeLabel, dateLabel, onClose, on
         </button>
 
         {/* DigiVet brand header */}
-        <div className="relative flex items-center gap-4 bg-gradient-to-br from-[#0b2a4a] via-[#0f4c75] to-[#14b8a6] px-6 py-5">
+        <div className="relative flex items-center gap-4 bg-linear-to-br from-[#0b2a4a] via-[#0f4c75] to-[#14b8a6] px-6 py-5">
           <img src={digivetLogo} alt="DigiVet" className="h-14 w-14 shrink-0 rounded-2xl object-cover shadow-lg ring-2 ring-white/20" />
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-200">DigiVet · Scheduling</p>

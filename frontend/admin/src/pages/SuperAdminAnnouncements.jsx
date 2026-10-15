@@ -132,7 +132,7 @@ export default function SuperAdminAnnouncements() {
       </div>
 
       {/* â”€â”€ Table â”€â”€ */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-dark-border dark:bg-dark-card shadow-xs">
 
         {/* Table header */}
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 border-b border-zinc-100 dark:border-dark-border bg-zinc-50/60 dark:bg-dark-surface/40 px-6 py-3">
@@ -145,11 +145,11 @@ export default function SuperAdminAnnouncements() {
           <div className="divide-y divide-zinc-50 dark:divide-dark-border">
             {Array(4).fill(0).map((_, i) => (
               <div key={i} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-6 py-4 animate-pulse">
-                <div className="h-4 rounded bg-zinc-100 dark:bg-dark-surface w-3/4" />
-                <div className="h-4 rounded bg-zinc-100 dark:bg-dark-surface w-20" />
-                <div className="h-4 rounded bg-zinc-100 dark:bg-dark-surface w-16" />
-                <div className="h-4 rounded bg-zinc-100 dark:bg-dark-surface w-24" />
-                <div className="h-4 rounded bg-zinc-100 dark:bg-dark-surface w-16" />
+                <div className="h-4 rounded-sm bg-zinc-100 dark:bg-dark-surface w-3/4" />
+                <div className="h-4 rounded-sm bg-zinc-100 dark:bg-dark-surface w-20" />
+                <div className="h-4 rounded-sm bg-zinc-100 dark:bg-dark-surface w-16" />
+                <div className="h-4 rounded-sm bg-zinc-100 dark:bg-dark-surface w-24" />
+                <div className="h-4 rounded-sm bg-zinc-100 dark:bg-dark-surface w-16" />
               </div>
             ))}
           </div>
@@ -235,7 +235,7 @@ export default function SuperAdminAnnouncements() {
       {/* Portalled to <body> so the sidebar and header can't sit above it, and
           capped at 90vh with a scrolling body so the footer is always reachable. */}
       {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={closeModal}>
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs" onClick={closeModal}>
           <div
             className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-dark-card shadow-2xl border border-zinc-200 dark:border-dark-border animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}

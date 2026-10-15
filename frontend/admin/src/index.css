@@ -1,19 +1,128 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@font-face {
-  font-family: 'Zacbel X';
-  src: url('./assets/fonts/zacbelx-medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: Zacbel X, ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #f0fdf4;
+  --color-brand-500: #059669;
+  --color-brand-600: #047857;
+
+  --color-autovet-navy: #002d5a;
+  --color-autovet-teal: #00a396;
+  --color-autovet-teal-light: #e6f6f5;
+  --color-autovet-navy-light: #e6eaef;
+
+  --color-light-bg: #f0f2f5;
+  --color-light-card: #ffffff;
+  --color-light-surface: #f7f8fa;
+  --color-light-border: #e0e2e7;
+  --color-light-muted: #6b7280;
+
+  --color-dark-bg: #121212;
+  --color-dark-card: #1c1c1c;
+  --color-dark-surface: #282828;
+  --color-dark-border: #3f3f3f;
+  --color-dark-hover: #3f3f3f;
+
+  --shadow-soft:
+    0 1px 2px 0 rgb(15 23 42 / 0.08), 0 1px 1px -1px rgb(15 23 42 / 0.08);
+  --shadow-dark-soft:
+    0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+
+  --animate-slide-in-right: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-out-right: slide-out-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes slide-in-right {
+    0% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-out-right {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
 }
 
-@font-face {
-  font-family: 'Zacbel X';
-  src: url('./assets/fonts/zacbelx-extrabold.ttf') format('truetype');
-  font-weight: 800;
-  font-style: normal;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility card-shell {
+  /* Main card / panel surface */
+  @apply rounded-2xl border border-light-border bg-light-card shadow-soft transition-colors duration-300;
+  @apply dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft;
+}
+
+@utility input-field {
+  /* Reusable input style for dark mode forms */
+  @apply h-12 w-full rounded-xl border border-light-border bg-light-surface px-4 text-base text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-400 focus:bg-white focus:outline-hidden transition-colors duration-150;
+  @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:bg-zinc-800;
+}
+
+@utility select-field {
+  /* Reusable select style for dark mode forms */
+  @apply h-12 w-full rounded-xl border border-light-border bg-light-surface px-4 text-base text-zinc-800 focus:border-emerald-400 focus:bg-white focus:outline-hidden appearance-none pr-10 transition-colors duration-150;
+  @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500;
+}
+
+@utility slim-scroll {
+  /* Thin scrollbar for calendar cells */
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-zinc-300 rounded-full dark:bg-zinc-600;
+  }
+}
+
+@layer utilities {
+  @font-face {
+    font-family: 'Zacbel X';
+    src: url('./assets/fonts/zacbelx-medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Zacbel X';
+    src: url('./assets/fonts/zacbelx-extrabold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+  }
 }
 
 @layer base {
@@ -30,75 +139,51 @@
   }
 }
 
-/*
+@layer utilities {
+  /*
   Light mode text normalization — outside @layer for higher specificity.
   Near-invisible zinc shades (designed for dark surfaces) are remapped to
   readable equivalents so they don't vanish on the #f0f2f5 background.
   Dark mode counterparts (dark:text-*) are unaffected because
   html:not(.dark) never matches when .dark is on <html>.
 */
-html:not(.dark) .text-zinc-50  { color: #52525b; } /* → zinc-600 */
-html:not(.dark) .text-zinc-100 { color: #52525b; } /* → zinc-600 */
-html:not(.dark) .text-zinc-200 { color: #71717a; } /* → zinc-500 */
-html:not(.dark) .text-zinc-300 { color: #a1a1aa; } /* → zinc-400 (still subtle but visible) */
-/* Bump zinc-400 used as secondary/muted text to pass WCAG AA on #f0f2f5 */
-html:not(.dark) .text-zinc-400 { color: #71717a; } /* → zinc-500 (4.7:1 contrast) */
+  html:not(.dark) .text-zinc-50 {
+    color: #52525b;
+  } /* → zinc-600 */
+  html:not(.dark) .text-zinc-100 {
+    color: #52525b;
+  } /* → zinc-600 */
+  html:not(.dark) .text-zinc-200 {
+    color: #71717a;
+  } /* → zinc-500 */
+  html:not(.dark) .text-zinc-300 {
+    color: #a1a1aa;
+  } /* → zinc-400 (still subtle but visible) */
+  /* Bump zinc-400 used as secondary/muted text to pass WCAG AA on #f0f2f5 */
+  html:not(.dark) .text-zinc-400 {
+    color: #71717a;
+  } /* → zinc-500 (4.7:1 contrast) */
 
-/* Outside @layer so it outranks Tailwind utilities */
-*, *::before, *::after {
-  cursor: default !important;
-}
-
-input,
-textarea,
-[contenteditable="true"] {
-  cursor: text !important;
-  user-select: text;
-}
-
-button,
-a,
-[role="button"],
-select,
-label[for] {
-  cursor: pointer !important;
-}
-
-@layer components {
-
-  /* Main card / panel surface */
-  .card-shell {
-    @apply rounded-2xl border border-light-border bg-light-card shadow-soft transition-colors duration-300;
-    @apply dark:border-dark-border dark:bg-dark-card dark:shadow-dark-soft;
+  /* Outside @layer so it outranks Tailwind utilities */
+  *,
+  *::before,
+  *::after {
+    cursor: default !important;
   }
 
-  /* Reusable input style for dark mode forms */
-  .input-field {
-    @apply h-12 w-full rounded-xl border border-light-border bg-light-surface px-4 text-base text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-400 focus:bg-white focus:outline-none transition-colors duration-150;
-    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:placeholder:text-zinc-500 dark:focus:border-emerald-500 dark:focus:bg-zinc-800;
+  input,
+  textarea,
+  [contenteditable='true'] {
+    cursor: text !important;
+    user-select: text;
   }
 
-  /* Reusable select style for dark mode forms */
-  .select-field {
-    @apply h-12 w-full rounded-xl border border-light-border bg-light-surface px-4 text-base text-zinc-800 focus:border-emerald-400 focus:bg-white focus:outline-none appearance-none pr-10 transition-colors duration-150;
-    @apply dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 dark:focus:border-emerald-500;
-  }
-
-  /* Thin scrollbar for calendar cells */
-  .slim-scroll {
-    scrollbar-width: thin;
-  }
-
-  .slim-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .slim-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .slim-scroll::-webkit-scrollbar-thumb {
-    @apply bg-zinc-300 rounded-full dark:bg-zinc-600;
+  button,
+  a,
+  [role='button'],
+  select,
+  label[for] {
+    cursor: pointer !important;
   }
 }
 

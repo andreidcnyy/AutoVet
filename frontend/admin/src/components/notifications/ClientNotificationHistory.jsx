@@ -123,7 +123,7 @@ export default function ClientNotificationHistory() {
                                           {item.title && <div className="font-medium text-gray-200 mb-1">{item.title}</div>}
                                           <div className="text-gray-400 line-clamp-2 pr-4">{item.message}</div>
                                           {item.status === 'failed' && item.error_message && (
-                                              <div className="text-red-400 text-xs mt-2 bg-red-400/10 p-2 rounded inline-block">
+                                              <div className="text-red-400 text-xs mt-2 bg-red-400/10 p-2 rounded-sm inline-block">
                                                   Error: {item.error_message}
                                               </div>
                                           )}
@@ -156,14 +156,14 @@ export default function ClientNotificationHistory() {
                         <button 
                             disabled={page === 1} 
                             onClick={() => setPage(p => p - 1)}
-                            className="px-3 py-1.5 bg-[#1e1e2d] border border-gray-700 rounded hover:bg-[#2b2b40] disabled:opacity-50 transition-colors"
+                            className="px-3 py-1.5 bg-[#1e1e2d] border border-gray-700 rounded-sm hover:bg-[#2b2b40] disabled:opacity-50 transition-colors"
                         >
                             Previous
                         </button>
                         <button 
                             disabled={page === totalPages} 
                             onClick={() => setPage(p => p + 1)}
-                            className="px-3 py-1.5 bg-[#1e1e2d] border border-gray-700 rounded hover:bg-[#2b2b40] disabled:opacity-50 transition-colors"
+                            className="px-3 py-1.5 bg-[#1e1e2d] border border-gray-700 rounded-sm hover:bg-[#2b2b40] disabled:opacity-50 transition-colors"
                         >
                             Next
                         </button>

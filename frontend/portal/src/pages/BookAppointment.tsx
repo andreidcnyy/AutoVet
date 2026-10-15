@@ -445,19 +445,19 @@ export default function BookAppointment() {
 
       <div className="flex flex-wrap items-center justify-center gap-6 py-2">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20" />
+          <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/20" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Approved</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/20" />
+          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-xs shadow-rose-500/20" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Declined</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-zinc-400 shadow-sm shadow-zinc-400/20" />
+          <span className="w-3 h-3 rounded-full bg-zinc-400 shadow-xs shadow-zinc-400/20" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pending</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/20" />
+          <span className="w-3 h-3 rounded-full bg-blue-500 shadow-xs shadow-blue-500/20" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Completed</span>
         </div>
       </div>
@@ -530,7 +530,7 @@ export default function BookAppointment() {
                         onClick={(e) => handleEventClick(e, event)}
                         title={`${event.pet?.name}: ${event.status}`}
                         className={clsx(
-                          "w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0 transition-transform md:hover:scale-150",
+                          "w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full shrink-0 transition-transform md:hover:scale-150",
                           status === 'pending' && "bg-zinc-400",
                           (status === 'approved' || status === 'scheduled' || status === 'confirmed') && "bg-emerald-500",
                           (status === 'cancelled' || status === 'declined') && "bg-rose-500",
@@ -557,10 +557,10 @@ export default function BookAppointment() {
 
       {/* Booking Modal — portal into body to escape overflow scroll container */}
       {createPortal(<div className={clsx(
-        "fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
+        "fixed inset-0 z-9999 flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300",
         isDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
-        <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
+        <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-xs" onClick={() => setIsDrawerOpen(false)} />
 
         <aside className={clsx(
           "relative w-full max-w-lg max-h-[88vh] overflow-y-auto bg-white dark:bg-dark-card rounded-3xl shadow-2xl transition-all duration-300",
@@ -716,7 +716,7 @@ export default function BookAppointment() {
                           className={clsx(
                             "relative flex items-center gap-2.5 p-3.5 rounded-2xl border-2 transition-all text-left",
                             selectedPetId === pet.id.toString()
-                              ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10 shadow-sm"
+                              ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10 shadow-xs"
                               : "border-zinc-100 dark:border-dark-border bg-white dark:bg-dark-card"
                           )}
                         >
@@ -957,10 +957,10 @@ export default function BookAppointment() {
       {/* Invoice detail modal */}
       {createPortal(
         <div className={clsx(
-          "fixed inset-0 z-[10000] flex items-center justify-center p-4 transition-opacity duration-200",
+          "fixed inset-0 z-10000 flex items-center justify-center p-4 transition-opacity duration-200",
           isInvoiceModalOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}>
-          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm" onClick={() => setIsInvoiceModalOpen(false)} />
+          <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-xs" onClick={() => setIsInvoiceModalOpen(false)} />
           <div className={clsx(
             "relative w-full max-w-md bg-white dark:bg-dark-card rounded-3xl shadow-2xl overflow-hidden transition-all duration-200",
             isInvoiceModalOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"

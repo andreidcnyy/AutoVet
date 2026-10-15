@@ -107,7 +107,7 @@ export default function AiInsightPanels() {
             <ul className="space-y-1">
               {(apptData.hints ?? []).map((hint, i) => (
                 <li key={i} className="flex items-start gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
                   {hint}
                 </li>
               ))}

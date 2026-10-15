@@ -19,7 +19,7 @@ export default function MaintenanceBanner({ secondsRemaining, message }: Props) 
     <div
       role="status"
       aria-live="polite"
-      className={`sticky top-0 z-[9998] w-full px-4 py-2.5 text-center ${
+      className={`sticky top-0 z-9998 w-full px-4 py-2.5 text-center ${
         urgent
           ? 'bg-red-500 text-white'
           : 'bg-amber-400 text-amber-950'

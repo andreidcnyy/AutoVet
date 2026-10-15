@@ -85,7 +85,7 @@ export default function InventoryForecastInsights() {
 
   // Handle specialized status badges
   const getStatusBadge = (status) => {
-    const baseClass = "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm";
+    const baseClass = "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs";
     switch (status) {
       case 'Critical':
         return <span className={`${baseClass} bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800`}>
@@ -109,7 +109,7 @@ export default function InventoryForecastInsights() {
   if (loading) {
     return (
       <article className="card-shell p-6 animate-pulse min-h-[300px]">
-        <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded mb-6" />
+        <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-sm mb-6" />
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-16 w-full bg-zinc-100 dark:bg-zinc-800/50 rounded-xl" />
@@ -142,13 +142,13 @@ export default function InventoryForecastInsights() {
       </div>
 
       {forecasts.length === 0 ? (
-        <div className="py-16 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-3xl flex-grow flex flex-col justify-center">
+        <div className="py-16 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-3xl grow flex flex-col justify-center">
           <LuActivity className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-4" />
           <p className="text-zinc-500 dark:text-zinc-400 font-medium">No inventory consumption data recorded yet.</p>
           <p className="text-xs text-zinc-400 mt-1 px-4">Sync datasets or finalize an invoice to trigger your first AI forecast.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto flex-grow">
+        <div className="overflow-x-auto grow">
           <table className="w-full text-left border-separate border-spacing-y-3">
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400">

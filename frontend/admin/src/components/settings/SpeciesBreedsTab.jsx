@@ -285,7 +285,7 @@ export default function SpeciesBreedsTab() {
               value={speciesSearch}
               onChange={(e) => setSpeciesSearch(e.target.value)}
               placeholder="Search species..."
-              className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
             />
             {speciesSearch && (
               <button type="button" onClick={() => setSpeciesSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
@@ -315,7 +315,7 @@ export default function SpeciesBreedsTab() {
                     type="text"
                     value={editSpeciesName}
                     onChange={(e) => setEditSpeciesName(e.target.value)}
-                    className="h-8 w-full rounded border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
+                    className="h-8 w-full rounded-sm border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
                   />
                   <button onClick={() => handleUpdateSpecies(s.id)} className="text-green-600 hover:text-green-700 p-1"><FiCheck /></button>
                   <button onClick={() => setEditingSpecies(null)} className="text-zinc-400 hover:text-zinc-600 p-1"><FiX /></button>
@@ -333,13 +333,13 @@ export default function SpeciesBreedsTab() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => { setEditingSpecies(s.id); setEditSpeciesName(s.name); }}
-                    className="rounded p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
+                    className="rounded-sm p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
                   >
                     <FiEdit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteSpecies(s.id)}
-                    className="rounded p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                    className="rounded-sm p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
                   >
                     <FiTrash2 className="h-4 w-4" />
                   </button>
@@ -367,7 +367,7 @@ export default function SpeciesBreedsTab() {
                     value={newBreedName}
                     onChange={(e) => setNewBreedName(e.target.value)}
                     placeholder={`Search or add ${selectedSpecies.name} breed...`}
-                    className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                    className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 pr-8 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                   />
                   {newBreedName && (
                     <button type="button" onClick={() => setNewBreedName("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
@@ -378,7 +378,7 @@ export default function SpeciesBreedsTab() {
                 <select
                   value={newBreedDefaultSize}
                   onChange={(e) => setNewBreedDefaultSize(e.target.value)}
-                  className="h-10 w-48 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                  className="h-10 w-48 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                 >
                   <option value="">All Sizes</option>
                   {sizeCategories.map(cat => (
@@ -402,12 +402,12 @@ export default function SpeciesBreedsTab() {
                           type="text"
                           value={editBreedName}
                           onChange={(e) => setEditBreedName(e.target.value)}
-                          className="h-8 w-full rounded border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
+                          className="h-8 w-full rounded-sm border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
                         />
                         <select
                           value={editBreedDefaultSize}
                           onChange={(e) => setEditBreedDefaultSize(e.target.value)}
-                          className="h-8 w-40 rounded border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
+                          className="h-8 w-40 rounded-sm border border-zinc-300 px-2 text-sm dark:border-dark-border dark:bg-dark-surface dark:text-zinc-100"
                         >
                           <option value="">Size...</option>
                           {sizeCategories.map(cat => (
@@ -433,13 +433,13 @@ export default function SpeciesBreedsTab() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => { setEditingBreed(b.id); setEditBreedName(b.name); setEditBreedDefaultSize(b.default_size_category_id || ""); }}
-                        className="rounded p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
+                        className="rounded-sm p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 dark:hover:bg-dark-surface"
                       >
                         <FiEdit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteBreed(b.id)}
-                        className="rounded p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                        className="rounded-sm p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
                       >
                         <FiTrash2 className="h-4 w-4" />
                       </button>
@@ -460,7 +460,7 @@ export default function SpeciesBreedsTab() {
       {/* Adding a species has its own dialog, so the list filter stays a filter. */}
       {showAddSpecies && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-zinc-900/60 p-4 backdrop-blur-xs"
           onClick={() => setShowAddSpecies(false)}
         >
           <div
@@ -489,7 +489,7 @@ export default function SpeciesBreedsTab() {
                   value={newSpeciesName}
                   onChange={(e) => setNewSpeciesName(e.target.value)}
                   placeholder="e.g. Canine"
-                  className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-none dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
+                  className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200"
                 />
               </label>
 
