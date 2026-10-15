@@ -164,6 +164,7 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
         Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
         Route::get('inventory/batch-lot-options',            [InventoryController::class, 'batchLotOptions']);
         Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
+        Route::get('inventory/{inventory}/usage',            [InventoryController::class, 'usage']);
         Route::get('inventory/{inventory}/batches',          [InventoryController::class, 'batches']);
         Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
         Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);

@@ -22,6 +22,8 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
+  const [usage, setUsage] = useState([]);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
   const [aiForecastData, setAiForecastData] = useState(null);
   const [isLoadingForecast, setIsLoadingForecast] = useState(false);
   const [insufficientMsg, setInsufficientMsg] = useState(null);
@@ -79,6 +81,15 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
             console.error(err);
             setIsLoadingForecast(false);
         });
+
+      setIsLoadingUsage(true);
+      fetch(`/api/inventory/${product.id}/usage?months=12`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${user?.token}` }
+      })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setUsage(Array.isArray(data) ? data : []))
+        .catch(() => setUsage([]))
+        .finally(() => setIsLoadingUsage(false));
 
       setIsLoadingTx(true);
       fetch(`/api/inventory/${product.id}/transactions`, {
@@ -422,6 +433,53 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               </div>
             </div>
           )}
+
+          {/* Usage History: what the AI forecast learns from */}
+          <div className="mt-8 border-t border-zinc-100 dark:border-dark-border pt-6">
+            <h4 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Usage History (12 Months)</h4>
+            <p className="mb-4 text-[11px] text-zinc-400 dark:text-zinc-500">Units used per month from sales and service use. The AI forecast learns from these figures.</p>
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-zinc-100 dark:border-dark-border custom-scrollbar">
+              {isLoadingUsage ? (
+                <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic animate-pulse">Loading usage history...</div>
+              ) : usage.some(u => u.units > 0) ? (
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="sticky top-0 bg-zinc-50 dark:bg-dark-surface z-10">
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-dark-border">
+                      <th className="px-4 py-3">Month</th>
+                      <th className="px-4 py-3 w-1/2">Usage</th>
+                      <th className="px-4 py-3 text-right">Units</th>
+                      <th className="px-4 py-3 text-right">Days Used</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50 dark:divide-dark-border">
+                    {(() => {
+                      const max = Math.max(...usage.map(u => u.units), 1);
+                      return usage.map(u => (
+                        <tr key={u.month}>
+                          <td className="px-4 py-2.5 font-bold text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
+                            {new Date(`${u.month}-01T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" })}
+                            {u.seeded > 0 && <span title="Includes generated sample usage" className="ml-1 text-violet-500">*</span>}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="h-2 rounded-full bg-zinc-100 dark:bg-dark-surface">
+                              <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${(u.units / max) * 100}%` }} />
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-black text-zinc-800 dark:text-zinc-200">{u.units}</td>
+                          <td className="px-4 py-2.5 text-right text-zinc-500 dark:text-zinc-400">{u.days}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-10 text-center text-sm text-zinc-400 dark:text-zinc-500 italic">No usage recorded in the last 12 months.</div>
+              )}
+            </div>
+            {usage.some(u => u.seeded > 0) && (
+              <p className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-500"><span className="text-violet-500">*</span> Includes generated sample usage (labelled in the database).</p>
+            )}
+          </div>
 
           {/* Transactions Ledger */}
           <div className="mt-8 border-t border-zinc-100 dark:border-dark-border pt-6">
