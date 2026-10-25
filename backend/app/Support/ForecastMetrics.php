@@ -104,7 +104,8 @@ class ForecastMetrics
     /**
      * The 80/20 check from the forecast: learn the line on the oldest 80% of
      * points, measure it on the newest 20%. Below 10 points everything is
-     * scored in-sample, exactly as batch_forecast.py does.
+     * scored in-sample, exactly as batch_forecast.py does. Test predictions
+     * start from the last training total, as the forecast's do.
      *
      * Also reports the "guess the average" baseline on the same test points,
      * which is what R² compares against.
@@ -120,20 +121,23 @@ class ForecastMetrics
 
             [$slope, $intercept] = self::fitLine($trainX, $trainY);
             $trainPred = self::predict($trainX, $slope, $intercept);
-            $testPred = self::predict($testX, $slope, $intercept);
             $testMean = array_fill(0, count($testY), array_sum($testY) / count($testY));
 
-            // Same learned slope, but the line starts from the last known
-            // total instead of the fitted intercept. Measured alongside the
-            // system's method as a possible improvement; not used by it.
+            // Test the line the way the forecast uses it: the learned slope,
+            // starting from the last known total (days until stock-out is
+            // current stock ÷ slope; the intercept is never used).
             $anchor = $trainY[count($trainY) - 1];
             $anchorX = $trainX[count($trainX) - 1];
-            $anchoredPred = array_map(fn ($xi) => $anchor + $slope * ($xi - $anchorX), $testX);
+            $testPred = array_map(fn ($xi) => $anchor + $slope * ($xi - $anchorX), $testX);
+
+            // The fitted line with its own intercept, as the test was scored
+            // before; kept so the two can be compared.
+            $fittedPred = self::predict($testX, $slope, $intercept);
 
             return self::baselines($x, $y, $split) + [
-                'anchored_r2'   => self::r2($testY, $anchoredPred),
-                'anchored_rmse' => self::rmse($testY, $anchoredPred),
-                'anchored_mae'  => self::mae($testY, $anchoredPred),
+                'fitted_r2'     => self::r2($testY, $fittedPred),
+                'fitted_rmse'   => self::rmse($testY, $fittedPred),
+                'fitted_mae'    => self::mae($testY, $fittedPred),
                 'method'        => '80/20 holdout',
                 'train_points'  => $split,
                 'test_points'   => count($testX),

@@ -22,24 +22,29 @@ class ForecastMetricsTest extends TestCase
         $this->assertSame(12, $h['train_points']);
         $this->assertEqualsWithDelta(1.30, $h['slope'], 0.005);
         $this->assertEqualsWithDelta(18.62, $h['intercept'], 0.005);
-        $this->assertEqualsWithDelta(0.89, $h['test_r2'], 0.005);
-        $this->assertEqualsWithDelta(0.49, $h['mae'], 0.005);
-        $this->assertEqualsWithDelta(0.65, $h['rmse'], 0.005);
+        // The guide scores the fitted line with its own intercept.
+        $this->assertEqualsWithDelta(0.89, $h['fitted_r2'], 0.005);
+        $this->assertEqualsWithDelta(0.49, $h['fitted_mae'], 0.005);
+        $this->assertEqualsWithDelta(0.65, $h['fitted_rmse'], 0.005);
         // "Guess the average every week": MAE 1.75, RMSE 1.92.
         $this->assertEqualsWithDelta(1.75, $h['baseline_mae'], 0.005);
         $this->assertEqualsWithDelta(1.92, $h['baseline_rmse'], 0.005);
     }
 
-    public function test_anchored_variant_starts_from_the_last_known_value(): void
+    public function test_test_days_are_projected_from_the_last_training_total(): void
     {
-        // A perfectly steady series: both variants should be exact.
-        $x = range(0, 19);
-        $y = array_map(fn ($v) => 3 * $v + 5, $x);
+        // Steady 2/day, then a one-off jump of 10 on the last training day.
+        // The fitted line misses that jump on every test day; a projection
+        // from the last known total does not.
+        $x = range(0, 9);
+        $y = [2, 4, 6, 8, 10, 12, 14, 26, 28, 30];
 
         $h = ForecastMetrics::holdout($x, $y);
+        [$slope] = ForecastMetrics::fitLine(range(0, 7), array_slice($y, 0, 8));
 
-        $this->assertEqualsWithDelta(0.0, $h['anchored_mae'], 1e-9);
-        $this->assertEqualsWithDelta(1.0, $h['anchored_r2'], 1e-9);
+        $expected = [26 + $slope, 26 + 2 * $slope];
+        $this->assertEqualsWithDelta(ForecastMetrics::mae([28, 30], $expected), $h['mae'], 1e-9);
+        $this->assertLessThan($h['fitted_mae'], $h['mae']);
     }
 
     public function test_baselines_project_from_the_last_training_total(): void

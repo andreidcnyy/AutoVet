@@ -175,9 +175,12 @@ def forecast_stockout(csv_filepath, min_stock_level, code=None, current_stock=No
         eval_model = LinearRegression()
         eval_model.fit(X[:split], y[:split])
         train_r2 = float(r2_score(y[:split], eval_model.predict(X[:split]))) if len(set(y[:split])) > 1 else 0.0
-        test_r2  = float(r2_score(y[split:], eval_model.predict(X[split:]))) if len(set(y[split:])) > 1 else 0.0
-        rmse = math.sqrt(mean_squared_error(y[split:], eval_model.predict(X[split:])))
-        mae  = mean_absolute_error(y[split:], eval_model.predict(X[split:]))
+        # Score the test days the way the forecast predicts: the learned slope
+        # projected from the last known total (the intercept is never used).
+        test_pred = y[split - 1] + eval_model.coef_[0] * (X[split:, 0] - X[split - 1, 0])
+        test_r2  = float(r2_score(y[split:], test_pred)) if len(set(y[split:])) > 1 else 0.0
+        rmse = math.sqrt(mean_squared_error(y[split:], test_pred))
+        mae  = mean_absolute_error(y[split:], test_pred)
         model.fit(X, y)
     else:
         model.fit(X, y)

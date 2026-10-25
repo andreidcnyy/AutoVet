@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Schema;
  *   - usage per day over the last --history-days days, then the running total
  *     (cumulative consumption) against the day number;
  *   - a straight line fitted to the oldest 80% of those days, scored on the
- *     newest 20% with R², RMSE and MAE (fewer than 10 days: scored in-sample);
+ *     newest 20% with R², RMSE and MAE (fewer than 10 days: scored in-sample),
+ *     projected from the last known total as the stock-out prediction is;
  *   - the line's slope is the learned "units used per day".
  *
  * Also reports, per item:
@@ -141,9 +142,9 @@ class BenchmarkInventoryForecast extends Command
                 'naive_rmse'      => $h['naive_rmse'] ?? null,
                 'moving_average_mae'  => $h['moving_average_mae'] ?? null,
                 'moving_average_rmse' => $h['moving_average_rmse'] ?? null,
-                'anchored_r2'     => $h['anchored_r2'] ?? null,
-                'anchored_rmse'   => $h['anchored_rmse'] ?? null,
-                'anchored_mae'    => $h['anchored_mae'] ?? null,
+                'fitted_r2'       => $h['fitted_r2'] ?? null,
+                'fitted_rmse'     => $h['fitted_rmse'] ?? null,
+                'fitted_mae'      => $h['fitted_mae'] ?? null,
                 'confidence'      => ForecastMetrics::confidenceLabel($h['train_r2']),
                 'learned_rate'    => $slopeAll,
                 'train_rate'      => $h['slope'],
@@ -186,9 +187,9 @@ class BenchmarkInventoryForecast extends Command
                 'model_wins_mae'  => count(array_filter($holdout, fn ($r) => $r['mae'] < $r["{$key}_mae"])),
                 'model_wins_rmse' => count(array_filter($holdout, fn ($r) => $r['rmse'] < $r["{$key}_rmse"])),
             ]])->all(),
-            'median_anchored_r2'  => $median(array_column($holdout, 'anchored_r2')),
-            'median_anchored_mae' => $median(array_column($holdout, 'anchored_mae')),
-            'median_anchored_rmse' => $median(array_column($holdout, 'anchored_rmse')),
+            'median_fitted_r2' => $median(array_column($holdout, 'fitted_r2')),
+            'median_fitted_mae' => $median(array_column($holdout, 'fitted_mae')),
+            'median_fitted_rmse' => $median(array_column($holdout, 'fitted_rmse')),
             'median_rate_error' => $median(array_column($holdout, 'rate_error')),
             'median_data_points'=> $median(array_column($results, 'data_points')),
         ];
