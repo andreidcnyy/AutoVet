@@ -130,7 +130,7 @@ class ForecastMetrics
             $anchorX = $trainX[count($trainX) - 1];
             $anchoredPred = array_map(fn ($xi) => $anchor + $slope * ($xi - $anchorX), $testX);
 
-            return [
+            return self::baselines($x, $y, $split) + [
                 'anchored_r2'   => self::r2($testY, $anchoredPred),
                 'anchored_rmse' => self::rmse($testY, $anchoredPred),
                 'anchored_mae'  => self::mae($testY, $anchoredPred),
@@ -167,6 +167,51 @@ class ForecastMetrics
             'baseline_mae'  => self::mae($y, $mean),
             'split_index'   => null,
         ];
+    }
+
+    /**
+     * The simple forecasting methods the model is benchmarked against
+     * (Hyndman & Athanasopoulos, Forecasting: Principles and Practice), scored
+     * on the same test points as the model.
+     *
+     * Each one guesses a daily usage from the training days only, then
+     * projects the running total forward from the last known total:
+     *
+     *   - average:        total used ÷ calendar days in training;
+     *   - naive:          the usage on the last training day;
+     *   - moving average: total used in the last $window calendar days ÷ $window.
+     *
+     * Days missing from $x had no usage and count as 0.
+     */
+    public static function baselines(array $x, array $y, int $split, int $window = 7): array
+    {
+        $lastX = $x[$split - 1];
+        $lastY = $y[$split - 1];
+        $testX = array_slice($x, $split);
+        $testY = array_slice($y, $split);
+
+        $recent = 0.0;
+        for ($i = 0; $i < $split; $i++) {
+            if ($x[$i] > $lastX - $window) {
+                $recent += $y[$i] - ($i > 0 ? $y[$i - 1] : 0.0);
+            }
+        }
+
+        $rates = [
+            'average'        => $lastY / ($lastX - $x[0] + 1),
+            'naive'          => $lastY - ($split > 1 ? $y[$split - 2] : 0.0),
+            'moving_average' => $recent / $window,
+        ];
+
+        $out = [];
+        foreach ($rates as $name => $rate) {
+            $pred = array_map(fn ($xi) => $lastY + $rate * ($xi - $lastX), $testX);
+            $out["{$name}_rate"] = $rate;
+            $out["{$name}_mae"] = self::mae($testY, $pred);
+            $out["{$name}_rmse"] = self::rmse($testY, $pred);
+        }
+
+        return $out;
     }
 
     /** One draw from a Poisson(λ) distribution using the given random source (Knuth's method). */

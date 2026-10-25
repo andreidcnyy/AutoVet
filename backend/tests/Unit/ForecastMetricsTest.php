@@ -42,6 +42,38 @@ class ForecastMetricsTest extends TestCase
         $this->assertEqualsWithDelta(1.0, $h['anchored_r2'], 1e-9);
     }
 
+    public function test_baselines_project_from_the_last_training_total(): void
+    {
+        // Daily usage 1,1,1,1,1,1,2,6 | 3,3 — training ends on day 7 at 14 units.
+        $x = range(0, 9);
+        $y = [1, 2, 3, 4, 5, 6, 8, 14, 17, 20];
+
+        $h = ForecastMetrics::holdout($x, $y);
+
+        // Average: 14 units over 8 days = 1.75/day → 15.75, 17.5.
+        $this->assertEqualsWithDelta(1.75, $h['average_rate'], 1e-9);
+        $this->assertEqualsWithDelta(1.875, $h['average_mae'], 1e-9);
+        // Naive: last day used 6 → 20, 26.
+        $this->assertEqualsWithDelta(6.0, $h['naive_rate'], 1e-9);
+        $this->assertEqualsWithDelta(4.5, $h['naive_mae'], 1e-9);
+        // 7-day moving average: days 1–7 used 13 → 13/7 per day.
+        $this->assertEqualsWithDelta(13 / 7, $h['moving_average_rate'], 1e-9);
+        $this->assertEqualsWithDelta(12 / 7, $h['moving_average_mae'], 1e-9);
+    }
+
+    public function test_baselines_count_days_without_usage_as_zero(): void
+    {
+        // 2 units every other day; training ends on day 14 at 16 units.
+        $x = range(0, 18, 2);
+        $y = range(2, 20, 2);
+
+        $h = ForecastMetrics::baselines($x, $y, 8);
+
+        $this->assertEqualsWithDelta(16 / 15, $h['average_rate'], 1e-9);
+        $this->assertEqualsWithDelta(2.0, $h['naive_rate'], 1e-9);
+        $this->assertEqualsWithDelta(8 / 7, $h['moving_average_rate'], 1e-9);
+    }
+
     public function test_fewer_than_ten_points_are_scored_in_sample(): void
     {
         $h = ForecastMetrics::holdout([0, 1, 2, 3], [1, 3, 5, 7]);

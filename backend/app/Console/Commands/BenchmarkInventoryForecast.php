@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\Schema;
  * Also reports, per item:
  *   - the "guess the average" baseline on the same test days, which is what
  *     R² = 0 means, so the model can be compared against doing nothing clever;
+ *   - three simple forecasting methods on the same test days (average,
+ *     naive, 7-day moving average; see ForecastMetrics::baselines), with how
+ *     many items the model beat each one on;
  *   - a rate check: the daily rate learned from the 80% against the rate
  *     actually seen in the 20%, as a percentage error. (Running totals always
  *     look straight, which flatters R²; this check does not.)
@@ -41,6 +44,12 @@ class BenchmarkInventoryForecast extends Command
         {--json= : Write the per-item results as JSON to this path}';
 
     protected $description = 'Score the inventory forecast (R², RMSE, MAE, 80/20 holdout) for every item';
+
+    private const BASELINES = [
+        'average'        => 'Average method',
+        'naive'          => 'Naive method',
+        'moving_average' => '7-day moving average',
+    ];
 
     private const SAFE_SOURCES = ['retail_sale', 'service_consumable', 'manual_adjustment'];
 
@@ -126,6 +135,12 @@ class BenchmarkInventoryForecast extends Command
                 'mae'             => $h['mae'],
                 'baseline_rmse'   => $h['baseline_rmse'],
                 'baseline_mae'    => $h['baseline_mae'],
+                'average_mae'     => $h['average_mae'] ?? null,
+                'average_rmse'    => $h['average_rmse'] ?? null,
+                'naive_mae'       => $h['naive_mae'] ?? null,
+                'naive_rmse'      => $h['naive_rmse'] ?? null,
+                'moving_average_mae'  => $h['moving_average_mae'] ?? null,
+                'moving_average_rmse' => $h['moving_average_rmse'] ?? null,
                 'anchored_r2'     => $h['anchored_r2'] ?? null,
                 'anchored_rmse'   => $h['anchored_rmse'] ?? null,
                 'anchored_mae'    => $h['anchored_mae'] ?? null,
@@ -165,6 +180,12 @@ class BenchmarkInventoryForecast extends Command
             'median_mae'        => $median(array_column($holdout, 'mae')),
             'median_baseline_mae' => $median(array_column($holdout, 'baseline_mae')),
             'median_baseline_rmse' => $median(array_column($holdout, 'baseline_rmse')),
+            'baselines'         => collect(self::BASELINES)->mapWithKeys(fn ($label, $key) => [$key => [
+                'median_mae'      => $median(array_column($holdout, "{$key}_mae")),
+                'median_rmse'     => $median(array_column($holdout, "{$key}_rmse")),
+                'model_wins_mae'  => count(array_filter($holdout, fn ($r) => $r['mae'] < $r["{$key}_mae"])),
+                'model_wins_rmse' => count(array_filter($holdout, fn ($r) => $r['rmse'] < $r["{$key}_rmse"])),
+            ]])->all(),
             'median_anchored_r2'  => $median(array_column($holdout, 'anchored_r2')),
             'median_anchored_mae' => $median(array_column($holdout, 'anchored_mae')),
             'median_anchored_rmse' => $median(array_column($holdout, 'anchored_rmse')),
@@ -180,6 +201,15 @@ class BenchmarkInventoryForecast extends Command
             self::fmt($summary['median_train_r2']), self::fmt($summary['median_test_r2']),
             self::fmt($summary['median_mae']), $summary['median_rate_error'] !== null ? number_format($summary['median_rate_error'] * 100, 1) . '%' : '-',
         ]]);
+
+        $rows = [['Linear regression (AutoVet)', self::fmt($summary['median_mae']), self::fmt($summary['median_rmse']), '-', '-']];
+        foreach (self::BASELINES as $key => $label) {
+            $b = $summary['baselines'][$key];
+            $rows[] = [$label, self::fmt($b['median_mae']), self::fmt($b['median_rmse']),
+                "{$b['model_wins_mae']} / {$summary['with_80_20_holdout']}", "{$b['model_wins_rmse']} / {$summary['with_80_20_holdout']}"];
+        }
+        $this->line('Benchmark on the 20% test days (items where the model\'s error is lower than the method\'s):');
+        $this->table(['Method', 'Med. MAE', 'Med. RMSE', 'Model beats it (MAE)', 'Model beats it (RMSE)'], $rows);
 
         if ($path = $this->option('json')) {
             file_put_contents($path, json_encode(['summary' => $summary, 'items' => $results], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
