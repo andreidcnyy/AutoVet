@@ -3,7 +3,11 @@
 # Python 3 + the forecasting libs so the AI subprocess (ai/forecast.py) works
 # self-contained — no separate AI service needed on Render's free tier.
 
-FROM php:8.2-cli-bookworm
+# Pinned to a patch release rather than the floating 8.2 tag so a cached base
+# layer cannot silently keep an older PHP. 8.2.35 is the first 8.2 build with
+# the PHP2Shell fixes (CVE-2026-109618, CVE-2026-109619 — unauthenticated RCE,
+# exploited in the wild from October 2026). Do not go below it.
+FROM php:8.2.35-cli-bookworm
 
 # --- System packages + Python for the AI forecasting subprocess ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -33,7 +37,8 @@ COPY . .
 # The extension is installed above, but `php artisan serve` runs under the CLI
 # SAPI where opcache is off unless enable_cli is set, so it was inert. Copied
 # before composer/npm so the build steps benefit from it too.
-RUN cp docker/opcache.ini "$PHP_INI_DIR/conf.d/zz-opcache.ini"
+RUN cp docker/opcache.ini "$PHP_INI_DIR/conf.d/zz-opcache.ini" \
+    && cp docker/security.ini "$PHP_INI_DIR/conf.d/zz-security.ini"
 
 # --- Python venv with the forecasting deps (numpy/pandas/scikit-learn/...) ---
 # PYTHON_BIN_PATH tells InventoryForecastingService which interpreter to spawn.
