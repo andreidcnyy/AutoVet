@@ -39,7 +39,7 @@ export default function ForgotPassword() {
         }
         setError(String(errorMsg));
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

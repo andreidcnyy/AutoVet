@@ -9,7 +9,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet, deletePet } from '../api';
+import { getSpecies, getWeightRanges, updatePet, getPet, deletePet } from '../api';
 import { useBreedsForSpecies } from '../hooks/useBreedsForSpecies';
 import { FiTrash2 } from 'react-icons/fi';
 import { getAgeGroup } from '../utils/petAgeGroups';

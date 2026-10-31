@@ -15,7 +15,7 @@ const getAuthToken = (): string | null => {
         if (!stored) return null;
         const parsed = JSON.parse(stored);
         return parsed?.token || null;
-    } catch (e) {
+    } catch {
         return null;
     }
 };

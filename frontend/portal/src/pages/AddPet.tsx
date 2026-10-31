@@ -8,13 +8,12 @@ import {
   FiCheckCircle, 
   FiAlertCircle 
 } from 'react-icons/fi';
-import { LuPawPrint } from 'react-icons/lu';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getSpecies, getPetSizeCategories, getWeightRanges, createPet, getBreeds } from '../api';
+import { getSpecies, getWeightRanges, createPet } from '../api';
 import { useBreedsForSpecies } from '../hooks/useBreedsForSpecies';
-import { getAgeGroup, calculateAgeDisplay } from '../utils/petAgeGroups';
+import { getAgeGroup } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';
 import { readCache, writeCache, clearAllPortalCache } from '../utils/swrCache';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import DarkModeToggle from "../components/DarkModeToggle";
 
@@ -61,7 +61,7 @@ export default function ResetPassword() {
         }
         setError(String(errorMsg));
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

@@ -42,7 +42,7 @@ export default function Register() {
   const [googleLoading, setGoogleLoading]           = useState(false);
   const [pendingGoogle, setPendingGoogle]           = useState<{ accessToken: string; name: string; email: string } | null>(null);
   const navigate = useNavigate();
-  const { register, login } = useAuth();
+  const { login } = useAuth();
 
   const handleGoogleSuccess = async (accessToken: string) => {
     setGoogleLoading(true);

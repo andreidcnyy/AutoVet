@@ -65,7 +65,7 @@ export const onPetImageError =
 /**
  * Returns the best-matching local SVG fallback image for a pet
  */
-export const getPetImageUrl = (species: any, breed: any) => {
+export const getPetImageUrl = (species: any, _breed: any) => {
   const s = (typeof species === "string" ? species : species?.name || "").toLowerCase();
   // const b = (typeof breed === "string" ? breed : breed?.name || "").toLowerCase();
 

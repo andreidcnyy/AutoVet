@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getPet, getMedicalRecords, getInvoices } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -6,12 +6,10 @@ import echo from '../utils/echo';
 import {
   FiX,
   FiCalendar,
-  FiFileText,
   FiCreditCard,
   FiActivity,
   FiInfo,
   FiUser,
-  FiClock,
   FiAlertCircle,
   FiEdit2
 } from 'react-icons/fi';

@@ -17,8 +17,8 @@ import {
   FiHeart,
   FiFileText,
   FiXCircle, FiSearch } from "react-icons/fi";
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { generateCalendarGrid, generateWeekGrid, generateDayGrid } from '../utils/calendarUtils';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { generateCalendarGrid } from '../utils/calendarUtils';
 import { getPets, getServices, getVets, createAppointment, getInvoices } from '../api';
 import { serviceMatchesSpecies, speciesNamedBy, petSpeciesName } from '../utils/serviceSpecies';
 import { getActualPetImageUrl, getPetImageUrl, onPetImageError } from '../utils/petImages';
@@ -116,7 +116,6 @@ export default function BookAppointment() {
   const selectedDate = watch("date");
   const selectedVetId = watch("vet_id");
   const selectedTime = watch("time");
-  const selectedServiceId = watch("service_id");
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   const [serviceSearch, setServiceSearch] = useState("");

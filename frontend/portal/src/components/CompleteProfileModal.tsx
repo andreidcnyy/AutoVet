@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import clsx from "clsx";
-import { FiMapPin, FiChevronDown, FiMap, FiX } from "react-icons/fi";
+import { FiMapPin, FiChevronDown, FiMap } from "react-icons/fi";
 import { PH_LOCATION_DATA, City } from "../utils/phLocationData";
 import PhoneInput from "./PhoneInput";
 import { useAuth } from "../context/AuthContext";

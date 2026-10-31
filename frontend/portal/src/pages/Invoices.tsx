@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getInvoices, getInvoice, getPets, getSettings } from '../api';
 import {
-  FiCreditCard,
   FiFileText,
   FiArrowLeft,
   FiFilter,
@@ -9,8 +8,6 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiClock,
-  FiCheckCircle,
-  FiAlertCircle,
   FiDownload,
   FiEye,
   FiX

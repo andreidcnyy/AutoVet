@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FiArrowRight, FiActivity, FiHeart, FiShield,
+  FiArrowRight, FiShield,
   FiMail, FiPhone, FiMapPin, FiCalendar, FiBell, FiFileText,
   FiUsers, FiLock, FiChevronRight, FiMenu, FiX, FiVolume2, FiVolumeX
 } from 'react-icons/fi';

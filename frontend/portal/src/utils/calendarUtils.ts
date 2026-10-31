@@ -10,12 +10,12 @@ export function generateCalendarGrid(currentDate: Date, events: any[] = []) {
 
     // To ensure the calendar has a full grid, we find starting Sunday and ending Saturday
     const startDate = startOfWeek(monthStart);
-    let endDate = endOfWeek(monthEnd);
+    const endDate = endOfWeek(monthEnd);
 
     const totalDaysNeeded = 42;
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     
-    let daysInGrid = [...days];
+    const daysInGrid = [...days];
     if (daysInGrid.length < totalDaysNeeded) {
         const remaining = totalDaysNeeded - daysInGrid.length;
         const lastDay = daysInGrid[daysInGrid.length - 1];

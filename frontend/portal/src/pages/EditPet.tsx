@@ -11,7 +11,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getSpecies, getWeightRanges, updatePet, getBreeds, getPet } from '../api';
+import { getSpecies, getWeightRanges, updatePet, getPet } from '../api';
 import { useBreedsForSpecies } from '../hooks/useBreedsForSpecies';
 import { getAgeGroup } from '../utils/petAgeGroups';
 import { getActualPetImageUrl } from '../utils/petImages';

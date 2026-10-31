@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, User, Bot, MapPin, Phone, Clock, Stethoscope } from 'lucide-react';
+import { MessageCircle, X, User, Bot, MapPin, Phone, Clock, Stethoscope } from 'lucide-react';
 import clsx from 'clsx';
 
 // NLP Helper: Levenshtein Distance for handling typos
@@ -118,7 +118,6 @@ const STOP_WORDS = ["the", "this", "that", "is", "are", "was", "were", "and", "b
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, type: 'bot', text: "Hello! I'm your NLP-enhanced AutoVet assistant. How can I help you today?" }
   ]);
@@ -191,7 +190,6 @@ export default function Chatbot() {
 
     const userMsg: Message = { id: Date.now(), type: 'user', text };
     setMessages(prev => [...prev, userMsg]);
-    setInputValue("");
     setIsTyping(true);
 
     setTimeout(() => {
@@ -206,10 +204,6 @@ export default function Chatbot() {
     }, 800);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleSendMessage(inputValue);
-  };
 
   return (
     <div className="fixed bottom-6 right-6 z-9999 font-sans">

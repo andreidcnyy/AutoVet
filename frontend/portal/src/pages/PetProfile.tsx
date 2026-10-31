@@ -5,10 +5,8 @@ import { getPet, getMedicalRecords, getInvoices } from '../api';
 import {
   FiArrowLeft,
   FiCalendar,
-  FiFileText,
   FiActivity,
   FiInfo,
-  FiClock,
   FiAlertCircle,
   FiEdit2,
   FiUser,
