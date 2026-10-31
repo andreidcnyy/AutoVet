@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 
@@ -70,11 +71,37 @@ class AppServiceProvider extends ServiceProvider
         // would put everyone on one shared IP limit. Staff and portal clients
         // live in different tables and can share an id, so the key carries
         // the model too.
+        //
+        // Guests are not counted here. Behind Vercel and Render every request
+        // arrives from a proxy address, so a per-IP limit would be one shared
+        // limit for all signed-out visitors: enough open landing pages polling
+        // maintenance status would lock everyone out of logging in. The guest
+        // routes that need a limit carry their own (login and recovery below).
         RateLimiter::for('api', function (Request $request) {
             $user = $request->user('sanctum');
 
-            return Limit::perMinute(300)->by($user ? get_class($user).':'.$user->getKey() : $request->ip());
+            return $user
+                ? Limit::perMinute(300)->by(get_class($user).':'.$user->getKey())
+                : Limit::none();
         });
+
+        // Login and account recovery are limited per e-mail address, which
+        // still stops guessing at one account but does not depend on the
+        // client IP (shared behind the proxy, see above). The per-IP limit is
+        // a generous backstop against spraying many addresses.
+        RateLimiter::for('login', fn (Request $request) => [
+            Limit::perMinute(10)->by('login:'.Str::lower((string) $request->input('email')).'|'.$request->ip()),
+            Limit::perMinute(100)->by('login-ip:'.$request->ip()),
+        ]);
+
+        // Google sign-in and e-mail verification links carry an unguessable
+        // token instead of an address, so only the backstop applies.
+        RateLimiter::for('token-auth', fn (Request $request) => Limit::perMinute(60)->by('token-auth:'.$request->ip()));
+
+        RateLimiter::for('account', fn (Request $request) => [
+            Limit::perMinute(5)->by('account:'.$request->path().'|'.Str::lower((string) $request->input('email')).'|'.$request->ip()),
+            Limit::perMinute(50)->by('account-ip:'.$request->ip()),
+        ]);
 
         Mail::extend('brevo', function (array $config = []) {
             return (new BrevoTransportFactory)->create(

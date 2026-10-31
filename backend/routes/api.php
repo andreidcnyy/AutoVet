@@ -58,12 +58,12 @@ use Illuminate\Support\Facades\Route;
 // Public reviews — landing page
 Route::get('/reviews/public', [ReviewController::class, 'publicIndex'])->middleware('throttle:60,1');
 
-Route::post('/auth/google', [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
-Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
-Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
-Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:10,1')->name('registration.verify');
+Route::post('/auth/google', [GoogleAuthController::class, 'handle'])->middleware('throttle:token-auth');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:account');
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:account');
+Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:account');
+Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:token-auth')->name('registration.verify');
 
 // Liveness only. It used to report whether the database was reachable (and
 // counted every staff account to find out), which is nobody else's business.
