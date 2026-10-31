@@ -47,8 +47,16 @@ class AppServiceProvider extends ServiceProvider
             return $query->exists();
         }, 'The selected :attribute is invalid.');
 
+        // Applied to every api route (bootstrap/app.php, throttleApi). It runs
+        // before auth:sanctum, so the token user has to be looked up on the
+        // sanctum guard: the default guard is web and never sees them, which
+        // would put everyone on one shared IP limit. Staff and portal clients
+        // live in different tables and can share an id, so the key carries
+        // the model too.
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
+            $user = $request->user('sanctum');
+
+            return Limit::perMinute(300)->by($user ? get_class($user) . ':' . $user->getKey() : $request->ip());
         });
 
         Mail::extend('brevo', function (array $config = []) {

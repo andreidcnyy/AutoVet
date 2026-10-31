@@ -30,6 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // went out without these headers.
         $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
 
+        // The 'api' limiter in AppServiceProvider: 300 requests a minute per
+        // signed-in user. It was defined but never attached to the routes.
+        $middleware->throttleApi();
+
         $middleware->alias([
             'auth'        => \App\Http\Middleware\Authenticate::class,
             'role'        => \App\Http\Middleware\RoleMiddleware::class,
