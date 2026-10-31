@@ -4,15 +4,15 @@ namespace App\Models;
 
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use App\Traits\HasClinic;
+use Illuminate\Support\Facades\Cache;
 
 class Appointment extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
 
     /**
      * The one definition of what each status means, shared by the calendar,
@@ -47,6 +47,7 @@ class Appointment extends Model
     public static function normaliseSlotTime($time): string
     {
         $ts = strtotime((string) $time);
+
         return $ts === false ? (string) $time : date('H:i', $ts);
     }
 
@@ -77,14 +78,14 @@ class Appointment extends Model
      */
     public static function withSlotLock(string $date, $time, callable $callback)
     {
-        $key = 'appointment-slot:' . date('Y-m-d', strtotime($date)) . ':' . self::normaliseSlotTime($time);
+        $key = 'appointment-slot:'.date('Y-m-d', strtotime($date)).':'.self::normaliseSlotTime($time);
 
-        return \Illuminate\Support\Facades\Cache::lock($key, 10)->block(5, $callback);
+        return Cache::lock($key, 10)->block(5, $callback);
     }
 
     public static function slotFullMessage(): string
     {
-        return 'This time slot is already full (' . self::SLOT_CAPACITY . ' approved appointments). Please choose another time.';
+        return 'This time slot is already full ('.self::SLOT_CAPACITY.' approved appointments). Please choose another time.';
     }
 
     protected $fillable = [
@@ -107,8 +108,8 @@ class Appointment extends Model
     ];
 
     protected $casts = [
-        'is_walk_in'               => 'boolean',
-        'synced_at'                => 'datetime',
+        'is_walk_in' => 'boolean',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 

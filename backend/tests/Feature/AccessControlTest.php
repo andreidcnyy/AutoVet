@@ -24,6 +24,7 @@ class AccessControlTest extends TestCase
     {
         $this->app['auth']->forgetGuards();
         Sanctum::actingAs($user, ['*']);
+
         return $this;
     }
 
@@ -61,7 +62,7 @@ class AccessControlTest extends TestCase
 
     public function test_vet_cannot_reset_an_admin_password(): void
     {
-        $vet   = Admin::factory()->role(Roles::VETERINARIAN->value)->create();
+        $vet = Admin::factory()->role(Roles::VETERINARIAN->value)->create();
         $admin = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create();
 
         $this->as($vet)->postJson("/api/users/{$admin->id}/reset-password", ['password' => 'takeover123'])
@@ -97,7 +98,7 @@ class AccessControlTest extends TestCase
 
     public function test_vet_cannot_restore_an_archived_admin(): void
     {
-        $vet   = Admin::factory()->role(Roles::VETERINARIAN->value)->create();
+        $vet = Admin::factory()->role(Roles::VETERINARIAN->value)->create();
         $admin = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create();
         $admin->delete();
 

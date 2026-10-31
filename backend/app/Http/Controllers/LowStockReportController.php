@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Inventory;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
 class LowStockReportController extends Controller
@@ -28,7 +28,7 @@ class LowStockReportController extends Controller
             $csvData = "Item Name,SKU,Current Stock,Minimum Threshold,Supplier,Expiration Date\n";
             foreach ($items as $item) {
                 $csvData .= sprintf(
-                    '"%s","%s",%d,%d,"%s","%s"' . "\n",
+                    '"%s","%s",%d,%d,"%s","%s"'."\n",
                     $item->item_name,
                     $item->sku,
                     $item->stock_level,

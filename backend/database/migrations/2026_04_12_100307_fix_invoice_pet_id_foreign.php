@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,11 +16,11 @@ return new class extends Migration
             // Based on investigation, the constraint name is 'invoices_patient_id_foreign'
             try {
                 $table->dropForeign('invoices_patient_id_foreign');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // If it fails, try to drop by array syntax
                 try {
                     $table->dropForeign(['pet_id']);
-                } catch (\Exception $e2) {
+                } catch (Exception $e2) {
                     // Ignore if it doesn't exist
                 }
             }

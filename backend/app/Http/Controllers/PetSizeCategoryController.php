@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PetSizeCategory;
+use App\Support\ListQuery;
 use Illuminate\Http\Request;
 
 class PetSizeCategoryController extends Controller
@@ -12,15 +13,15 @@ class PetSizeCategoryController extends Controller
         $query = PetSizeCategory::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', \App\Support\ListQuery::contains($request->search));
+            $query->where('name', 'like', ListQuery::contains($request->search));
         }
 
-        [$sortBy, $sortDirection] = \App\Support\ListQuery::sort($request, ['id', 'name', 'status', 'created_at', 'updated_at'], 'name');
+        [$sortBy, $sortDirection] = ListQuery::sort($request, ['id', 'name', 'status', 'created_at', 'updated_at'], 'name');
         $query->orderBy($sortBy, $sortDirection)->orderBy('id');
 
         // Lookup table: screens load it whole into dropdowns, so the ceiling
         // is higher than for paged lists, but there is one.
-        return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 10, \App\Support\ListQuery::MAX_LOOKUP_PER_PAGE)));
+        return response()->json($query->paginate(ListQuery::perPage($request, 10, ListQuery::MAX_LOOKUP_PER_PAGE)));
     }
 
     public function store(Request $request)
@@ -28,10 +29,11 @@ class PetSizeCategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|unique:pet_size_categories',
             'description' => 'nullable|string',
-            'status' => 'nullable|string'
+            'status' => 'nullable|string',
         ]);
 
         $category = PetSizeCategory::create($validated);
+
         return response()->json($category, 201);
     }
 
@@ -48,18 +50,20 @@ class PetSizeCategoryController extends Controller
     public function update(Request $request, PetSizeCategory $petSizeCategory)
     {
         $validated = $request->validate([
-            'name' => 'required|string|unique:pet_size_categories,name,' . $petSizeCategory->id,
+            'name' => 'required|string|unique:pet_size_categories,name,'.$petSizeCategory->id,
             'description' => 'nullable|string',
-            'status' => 'nullable|string'
+            'status' => 'nullable|string',
         ]);
 
         $petSizeCategory->update($validated);
+
         return response()->json($petSizeCategory);
     }
 
     public function destroy(PetSizeCategory $petSizeCategory)
     {
         $petSizeCategory->delete();
+
         return response()->json(null, 204);
     }
 }

@@ -58,7 +58,7 @@ return new class extends Migration
                 DB::table($table)
                     ->where('id', $row->id)
                     ->update([
-                        'uuid'                     => (string) Str::uuid(),
+                        'uuid' => (string) Str::uuid(),
                         'last_modified_locally_at' => now(),
                     ]);
             }

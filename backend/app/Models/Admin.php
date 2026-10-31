@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\Roles;
+use App\Exceptions\UserFacingException;
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
-use Laravel\Sanctum\HasApiTokens;
-use App\Enums\Roles;
-use Illuminate\Support\Facades\DB;
-
 use App\Traits\HasClinic;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasApiTokens, HasAuditTrail, HasClinic, HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'admins';
 
@@ -46,11 +46,11 @@ class Admin extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'           => 'datetime',
-            'must_change_password'        => 'boolean',
-            'ai_features_enabled'         => 'boolean',
-            'last_seen_patients_at'       => 'datetime',
-            'last_seen_appointments_at'   => 'datetime',
+            'email_verified_at' => 'datetime',
+            'must_change_password' => 'boolean',
+            'ai_features_enabled' => 'boolean',
+            'last_seen_patients_at' => 'datetime',
+            'last_seen_appointments_at' => 'datetime',
         ];
     }
 
@@ -87,10 +87,10 @@ class Admin extends Authenticatable
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('appointments')->where('vet_id', $this->id)->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this user because they are assigned to past or upcoming appointments.");
+            throw new UserFacingException('Cannot permanently delete this user because they are assigned to past or upcoming appointments.');
         }
         if (DB::table('vet_schedules')->where('user_id', $this->id)->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this user because they have recorded work schedules.");
+            throw new UserFacingException('Cannot permanently delete this user because they have recorded work schedules.');
         }
     }
 }

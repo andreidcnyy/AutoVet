@@ -28,7 +28,7 @@ class SeedDemoActivityTest extends TestCase
         for ($d = CarbonImmutable::parse('2026-02-01'); $d->lte(CarbonImmutable::parse('2026-02-28')); $d = $d->addDay()) {
             foreach ([400, 650] as $total) {
                 $id = DB::table('invoices')->insertGetId([
-                    'clinic_id' => 1, 'invoice_number' => 'SEED-' . $d->format('md') . $total, 'pet_id' => $demoPet,
+                    'clinic_id' => 1, 'invoice_number' => 'SEED-'.$d->format('md').$total, 'pet_id' => $demoPet,
                     'status' => 'Paid', 'subtotal' => $total, 'total' => $total, 'amount_paid' => $total,
                     'created_at' => $d->setTime(10, 0), 'updated_at' => $d->setTime(10, 0),
                 ]);

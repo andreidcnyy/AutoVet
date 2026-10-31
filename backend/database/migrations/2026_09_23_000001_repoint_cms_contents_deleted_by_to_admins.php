@@ -17,11 +17,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('cms_contents') || !Schema::hasColumn('cms_contents', 'deleted_by')) {
+        if (! Schema::hasTable('cms_contents') || ! Schema::hasColumn('cms_contents', 'deleted_by')) {
             return;
         }
 
-        if (!$this->hasForeignKey('cms_contents', 'cms_contents_deleted_by_foreign')) {
+        if (! $this->hasForeignKey('cms_contents', 'cms_contents_deleted_by_foreign')) {
             return;
         }
 

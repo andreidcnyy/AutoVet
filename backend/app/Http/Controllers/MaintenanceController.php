@@ -9,9 +9,7 @@ use Illuminate\Validation\Rule;
 
 class MaintenanceController extends Controller
 {
-    public function __construct(private MaintenanceWindow $window)
-    {
-    }
+    public function __construct(private MaintenanceWindow $window) {}
 
     /**
      * The current window.
@@ -27,8 +25,8 @@ class MaintenanceController extends Controller
         // is up, so a proxy or browser serving a stored copy would show a window
         // that has already opened or closed.
         return response()->json($this->window->state())
-            ->header("Cache-Control", "no-store, no-cache, must-revalidate")
-            ->header("Pragma", "no-cache");
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->header('Pragma', 'no-cache');
     }
 
     /**
@@ -53,7 +51,7 @@ class MaintenanceController extends Controller
             'message' => 'nullable|string|max:500',
         ]);
 
-        if (!$validated['enabled']) {
+        if (! $validated['enabled']) {
             return response()->json($this->window->cancel());
         }
 
@@ -86,7 +84,7 @@ class MaintenanceController extends Controller
     {
         $role = $request->user()->role ?? null;
 
-        if (!in_array($role, [Roles::SUPER_ADMIN->value, Roles::CLINIC_ADMIN->value], true)) {
+        if (! in_array($role, [Roles::SUPER_ADMIN->value, Roles::CLINIC_ADMIN->value], true)) {
             abort(403, 'Unauthorized. This action is restricted to super_admin or clinic_admin.');
         }
     }

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Concerns\LoadsLiveConnection;
+use App\Support\DashboardCache;
 use App\Support\ForecastMetrics;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -28,6 +29,7 @@ use Illuminate\Support\Str;
  *                      --client-ref-from..--client-ref-to; each gets a pet
  *                      whose species, breed, size, sex and age are copied
  *                      from a random existing pet. Names, phones and
+ *
  *                      @example.com emails are fictional.
  *
  * Generated invoices go only to pets of clients without a portal account
@@ -59,20 +61,25 @@ class SeedDemoActivity extends Command
     protected $description = 'Fill a quiet period with invoices, appointments and new clients learned from real records';
 
     private const TABLES = ['invoices', 'appointments', 'owners', 'pets'];
+
     private const CLINIC_TZ = 'Asia/Manila';
 
     private const FIRST_NAMES = ['Juan', 'Maria', 'Jose', 'Ana', 'Mark', 'Kristine', 'John Paul', 'Angelica', 'Miguel', 'Camille',
         'Paolo', 'Bea', 'Carlo', 'Nicole', 'Rafael', 'Patricia', 'Gabriel', 'Andrea', 'Joshua', 'Katrina', 'Daniel', 'Jasmine',
         'Christian', 'Erika', 'Adrian', 'Danica', 'Kevin', 'Joanna', 'Ramon', 'Liza', 'Bryan', 'Shiela', 'Francis', 'Janine',
         'Vincent', 'Aileen', 'Renz', 'Trisha', 'Nathaniel', 'Pauline'];
+
     private const LAST_NAMES = ['Santos', 'Reyes', 'Cruz', 'Bautista', 'Ocampo', 'Garcia', 'Mendoza', 'Torres', 'Tomas', 'Andrada',
         'Castillo', 'Flores', 'Villanueva', 'Ramos', 'Castro', 'Rivera', 'Aquino', 'Navarro', 'Salazar', 'Mercado', 'Domingo',
         'Gonzales', 'Lopez', 'Hernandez', 'Dela Cruz', 'Del Rosario', 'Pascual', 'Soriano', 'Valdez', 'Manalo', 'Aguilar', 'Marquez'];
+
     private const PET_NAMES = ['Bantay', 'Choco', 'Brownie', 'Mochi', 'Coco', 'Max', 'Luna', 'Bella', 'Milo', 'Snow', 'Peanut',
         'Kitkat', 'Oreo', 'Tiger', 'Shadow', 'Princess', 'Buddy', 'Lucky', 'Ginger', 'Muning', 'Whitey', 'Blackie', 'Cookie',
         'Pepper', 'Sushi', 'Toffee', 'Biscuit', 'Nala', 'Simba', 'Chowchow', 'Hachi', 'Yuki', 'Mango', 'Bruno', 'Ash'];
+
     private const STREETS = ['Rizal St.', 'Mabini St.', 'Bonifacio Ave.', 'Luna St.', 'Del Pilar St.', 'Aguinaldo St.',
         'Quezon Ave.', 'Burgos St.', 'Jacinto St.', 'Magsaysay Blvd.', 'Roxas St.', 'Osmena St.'];
+
     private const CITIES = [['Quezon City', 'Metro Manila', '1100'], ['Marikina', 'Metro Manila', '1800'], ['San Juan', 'Metro Manila', '1500'],
         ['Manila', 'Metro Manila', '1000'], ['Makati City', 'Metro Manila', '1200'], ['Pasig', 'Metro Manila', '1600'],
         ['Mandaluyong', 'Metro Manila', '1550'], ['Caloocan', 'Metro Manila', '1400'], ['San Jose del Monte City', 'Bulacan', '3023'],
@@ -84,8 +91,9 @@ class SeedDemoActivity extends Command
     {
         $connection = 'mysql';
         if ($this->option('live')) {
-            if (!$this->loadLiveEnv()) {
+            if (! $this->loadLiveEnv()) {
                 $this->explainMissingLiveConfig();
+
                 return self::FAILURE;
             }
             $connection = 'live';
@@ -94,8 +102,9 @@ class SeedDemoActivity extends Command
         $schema = Schema::connection($connection);
 
         foreach (self::TABLES as $table) {
-            if (!$schema->hasColumn($table, 'synthetic_batch')) {
+            if (! $schema->hasColumn($table, 'synthetic_batch')) {
                 $this->error("{$table}.synthetic_batch is missing. Run the migrations on this database first.");
+
                 return self::FAILURE;
             }
         }
@@ -126,6 +135,7 @@ class SeedDemoActivity extends Command
             ->get(['id', 'report_type', 'subtotal', 'discount_type', 'discount_value', 'tax_rate', 'total', 'payment_method']);
         if ($refInvoices->isEmpty()) {
             $this->error('No finalized invoices in the reference period.');
+
             return self::FAILURE;
         }
         $lambda = $refInvoices->count() / $refDays;
@@ -183,7 +193,7 @@ class SeedDemoActivity extends Command
             foreach ($week['days'] as $day) {
                 $nClients = ForecastMetrics::poisson($clientRate, fn () => $this->uniform());
                 $nInvoices = ForecastMetrics::poisson($lambda * $weights[$day->dayOfWeekIso % 7 + 1], fn () => $this->uniform());
-                if (!$weeks[$key]['filled']) {
+                if (! $weeks[$key]['filled']) {
                     continue;
                 }
 
@@ -195,9 +205,9 @@ class SeedDemoActivity extends Command
                     $ownerUuid = (string) Str::uuid();
                     $owners[] = [
                         'clinic_id' => $clinicId, 'uuid' => $ownerUuid, 'name' => "{$first} {$last}",
-                        'phone' => '09' . str_pad((string) $this->int(100000000, 999999999), 9, '0', STR_PAD_LEFT),
-                        'email' => strtolower(str_replace(' ', '', $first) . '.' . str_replace(' ', '', $last)) . '.' . $this->int(10, 99) . '@example.com',
-                        'address' => $this->int(1, 250) . ' ' . $this->pick(self::STREETS), 'city' => $city, 'province' => $province, 'zip' => $zip,
+                        'phone' => '09'.str_pad((string) $this->int(100000000, 999999999), 9, '0', STR_PAD_LEFT),
+                        'email' => strtolower(str_replace(' ', '', $first).'.'.str_replace(' ', '', $last)).'.'.$this->int(10, 99).'@example.com',
+                        'address' => $this->int(1, 250).' '.$this->pick(self::STREETS), 'city' => $city, 'province' => $province, 'zip' => $zip,
                         'is_seeded' => 1, 'synthetic_batch' => $batch, 'created_at' => $stamp, 'updated_at' => $stamp,
                     ];
                     $t = $petTemplates->isNotEmpty() ? $petTemplates[$this->int(0, $petTemplates->count() - 1)] : null;
@@ -210,10 +220,10 @@ class SeedDemoActivity extends Command
                         'weight_unit' => $t->weight_unit ?? 'kg', 'status' => $t->status ?? 'Active',
                         'synthetic_batch' => $batch, 'created_at' => $stamp, 'updated_at' => $stamp,
                     ];
-                    $pool[] = 'uuid:' . $petUuid;
+                    $pool[] = 'uuid:'.$petUuid;
                 }
 
-                if (!$pool) {
+                if (! $pool) {
                     continue;
                 }
                 for ($n = 0; $n < $nInvoices; $n++) {
@@ -299,6 +309,7 @@ class SeedDemoActivity extends Command
 
         if ($this->option('dry-run')) {
             $this->warn('Dry run: nothing written.');
+
             return self::SUCCESS;
         }
 
@@ -312,6 +323,7 @@ class SeedDemoActivity extends Command
                 $db->table('pets')->insert(array_map(function ($p) use ($ownerIds) {
                     $p['owner_id'] = $ownerIds[$p['owner_uuid']];
                     unset($p['owner_uuid']);
+
                     return $p;
                 }, $chunk));
             }
@@ -322,6 +334,7 @@ class SeedDemoActivity extends Command
                 $db->table('appointments')->insert(array_map(function ($a) use ($resolvePet) {
                     $a['pet_id'] = $resolvePet($a['pet']);
                     unset($a['pet']);
+
                     return $a;
                 }, $chunk));
             }
@@ -333,6 +346,7 @@ class SeedDemoActivity extends Command
                     $i['pet_id'] = $resolvePet($i['pet']);
                     $i['appointment_id'] = $apptIds[$i['appointment_uuid']];
                     unset($i['pet'], $i['appointment_uuid']);
+
                     return $i;
                 }, $chunk));
             }
@@ -343,14 +357,15 @@ class SeedDemoActivity extends Command
                 $db->table('invoice_items')->insert(array_map(function ($it) use ($invIds) {
                     $it['invoice_id'] = $invIds[$it['invoice_uuid']];
                     unset($it['invoice_uuid']);
+
                     return $it;
                 }, $chunk));
             }
         });
 
         $this->clearDashboardCache($db, $connection);
-        $this->info('Written: ' . count($invoices) . ' invoices, ' . count($appointments) . ' appointments, '
-            . count($owners) . ' clients, ' . count($pets) . " pets, labelled {$batch}.");
+        $this->info('Written: '.count($invoices).' invoices, '.count($appointments).' appointments, '
+            .count($owners).' clients, '.count($pets)." pets, labelled {$batch}.");
 
         return self::SUCCESS;
     }
@@ -365,7 +380,7 @@ class SeedDemoActivity extends Command
             'pets' => $db->table('pets')->where('synthetic_batch', $batch)->count(),
             'clients' => $db->table('owners')->where('synthetic_batch', $batch)->count(),
         ];
-        if (!$this->option('dry-run')) {
+        if (! $this->option('dry-run')) {
             $db->transaction(function () use ($db, $batch, $invoiceIds) {
                 foreach ($invoiceIds->chunk(1000) as $ids) {
                     $db->table('invoice_items')->whereIn('invoice_id', $ids)->delete();
@@ -378,7 +393,7 @@ class SeedDemoActivity extends Command
             $this->clearDashboardCache($db, $connection);
         }
         $this->info(($this->option('dry-run') ? 'Would delete: ' : 'Deleted: ')
-            . collect($counts)->map(fn ($n, $k) => "{$n} {$k}")->implode(', ') . " of batch {$batch} on [{$connection}].");
+            .collect($counts)->map(fn ($n, $k) => "{$n} {$k}")->implode(', ')." of batch {$batch} on [{$connection}].");
 
         return self::SUCCESS;
     }
@@ -387,7 +402,7 @@ class SeedDemoActivity extends Command
     private function clearDashboardCache($db, string $connection): void
     {
         if ($connection === 'mysql') {
-            \App\Support\DashboardCache::forgetEverywhere();
+            DashboardCache::forgetEverywhere();
         }
         if (Schema::connection($connection)->hasTable('cache')) {
             $db->table('cache')->where('key', 'like', '%dashboard%')->delete();
@@ -398,13 +413,14 @@ class SeedDemoActivity extends Command
     {
         $last = $db->table('invoices')->where('invoice_number', 'like', "VB-{$month}-%")
             ->orderByDesc('invoice_number')->value('invoice_number');
+
         return $last ? (int) substr($last, -4) : 0;
     }
 
     /** A moment during clinic hours (08:00–17:59 Manila) on the given day, in the app's timezone. */
     private function stamp(CarbonImmutable $day, string $tz): string
     {
-        return CarbonImmutable::parse($day->toDateString() . ' 08:00:00', self::CLINIC_TZ)
+        return CarbonImmutable::parse($day->toDateString().' 08:00:00', self::CLINIC_TZ)
             ->addMinutes($this->int(0, 599))->setTimezone($tz)->toDateTimeString();
     }
 
@@ -422,6 +438,7 @@ class SeedDemoActivity extends Command
     private function uniform(): float
     {
         $this->randState = (1664525 * $this->randState + 1013904223) % 4294967296;
+
         return ($this->randState + 1) / 4294967297;
     }
 }

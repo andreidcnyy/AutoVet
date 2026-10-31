@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use App\Traits\HasClinic;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryUsageHistory extends Model
 {
@@ -31,8 +30,8 @@ class InventoryUsageHistory extends Model
 
     protected $casts = [
         'quantity_used' => 'decimal:2',
-        'unit_price'    => 'decimal:2',
-        'usage_date'    => 'date',
+        'unit_price' => 'decimal:2',
+        'usage_date' => 'date',
     ];
 
     public function inventory()

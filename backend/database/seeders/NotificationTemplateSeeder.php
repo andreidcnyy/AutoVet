@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Clinic;
 use App\Models\NotificationTemplate;
+use Illuminate\Database\Seeder;
 
 class NotificationTemplateSeeder extends Seeder
 {
@@ -63,7 +64,7 @@ class NotificationTemplateSeeder extends Seeder
             ],
         ];
 
-        $clinic = \App\Models\Clinic::first();
+        $clinic = Clinic::first();
 
         foreach ($templates as $template) {
             NotificationTemplate::updateOrCreate(

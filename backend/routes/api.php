@@ -1,43 +1,55 @@
 <?php
 
-use App\Http\Controllers\InventoryForecastController;
-use App\Http\Controllers\ImportController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Enums\Roles;
-
-
-use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\AiDiagnosisController;
+use App\Http\Controllers\Api\SuperAdminDashboardController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentStatusController;
+use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackupController;
+use App\Http\Controllers\BreedController;
+use App\Http\Controllers\ClientNotificationController;
+use App\Http\Controllers\CmsContentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\ImportController;
+use App\Http\Controllers\InventoryCategoryController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InventoryForecastController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\LowStockReportController;
+use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\NewCountsController;
 use App\Http\Controllers\NotificationTemplateController;
 use App\Http\Controllers\PatientOwnerController;
+use App\Http\Controllers\PatientReportController;
+use App\Http\Controllers\PetController;
+use App\Http\Controllers\PetSizeCategoryController;
+use App\Http\Controllers\PortalUserAdminController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportAnalyticsController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\ServiceCategoryController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SpeciesController;
+use App\Http\Controllers\SystemAnnouncementController;
+use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VetScheduleController;
-use App\Http\Controllers\CmsContentController;
-use App\Http\Controllers\ClientNotificationController;
-use App\Http\Controllers\AuditLogController;
-use App\Http\Controllers\BackupController;
-use App\Http\Controllers\ArchiveController;
-use App\Http\Controllers\SalesReportController;
-use App\Http\Controllers\PatientReportController;
-use App\Http\Controllers\LowStockReportController;
-
-use App\Http\Controllers\PetSizeCategoryController;
-use App\Http\Controllers\UnitOfMeasureController;
-use App\Http\Controllers\SpeciesController;
-use App\Http\Controllers\BreedController;
+use App\Http\Controllers\WalkInController;
 use App\Http\Controllers\WeightRangeController;
 use App\Models\Owner;
-use App\Http\Controllers\ReviewController;
+use App\Services\SyncService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 
 // ---------------------------------------------------------------------------
 // Public-facing routes (Login, Registration, etc.)
@@ -46,13 +58,12 @@ use App\Http\Controllers\ReviewController;
 // Public reviews — landing page
 Route::get('/reviews/public', [ReviewController::class, 'publicIndex'])->middleware('throttle:60,1');
 
-Route::post('/auth/google',     [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
-Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
-Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/auth/google', [GoogleAuthController::class, 'handle'])->middleware('throttle:10,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
-Route::post('/password/reset',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:10,1')->name('registration.verify');
-
 
 // Liveness only. It used to report whether the database was reachable (and
 // counted every staff account to find out), which is nobody else's business.
@@ -63,10 +74,10 @@ Route::get('/status', function () {
 // Maintenance window — public so the portal can show its countdown during the
 // warning period, before anything is blocked, and on the maintenance page
 // itself where the session may already be gone.
-Route::get('/maintenance-status', [\App\Http\Controllers\MaintenanceController::class, 'status']);
+Route::get('/maintenance-status', [MaintenanceController::class, 'status']);
 
 // Public system announcements (used by landing page — no auth required)
-Route::get('/public/system-announcements', [\App\Http\Controllers\SystemAnnouncementController::class, 'active'])
+Route::get('/public/system-announcements', [SystemAnnouncementController::class, 'active'])
     ->middleware('throttle:60,1');
 
 // ---------------------------------------------------------------------------
@@ -78,72 +89,74 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // -----------------------------------------------------------------------
     // User profile
     // -----------------------------------------------------------------------
-    Route::get('/user',     function (Request $request) { return $request->user(); });
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 
     // WebSocket private-channel authorization for the SPAs (Bearer-token auth).
     // The frontends point Echo at /api/broadcasting/auth; this resolves it under
     // the Sanctum guard instead of Laravel's default session-based route.
     Route::post('/broadcasting/auth', function (Request $request) {
-        return \Illuminate\Support\Facades\Broadcast::auth($request);
+        return Broadcast::auth($request);
     });
 
-    Route::get('/vets',     [UserController::class, 'vets']);
-    Route::get('/new-counts', [\App\Http\Controllers\NewCountsController::class, 'counts'])->middleware('role:' . implode(',', Roles::adminRoles()));
+    Route::get('/vets', [UserController::class, 'vets']);
+    Route::get('/new-counts', [NewCountsController::class, 'counts'])->middleware('role:'.implode(',', Roles::adminRoles()));
     Route::post('/change-password', [AuthController::class, 'changePassword']);
-    Route::post('/logout',          [AuthController::class, 'logout']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/profile',          [ProfileController::class, 'show']);
-    Route::put('/profile',          [ProfileController::class, 'update']);
-    Route::delete('/profile',       [ProfileController::class, 'deleteAccount']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile', [ProfileController::class, 'deleteAccount']);
     Route::post('/profile/recover', [ProfileController::class, 'recoverAccount']);
     Route::post('/profile/complete', [ProfileController::class, 'completeProfile']);
-    Route::get('/profile/devices',              [ProfileController::class, 'devices']);
-    Route::delete('/profile/devices/{id}',      [ProfileController::class, 'revokeDevice']);
-    Route::delete('/profile/devices',           [ProfileController::class, 'revokeOtherDevices']);
+    Route::get('/profile/devices', [ProfileController::class, 'devices']);
+    Route::delete('/profile/devices/{id}', [ProfileController::class, 'revokeDevice']);
+    Route::delete('/profile/devices', [ProfileController::class, 'revokeOtherDevices']);
 
     // -----------------------------------------------------------------------
     // Reviews (portal users)
     // -----------------------------------------------------------------------
     Route::get('/portal/reviews/pending', [ReviewController::class, 'pending']);
-    Route::post('/portal/reviews',        [ReviewController::class, 'store']);
+    Route::post('/portal/reviews', [ReviewController::class, 'store']);
 
     // -----------------------------------------------------------------------
     // Dashboard & Metrics
     // -----------------------------------------------------------------------
-    Route::get('/portal/overview',                 [DashboardController::class, 'getPortalOverview']);
-    Route::get('/dashboard/notifications',         [DashboardController::class, 'getNotifications']);
+    Route::get('/portal/overview', [DashboardController::class, 'getPortalOverview']);
+    Route::get('/dashboard/notifications', [DashboardController::class, 'getNotifications']);
     Route::post('/dashboard/notifications/mark-all-read', [DashboardController::class, 'markAllRead']);
     Route::post('/dashboard/notifications/clear-all', [DashboardController::class, 'clearAll']);
     Route::post('/dashboard/notifications/{id}/dismiss', [DashboardController::class, 'dismissNotification']);
-    Route::get('/dashboard/forecast-status',       [DashboardController::class, 'getForecastStatus']);
+    Route::get('/dashboard/forecast-status', [DashboardController::class, 'getForecastStatus']);
 
     // Triggering a forecast run is a write action — keep it on admin roles.
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
-        Route::post('/dashboard/run-forecast',         [DashboardController::class, 'runForecastSync']);
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('/dashboard/run-forecast', [DashboardController::class, 'runForecastSync']);
     });
 
     // Read-only dashboard & metrics — includes front-desk staff, who are shown
     // the Dashboard and Analytics nav items and need these to render.
-    Route::middleware('role:' . implode(',', Roles::dashboardRoles()))->group(function () {
+    Route::middleware('role:'.implode(',', Roles::dashboardRoles()))->group(function () {
         // Everything the dashboard shows, one request, each section isolated.
-        Route::get('/dashboard/summary',               [DashboardController::class, 'summary']);
-        Route::get('/dashboard/overview',              [DashboardController::class, 'getOverview']);
-        Route::get('/dashboard/stats',                 [DashboardController::class, 'getStats']);
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+        Route::get('/dashboard/overview', [DashboardController::class, 'getOverview']);
+        Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
         Route::get('/dashboard/inventory-consumption', [DashboardController::class, 'getInventoryConsumption']);
-        Route::get('/dashboard/inventory-forecast',    [DashboardController::class, 'getInventoryForecast']);
-        Route::get('/dashboard/appointment-forecast',  [DashboardController::class, 'getAppointmentForecast']);
+        Route::get('/dashboard/inventory-forecast', [DashboardController::class, 'getInventoryForecast']);
+        Route::get('/dashboard/appointment-forecast', [DashboardController::class, 'getAppointmentForecast']);
         Route::get('/dashboard/patient-visit-predictions', [DashboardController::class, 'getPatientVisitPredictions']);
-        Route::get('/dashboard/appointments/today',    [DashboardController::class, 'appointmentsToday']);
+        Route::get('/dashboard/appointments/today', [DashboardController::class, 'appointmentsToday']);
         Route::get('/dashboard/appointments/upcoming', [DashboardController::class, 'appointmentsUpcoming']);
-        Route::get('/dashboard/pets',                  [DashboardController::class, 'petsList']);
-        Route::get('/dashboard/clients',               [DashboardController::class, 'clientsList']);
-        Route::get('/dashboard/appointments/cancelled',[DashboardController::class, 'appointmentsCancelled']);
-        Route::get('/dashboard/analytics/monthly-clients',   [DashboardController::class, 'getMonthlyClients']);
+        Route::get('/dashboard/pets', [DashboardController::class, 'petsList']);
+        Route::get('/dashboard/clients', [DashboardController::class, 'clientsList']);
+        Route::get('/dashboard/appointments/cancelled', [DashboardController::class, 'appointmentsCancelled']);
+        Route::get('/dashboard/analytics/monthly-clients', [DashboardController::class, 'getMonthlyClients']);
         Route::get('/dashboard/analytics/items-by-category', [DashboardController::class, 'getItemsByCategory']);
         Route::get('/dashboard/analytics/services-by-category', [DashboardController::class, 'getServicesByCategory']);
     });
     // Each call is a paid request to the AI provider.
-    Route::post('/ai/clinical-support', [\App\Http\Controllers\AiDiagnosisController::class, 'getSuggestions'])
+    Route::post('/ai/clinical-support', [AiDiagnosisController::class, 'getSuggestions'])
         ->middleware('throttle:10,1');
 
     // -----------------------------------------------------------------------
@@ -153,43 +166,43 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     Route::post('appointments/{appointment}/decline', [AppointmentStatusController::class, 'decline']);
     Route::post('appointments/{appointment}/complete', [AppointmentStatusController::class, 'complete']);
     Route::post('appointments/{appointment}/remind', [AppointmentStatusController::class, 'remind']);
-    Route::get('/appointments/availability',      [\App\Http\Controllers\AppointmentController::class, 'getAvailability']);
+    Route::get('/appointments/availability', [AppointmentController::class, 'getAvailability']);
     Route::get('/appointments/summary', [AppointmentController::class, 'summary']);
     Route::apiResource('appointments', AppointmentController::class);
     // Inventory — read open to all clinic staff, writes restricted to admin
     // roles. Portal owners hold Sanctum tokens too, so "logged in" alone is
     // not enough: without the role check they could read every item, price
     // and supplier.
-    Route::middleware('role:' . implode(',', Roles::dashboardRoles()))->group(function () {
-        Route::get('inventory/low-stock',                    [InventoryController::class, 'lowStock']);
-        Route::get('inventory/batch-lot-options',            [InventoryController::class, 'batchLotOptions']);
-        Route::get('inventory/{inventory}/transactions',     [InventoryController::class, 'transactions']);
-        Route::get('inventory/{inventory}/usage',            [InventoryController::class, 'usage']);
-        Route::get('inventory/{inventory}/batches',          [InventoryController::class, 'batches']);
-        Route::get('inventory/{inventory}/forecast',         [\App\Http\Controllers\InventoryForecastController::class, 'forecast']);
-        Route::get('inventory/{inventory}/forecast/saved',   [\App\Http\Controllers\InventoryForecastController::class, 'savedForecast']);
-        Route::get('inventory/{inventory}/forecast/history', [\App\Http\Controllers\InventoryForecastController::class, 'forecastHistory']);
-        Route::get('inventory',                              [InventoryController::class, 'index']);
-        Route::get('inventory/{inventory}',                  [InventoryController::class, 'show']);
+    Route::middleware('role:'.implode(',', Roles::dashboardRoles()))->group(function () {
+        Route::get('inventory/low-stock', [InventoryController::class, 'lowStock']);
+        Route::get('inventory/batch-lot-options', [InventoryController::class, 'batchLotOptions']);
+        Route::get('inventory/{inventory}/transactions', [InventoryController::class, 'transactions']);
+        Route::get('inventory/{inventory}/usage', [InventoryController::class, 'usage']);
+        Route::get('inventory/{inventory}/batches', [InventoryController::class, 'batches']);
+        Route::get('inventory/{inventory}/forecast', [InventoryForecastController::class, 'forecast']);
+        Route::get('inventory/{inventory}/forecast/saved', [InventoryForecastController::class, 'savedForecast']);
+        Route::get('inventory/{inventory}/forecast/history', [InventoryForecastController::class, 'forecastHistory']);
+        Route::get('inventory', [InventoryController::class, 'index']);
+        Route::get('inventory/{inventory}', [InventoryController::class, 'show']);
     });
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
         Route::post('inventory/{inventory}/accept-forecast', [InventoryController::class, 'acceptForecastRecommendation']);
-        Route::post('inventory',                             [InventoryController::class, 'store']);
-        Route::post('inventory/{inventory}/receive',         [InventoryController::class, 'receiveStock']);
-        Route::put('inventory/{inventory}',                  [InventoryController::class, 'update']);
-        Route::patch('inventory/{inventory}',                [InventoryController::class, 'update']);
-        Route::delete('inventory/{inventory}',               [InventoryController::class, 'destroy']);
+        Route::post('inventory', [InventoryController::class, 'store']);
+        Route::post('inventory/{inventory}/receive', [InventoryController::class, 'receiveStock']);
+        Route::put('inventory/{inventory}', [InventoryController::class, 'update']);
+        Route::patch('inventory/{inventory}', [InventoryController::class, 'update']);
+        Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy']);
     });
 
-    Route::apiResource('invoices',        InvoiceController::class);
-    Route::apiResource('reports',         InvoiceController::class)->parameters(['reports' => 'invoice']);
-    Route::get('services',           [ServiceController::class, 'index']);
+    Route::apiResource('invoices', InvoiceController::class);
+    Route::apiResource('reports', InvoiceController::class)->parameters(['reports' => 'invoice']);
+    Route::get('services', [ServiceController::class, 'index']);
     Route::get('services/{service}', [ServiceController::class, 'show']);
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
-        Route::post('services',                [ServiceController::class, 'store']);
-        Route::put('services/{service}',       [ServiceController::class, 'update']);
-        Route::patch('services/{service}',     [ServiceController::class, 'update']);
-        Route::delete('services/{service}',    [ServiceController::class, 'destroy']);
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('services', [ServiceController::class, 'store']);
+        Route::put('services/{service}', [ServiceController::class, 'update']);
+        Route::patch('services/{service}', [ServiceController::class, 'update']);
+        Route::delete('services/{service}', [ServiceController::class, 'destroy']);
     });
 
     Route::apiResource('medical-records', MedicalRecordController::class);
@@ -197,26 +210,26 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // Staff only: it answers "who owns this phone/email" for any client, which
     // a portal user must not be able to ask.
     Route::get('/owners/check-duplicate', [PatientOwnerController::class, 'checkDuplicate'])
-        ->middleware('role:' . implode(',', Roles::dashboardRoles()));
+        ->middleware('role:'.implode(',', Roles::dashboardRoles()));
     Route::apiResource('owners', PatientOwnerController::class);
-    Route::apiResource('pets',            \App\Http\Controllers\PetController::class);
+    Route::apiResource('pets', PetController::class);
 
     // Walk-in Registration — clinic staff only. It creates an owner, a pet and
     // an already-approved appointment, so a portal owner must not reach it.
-    Route::post('/walk-in', [\App\Http\Controllers\WalkInController::class, 'register'])
-        ->middleware('role:' . implode(',', Roles::dashboardRoles()));
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
-        Route::post('vet-schedules/bulk',       [VetScheduleController::class, 'bulkStore']);
-        Route::post('vet-schedules',            [VetScheduleController::class, 'store']);
-        Route::put('vet-schedules/{vet_schedule}',    [VetScheduleController::class, 'update']);
-        Route::patch('vet-schedules/{vet_schedule}',  [VetScheduleController::class, 'update']);
+    Route::post('/walk-in', [WalkInController::class, 'register'])
+        ->middleware('role:'.implode(',', Roles::dashboardRoles()));
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('vet-schedules/bulk', [VetScheduleController::class, 'bulkStore']);
+        Route::post('vet-schedules', [VetScheduleController::class, 'store']);
+        Route::put('vet-schedules/{vet_schedule}', [VetScheduleController::class, 'update']);
+        Route::patch('vet-schedules/{vet_schedule}', [VetScheduleController::class, 'update']);
         Route::delete('vet-schedules/{vet_schedule}', [VetScheduleController::class, 'destroy']);
     });
-    Route::get('vet-schedules',                    [VetScheduleController::class, 'index']);
-    Route::get('vet-schedules/{vet_schedule}',     [VetScheduleController::class, 'show']);
-    
+    Route::get('vet-schedules', [VetScheduleController::class, 'index']);
+    Route::get('vet-schedules/{vet_schedule}', [VetScheduleController::class, 'show']);
+
     // Data Import Routes — admin/staff only
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->prefix('import')->group(function () {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->prefix('import')->group(function () {
         Route::post('/owners', [ImportController::class, 'importOwners']);
         Route::post('/appointments', [ImportController::class, 'importAppointments']);
         Route::post('/invoices', [ImportController::class, 'importInvoices']);
@@ -227,125 +240,126 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // -----------------------------------------------------------------------
     // Client Notifications
     // -----------------------------------------------------------------------
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
         Route::apiResource('client-notifications/templates', NotificationTemplateController::class);
-        Route::get('/client-notifications',              [ClientNotificationController::class, 'index']);
+        Route::get('/client-notifications', [ClientNotificationController::class, 'index']);
         // These send real email; a stuck button or a script should not be
         // able to flood clients' inboxes.
         Route::middleware('throttle:30,1')->group(function () {
-            Route::post('/client-notifications/send',        [ClientNotificationController::class, 'send']);
+            Route::post('/client-notifications/send', [ClientNotificationController::class, 'send']);
             Route::post('/client-notifications/send-invoice', [ClientNotificationController::class, 'sendInvoice']);
-            Route::post('/owners/{ownerId}/warn',             [ClientNotificationController::class, 'sendWarning']);
+            Route::post('/owners/{ownerId}/warn', [ClientNotificationController::class, 'sendWarning']);
         });
     });
 
-    Route::get('/notifications',                  [ClientNotificationController::class, 'portalIndex']);
-    Route::put('/notifications/{id}',             [ClientNotificationController::class, 'markAsRead']);
-    Route::get('/notifications/warnings/unread',  [ClientNotificationController::class, 'unreadWarnings']);
+    Route::get('/notifications', [ClientNotificationController::class, 'portalIndex']);
+    Route::put('/notifications/{id}', [ClientNotificationController::class, 'markAsRead']);
+    Route::get('/notifications/warnings/unread', [ClientNotificationController::class, 'unreadWarnings']);
 
     // Synchronization Trigger — admin only
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->post('/sync/trigger', function (\App\Services\SyncService $syncService) {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->post('/sync/trigger', function (SyncService $syncService) {
         $syncService->pushToPortal();
+
         return response()->json(['status' => 'triggered']);
     });
 
     // -----------------------------------------------------------------------
     // Master Data Management
     // -----------------------------------------------------------------------
-    Route::get('/inventory-categories', [\App\Http\Controllers\InventoryCategoryController::class, 'index']);
-    Route::get('/service-categories',    [\App\Http\Controllers\ServiceCategoryController::class, 'index']);
+    Route::get('/inventory-categories', [InventoryCategoryController::class, 'index']);
+    Route::get('/service-categories', [ServiceCategoryController::class, 'index']);
 
     Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->only(['index', 'show']);
-    Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->only(['index', 'show']);
-    Route::apiResource('species',             SpeciesController::class)->only(['index', 'show']);
-    Route::apiResource('breeds',              BreedController::class)->only(['index', 'show']);
-    Route::apiResource('weight-ranges',       WeightRangeController::class)->only(['index', 'show']);
+    Route::apiResource('units-of-measure', UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->only(['index', 'show']);
+    Route::apiResource('species', SpeciesController::class)->only(['index', 'show']);
+    Route::apiResource('breeds', BreedController::class)->only(['index', 'show']);
+    Route::apiResource('weight-ranges', WeightRangeController::class)->only(['index', 'show']);
 
     // Master Data Write Access - Admin only
-    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+    Route::group(['middleware' => 'role:'.implode(',', Roles::adminRoles())], function () {
         Route::apiResource('pet-size-categories', PetSizeCategoryController::class)->except(['index', 'show']);
-        Route::apiResource('units-of-measure',    UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->except(['index', 'show']);
-        Route::apiResource('species',             SpeciesController::class)->except(['index', 'show']);
-        Route::apiResource('breeds',              BreedController::class)->except(['index', 'show']);
-        Route::apiResource('weight-ranges',       WeightRangeController::class)->except(['index', 'show']);
-        Route::apiResource('inventory-categories', \App\Http\Controllers\InventoryCategoryController::class)->except(['index']);
-        Route::apiResource('service-categories',    \App\Http\Controllers\ServiceCategoryController::class)->except(['index']);
+        Route::apiResource('units-of-measure', UnitOfMeasureController::class)->parameters(['units-of-measure' => 'unitOfMeasure'])->except(['index', 'show']);
+        Route::apiResource('species', SpeciesController::class)->except(['index', 'show']);
+        Route::apiResource('breeds', BreedController::class)->except(['index', 'show']);
+        Route::apiResource('weight-ranges', WeightRangeController::class)->except(['index', 'show']);
+        Route::apiResource('inventory-categories', InventoryCategoryController::class)->except(['index']);
+        Route::apiResource('service-categories', ServiceCategoryController::class)->except(['index']);
     });
 
     // Settings — read is open to all authenticated users, write is admin only
     Route::get('/settings', [SettingController::class, 'index']);
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
         Route::match(['post', 'put'], '/settings', [SettingController::class, 'update']);
-        Route::put('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'update']);
+        Route::put('/maintenance', [MaintenanceController::class, 'update']);
     });
 
     // Content Management — read open to all authenticated, writes admin only
     Route::apiResource('cms-content', CmsContentController::class)->only(['index', 'show']);
-    Route::middleware('role:' . implode(',', Roles::adminRoles()))->group(function () {
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
         Route::apiResource('cms-content', CmsContentController::class)->except(['index', 'show']);
     });
 
     // -----------------------------------------------------------------------
     // System Administration
     // -----------------------------------------------------------------------
-    Route::get('/system-announcements', [\App\Http\Controllers\SystemAnnouncementController::class, 'active']);
+    Route::get('/system-announcements', [SystemAnnouncementController::class, 'active']);
 
     Route::group(['middleware' => 'role:super_admin'], function () {
-        Route::get('/super-admin/stats', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'stats']);
-        Route::get('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinics']);
-        Route::post('/super-admin/clinics', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeClinic']);
-        Route::put('/super-admin/clinics/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateClinic']);
-        Route::delete('/super-admin/clinics/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'destroyClinic']);
-        Route::post('/super-admin/clinics/{clinic}/toggle-status', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'toggleStatus']);
-        
+        Route::get('/super-admin/stats', [SuperAdminDashboardController::class, 'stats']);
+        Route::get('/super-admin/clinics', [SuperAdminDashboardController::class, 'clinics']);
+        Route::post('/super-admin/clinics', [SuperAdminDashboardController::class, 'storeClinic']);
+        Route::put('/super-admin/clinics/{clinic}', [SuperAdminDashboardController::class, 'updateClinic']);
+        Route::delete('/super-admin/clinics/{clinic}', [SuperAdminDashboardController::class, 'destroyClinic']);
+        Route::post('/super-admin/clinics/{clinic}/toggle-status', [SuperAdminDashboardController::class, 'toggleStatus']);
+
         // Super Admin Powers
-        Route::get('/super-admin/clinics/{clinic}/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'clinicAdmins']);
-        Route::post('/super-admin/clinics/{clinic}/users', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeClinicUser']);
-        Route::post('/super-admin/clinics/{clinic}/admins/{admin}/reset-password', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'resetClinicAdminPassword']);
-        Route::post('/super-admin/impersonate/{clinic}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'impersonate']);
-        Route::get('/super-admin/system-logs', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'systemLogs']);
-        Route::get('/super-admin/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'superAdmins']);
-        Route::post('/super-admin/admins', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeSuperAdmin']);
-        Route::get('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'announcements']);
-        Route::post('/super-admin/announcements', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'storeAnnouncement']);
-        Route::put('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'updateAnnouncement']);
-        Route::delete('/super-admin/announcements/{announcement}', [\App\Http\Controllers\Api\SuperAdminDashboardController::class, 'destroyAnnouncement']);
+        Route::get('/super-admin/clinics/{clinic}/admins', [SuperAdminDashboardController::class, 'clinicAdmins']);
+        Route::post('/super-admin/clinics/{clinic}/users', [SuperAdminDashboardController::class, 'storeClinicUser']);
+        Route::post('/super-admin/clinics/{clinic}/admins/{admin}/reset-password', [SuperAdminDashboardController::class, 'resetClinicAdminPassword']);
+        Route::post('/super-admin/impersonate/{clinic}', [SuperAdminDashboardController::class, 'impersonate']);
+        Route::get('/super-admin/system-logs', [SuperAdminDashboardController::class, 'systemLogs']);
+        Route::get('/super-admin/admins', [SuperAdminDashboardController::class, 'superAdmins']);
+        Route::post('/super-admin/admins', [SuperAdminDashboardController::class, 'storeSuperAdmin']);
+        Route::get('/super-admin/announcements', [SuperAdminDashboardController::class, 'announcements']);
+        Route::post('/super-admin/announcements', [SuperAdminDashboardController::class, 'storeAnnouncement']);
+        Route::put('/super-admin/announcements/{announcement}', [SuperAdminDashboardController::class, 'updateAnnouncement']);
+        Route::delete('/super-admin/announcements/{announcement}', [SuperAdminDashboardController::class, 'destroyAnnouncement']);
     });
 
-    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+    Route::group(['middleware' => 'role:'.implode(',', Roles::adminRoles())], function () {
         // Audit Logs
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
         // Reviews & Feedback
-        Route::get('/reviews',                     [ReviewController::class, 'index']);
-        Route::patch('/reviews/{review}/approve',  [ReviewController::class, 'approve']);
-        Route::patch('/reviews/{review}/feature',  [ReviewController::class, 'feature']);
-        Route::delete('/reviews/{review}',         [ReviewController::class, 'destroy']);
+        Route::get('/reviews', [ReviewController::class, 'index']);
+        Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve']);
+        Route::patch('/reviews/{review}/feature', [ReviewController::class, 'feature']);
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 
         // Backup & Restore
-        Route::get('/backups',                     [BackupController::class, 'index']);
-        Route::post('/backups',                    [BackupController::class, 'create']);
+        Route::get('/backups', [BackupController::class, 'index']);
+        Route::post('/backups', [BackupController::class, 'create']);
         Route::get('/backups/download/{filename}', [BackupController::class, 'download']);
-        Route::delete('/backups/{filename}',       [BackupController::class, 'destroy']);
+        Route::delete('/backups/{filename}', [BackupController::class, 'destroy']);
 
         // Archive & Recovery
-        Route::get('/archives/portal-users/pending',          [ArchiveController::class, 'pendingDeletions']);
+        Route::get('/archives/portal-users/pending', [ArchiveController::class, 'pendingDeletions']);
         Route::post('/archives/portal-users/{id}/cancel-deletion', [ArchiveController::class, 'cancelPendingDeletion']);
-        Route::get('/archives/{type}',              [ArchiveController::class, 'index']);
+        Route::get('/archives/{type}', [ArchiveController::class, 'index']);
         Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore']);
         Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete']);
 
         // Portal User Management (suspend / deactivate / reactivate)
-        Route::get('/portal-users',                            [\App\Http\Controllers\PortalUserAdminController::class, 'index']);
-        Route::post('/portal-users/{portalUser}/suspend',      [\App\Http\Controllers\PortalUserAdminController::class, 'suspend']);
-        Route::post('/portal-users/{portalUser}/deactivate',   [\App\Http\Controllers\PortalUserAdminController::class, 'deactivate']);
-        Route::post('/portal-users/{portalUser}/reactivate',   [\App\Http\Controllers\PortalUserAdminController::class, 'reactivate']);
+        Route::get('/portal-users', [PortalUserAdminController::class, 'index']);
+        Route::post('/portal-users/{portalUser}/suspend', [PortalUserAdminController::class, 'suspend']);
+        Route::post('/portal-users/{portalUser}/deactivate', [PortalUserAdminController::class, 'deactivate']);
+        Route::post('/portal-users/{portalUser}/reactivate', [PortalUserAdminController::class, 'reactivate']);
     });
 
     // -----------------------------------------------------------------------
     // User Management — Admin & Vet Access
     // -----------------------------------------------------------------------
-    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+    Route::group(['middleware' => 'role:'.implode(',', Roles::adminRoles())], function () {
         Route::apiResource('users', UserController::class);
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
     });
@@ -353,16 +367,16 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // -----------------------------------------------------------------------
     // Reporting
     // -----------------------------------------------------------------------
-    Route::group(['middleware' => 'role:' . implode(',', Roles::adminRoles())], function () {
+    Route::group(['middleware' => 'role:'.implode(',', Roles::adminRoles())], function () {
         // Sales Reports
-        Route::get('/reports/sales/revenue-summary',   [SalesReportController::class, 'getRevenueSummary']);
-        Route::get('/reports/sales/top-services',      [SalesReportController::class, 'getTopServices']);
+        Route::get('/reports/sales/revenue-summary', [SalesReportController::class, 'getRevenueSummary']);
+        Route::get('/reports/sales/top-services', [SalesReportController::class, 'getTopServices']);
         Route::get('/reports/sales/transaction-volume', [SalesReportController::class, 'getTransactionVolume']);
 
         // Patient Reports
         Route::get('/reports/patients/species-distribution', [PatientReportController::class, 'getSpeciesDistribution']);
-        Route::get('/reports/patients/registration-trends',  [PatientReportController::class, 'getRegistrationTrends']);
-        Route::get('/reports/patients/demographics',         [PatientReportController::class, 'getDemographics']);
+        Route::get('/reports/patients/registration-trends', [PatientReportController::class, 'getRegistrationTrends']);
+        Route::get('/reports/patients/demographics', [PatientReportController::class, 'getDemographics']);
 
         // Inventory Reports
         Route::get('/reports/inventory/low-stock', [LowStockReportController::class, 'generate']);
@@ -373,33 +387,35 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     // Separate from the reports group above so front-desk staff can open the
     // Analytics page, which is in their sidebar. Sales/revenue reports stay
     // restricted to admin roles.
-    Route::group(['middleware' => 'role:' . implode(',', Roles::dashboardRoles())], function () {
-        Route::get('/reports/analytics/transaction-trends', [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionTrends']);
-        Route::get('/reports/analytics/transaction-stats',  [\App\Http\Controllers\ReportAnalyticsController::class, 'transactionStats']);
-        Route::get('/reports/analytics/inventory-consumption', [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryConsumption']);
-        Route::get('/reports/analytics/inventory-stock',    [\App\Http\Controllers\ReportAnalyticsController::class, 'inventoryStockSummary']);
+    Route::group(['middleware' => 'role:'.implode(',', Roles::dashboardRoles())], function () {
+        Route::get('/reports/analytics/transaction-trends', [ReportAnalyticsController::class, 'transactionTrends']);
+        Route::get('/reports/analytics/transaction-stats', [ReportAnalyticsController::class, 'transactionStats']);
+        Route::get('/reports/analytics/inventory-consumption', [ReportAnalyticsController::class, 'inventoryConsumption']);
+        Route::get('/reports/analytics/inventory-stock', [ReportAnalyticsController::class, 'inventoryStockSummary']);
     });
 });
 
 // -----------------------------------------------------------------------
 // Vercel Cron Jobs (no auth middleware — protected by CRON_SECRET header)
 // -----------------------------------------------------------------------
-Route::get('/cron/check-expiry', function (Illuminate\Http\Request $request) {
+Route::get('/cron/check-expiry', function (Request $request) {
     $secret = config('services.cron.secret');
     $bearer = $request->bearerToken();
 
-    if (!$secret || $bearer !== $secret) {
+    if (! $secret || $bearer !== $secret) {
         return response()->json(['message' => 'Unauthorized'], 401);
     }
 
     try {
-        \Illuminate\Support\Facades\Artisan::call('inventory:check-expiry');
+        Artisan::call('inventory:check-expiry');
         // The command output stays in the log; the caller only needs to know
         // it ran.
-        \Illuminate\Support\Facades\Log::info('[cron] inventory:check-expiry', ['output' => trim(\Illuminate\Support\Facades\Artisan::output())]);
+        Log::info('[cron] inventory:check-expiry', ['output' => trim(Artisan::output())]);
+
         return response()->json(['message' => 'Expiry check completed.']);
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('[cron] inventory:check-expiry failed: ' . $e->getMessage());
+    } catch (Exception $e) {
+        Log::error('[cron] inventory:check-expiry failed: '.$e->getMessage());
+
         return response()->json(['message' => 'Expiry check failed.'], 500);
     }
 });

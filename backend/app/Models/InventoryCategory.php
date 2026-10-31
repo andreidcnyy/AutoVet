@@ -10,5 +10,6 @@ class InventoryCategory extends Model
     use SoftDeletes;
 
     protected $table = 'mdm_inventory_categories';
+
     protected $fillable = ['name', 'status'];
 }

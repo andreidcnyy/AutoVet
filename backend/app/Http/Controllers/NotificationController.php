@@ -13,7 +13,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $query = Notification::orderBy('created_at', 'desc');
-        
+
         if ($request->user()) {
             $query->where(function ($q) use ($request) {
                 $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
@@ -21,6 +21,7 @@ class NotificationController extends Controller
         }
 
         $notifications = $query->limit(50)->get();
+
         return response()->json($notifications);
     }
 

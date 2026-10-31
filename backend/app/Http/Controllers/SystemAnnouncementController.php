@@ -22,7 +22,7 @@ class SystemAnnouncementController extends Controller
         $query = SystemAnnouncement::where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('active_until')
-                  ->orWhere('active_until', '>=', now('UTC'));
+                    ->orWhere('active_until', '>=', now('UTC'));
             });
 
         if ($request->filled('target')) {

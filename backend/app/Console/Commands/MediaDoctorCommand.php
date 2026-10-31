@@ -30,18 +30,18 @@ class MediaDoctorCommand extends Command
 
     public function handle(): int
     {
-        $this->line('DB: ' . DB::connection()->getDatabaseName()
-            . '   env: ' . app()->environment()
-            . '   FILESYSTEM_PUBLIC: ' . var_export(env('FILESYSTEM_PUBLIC'), true));
+        $this->line('DB: '.DB::connection()->getDatabaseName()
+            .'   env: '.app()->environment()
+            .'   FILESYSTEM_PUBLIC: '.var_export(env('FILESYSTEM_PUBLIC'), true));
 
         $hasStore = DB::getSchemaBuilder()->hasTable('stored_files');
-        $this->line('stored_files rows: ' . ($hasStore ? DB::table('stored_files')->count() : 'TABLE MISSING'));
+        $this->line('stored_files rows: '.($hasStore ? DB::table('stored_files')->count() : 'TABLE MISSING'));
         $this->newLine();
 
         $tally = [];
 
         foreach (self::TARGETS as [$table, $column]) {
-            if (!DB::getSchemaBuilder()->hasTable($table) || !DB::getSchemaBuilder()->hasColumn($table, $column)) {
+            if (! DB::getSchemaBuilder()->hasTable($table) || ! DB::getSchemaBuilder()->hasColumn($table, $column)) {
                 continue;
             }
 
@@ -52,7 +52,7 @@ class MediaDoctorCommand extends Command
                 ->limit((int) $this->option('limit'))
                 ->get();
 
-            $rows = $rows->filter(fn($r) => $this->looksLikeImage((string) $r->{$column}));
+            $rows = $rows->filter(fn ($r) => $this->looksLikeImage((string) $r->{$column}));
 
             if ($rows->isEmpty()) {
                 continue;
@@ -72,7 +72,7 @@ class MediaDoctorCommand extends Command
                         : '<fg=red>NO BYTES</>';
                 }
 
-                $key = $kind . ($path !== null && $hasStore ? ' / ' . strip_tags($bytes) : '');
+                $key = $kind.($path !== null && $hasStore ? ' / '.strip_tags($bytes) : '');
                 $tally[$key] = ($tally[$key] ?? 0) + 1;
 
                 $this->line(sprintf(
@@ -113,12 +113,12 @@ class MediaDoctorCommand extends Command
         $this->line('<fg=cyan>== inline base64 avatar weight (list payload cost) ==</>');
 
         foreach ([['admins', 'avatar'], ['portal_users', 'avatar']] as [$table, $column]) {
-            if (!DB::getSchemaBuilder()->hasTable($table) || !DB::getSchemaBuilder()->hasColumn($table, $column)) {
+            if (! DB::getSchemaBuilder()->hasTable($table) || ! DB::getSchemaBuilder()->hasColumn($table, $column)) {
                 continue;
             }
 
             $stat = DB::table($table)
-                ->selectRaw("COUNT(*) AS rows_total")
+                ->selectRaw('COUNT(*) AS rows_total')
                 ->selectRaw("SUM(CASE WHEN {$column} LIKE 'data:%' THEN 1 ELSE 0 END) AS inline_rows")
                 ->selectRaw("COALESCE(SUM(CASE WHEN {$column} LIKE 'data:%' THEN CHAR_LENGTH({$column}) ELSE 0 END), 0) AS inline_bytes")
                 ->selectRaw("COALESCE(MAX(CASE WHEN {$column} LIKE 'data:%' THEN CHAR_LENGTH({$column}) ELSE 0 END), 0) AS worst_bytes")
@@ -140,10 +140,10 @@ class MediaDoctorCommand extends Command
     private function bytes(int $n): string
     {
         if ($n >= 1048576) {
-            return number_format($n / 1048576, 2) . ' MB';
+            return number_format($n / 1048576, 2).' MB';
         }
 
-        return $n >= 1024 ? number_format($n / 1024, 1) . ' KB' : $n . ' B';
+        return $n >= 1024 ? number_format($n / 1024, 1).' KB' : $n.' B';
     }
 
     /** Filters out rows that are plainly not image references (free-text settings). */
@@ -183,6 +183,6 @@ class MediaDoctorCommand extends Command
     {
         $v = trim(preg_replace('/\s+/', ' ', $raw));
 
-        return strlen($v) > 78 ? substr($v, 0, 75) . '...' : $v;
+        return strlen($v) > 78 ? substr($v, 0, 75).'...' : $v;
     }
 }

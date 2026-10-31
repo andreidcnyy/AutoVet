@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Service;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
     public function index()
     {
-        return response()->json(\App\Models\Service::with(['sizePrices', 'pricingRules'])->get());
+        return response()->json(Service::with(['sizePrices', 'pricingRules'])->get());
     }
 
     public function store(Request $request)
@@ -20,18 +21,18 @@ class ServiceController extends Controller
             'pricing_type' => 'required|string|in:fixed,size_based,weight_based',
             'measurement_basis' => 'required|string|in:none,size,weight',
             'base_price' => 'nullable|numeric|min:0',
-            'category'        => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
             'requires_doctor' => 'nullable|boolean',
-            'status'          => 'nullable|string|in:Active,Inactive',
-            'pricing_rules'   => 'nullable|array',
-            'pricing_rules.*.basis_type'    => 'required|string|in:size,weight',
-            'pricing_rules.*.reference_id'  => 'required|integer',
-            'pricing_rules.*.price'         => 'required|numeric|min:0',
+            'status' => 'nullable|string|in:Active,Inactive',
+            'pricing_rules' => 'nullable|array',
+            'pricing_rules.*.basis_type' => 'required|string|in:size,weight',
+            'pricing_rules.*.reference_id' => 'required|integer',
+            'pricing_rules.*.price' => 'required|numeric|min:0',
         ]);
 
-        $service = \App\Models\Service::create($validated);
+        $service = Service::create($validated);
 
-        if (!empty($validated['pricing_rules'])) {
+        if (! empty($validated['pricing_rules'])) {
             $service->pricingRules()->createMany($validated['pricing_rules']);
         }
 
@@ -40,13 +41,14 @@ class ServiceController extends Controller
 
     public function show(string $id)
     {
-        $service = \App\Models\Service::with(['sizePrices', 'pricingRules'])->findOrFail($id);
+        $service = Service::with(['sizePrices', 'pricingRules'])->findOrFail($id);
+
         return response()->json($service);
     }
 
     public function update(Request $request, string $id)
     {
-        $service = \App\Models\Service::findOrFail($id);
+        $service = Service::findOrFail($id);
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -55,10 +57,10 @@ class ServiceController extends Controller
             'pricing_type' => 'nullable|string|in:fixed,size_based,weight_based',
             'measurement_basis' => 'nullable|string|in:none,size,weight',
             'base_price' => 'nullable|numeric|min:0',
-            'category'        => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:255',
             'requires_doctor' => 'nullable|boolean',
-            'status'          => 'nullable|string|in:Active,Inactive',
-            'pricing_rules'   => 'nullable|array',
+            'status' => 'nullable|string|in:Active,Inactive',
+            'pricing_rules' => 'nullable|array',
             'pricing_rules.*.basis_type' => 'required|string|in:size,weight',
             'pricing_rules.*.reference_id' => 'required|integer',
             'pricing_rules.*.price' => 'required|numeric|min:0',
@@ -76,8 +78,9 @@ class ServiceController extends Controller
 
     public function destroy(string $id)
     {
-        $service = \App\Models\Service::findOrFail($id);
+        $service = Service::findOrFail($id);
         $service->delete();
+
         return response()->json(null, 204);
     }
 }

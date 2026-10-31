@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\RefreshInventoryForecast;
+use App\Models\Inventory;
 use Illuminate\Console\Command;
 
 class RefreshAllInventoryForecasts extends Command
@@ -27,11 +29,12 @@ class RefreshAllInventoryForecasts extends Command
     {
         $this->info('Starting global AI forecast refresh...');
 
-        $inventoryIds = \App\Models\Inventory::pluck('id')->toArray();
+        $inventoryIds = Inventory::pluck('id')->toArray();
         $count = count($inventoryIds);
 
         if ($count === 0) {
             $this->warn('No inventory items found to refresh.');
+
             return;
         }
 
@@ -39,7 +42,7 @@ class RefreshAllInventoryForecasts extends Command
 
         // Dispatch in chunks to avoid overwhelming the queue if the catalog is huge
         foreach (array_chunk($inventoryIds, 10) as $chunk) {
-            \App\Jobs\RefreshInventoryForecast::dispatch($chunk, 'scheduled');
+            RefreshInventoryForecast::dispatch($chunk, 'scheduled');
         }
 
         $this->info('Forecast refresh jobs have been dispatched successfully.');

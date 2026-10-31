@@ -38,6 +38,7 @@ class ForecastMetrics
         }
 
         $slope = $sxx > 0 ? $sxy / $sxx : 0.0;
+
         return [$slope, $meanY - $slope * $meanX];
     }
 
@@ -135,21 +136,21 @@ class ForecastMetrics
             $fittedPred = self::predict($testX, $slope, $intercept);
 
             return self::baselines($x, $y, $split) + [
-                'fitted_r2'     => self::r2($testY, $fittedPred),
-                'fitted_rmse'   => self::rmse($testY, $fittedPred),
-                'fitted_mae'    => self::mae($testY, $fittedPred),
-                'method'        => '80/20 holdout',
-                'train_points'  => $split,
-                'test_points'   => count($testX),
-                'slope'         => $slope,
-                'intercept'     => $intercept,
-                'train_r2'      => self::r2($trainY, $trainPred),
-                'test_r2'       => self::r2($testY, $testPred),
-                'rmse'          => self::rmse($testY, $testPred),
-                'mae'           => self::mae($testY, $testPred),
+                'fitted_r2' => self::r2($testY, $fittedPred),
+                'fitted_rmse' => self::rmse($testY, $fittedPred),
+                'fitted_mae' => self::mae($testY, $fittedPred),
+                'method' => '80/20 holdout',
+                'train_points' => $split,
+                'test_points' => count($testX),
+                'slope' => $slope,
+                'intercept' => $intercept,
+                'train_r2' => self::r2($trainY, $trainPred),
+                'test_r2' => self::r2($testY, $testPred),
+                'rmse' => self::rmse($testY, $testPred),
+                'mae' => self::mae($testY, $testPred),
                 'baseline_rmse' => self::rmse($testY, $testMean),
-                'baseline_mae'  => self::mae($testY, $testMean),
-                'split_index'   => $split,
+                'baseline_mae' => self::mae($testY, $testMean),
+                'split_index' => $split,
             ];
         }
 
@@ -158,18 +159,18 @@ class ForecastMetrics
         $mean = $n ? array_fill(0, $n, array_sum($y) / $n) : [];
 
         return [
-            'method'        => 'in-sample (insufficient data for split)',
-            'train_points'  => $n,
-            'test_points'   => 0,
-            'slope'         => $slope,
-            'intercept'     => $intercept,
-            'train_r2'      => self::r2($y, $pred),
-            'test_r2'       => null,
-            'rmse'          => self::rmse($y, $pred),
-            'mae'           => self::mae($y, $pred),
+            'method' => 'in-sample (insufficient data for split)',
+            'train_points' => $n,
+            'test_points' => 0,
+            'slope' => $slope,
+            'intercept' => $intercept,
+            'train_r2' => self::r2($y, $pred),
+            'test_r2' => null,
+            'rmse' => self::rmse($y, $pred),
+            'mae' => self::mae($y, $pred),
             'baseline_rmse' => self::rmse($y, $mean),
-            'baseline_mae'  => self::mae($y, $mean),
-            'split_index'   => null,
+            'baseline_mae' => self::mae($y, $mean),
+            'split_index' => null,
         ];
     }
 
@@ -202,8 +203,8 @@ class ForecastMetrics
         }
 
         $rates = [
-            'average'        => $lastY / ($lastX - $x[0] + 1),
-            'naive'          => $lastY - ($split > 1 ? $y[$split - 2] : 0.0),
+            'average' => $lastY / ($lastX - $x[0] + 1),
+            'naive' => $lastY - ($split > 1 ? $y[$split - 2] : 0.0),
             'moving_average' => $recent / $window,
         ];
 
@@ -231,6 +232,7 @@ class ForecastMetrics
             $u1 = max($uniform(), 1e-12);
             $u2 = $uniform();
             $z = sqrt(-2 * log($u1)) * cos(2 * M_PI * $u2);
+
             return max(0, (int) round($lambda + sqrt($lambda) * $z));
         }
 

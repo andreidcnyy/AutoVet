@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,9 +14,9 @@ return new class extends Migration
         });
 
         // Assign to first clinic
-        $clinic = \Illuminate\Support\Facades\DB::table('clinics')->first();
+        $clinic = DB::table('clinics')->first();
         if ($clinic) {
-            \Illuminate\Support\Facades\DB::table('notification_templates')->update(['clinic_id' => $clinic->id]);
+            DB::table('notification_templates')->update(['clinic_id' => $clinic->id]);
         }
 
         Schema::table('notification_templates', function (Blueprint $table) {

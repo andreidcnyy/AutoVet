@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Clinic;
 use App\Models\Inventory;
 use App\Models\InventoryForecast;
 use App\Models\MedicalRecord;
 use App\Models\Pet;
-use App\Models\Clinic;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class DashboardAIForecastSeeder extends Seeder
@@ -19,14 +19,14 @@ class DashboardAIForecastSeeder extends Seeder
 
         // 1. Clear existing forecasts and medical records to prevent duplicates
         DB::table('inventory_forecasts')->where('clinic_id', $clinic->id)->delete();
-        
+
         // 2. Populate Inventory Forecasts for matched items
         $items = Inventory::whereIn('code', ['INV-001', 'INV-002', 'INV-003', 'INV-004', 'INV-005'])
             ->where('clinic_id', $clinic->id)
             ->get();
 
         foreach ($items as $item) {
-            $avgDaily = match($item->code) {
+            $avgDaily = match ($item->code) {
                 'INV-001' => 1.5,
                 'INV-002' => 0.8,
                 'INV-003' => 2.1,
@@ -35,7 +35,7 @@ class DashboardAIForecastSeeder extends Seeder
                 default => 1.0,
             };
 
-            $daysLeft = match($item->code) {
+            $daysLeft = match ($item->code) {
                 'INV-001' => 5,
                 'INV-002' => 45,
                 'INV-003' => 8,
@@ -45,10 +45,10 @@ class DashboardAIForecastSeeder extends Seeder
             };
 
             $status = ($daysLeft < 7) ? 'Critical' : (($daysLeft < 14) ? 'Reorder Soon' : 'Safe');
-            $notes = match($status) {
-                'Critical' => "Immediate reorder required. Current stock will be depleted in less than a week.",
-                'Reorder Soon' => "Stock levels are decreasing. Plan to reorder within the next 10 days.",
-                'Safe' => "Stock levels are healthy based on average consumption trends.",
+            $notes = match ($status) {
+                'Critical' => 'Immediate reorder required. Current stock will be depleted in less than a week.',
+                'Reorder Soon' => 'Stock levels are decreasing. Plan to reorder within the next 10 days.',
+                'Safe' => 'Stock levels are healthy based on average consumption trends.',
             };
 
             InventoryForecast::create([

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class CmsContent extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
 
     protected $table = 'cms_contents';
 
@@ -36,7 +36,7 @@ class CmsContent extends Model
         'is_published',
         'display_order',
         // Archive tracking
-        'deleted_by', 
+        'deleted_by',
         'restore_until',
         'sync_status',
         'synced_at',
@@ -44,10 +44,10 @@ class CmsContent extends Model
     ];
 
     protected $casts = [
-        'is_published'             => 'boolean',
-        'synced_at'                => 'datetime',
+        'is_published' => 'boolean',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
-        'display_order'            => 'integer',
+        'display_order' => 'integer',
     ];
 
     // -------------------------------------------------------------------------

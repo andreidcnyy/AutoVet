@@ -2,20 +2,21 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Pet;
-use App\Models\Owner;
-use App\Models\Species;
-use App\Models\Breed;
 use App\Models\Appointment;
+use App\Models\Breed;
 use App\Models\Invoice;
 use App\Models\MedicalRecord;
+use App\Models\Owner;
+use App\Models\Pet;
+use App\Models\Species;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class MigrateLegacyPatients extends Command
 {
     protected $signature = 'migrate:legacy-patients';
+
     protected $description = 'Migrate legacy patient data to owners and pets structure';
 
     public function handle()
@@ -23,8 +24,9 @@ class MigrateLegacyPatients extends Command
         $this->info('Starting legacy patient migration...');
 
         // Use direct DB access for legacy table that has no model anymore
-        if (!Schema::hasTable('patients')) {
+        if (! Schema::hasTable('patients')) {
             $this->error('Legacy patients table does not exist.');
+
             return 1;
         }
 
@@ -61,15 +63,15 @@ class MigrateLegacyPatients extends Command
                 if ($patient->breed && $species) {
                     $breed = Breed::firstOrCreate([
                         'name' => $patient->breed,
-                        'species_id' => $species->id
+                        'species_id' => $species->id,
                     ]);
                 }
 
                 // 4. Handle Pet
                 // Check if already migrated
                 $pet = Pet::where('legacy_patient_id', $patient->id)->first();
-                
-                if (!$pet) {
+
+                if (! $pet) {
                     $pet = Pet::create([
                         'legacy_patient_id' => $patient->id,
                         'owner_id' => $owner->id,
@@ -93,10 +95,10 @@ class MigrateLegacyPatients extends Command
                 // 5. Update Relationships
                 // Note: Columns were renamed from patient_id to pet_id in migrations
                 // We need to update the actual values from patient->id to pet->id
-                
+
                 // IMPORTANT: We only update those that currently match the OLD patient id
                 // Use a direct DB update to avoid model events if necessary, or just use models
-                
+
                 Appointment::where('pet_id', $patient->id)->update(['pet_id' => $pet->id]);
                 Invoice::where('pet_id', $patient->id)->update(['pet_id' => $pet->id]);
                 MedicalRecord::where('pet_id', $patient->id)->update(['pet_id' => $pet->id]);
@@ -105,20 +107,24 @@ class MigrateLegacyPatients extends Command
                 $count++;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->error("Failed to migrate patient ID {$patient->id}: " . $e->getMessage());
+                $this->error("Failed to migrate patient ID {$patient->id}: ".$e->getMessage());
                 $errors++;
             }
         }
 
         $this->info("Migration completed. {$count} patients migrated. {$errors} errors.");
+
         return 0;
     }
 
     private function parseWeight($weightStr)
     {
-        if (!$weightStr) return null;
+        if (! $weightStr) {
+            return null;
+        }
         // Extract numbers from string like "10.5 kg" or "10.5"
         preg_match('/[\d\.]+/', $weightStr, $matches);
-        return isset($matches[0]) ? (float)$matches[0] : null;
+
+        return isset($matches[0]) ? (float) $matches[0] : null;
     }
 }

@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use App\Exceptions\UserFacingException;
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
-use App\Traits\HasClinic;
-
 class Service extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
+
     protected $fillable = [
         'clinic_id',
         'name',
@@ -33,8 +34,8 @@ class Service extends Model
     ];
 
     protected $casts = [
-        'requires_doctor'          => 'boolean',
-        'synced_at'                => 'datetime',
+        'requires_doctor' => 'boolean',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 
@@ -56,10 +57,10 @@ class Service extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('invoice_items')->where('service_id', $this->id)->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this service because it is referenced in past invoices.");
+            throw new UserFacingException('Cannot permanently delete this service because it is referenced in past invoices.');
         }
         if (DB::table('appointments')->where('service_id', $this->id)->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this service because it is referenced in past appointments.");
+            throw new UserFacingException('Cannot permanently delete this service because it is referenced in past appointments.');
         }
     }
 }

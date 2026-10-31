@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Roles;
+use App\Models\Admin;
+use App\Models\Clinic;
+use App\Models\Owner;
+use App\Models\PortalUser;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Admin;
-use App\Models\PortalUser;
-use App\Models\Owner;
-use App\Models\Clinic;
-use App\Enums\Roles;
 
 class SeparateUserSeeder extends Seeder
 {

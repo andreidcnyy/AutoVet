@@ -2,14 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Owner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use App\Models\Owner;
-use App\Models\PortalUser;
 
 class DeduplicateOwners extends Command
 {
-    protected $signature   = 'owners:deduplicate {--dry-run : Show what would be merged without making changes}';
+    protected $signature = 'owners:deduplicate {--dry-run : Show what would be merged without making changes}';
+
     protected $description = 'Merge duplicate Owner records that share the same email or phone';
 
     public function handle(): int
@@ -40,18 +40,20 @@ class DeduplicateOwners extends Command
                 ->orderBy('created_at')
                 ->get();
 
-            if ($owners->count() < 2) continue;
+            if ($owners->count() < 2) {
+                continue;
+            }
 
             $keeper = $owners->first();
-            $dupes  = $owners->slice(1);
+            $dupes = $owners->slice(1);
 
             $this->line("Email: <fg=yellow>{$email}</>");
-            $this->line("  Keep : #{$keeper->id} — {$keeper->name} (user_id: " . ($keeper->user_id ?? 'none') . ")");
+            $this->line("  Keep : #{$keeper->id} — {$keeper->name} (user_id: ".($keeper->user_id ?? 'none').')');
 
             foreach ($dupes as $dupe) {
-                $this->line("  Merge: #{$dupe->id} — {$dupe->name} (user_id: " . ($dupe->user_id ?? 'none') . ")");
+                $this->line("  Merge: #{$dupe->id} — {$dupe->name} (user_id: ".($dupe->user_id ?? 'none').')');
 
-                if (!$dryRun) {
+                if (! $dryRun) {
                     DB::transaction(function () use ($keeper, $dupe) {
                         // Re-link pets
                         DB::table('pets')
@@ -64,18 +66,20 @@ class DeduplicateOwners extends Command
                             ->update(['owner_id' => $keeper->id]);
 
                         // If the dupe was portal-linked and the keeper isn't, transfer the link
-                        if ($dupe->user_id && !$keeper->user_id) {
+                        if ($dupe->user_id && ! $keeper->user_id) {
                             $keeper->update(['user_id' => $dupe->user_id]);
                         }
 
                         // Fill any blank fields on the keeper from the dupe
                         $fill = [];
                         foreach (['phone', 'address', 'city', 'province', 'zip'] as $field) {
-                            if (empty($keeper->$field) && !empty($dupe->$field)) {
+                            if (empty($keeper->$field) && ! empty($dupe->$field)) {
                                 $fill[$field] = $dupe->$field;
                             }
                         }
-                        if ($fill) $keeper->update($fill);
+                        if ($fill) {
+                            $keeper->update($fill);
+                        }
 
                         $dupe->delete();
                     });
@@ -105,10 +109,12 @@ class DeduplicateOwners extends Command
                 ->orderBy('created_at')
                 ->get();
 
-            if ($owners->count() < 2) continue;
+            if ($owners->count() < 2) {
+                continue;
+            }
 
             $keeper = $owners->first();
-            $dupes  = $owners->slice(1);
+            $dupes = $owners->slice(1);
 
             $this->line("Phone: <fg=yellow>{$phone}</>");
             $this->line("  Keep : #{$keeper->id} — {$keeper->name}");
@@ -116,7 +122,7 @@ class DeduplicateOwners extends Command
             foreach ($dupes as $dupe) {
                 $this->line("  Merge: #{$dupe->id} — {$dupe->name}");
 
-                if (!$dryRun) {
+                if (! $dryRun) {
                     DB::transaction(function () use ($keeper, $dupe) {
                         DB::table('pets')
                             ->where('owner_id', $dupe->id)
@@ -126,7 +132,7 @@ class DeduplicateOwners extends Command
                             ->where('owner_id', $dupe->id)
                             ->update(['owner_id' => $keeper->id]);
 
-                        if ($dupe->user_id && !$keeper->user_id) {
+                        if ($dupe->user_id && ! $keeper->user_id) {
                             $keeper->update(['user_id' => $dupe->user_id]);
                         }
 

@@ -2,10 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Roles;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
-use App\Enums\Roles;
 
 class RoleMiddleware
 {
@@ -15,8 +16,8 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
@@ -28,12 +29,13 @@ class RoleMiddleware
             $userRole = Roles::OWNER->value;
         }
 
-        if (!$userRole) {
+        if (! $userRole) {
             // Identify the account only: the attribute dump this replaced
             // wrote the password hash into the log.
-            \Illuminate\Support\Facades\Log::warning("RoleMiddleware: Role not defined for user " . $user->id, [
+            Log::warning('RoleMiddleware: Role not defined for user '.$user->id, [
                 'class' => get_class($user),
             ]);
+
             return response()->json(['message' => 'Unauthorized. Role not defined.'], 403);
         }
 
@@ -46,9 +48,9 @@ class RoleMiddleware
 
         $lowercasedRoles = array_map('strtolower', $roles);
 
-        if (!in_array($userRole, $lowercasedRoles)) {
+        if (! in_array($userRole, $lowercasedRoles)) {
             return response()->json([
-                'message' => 'Unauthorized. This action is restricted to ' . implode(' or ', $roles) . '.',
+                'message' => 'Unauthorized. This action is restricted to '.implode(' or ', $roles).'.',
             ], 403);
         }
 

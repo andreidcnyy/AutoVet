@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
-use App\Models\Invoice;
 use App\Models\Inventory;
 use App\Models\InventoryUsageHistory;
-use App\Models\Service;
+use App\Models\Invoice;
 use App\Models\Owner;
-use App\Models\Pet;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +25,7 @@ class ImportController extends Controller
             'service_id' => 'required|clinic_exists:services,id',
             'date' => 'required|date',
             'status' => 'required|string|in:pending,approved,completed,cancelled,declined',
-        ], function($row) {
+        ], function ($row) {
             return Appointment::create($row);
         });
     }
@@ -41,7 +40,7 @@ class ImportController extends Controller
             'total' => 'required|numeric',
             'status' => 'required|string|in:Draft,Finalized,Paid,Partially Paid,Cancelled',
             'created_at' => 'required|date',
-        ], function($row) {
+        ], function ($row) {
             return Invoice::create($row);
         });
     }
@@ -56,17 +55,18 @@ class ImportController extends Controller
             'quantity' => 'required|numeric',
             'transaction_type' => 'required|string',
             'created_at' => 'required|date',
-        ], function($row) {
+        ], function ($row) {
             $inventory = Inventory::find($row['inventory_id']);
             $oldStock = $inventory->stock_level;
             $newStock = $oldStock + $row['quantity'];
-            
+
             $usage = InventoryUsageHistory::create(array_merge($row, [
                 'old_stock' => $oldStock,
-                'new_stock' => $newStock
+                'new_stock' => $newStock,
             ]));
 
             $inventory->update(['stock_level' => $newStock]);
+
             return $usage;
         });
     }
@@ -81,7 +81,7 @@ class ImportController extends Controller
             'category' => 'required|string',
             'price' => 'required|numeric',
             'status' => 'required|string|in:Active,Inactive',
-        ], function($row) {
+        ], function ($row) {
             return Service::create($row);
         });
     }
@@ -95,7 +95,7 @@ class ImportController extends Controller
             'name' => 'required|string',
             'phone' => 'required|string',
             'email' => 'nullable|email',
-        ], function($row) {
+        ], function ($row) {
             return Owner::firstOrCreate(['phone' => $row['phone']], $row);
         });
     }
@@ -112,8 +112,8 @@ class ImportController extends Controller
         $file = $request->file('file');
         $handle = fopen($file->getRealPath(), 'r');
         $header = fgetcsv($handle);
-        
-        if (!$header) {
+
+        if (! $header) {
             return response()->json(['message' => 'Invalid CSV format.'], 400);
         }
 
@@ -123,19 +123,21 @@ class ImportController extends Controller
 
         DB::beginTransaction();
         try {
-            while (($data = fgetcsv($handle)) !== FALSE) {
+            while (($data = fgetcsv($handle)) !== false) {
                 $rowNumber++;
                 // A row with more or fewer cells than the header made
                 // array_combine() throw and abort the whole import.
                 if (count($data) !== count($header)) {
-                    $errors[] = "Row {$rowNumber}: expected " . count($header) . " columns, found " . count($data) . ".";
+                    $errors[] = "Row {$rowNumber}: expected ".count($header).' columns, found '.count($data).'.';
+
                     continue;
                 }
                 $row = array_combine($header, $data);
-                
+
                 $validator = Validator::make($row, $rules);
                 if ($validator->fails()) {
-                    $errors[] = "Row {$rowNumber}: " . implode(', ', $validator->errors()->all());
+                    $errors[] = "Row {$rowNumber}: ".implode(', ', $validator->errors()->all());
+
                     continue;
                 }
 
@@ -145,22 +147,25 @@ class ImportController extends Controller
 
             if (count($errors) > 0 && $importedCount == 0) {
                 DB::rollBack();
+
                 return response()->json([
                     'message' => 'Import failed with validation errors.',
-                    'errors' => $errors
+                    'errors' => $errors,
                 ], 422);
             }
 
             DB::commit();
+
             return response()->json([
                 'message' => "Successfully imported {$importedCount} records.",
                 'warning_count' => count($errors),
-                'warnings' => array_slice($errors, 0, 10)
+                'warnings' => array_slice($errors, 0, 10),
             ]);
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error("Import Error ({$type}): " . $e->getMessage());
+            Log::error("Import Error ({$type}): ".$e->getMessage());
+
             return response()->json([
                 'message' => 'An error occurred during import. No rows were saved.',
             ], 500);

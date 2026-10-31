@@ -2,21 +2,20 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PortalUser;
 use App\Services\MaintenanceWindow;
 use Closure;
 use Illuminate\Http\Request;
 
 class CheckMaintenanceMode
 {
-    public function __construct(private MaintenanceWindow $window)
-    {
-    }
+    public function __construct(private MaintenanceWindow $window) {}
 
     public function handle(Request $request, Closure $next)
     {
         // Only block portal users — admins/vets always pass through, so the
         // clinic can keep working during its own maintenance window.
-        if (!$request->user() instanceof \App\Models\PortalUser) {
+        if (! $request->user() instanceof PortalUser) {
             return $next($request);
         }
 
@@ -24,7 +23,7 @@ class CheckMaintenanceMode
 
         // Scheduled but not started: the portal stays usable and the client
         // shows a countdown, which is the whole point of the warning period.
-        if (!$state['active']) {
+        if (! $state['active']) {
             return $next($request);
         }
 

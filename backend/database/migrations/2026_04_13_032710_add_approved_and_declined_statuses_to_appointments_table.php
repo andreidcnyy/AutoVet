@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Laravel's change() on enum is sometimes tricky depending on DB. 
+        // Laravel's change() on enum is sometimes tricky depending on DB.
         // Using raw SQL or standard column modification for broader support.
         Schema::table('appointments', function (Blueprint $table) {
             $table->string('status')->default('pending')->change();

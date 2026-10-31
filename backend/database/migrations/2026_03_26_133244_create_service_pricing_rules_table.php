@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('reference_id');
             $table->decimal('price', 10, 2);
             $table->timestamps();
-            
+
             $table->index(['service_id', 'basis_type', 'reference_id']);
         });
     }

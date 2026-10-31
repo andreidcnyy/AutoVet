@@ -4,15 +4,14 @@ namespace App\Models;
 
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Traits\HasClinic;
-
 class MedicalRecord extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
 
     protected $fillable = [
         'clinic_id',
@@ -25,8 +24,8 @@ class MedicalRecord extends Model
     ];
 
     protected $casts = [
-        'follow_up_date'           => 'date',
-        'synced_at'                => 'datetime',
+        'follow_up_date' => 'date',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 

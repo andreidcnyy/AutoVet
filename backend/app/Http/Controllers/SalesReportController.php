@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class SalesReportController extends Controller
 {
@@ -41,8 +41,8 @@ class SalesReportController extends Controller
         $limit = (int) $request->query('limit', 5);
 
         $topServices = InvoiceItem::whereHas('invoice', function ($query) {
-                $query->where('status', '!=', 'Cancelled');
-            })
+            $query->where('status', '!=', 'Cancelled');
+        })
             ->whereNotNull('service_id')
             ->select('name', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_revenue'))
             ->groupBy('name')

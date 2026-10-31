@@ -40,7 +40,7 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->tables as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
@@ -70,7 +70,7 @@ return new class extends Migration
     {
         try {
             DB::statement("ANALYZE TABLE `{$table}`");
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Not fatal — the previous statistics, or none, remain in place.
         }
     }

@@ -2,12 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Inventory;
-use App\Models\InventoryTransaction;
-use App\Models\Admin;
+use App\Events\InventoryUpdated;
+use App\Events\LowStockDetected;
 use App\Jobs\RefreshInventoryForecast;
+use App\Models\Admin;
+use App\Models\Inventory;
+use App\Models\InventoryCategory;
+use App\Models\InventoryForecast;
+use App\Models\InventoryTransaction;
+use App\Models\InventoryUsageHistory;
+use App\Services\SkuGeneratorService;
 use App\Traits\HasInternalNotifications;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class InventoryController extends Controller
 {
@@ -15,7 +26,7 @@ class InventoryController extends Controller
 
     protected $skuGenerator;
 
-    public function __construct(\App\Services\SkuGeneratorService $skuGenerator)
+    public function __construct(SkuGeneratorService $skuGenerator)
     {
         $this->skuGenerator = $skuGenerator;
     }
@@ -25,12 +36,14 @@ class InventoryController extends Controller
         $inventory = Inventory::with(['inventoryCategory', 'latestForecast'])->get();
         // Recalculate forecast days/status based on real-time stock and monthly needs
         Inventory::applyLiveForecasts($inventory);
+
         return response()->json($inventory);
     }
 
     public function lowStock(Request $request)
     {
         $lowStockItems = Inventory::whereRaw('stock_level <= min_stock_level')->get();
+
         return response()->json($lowStockItems);
     }
 
@@ -66,25 +79,25 @@ class InventoryController extends Controller
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0', 
+            'price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
-            'lot_number'      => 'nullable|string|max:100',
-            'batch_number'    => 'nullable|string|max:100',
+            'lot_number' => 'nullable|string|max:100',
+            'batch_number' => 'nullable|string|max:100',
         ]);
 
         // Automatically generate SKU by resolving the category name
-        $categoryRecord = \App\Models\InventoryCategory::find($validatedData['inventory_category_id']);
+        $categoryRecord = InventoryCategory::find($validatedData['inventory_category_id']);
         $validatedData['sku'] = $this->skuGenerator->generate(
             $categoryRecord->name ?? 'UNK',
             $validatedData['item_name'],
             $validatedData['sub_details'] ?? null
         );
 
-        if (!empty($validatedData['batch_number'])) {
+        if (! empty($validatedData['batch_number'])) {
             $validatedData['batch_number'] = trim($validatedData['batch_number']);
-            if (!empty($validatedData['code'])) {
+            if (! empty($validatedData['code'])) {
                 $this->assertBatchNumberFree($validatedData['code'], $validatedData['batch_number']);
             }
         }
@@ -99,7 +112,7 @@ class InventoryController extends Controller
                 'previous_stock' => 0,
                 'new_stock' => $item->stock_level,
                 'remarks' => 'Initial Stock',
-                'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
+                'created_by' => auth()->id() ?? (Admin::first()->id ?? null),
             ]);
 
             // Internal admin notification for initial stock
@@ -124,7 +137,7 @@ class InventoryController extends Controller
             'code' => 'nullable|string|max:100',
             'sub_details' => 'nullable|string|max:255',
             'inventory_category_id' => 'required|clinic_exists:mdm_inventory_categories,id',
-            'sku' => 'required|string|max:255|unique:inventories,sku,' . $inventory->id,
+            'sku' => 'required|string|max:255|unique:inventories,sku,'.$inventory->id,
             'stock_level' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'status' => 'required|string|max:255',
@@ -132,14 +145,14 @@ class InventoryController extends Controller
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
-            'lot_number'      => 'nullable|string|max:100',
-            'batch_number'    => 'nullable|string|max:100',
+            'lot_number' => 'nullable|string|max:100',
+            'batch_number' => 'nullable|string|max:100',
         ]);
 
-        if (!empty($validatedData['batch_number'])) {
+        if (! empty($validatedData['batch_number'])) {
             $validatedData['batch_number'] = trim($validatedData['batch_number']);
             $code = $validatedData['code'] ?? $inventory->code;
-            if (!empty($code)) {
+            if (! empty($code)) {
                 $this->assertBatchNumberFree($code, $validatedData['batch_number'], $inventory->id);
             }
         }
@@ -151,34 +164,34 @@ class InventoryController extends Controller
 
         if ($oldStock != $newStock) {
             $qtyDiff = $newStock - $oldStock;
-            \App\Models\InventoryTransaction::create([
+            InventoryTransaction::create([
                 'inventory_id' => $inventory->id,
                 'transaction_type' => 'Adjustment',
                 'quantity' => $qtyDiff,
                 'previous_stock' => $oldStock,
                 'new_stock' => $newStock,
                 'remarks' => 'Manual adjustment via UI',
-                'created_by' => auth()->id() ?? (\App\Models\Admin::first()->id ?? null)
+                'created_by' => auth()->id() ?? (Admin::first()->id ?? null),
             ]);
 
             // If it's a decrease, log into usage history for AI learning
             if ($qtyDiff < 0) {
-                \App\Models\InventoryUsageHistory::create([
+                InventoryUsageHistory::create([
                     'inventory_id' => $inventory->id,
                     'quantity_used' => abs($qtyDiff),
                     'usage_date' => now()->toDateString(),
                     'source_type' => 'manual_adjustment',
-                    'unit_price' => $inventory->selling_price
+                    'unit_price' => $inventory->selling_price,
                 ]);
 
                 // Clear AI forecast reorder suggestions if item just became out of stock
                 if ($newStock <= 0) {
-                    \App\Models\InventoryForecast::where('inventory_id', $inventory->id)->update(['forecast_status' => 'Out of Stock']);
+                    InventoryForecast::where('inventory_id', $inventory->id)->update(['forecast_status' => 'Out of Stock']);
                 }
 
                 // Fire low stock alert if stock has dropped to or below threshold
                 if ($newStock <= $inventory->min_stock_level) {
-                    event(new \App\Events\LowStockDetected($inventory));
+                    event(new LowStockDetected($inventory));
                 }
             }
 
@@ -186,16 +199,16 @@ class InventoryController extends Controller
             $this->createInternalNotification(
                 'StockAdjustment',
                 'Inventory Adjusted',
-                "Stock for '{$inventory->item_name}' was manually adjusted from {$oldStock} to {$newStock}. New Status: " . $inventory->calculateStockStatus(),
+                "Stock for '{$inventory->item_name}' was manually adjusted from {$oldStock} to {$newStock}. New Status: ".$inventory->calculateStockStatus(),
                 ['inventory_id' => $inventory->id]
             );
-            }
+        }
 
-            // Trigger initial forecast refresh (Part 1.2)
-            \App\Jobs\RefreshInventoryForecast::dispatch([$inventory->id], 'manual');
+        // Trigger initial forecast refresh (Part 1.2)
+        RefreshInventoryForecast::dispatch([$inventory->id], 'manual');
 
-            return response()->json($inventory->load('inventoryCategory'));
-            }
+        return response()->json($inventory->load('inventoryCategory'));
+    }
 
     /**
      * Receive a new delivery of an existing product.
@@ -208,17 +221,17 @@ class InventoryController extends Controller
     public function receiveStock(Request $request, Inventory $inventory)
     {
         $validated = $request->validate([
-            'quantity'        => 'required|integer|min:1',
-            'batch_number'    => 'required|string|max:100',
-            'lot_number'      => 'nullable|string|max:100',
+            'quantity' => 'required|integer|min:1',
+            'batch_number' => 'required|string|max:100',
+            'lot_number' => 'nullable|string|max:100',
             'expiration_date' => 'nullable|date',
-            'price'           => 'nullable|numeric|min:0',
-            'selling_price'   => 'nullable|numeric|min:0',
-            'supplier'        => 'nullable|string|max:255',
-            'remarks'         => 'nullable|string|max:255',
+            'price' => 'nullable|numeric|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
+            'supplier' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string|max:255',
         ]);
 
-        $batch = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $inventory) {
+        $batch = DB::transaction(function () use ($validated, $inventory) {
             $product = Inventory::where('id', $inventory->id)->lockForUpdate()->first();
 
             // FIFO groups batches by code, so a product without one can never
@@ -232,46 +245,46 @@ class InventoryController extends Controller
             // at the same moment cannot both claim the same batch number.
             $this->assertBatchNumberFree($product->code, $validated['batch_number']);
 
-            $categoryName = \App\Models\InventoryCategory::find($product->inventory_category_id)->name ?? 'UNK';
+            $categoryName = InventoryCategory::find($product->inventory_category_id)->name ?? 'UNK';
 
             $batch = Inventory::create([
                 // Inherit the product's clinic rather than the actor's, so a
                 // batch always belongs to the same clinic as the stock it joins.
-                'clinic_id'             => $product->clinic_id,
-                'item_name'             => $product->item_name,
-                'code'                  => $product->code,
-                'sub_details'           => $product->sub_details,
+                'clinic_id' => $product->clinic_id,
+                'item_name' => $product->item_name,
+                'code' => $product->code,
+                'sub_details' => $product->sub_details,
                 'inventory_category_id' => $product->inventory_category_id,
-                'sku'                   => $this->skuGenerator->generate(
+                'sku' => $this->skuGenerator->generate(
                     $categoryName,
                     $product->item_name,
                     $product->sub_details
                 ),
-                'unit'                  => $product->unit,
-                'stock_level'           => $validated['quantity'],
-                'min_stock_level'       => $product->min_stock_level,
-                'price'                 => $validated['price']         ?? $product->price,
-                'selling_price'         => $validated['selling_price'] ?? $product->selling_price,
-                'supplier'              => $validated['supplier']      ?? $product->supplier,
-                'expiration_date'       => $validated['expiration_date'] ?? null,
-                'lot_number'            => $validated['lot_number']      ?? null,
-                'batch_number'          => trim($validated['batch_number']),
+                'unit' => $product->unit,
+                'stock_level' => $validated['quantity'],
+                'min_stock_level' => $product->min_stock_level,
+                'price' => $validated['price'] ?? $product->price,
+                'selling_price' => $validated['selling_price'] ?? $product->selling_price,
+                'supplier' => $validated['supplier'] ?? $product->supplier,
+                'expiration_date' => $validated['expiration_date'] ?? null,
+                'lot_number' => $validated['lot_number'] ?? null,
+                'batch_number' => trim($validated['batch_number']),
                 // Carry over the billing/consumption flags so the new batch is
                 // treated exactly like the stock it replenishes.
-                'is_billable'           => $product->is_billable,
-                'is_consumable'         => $product->is_consumable,
-                'deduct_on_finalize'    => $product->deduct_on_finalize,
-                'status'                => 'In Stock',
+                'is_billable' => $product->is_billable,
+                'is_consumable' => $product->is_consumable,
+                'deduct_on_finalize' => $product->deduct_on_finalize,
+                'status' => 'In Stock',
             ]);
 
             InventoryTransaction::create([
-                'inventory_id'     => $batch->id,
+                'inventory_id' => $batch->id,
                 'transaction_type' => 'Stock In',
-                'quantity'         => $batch->stock_level,
-                'previous_stock'   => 0,
-                'new_stock'        => $batch->stock_level,
-                'remarks'          => $validated['remarks'] ?? "Received batch {$batch->batch_number}",
-                'created_by'       => auth()->id() ?? (Admin::first()->id ?? null),
+                'quantity' => $batch->stock_level,
+                'previous_stock' => 0,
+                'new_stock' => $batch->stock_level,
+                'remarks' => $validated['remarks'] ?? "Received batch {$batch->batch_number}",
+                'created_by' => auth()->id() ?? (Admin::first()->id ?? null),
             ]);
 
             return $batch;
@@ -284,7 +297,7 @@ class InventoryController extends Controller
             ['inventory_id' => $batch->id]
         );
 
-        event(new \App\Events\InventoryUpdated($batch));
+        event(new InventoryUpdated($batch));
 
         RefreshInventoryForecast::dispatch([$batch->id], 'manual');
 
@@ -308,8 +321,8 @@ class InventoryController extends Controller
             ->exists();
 
         if ($taken) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'batch_number' => "Batch number \"" . trim($batchNumber) . "\" already exists for this item. Use a different batch number.",
+            throw ValidationException::withMessages([
+                'batch_number' => 'Batch number "'.trim($batchNumber).'" already exists for this item. Use a different batch number.',
             ]);
         }
     }
@@ -322,7 +335,7 @@ class InventoryController extends Controller
     {
         $query = Inventory::query();
 
-        if (!empty($inventory->code)) {
+        if (! empty($inventory->code)) {
             $query->where('code', $inventory->code);
         } else {
             $query->where('id', $inventory->id);
@@ -331,21 +344,23 @@ class InventoryController extends Controller
         $batches = $query->orderBy('id', 'asc')->get();
 
         return response()->json([
-            'code'        => $inventory->code,
+            'code' => $inventory->code,
             'total_stock' => $batches->sum('stock_level'),
-            'batches'     => $batches,
+            'batches' => $batches,
         ]);
     }
 
     public function destroy(Inventory $inventory)
     {
         $inventory->delete();
+
         return response()->json(null, 204);
     }
 
     public function transactions(Inventory $inventory)
     {
         $transactions = $inventory->transactions()->with('creator:id,name')->orderBy('created_at', 'desc')->get();
+
         return response()->json($transactions);
     }
 
@@ -358,13 +373,13 @@ class InventoryController extends Controller
     {
         $months = max(1, min(24, (int) $request->query('months', 12)));
         $start = now()->startOfMonth()->subMonths($months - 1);
-        $hasBatch = \Illuminate\Support\Facades\Schema::hasColumn('inventory_usage_history', 'synthetic_batch');
+        $hasBatch = Schema::hasColumn('inventory_usage_history', 'synthetic_batch');
 
-        $rows = \App\Models\InventoryUsageHistory::forecastingSafe()
+        $rows = InventoryUsageHistory::forecastingSafe()
             ->where('inventory_id', $inventory->id)
             ->where('usage_date', '>=', $start->toDateString())
             ->selectRaw("DATE_FORMAT(usage_date, '%Y-%m') AS month, SUM(quantity_used) AS units, COUNT(DISTINCT usage_date) AS days"
-                . ($hasBatch ? ', SUM(CASE WHEN synthetic_batch IS NOT NULL THEN quantity_used ELSE 0 END) AS seeded' : ', 0 AS seeded'))
+                .($hasBatch ? ', SUM(CASE WHEN synthetic_batch IS NOT NULL THEN quantity_used ELSE 0 END) AS seeded' : ', 0 AS seeded'))
             ->groupBy('month')
             ->get()
             ->keyBy('month');
@@ -373,9 +388,9 @@ class InventoryController extends Controller
         for ($m = $start->copy(); $m->lte(now()); $m->addMonth()) {
             $row = $rows[$m->format('Y-m')] ?? null;
             $result[] = [
-                'month'  => $m->format('Y-m'),
-                'units'  => $row ? (float) $row->units : 0,
-                'days'   => $row ? (int) $row->days : 0,
+                'month' => $m->format('Y-m'),
+                'units' => $row ? (float) $row->units : 0,
+                'days' => $row ? (int) $row->days : 0,
                 'seeded' => $row ? (float) $row->seeded : 0,
             ];
         }
@@ -386,9 +401,7 @@ class InventoryController extends Controller
     /**
      * Accepts an AI forecast recommendation to update the minimum stock level of an inventory item.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Models\Inventory $inventory
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function acceptForecastRecommendation(Request $request, Inventory $inventory)
     {
@@ -400,7 +413,7 @@ class InventoryController extends Controller
         $inventory->min_stock_level = $validatedData['new_min_stock_level'];
         $inventory->save();
 
-        \Illuminate\Support\Facades\Log::info("Inventory {$inventory->id}: min_stock_level updated from {$oldMinStockLevel} to {$inventory->min_stock_level} based on AI forecast.", [
+        Log::info("Inventory {$inventory->id}: min_stock_level updated from {$oldMinStockLevel} to {$inventory->min_stock_level} based on AI forecast.", [
             'inventory_id' => $inventory->id,
             'old_min_stock_level' => $oldMinStockLevel,
             'new_min_stock_level' => $inventory->min_stock_level,

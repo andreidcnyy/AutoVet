@@ -5,16 +5,21 @@ namespace App\Services;
 use App\Models\Inventory;
 use App\Models\InventoryForecast;
 use App\Models\InventoryUsageHistory;
+use App\Support\DashboardCache;
+use App\Traits\HasInternalNotifications;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache;
-use App\Traits\HasInternalNotifications;
 
 class InventoryForecastService
 {
     use HasInternalNotifications;
+
     /**
      * Generate a forecast on-demand (returns array, does NOT persist).
      * Used by the dashboard/API for live reads.
@@ -24,8 +29,9 @@ class InventoryForecastService
         try {
             $inventory = Inventory::find($inventoryId);
 
-            if (!$inventory) {
+            if (! $inventory) {
                 Log::error("[AI-ERROR] Inventory item not found for ID: {$inventoryId}");
+
                 return ['error' => 'Inventory item not found.'];
             }
 
@@ -33,17 +39,17 @@ class InventoryForecastService
             $usageCount = InventoryUsageHistory::forecastingSafe()
                 ->where('inventory_id', $inventoryId)
                 ->count();
-                
+
             $progressPercent = min(100, round(($usageCount / 3) * 100));
             $needed = max(0, 3 - $usageCount);
 
             $insufficientDataResponse = [
                 'prediction_status' => 'Insufficient Data',
                 'ai_intelligence_progress' => $progressPercent,
-                'message'           => "AI Intelligence: {$progressPercent}% — Need {$needed} more completed transaction" . ($needed > 1 ? 's' : '') . " to generate a trend.",
-                'current_stock'     => $inventory->stock_level,
-                'min_stock_level'   => $inventory->min_stock_level,
-                'item_name'         => $inventory->item_name,
+                'message' => "AI Intelligence: {$progressPercent}% — Need {$needed} more completed transaction".($needed > 1 ? 's' : '').' to generate a trend.',
+                'current_stock' => $inventory->stock_level,
+                'min_stock_level' => $inventory->min_stock_level,
+                'item_name' => $inventory->item_name,
             ];
 
             // No dataset fallback when live history is short. We surface
@@ -63,18 +69,19 @@ class InventoryForecastService
 
             if ($distinctDates < 2) {
                 return [
-                    'prediction_status'          => 'Insufficient Data',
-                    'ai_intelligence_progress'   => 80,
-                    'message'                    => "Almost there — your {$usageCount} transaction" . ($usageCount > 1 ? 's' : '') . " all happened on the same day. Complete at least one transaction on a different day so the AI can detect a usage trend.",
-                    'current_stock'              => $inventory->stock_level,
-                    'min_stock_level'            => $inventory->min_stock_level,
-                    'item_name'                  => $inventory->item_name,
+                    'prediction_status' => 'Insufficient Data',
+                    'ai_intelligence_progress' => 80,
+                    'message' => "Almost there — your {$usageCount} transaction".($usageCount > 1 ? 's' : '').' all happened on the same day. Complete at least one transaction on a different day so the AI can detect a usage trend.',
+                    'current_stock' => $inventory->stock_level,
+                    'min_stock_level' => $inventory->min_stock_level,
+                    'item_name' => $inventory->item_name,
                 ];
             }
 
             $result = $this->runPythonForecast($inventory, $historyDays);
-            if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
+            if ($result && ! isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
                 $this->saveForecast($inventoryId, $result, $triggerSource);
+
                 return $result;
             }
 
@@ -82,13 +89,14 @@ class InventoryForecastService
             // a usable result, surface "Insufficient Data" honestly so the panel
             // and users see exactly when AI is/isn't running.
             return $insufficientDataResponse;
-            
+
         } catch (\Throwable $e) {
-            Log::error("[AI-EXCEPTION] Error during live forecast for item {$inventoryId}: " . $e->getMessage());
+            Log::error("[AI-EXCEPTION] Error during live forecast for item {$inventoryId}: ".$e->getMessage());
+
             return [
                 'prediction_status' => 'Monitoring',
                 'message' => 'Forecast system is currently analyzing trends. Check back soon.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -100,10 +108,11 @@ class InventoryForecastService
     public function refreshAndSaveForecast(int $inventoryId, int $historyDays = 30, string $triggerSource = 'manual'): void
     {
         $lockKey = "inventory_forecast_lock_{$inventoryId}";
-        
+
         // Prevent overlapping forecast runs for the same item (Part 3.3)
         if (Cache::has($lockKey)) {
             Log::info("InventoryForecastService: Forecast for ID {$inventoryId} is already in progress. Skipping.");
+
             return;
         }
 
@@ -111,22 +120,24 @@ class InventoryForecastService
 
         try {
             $inventory = Inventory::find($inventoryId);
-            if (!$inventory) {
+            if (! $inventory) {
                 Log::warning("[AI-ERROR] Inventory ID {$inventoryId} not found in database.");
+
                 return;
             }
 
             $usageCount = InventoryUsageHistory::forecastingSafe()
                 ->where('inventory_id', $inventoryId)
                 ->count();
-                
+
             if ($usageCount < 3) {
                 Log::info("[AI-REFRESH-STATUS] Inventory ID {$inventoryId} insufficient history.");
                 $this->saveForecast($inventoryId, [
                     'prediction_status' => 'Insufficient Data',
                     'forecast_status' => 'Insufficient Data',
-                    'message' => 'Not enough sales history (need 3+ records) to generate a reliable AI forecast.'
+                    'message' => 'Not enough sales history (need 3+ records) to generate a reliable AI forecast.',
                 ], $triggerSource);
+
                 return;
             }
 
@@ -135,12 +146,13 @@ class InventoryForecastService
 
             if ($result === null || isset($result['error']) || ($result['prediction_status'] ?? '') === 'Insufficient Data') {
                 Log::warning("[AI-REFRESH-FAILED] Inventory ID {$inventoryId}: Model execution error or insufficient data.");
+
                 return;
             }
 
             $this->saveForecast($inventoryId, $result, $triggerSource);
         } catch (\Throwable $e) {
-            Log::error("[AI-REFRESH-EXCEPTION] Inventory ID {$inventoryId}: " . $e->getMessage());
+            Log::error("[AI-REFRESH-EXCEPTION] Inventory ID {$inventoryId}: ".$e->getMessage());
         } finally {
             Cache::forget($lockKey);
         }
@@ -161,20 +173,20 @@ class InventoryForecastService
                       strpos($forecastResult['prediction_status'], 'dataset') !== false));
 
         InventoryForecast::create([
-            'inventory_id'              => $inventoryId,
-            'predicted_demand'          => $avgDaily,
+            'inventory_id' => $inventoryId,
+            'predicted_demand' => $avgDaily,
             'average_daily_consumption' => $avgDaily,
-            'days_until_stockout'       => $forecastResult['days_until_stockout'] ?? null,
-            'predicted_stockout_date'   => $forecastResult['predicted_stockout_date'] ?? null,
+            'days_until_stockout' => $forecastResult['days_until_stockout'] ?? null,
+            'predicted_stockout_date' => $forecastResult['predicted_stockout_date'] ?? null,
             'suggested_reorder_quantity' => $forecastResult['suggested_reorder_quantity'] ?? null,
-            'forecast_status'           => $forecastResult['forecast_status'] ?? 'Safe',
-            'generated_at'              => now(),
-            'model_used'                => $forecastResult['model_used'] ?? 'python_forecast',
-            'prediction_source'         => $isDataset ? 'dataset' : 'live',
-            'trigger_source'            => $triggerSource,
-            'notes'                     => $forecastResult['message'] ?? null,
-            'trend_fit_score'           => $forecastResult['trend_fit_score'] ?? $forecastResult['confidence_score'] ?? null,
-            'confidence_score'          => $forecastResult['confidence_score'] ?? $forecastResult['trend_fit_score'] ?? null,
+            'forecast_status' => $forecastResult['forecast_status'] ?? 'Safe',
+            'generated_at' => now(),
+            'model_used' => $forecastResult['model_used'] ?? 'python_forecast',
+            'prediction_source' => $isDataset ? 'dataset' : 'live',
+            'trigger_source' => $triggerSource,
+            'notes' => $forecastResult['message'] ?? null,
+            'trend_fit_score' => $forecastResult['trend_fit_score'] ?? $forecastResult['confidence_score'] ?? null,
+            'confidence_score' => $forecastResult['confidence_score'] ?? $forecastResult['trend_fit_score'] ?? null,
         ]);
 
         $this->generateAiNotification($inventory, $forecastResult);
@@ -197,12 +209,12 @@ class InventoryForecastService
         }
 
         $message = $status === 'Critical'
-            ? "Critical: '{$itemName}' may run out in " . ($days ?? 'less than 7') . " days. Immediate reorder recommended."
-            : "Advisory: '{$itemName}' is depleting. Reorder suggested within " . ($days ?? '14') . " days.";
+            ? "Critical: '{$itemName}' may run out in ".($days ?? 'less than 7').' days. Immediate reorder recommended.'
+            : "Advisory: '{$itemName}' is depleting. Reorder suggested within ".($days ?? '14').' days.';
 
         if (isset($result['predicted_weekly_sales']) && $result['predicted_weekly_sales'] > 0) {
-             // Use revenue formatting directly since weekly sales in inventory typically means units*price or just units depending on script
-            $message .= " Weekly usage rate: " . number_format($result['predicted_weekly_sales'], 2) . " projected.";
+            // Use revenue formatting directly since weekly sales in inventory typically means units*price or just units depending on script
+            $message .= ' Weekly usage rate: '.number_format($result['predicted_weekly_sales'], 2).' projected.';
         }
 
         $this->createInternalNotification(
@@ -216,7 +228,7 @@ class InventoryForecastService
                 'days' => $days,
                 'average_daily_consumption' => $result['average_daily_consumption'] ?? 0,
                 'predicted_weekly_sales' => $result['predicted_weekly_sales'] ?? 0,
-                'predicted_monthly_sales' => $result['predicted_monthly_sales'] ?? 0
+                'predicted_monthly_sales' => $result['predicted_monthly_sales'] ?? 0,
             ]
         );
     }
@@ -235,7 +247,7 @@ class InventoryForecastService
      * Return all forecast rows for an inventory item, newest first.
      * Supports audit trail / prediction drift analysis.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<InventoryForecast>
+     * @return Collection<InventoryForecast>
      */
     public function getForecastHistory(int $inventoryId, int $limit = 20)
     {
@@ -265,23 +277,24 @@ class InventoryForecastService
         $csvPath = $customCsvPath ?? Storage::disk('local')->path($csvFilename);
 
         try {
-            if (!$customCsvPath) {
+            if (! $customCsvPath) {
                 if (Storage::disk('local')->exists($csvFilename)) {
                     Storage::disk('local')->delete($csvFilename);
                 }
 
                 Artisan::call('app:export-inventory-history', [
                     'inventory_id' => $inventoryId,
-                    '--days'       => $historyDays,
+                    '--days' => $historyDays,
                 ]);
 
-                if (!Storage::disk('local')->exists($csvFilename)) {
+                if (! Storage::disk('local')->exists($csvFilename)) {
                     Log::warning("InventoryForecastService: CSV export produced no file for inventory ID {$inventoryId}.");
+
                     return null;
                 }
 
                 $fileContent = file($csvPath);
-                if (!$fileContent || count($fileContent) < 3) {
+                if (! $fileContent || count($fileContent) < 3) {
                     return null; // header + fewer than 2 data rows
                 }
             }
@@ -290,29 +303,30 @@ class InventoryForecastService
             if ($apiUrl) {
                 try {
                     $csvData = file_get_contents($csvPath);
-                    $response = \Illuminate\Support\Facades\Http::timeout(90)->post("{$apiUrl}/forecast/inventory", [
+                    $response = Http::timeout(90)->post("{$apiUrl}/forecast/inventory", [
                         'min_stock_level' => $inventory->min_stock_level ?? 0,
                         'csv_data' => $csvData,
                         'code' => $inventory->code,
                         'current_stock' => $inventory->stock_level,
-                        'history_days' => $historyDays
+                        'history_days' => $historyDays,
                     ]);
 
                     if ($response->successful()) {
                         $forecastResult = $response->json();
-                        $forecastResult['item_name']    = $inventory->item_name;
+                        $forecastResult['item_name'] = $inventory->item_name;
                         $forecastResult['inventory_id'] = $inventory->id;
 
                         return $forecastResult;
                     }
                 } catch (\Exception $e) {
-                    Log::error("AI API Inventory Forecast failed: " . $e->getMessage());
+                    Log::error('AI API Inventory Forecast failed: '.$e->getMessage());
                 }
             }
 
             $pythonScriptPath = base_path('ai/forecast.py');
-            if (!file_exists($pythonScriptPath)) {
+            if (! file_exists($pythonScriptPath)) {
                 Log::error("InventoryForecastService: Python forecast script not found at {$pythonScriptPath}.");
+
                 return null;
             }
 
@@ -320,33 +334,36 @@ class InventoryForecastService
                 ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
 
             $minStockLevel = $inventory->min_stock_level ?? 0;
-            $command       = $pythonExecutable
-                . ' ' . escapeshellarg($pythonScriptPath)
-                . ' ' . escapeshellarg($csvPath)
-                . ' ' . escapeshellarg($minStockLevel)
-                . ' ' . escapeshellarg("--current_stock={$inventory->stock_level}")
-                . ' ' . escapeshellarg("--history_days={$historyDays}");
+            $command = $pythonExecutable
+                .' '.escapeshellarg($pythonScriptPath)
+                .' '.escapeshellarg($csvPath)
+                .' '.escapeshellarg($minStockLevel)
+                .' '.escapeshellarg("--current_stock={$inventory->stock_level}")
+                .' '.escapeshellarg("--history_days={$historyDays}");
 
             $process = Process::run($command);
 
             if ($process->failed()) {
-                Log::error("InventoryForecastService: Python script error for inventory ID {$inventoryId}: " . $process->errorOutput());
+                Log::error("InventoryForecastService: Python script error for inventory ID {$inventoryId}: ".$process->errorOutput());
+
                 return null;
             }
 
             $forecastResult = json_decode($process->output(), true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::error("InventoryForecastService: JSON decode error for inventory ID {$inventoryId}: " . json_last_error_msg());
+                Log::error("InventoryForecastService: JSON decode error for inventory ID {$inventoryId}: ".json_last_error_msg());
+
                 return null;
             }
 
-            $forecastResult['item_name']    = $inventory->item_name;
+            $forecastResult['item_name'] = $inventory->item_name;
             $forecastResult['inventory_id'] = $inventory->id;
 
             return $forecastResult;
 
         } catch (\Throwable $e) {
-            Log::error("InventoryForecastService: exception for inventory ID {$inventoryId}: " . $e->getMessage());
+            Log::error("InventoryForecastService: exception for inventory ID {$inventoryId}: ".$e->getMessage());
+
             return null;
         } finally {
             if (Storage::disk('local')->exists($csvFilename)) {
@@ -373,8 +390,8 @@ class InventoryForecastService
                 $this->runBatchViaPython($inventoryIds, $historyDays, $triggerSource, $batchId, $totalItems);
             }
         } catch (\Throwable $e) {
-            Log::error("[AI-BATCH-ERROR] " . $e->getMessage());
-            $this->updateBatchProgress($batchId, 0, $totalItems, 'Error: ' . $e->getMessage());
+            Log::error('[AI-BATCH-ERROR] '.$e->getMessage());
+            $this->updateBatchProgress($batchId, 0, $totalItems, 'Error: '.$e->getMessage());
         }
     }
 
@@ -389,7 +406,9 @@ class InventoryForecastService
 
         foreach ($inventoryIds as $id) {
             $inventory = Inventory::find($id);
-            if (!$inventory) continue;
+            if (! $inventory) {
+                continue;
+            }
 
             $usageCount = InventoryUsageHistory::forecastingSafe()
                 ->where('inventory_id', $id)
@@ -397,11 +416,12 @@ class InventoryForecastService
 
             if ($usageCount < 3) {
                 $processed++;
+
                 continue;
             }
 
             $result = $this->runPythonForecast($inventory, $historyDays);
-            if ($result && !isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
+            if ($result && ! isset($result['error']) && ($result['prediction_status'] ?? '') !== 'Insufficient Data') {
                 $this->saveForecast($id, $result, $triggerSource);
                 $successCount++;
             }
@@ -414,7 +434,7 @@ class InventoryForecastService
         $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
         Log::info("[AI-BATCH-SUCCESS] API mode: processed {$totalItems} items, saved {$successCount} results.");
 
-        \App\Support\DashboardCache::forgetEverywhere();
+        DashboardCache::forgetEverywhere();
     }
 
     /**
@@ -431,32 +451,35 @@ class InventoryForecastService
                     'code' => $inventory->code ?? $inventory->item_name,
                     'min_stock_level' => $inventory->min_stock_level,
                     'current_stock' => $inventory->stock_level,
-                    'history_days' => $historyDays
+                    'history_days' => $historyDays,
                 ];
             }
         }
 
         if (empty($itemsToProcess)) {
             $this->updateBatchProgress($batchId, 100, 0, 'No items found with valid codes for analysis.');
+
             return;
         }
 
         $tempDir = storage_path('app/temp');
-        if (!is_dir($tempDir)) {
+        if (! is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
 
-        $inputPath = $tempDir . "/batch_input_{$batchId}.json";
+        $inputPath = $tempDir."/batch_input_{$batchId}.json";
         file_put_contents($inputPath, json_encode($itemsToProcess));
 
-        $batchCsvPath = $tempDir . "/batch_usage_{$batchId}.csv";
+        $batchCsvPath = $tempDir."/batch_usage_{$batchId}.csv";
         $usageRows = InventoryUsageHistory::forecastingSafe()
             ->whereIn('inventory_id', $inventoryIds)
             ->where('usage_date', '>=', now()->subDays($historyDays)->toDateString())
             ->get(['inventory_id', 'usage_date', 'quantity_used']);
 
         $idToCode = [];
-        foreach ($itemsToProcess as $item) { $idToCode[$item['id']] = $item['code']; }
+        foreach ($itemsToProcess as $item) {
+            $idToCode[$item['id']] = $item['code'];
+        }
 
         $f = fopen($batchCsvPath, 'w');
         fputcsv($f, ['id', 'code', 'date', 'quantity_used']);
@@ -464,8 +487,8 @@ class InventoryForecastService
             fputcsv($f, [
                 $row->inventory_id,
                 $idToCode[$row->inventory_id] ?? 'UNK',
-                $row->usage_date instanceof \Carbon\Carbon ? $row->usage_date->toDateString() : $row->usage_date,
-                $row->quantity_used
+                $row->usage_date instanceof Carbon ? $row->usage_date->toDateString() : $row->usage_date,
+                $row->quantity_used,
             ]);
         }
         fclose($f);
@@ -478,20 +501,24 @@ class InventoryForecastService
 
         $process = Process::path(base_path())->timeout(300)->run(
             $pythonExecutable
-            . ' ' . escapeshellarg($scriptPath)
-            . ' ' . escapeshellarg($batchCsvPath)
-            . ' ' . escapeshellarg($inputPath)
+            .' '.escapeshellarg($scriptPath)
+            .' '.escapeshellarg($batchCsvPath)
+            .' '.escapeshellarg($inputPath)
         );
 
-        if (file_exists($inputPath)) @unlink($inputPath);
-        if (file_exists($batchCsvPath)) @unlink($batchCsvPath);
+        if (file_exists($inputPath)) {
+            @unlink($inputPath);
+        }
+        if (file_exists($batchCsvPath)) {
+            @unlink($batchCsvPath);
+        }
 
         if ($process->failed()) {
-            throw new \Exception("Batch Python script failed: " . $process->errorOutput());
+            throw new \Exception('Batch Python script failed: '.$process->errorOutput());
         }
 
         $allResults = json_decode($process->output(), true);
-        if (!$allResults || isset($allResults['error'])) {
+        if (! $allResults || isset($allResults['error'])) {
             throw new \Exception($allResults['error'] ?? 'Invalid JSON output from AI script.');
         }
 
@@ -500,17 +527,18 @@ class InventoryForecastService
         $successCount = 0;
         foreach ($allResults as $inventoryId => $result) {
             if (isset($result['error']) || ($result['prediction_status'] ?? '') === 'Error') {
-                Log::warning("Batch forecast item failure ID {$inventoryId}: " . ($result['error'] ?? 'Unknown error'));
+                Log::warning("Batch forecast item failure ID {$inventoryId}: ".($result['error'] ?? 'Unknown error'));
+
                 continue;
             }
-            $this->saveForecast((int)$inventoryId, $result, $triggerSource);
+            $this->saveForecast((int) $inventoryId, $result, $triggerSource);
             $successCount++;
         }
 
         $this->updateBatchProgress($batchId, 100, $totalItems, "Analysis complete. Updated {$successCount} items.");
         Log::info("[AI-BATCH-SUCCESS] Python mode: processed {$totalItems} items, saved {$successCount} results.");
 
-        \App\Support\DashboardCache::forgetEverywhere();
+        DashboardCache::forgetEverywhere();
     }
 
     /**
@@ -518,13 +546,13 @@ class InventoryForecastService
      */
     protected function updateBatchProgress(string $batchId, int $percent, int $total, string $message): void
     {
-        Cache::put("forecast_batch_status", [
+        Cache::put('forecast_batch_status', [
             'batch_id' => $batchId,
             'percent' => $percent,
             'total' => $total,
             'message' => $message,
             'updated_at' => now()->toDateTimeString(),
-            'is_running' => $percent < 100 && !str_starts_with($message, 'Error')
+            'is_running' => $percent < 100 && ! str_starts_with($message, 'Error'),
         ], 600);
     }
 }

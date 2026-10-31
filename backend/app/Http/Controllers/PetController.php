@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
 use App\Models\Pet;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Scopes\ClinicScope;
+use App\Models\StoredFile;
+use App\Support\ListQuery;
 use App\Traits\IdentifiesPortalOwner;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class PetController extends Controller
 {
@@ -19,12 +23,13 @@ class PetController extends Controller
     private function uploadPetPhotoBytes(string $bytes, string $ext): string
     {
         $ext = $ext === 'jpeg' ? 'jpg' : $ext;
-        $name = 'pets/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        \App\Models\StoredFile::store($name, $bytes, 'image/' . $ext);
+        $name = 'pets/'.time().'_'.bin2hex(random_bytes(4)).'.'.$ext;
+        StoredFile::store($name, $bytes, 'image/'.$ext);
+
         return $name;
     }
 
-    private function uploadPetPhotoFile(\Illuminate\Http\UploadedFile $file): string
+    private function uploadPetPhotoFile(UploadedFile $file): string
     {
         $contents = file_get_contents($file->getRealPath());
         if ($contents === false) {
@@ -33,6 +38,7 @@ class PetController extends Controller
         // Prefer the extension guessed from the file's actual contents over the
         // client-supplied filename, which the uploader controls.
         $ext = strtolower($file->extension() ?: $file->getClientOriginalExtension() ?: 'png');
+
         return $this->uploadPetPhotoBytes($contents, $ext);
     }
 
@@ -49,7 +55,7 @@ class PetController extends Controller
     private function unscopedName(): \Closure
     {
         return fn ($q) => $q
-            ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+            ->withoutGlobalScope(ClinicScope::class)
             ->select('id', 'name');
     }
 
@@ -60,19 +66,22 @@ class PetController extends Controller
         if ($request->boolean('minimal')) {
             $query = Pet::select('id', 'name', 'owner_id', 'species_id', 'breed_id', 'weight')
                 ->with(['owner:id,name', 'species' => $this->unscopedName()]);
-            
+
             // Always hide AI Training Records for minimal lists too
-            $query->whereHas('owner', function($q) {
+            $query->whereHas('owner', function ($q) {
                 $q->where('email', '!=', 'dataset.seeder@autovet.ai');
             });
 
             if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
                 $ownerId = $this->getPortalOwnerId();
-                if (!$ownerId) return response()->json([]);
+                if (! $ownerId) {
+                    return response()->json([]);
+                }
                 $query->where('owner_id', $ownerId);
             } elseif ($request->has('owner_id')) {
                 $query->where('owner_id', $request->owner_id);
             }
+
             return response()->json($query->orderBy('name')->get());
         }
 
@@ -85,13 +94,13 @@ class PetController extends Controller
             ]);
 
         // Always hide AI Training Records from the list for Admins/Staff
-        $query->whereHas('owner', function($q) {
+        $query->whereHas('owner', function ($q) {
             $q->where('email', '!=', 'dataset.seeder@autovet.ai');
         });
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
                 $query->where('owner_id', $ownerId);
@@ -103,23 +112,24 @@ class PetController extends Controller
         // Add Search functionality
         if ($request->has('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhereHas('owner', function($sq) use ($search) {
-                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
-                  })
-                  ->orWhereHas('breed', function($sq) use ($search) {
-                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
-                  })
-                  ->orWhereHas('species', function($sq) use ($search) {
-                      $sq->where('name', 'like', \App\Support\ListQuery::contains($search));
-                  });
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', ListQuery::contains($search))
+                    ->orWhereHas('owner', function ($sq) use ($search) {
+                        $sq->where('name', 'like', ListQuery::contains($search));
+                    })
+                    ->orWhereHas('breed', function ($sq) use ($search) {
+                        $sq->where('name', 'like', ListQuery::contains($search));
+                    })
+                    ->orWhereHas('species', function ($sq) use ($search) {
+                        $sq->where('name', 'like', ListQuery::contains($search));
+                    });
             });
         }
 
         $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
-        $perPage = \App\Support\ListQuery::perPage($request, 12);
+        $perPage = ListQuery::perPage($request, 12);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -136,13 +146,13 @@ class PetController extends Controller
         $user = auth()->user();
         $isOwner = $user && method_exists($user, 'isOwner') && $user->isOwner();
 
-        if (!$isOwner) {
+        if (! $isOwner) {
             return null;
         }
 
         $ownerId = $this->getPortalOwnerId();
 
-        if (!$ownerId) {
+        if (! $ownerId) {
             abort(response()->json([
                 'message' => 'Your client record could not be found or created. Please contact the clinic so they can restore your profile.',
             ], 422));
@@ -199,20 +209,20 @@ class PetController extends Controller
         // file a diagnosis attributed to any vet by sending these fields.
         if ($this->canWriteClinicalNotes() && $request->hasAny(['chief_complaint', 'findings', 'diagnosis', 'treatment_plan'])) {
             $recordVetId = $request->vet_id;
-            if (!$recordVetId) {
+            if (! $recordVetId) {
                 $user = auth()->user();
-                if ($user && $user->role === \App\Enums\Roles::VETERINARIAN->value) {
+                if ($user && $user->role === Roles::VETERINARIAN->value) {
                     $recordVetId = $user->id;
                 }
             }
 
             $pet->medicalRecords()->create([
                 'chief_complaint' => $request->chief_complaint,
-                'findings'        => $request->findings,
-                'diagnosis'       => $request->diagnosis,
-                'treatment_plan'  => $request->treatment_plan,
-                'notes'           => $request->notes,
-                'vet_id'          => $recordVetId,
+                'findings' => $request->findings,
+                'diagnosis' => $request->diagnosis,
+                'treatment_plan' => $request->treatment_plan,
+                'notes' => $request->notes,
+                'vet_id' => $recordVetId,
             ]);
         }
 
@@ -228,6 +238,7 @@ class PetController extends Controller
     private function canWriteClinicalNotes(): bool
     {
         $user = auth()->user();
+
         return $user && method_exists($user, 'isClinical') && $user->isClinical();
     }
 
@@ -241,12 +252,12 @@ class PetController extends Controller
         // status included, used to reach the client), and a client does not
         // see invoices the clinic is still drafting.
         return response()->json($pet->load([
-                'owner',
-                'species' => $this->unscopedName(),
-                'breed' => $this->unscopedName(),
-                'sizeCategory', 'appointments.service', 'medicalRecords.vet:id,name',
-                'invoices' => fn ($q) => $isOwner ? $q->whereRaw('LOWER(status) != ?', ['draft']) : $q,
-            ])
+            'owner',
+            'species' => $this->unscopedName(),
+            'breed' => $this->unscopedName(),
+            'sizeCategory', 'appointments.service', 'medicalRecords.vet:id,name',
+            'invoices' => fn ($q) => $isOwner ? $q->whereRaw('LOWER(status) != ?', ['draft']) : $q,
+        ])
             ->append(['total_paid', 'total_due', 'last_visit', 'next_due']));
     }
 
@@ -293,7 +304,7 @@ class PetController extends Controller
             $validated['photo'] = null;
         } else {
             // Keep existing photo if a URL was sent back unchanged
-            if (isset($request->photo) && !preg_match('/^data:image/', $request->photo)) {
+            if (isset($request->photo) && ! preg_match('/^data:image/', $request->photo)) {
                 // It's likely the existing path, so leave it untouched
                 unset($validated['photo']);
             }
@@ -308,20 +319,20 @@ class PetController extends Controller
             // Only create if at least one clinical field is not empty
             if ($request->chief_complaint || $request->findings || $request->diagnosis || $request->treatment_plan) {
                 $recordVetId = $request->vet_id;
-                if (!$recordVetId) {
+                if (! $recordVetId) {
                     $user = auth()->user();
-                    if ($user && $user->role === \App\Enums\Roles::VETERINARIAN->value) {
+                    if ($user && $user->role === Roles::VETERINARIAN->value) {
                         $recordVetId = $user->id;
                     }
                 }
 
                 $pet->medicalRecords()->create([
                     'chief_complaint' => $request->chief_complaint,
-                    'findings'        => $request->findings,
-                    'diagnosis'       => $request->diagnosis,
-                    'treatment_plan'  => $request->treatment_plan,
-                    'notes'           => $request->notes,
-                    'vet_id'          => $recordVetId,
+                    'findings' => $request->findings,
+                    'diagnosis' => $request->diagnosis,
+                    'treatment_plan' => $request->treatment_plan,
+                    'notes' => $request->notes,
+                    'vet_id' => $recordVetId,
                 ]);
             }
         }
@@ -341,7 +352,7 @@ class PetController extends Controller
         $isAdminUser = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
         $isClinicalUser = $user && method_exists($user, 'isClinical') && $user->isClinical();
 
-        if (!$isPortalOwner && !$isAdminUser && !$isClinicalUser) {
+        if (! $isPortalOwner && ! $isAdminUser && ! $isClinicalUser) {
             return response()->json(['message' => 'Unauthorized. You can only delete your own pet.'], 403);
         }
 

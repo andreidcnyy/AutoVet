@@ -20,7 +20,7 @@ trait HasSyncFields
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
             }
-            $model->sync_status              = SyncStatus::LOCAL_ONLY->value;
+            $model->sync_status = SyncStatus::LOCAL_ONLY->value;
             $model->last_modified_locally_at = now();
         });
 
@@ -63,13 +63,13 @@ trait HasSyncFields
                 : $model->toArray();
 
             SyncOutbox::create([
-                'entity_type'     => class_basename($model),
-                'entity_uuid'     => $model->uuid,
+                'entity_type' => class_basename($model),
+                'entity_uuid' => $model->uuid,
                 'entity_local_id' => $model->getKey(),
-                'action_type'     => $action,
-                'payload'         => $payload,
-                'status'          => 'pending',
-                'queued_at'       => now(),
+                'action_type' => $action,
+                'payload' => $payload,
+                'status' => 'pending',
+                'queued_at' => now(),
             ]);
         } catch (\Throwable $e) {
             // Log warning removed to prevent potential logger-related crashes
@@ -101,7 +101,7 @@ trait HasSyncFields
         $this->timestamps = false;
         $this->update([
             'sync_status' => SyncStatus::SYNCED->value,
-            'synced_at'   => now(),
+            'synced_at' => now(),
         ]);
         $this->timestamps = true;
     }

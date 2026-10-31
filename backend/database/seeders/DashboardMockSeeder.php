@@ -2,19 +2,18 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Owner;
-use App\Models\Pet;
-use App\Models\Species;
+use App\Models\Appointment;
 use App\Models\Breed;
+use App\Models\Clinic;
 use App\Models\Inventory;
 use App\Models\InventoryCategory;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
-use App\Models\Appointment;
 use App\Models\Notification;
-use App\Models\Clinic;
+use App\Models\Owner;
+use App\Models\Pet;
+use App\Models\Service;
+use App\Models\Species;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -49,7 +48,7 @@ class DashboardMockSeeder extends Seeder
                 'name' => "Mock Owner {$i}",
                 'email' => "owner{$i}@example.com",
                 'phone' => "0912345678{$i}",
-                'address' => "Quezon City, PH",
+                'address' => 'Quezon City, PH',
                 'city' => 'Quezon City',
                 'province' => 'Metro Manila',
                 'zip' => '1100',
@@ -62,7 +61,7 @@ class DashboardMockSeeder extends Seeder
         foreach ($owners as $index => $owner) {
             $speciesName = ($index % 2 == 0) ? 'Canine' : 'Feline';
             $speciesId = ($index % 2 == 0) ? $canine->id : $feline->id;
-            
+
             $pet = Pet::create([
                 'name' => "Pet of {$owner->name}",
                 'owner_id' => $owner->id,
@@ -85,7 +84,7 @@ class DashboardMockSeeder extends Seeder
                 'status' => 'Healthy',
                 'clinic_id' => $clinic->id,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             $pets[] = $pet;
@@ -99,8 +98,8 @@ class DashboardMockSeeder extends Seeder
                 ['item_name' => $med, 'clinic_id' => $clinic->id],
                 [
                     'inventory_category_id' => $medCategory->id ?? 1,
-                    'sku' => 'MED-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
-                    'code' => 'MED-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
+                    'sku' => 'MED-'.str_pad($index + 1, 4, '0', STR_PAD_LEFT),
+                    'code' => 'MED-'.str_pad($index + 1, 4, '0', STR_PAD_LEFT),
                     'stock_level' => rand(5, 50),
                     'min_stock_level' => 10,
                     'price' => rand(50, 200),
@@ -116,7 +115,7 @@ class DashboardMockSeeder extends Seeder
         foreach ($pets as $pet) {
             Appointment::create([
                 'pet_id' => $pet->id,
-                'title' => 'General Checkup for ' . $pet->name,
+                'title' => 'General Checkup for '.$pet->name,
                 'date' => Carbon::now()->addDays(rand(1, 10))->toDateString(),
                 'time' => '10:00 AM',
                 'status' => 'Scheduled',
@@ -130,10 +129,10 @@ class DashboardMockSeeder extends Seeder
             $date = Carbon::now()->subMonths($m);
             for ($i = 0; $i < 3; $i++) {
                 $pet = $pets[rand(0, count($pets) - 1)];
-                
+
                 $total = rand(500, 2000);
                 $invoiceId = DB::table('invoices')->insertGetId([
-                    'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+                    'invoice_number' => 'INV-'.strtoupper(Str::random(8)),
                     'pet_id' => $pet->id,
                     'status' => 'Paid',
                     'total' => $total,
@@ -143,11 +142,11 @@ class DashboardMockSeeder extends Seeder
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
                     'sync_status' => 'local_only',
-                    'stock_deducted' => true
+                    'stock_deducted' => true,
                 ]);
 
                 // Service item
-                $service = \App\Models\Service::where('category', 'Consultation')->where('clinic_id', $clinic->id)->first();
+                $service = Service::where('category', 'Consultation')->where('clinic_id', $clinic->id)->first();
                 DB::table('invoice_items')->insert([
                     'invoice_id' => $invoiceId,
                     'name' => 'Consultation',
@@ -160,7 +159,7 @@ class DashboardMockSeeder extends Seeder
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
-                    'sync_status' => 'local_only'
+                    'sync_status' => 'local_only',
                 ]);
 
                 // Inventory item
@@ -178,18 +177,18 @@ class DashboardMockSeeder extends Seeder
                     'created_at' => $date->copy()->subDays(rand(1, 25)),
                     'updated_at' => $date->copy()->subDays(rand(1, 25)),
                     'uuid' => (string) Str::uuid(),
-                    'sync_status' => 'local_only'
+                    'sync_status' => 'local_only',
                 ]);
 
                 // Populate InventoryUsageHistory
                 DB::table('inventory_usage_history')->insert([
                     'inventory_id' => $inv->id,
-                    'invoice_id'   => $invoiceId,
+                    'invoice_id' => $invoiceId,
                     'invoice_item_id' => $itemId,
                     'quantity_used' => $qty,
-                    'usage_date'   => $date->copy()->subDays(rand(1, 25))->toDateString(),
-                    'source_type'  => 'retail_sale',
-                    'unit_price'   => $inv->selling_price,
+                    'usage_date' => $date->copy()->subDays(rand(1, 25))->toDateString(),
+                    'source_type' => 'retail_sale',
+                    'unit_price' => $inv->selling_price,
                     'clinic_id' => $clinic->id,
                     'created_at' => $date->copy(),
                     'updated_at' => $date->copy(),
@@ -203,7 +202,7 @@ class DashboardMockSeeder extends Seeder
             'message' => 'The Admin Dashboard is now showing live data from the Laravel API.',
             'type' => 'System',
             'clinic_id' => $clinic->id,
-            'created_at' => Carbon::now()
+            'created_at' => Carbon::now(),
         ]);
     }
 }

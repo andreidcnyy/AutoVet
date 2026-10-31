@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasClinic;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\HasClinic;
 
 class ClientNotification extends Model
 {
-    use HasFactory, HasClinic;
+    use HasClinic, HasFactory;
 
     protected $fillable = [
         'clinic_id',

@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Clinic;
 use App\Models\Inventory;
-use App\Models\InventoryCategory;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class AnalyticsMockSeeder extends Seeder
@@ -14,7 +13,9 @@ class AnalyticsMockSeeder extends Seeder
     public function run(): void
     {
         $clinic = Clinic::first();
-        if (!$clinic) return;
+        if (! $clinic) {
+            return;
+        }
 
         // ── 1. OWNERS: realistic gradual-growth distribution ─────────────────────
 
@@ -31,8 +32,8 @@ class AnalyticsMockSeeder extends Seeder
 
         $bulkSpread = [
             -11 => 2, -10 => 3, -9 => 3, -8 => 4,
-            -7  => 4, -6  => 5, -5 => 5, -4 => 5,
-            -3  => 6, -2  => 6, -1 => 5, 0  => 2,
+            -7 => 4, -6 => 5, -5 => 5, -4 => 5,
+            -3 => 6, -2 => 6, -1 => 5, 0 => 2,
         ];
 
         $bulkIdx = 0;
@@ -50,8 +51,8 @@ class AnalyticsMockSeeder extends Seeder
         // Analytics demo owners: gradual growth from ~8/month to ~18/month
         $distribution = [
             -11 => 8,  -10 => 9,  -9 => 10, -8 => 11,
-            -7  => 12, -6  => 13, -5 => 13, -4 => 14,
-            -3  => 15, -2  => 16, -1 => 17, 0  => 12,
+            -7 => 12, -6 => 13, -5 => 13, -4 => 14,
+            -3 => 15, -2 => 16, -1 => 17, 0 => 12,
         ];
 
         $index = (DB::table('owners')->max('id') ?? 0) + 1;
@@ -61,24 +62,24 @@ class AnalyticsMockSeeder extends Seeder
             for ($i = 0; $i < $count; $i++, $index++) {
                 $createdAt = $monthBase->copy()->addDays(rand(0, 27))->setHour(rand(8, 18));
                 DB::table('owners')->insert([
-                    'name'       => "Analytics Client {$index}",
-                    'email'      => "analytics.client.{$index}@autovet.demo",
-                    'phone'      => '09' . rand(100000000, 999999999),
-                    'address'    => 'Metro Manila',
-                    'clinic_id'  => $clinic->id,
+                    'name' => "Analytics Client {$index}",
+                    'email' => "analytics.client.{$index}@autovet.demo",
+                    'phone' => '09'.rand(100000000, 999999999),
+                    'address' => 'Metro Manila',
+                    'clinic_id' => $clinic->id,
                     'created_at' => $createdAt,
                     'updated_at' => $createdAt,
                 ]);
             }
         }
 
-        $this->command->info('AnalyticsMockSeeder: ' . array_sum($distribution) . ' demo clients seeded; bulk owners redistributed.');
+        $this->command->info('AnalyticsMockSeeder: '.array_sum($distribution).' demo clients seeded; bulk owners redistributed.');
 
         // ── 2. INVENTORY CATEGORIES & ITEMS ──────────────────────────────────────
 
         $extraCategories = [
-            'Vaccines'           => ['Rabies Vaccine', 'Distemper Combo Vaccine', 'Parvo Vaccine', 'Bordetella Vaccine'],
-            'Grooming Supplies'  => ['Pet Shampoo', 'Conditioning Spray', 'Ear Cleaner Solution', 'Nail Clippers Set'],
+            'Vaccines' => ['Rabies Vaccine', 'Distemper Combo Vaccine', 'Parvo Vaccine', 'Bordetella Vaccine'],
+            'Grooming Supplies' => ['Pet Shampoo', 'Conditioning Spray', 'Ear Cleaner Solution', 'Nail Clippers Set'],
             'Food & Supplements' => ['Premium Dog Food 3kg', 'Cat Food Sachets', 'Vitamin E Drops', 'Probiotic Supplement'],
         ];
 
@@ -98,7 +99,7 @@ class AnalyticsMockSeeder extends Seeder
                     ->limit(4)
                     ->pluck('id')
                     ->toArray();
-                if (!empty($ids)) {
+                if (! empty($ids)) {
                     $categoryItems[$catName] = $ids;
                 }
             }
@@ -111,11 +112,11 @@ class AnalyticsMockSeeder extends Seeder
                 ->where('clinic_id', $clinic->id)
                 ->value('id');
 
-            if (!$catId) {
+            if (! $catId) {
                 $catId = DB::table('mdm_inventory_categories')->insertGetId([
-                    'name'       => $catName,
-                    'status'     => 'Active',
-                    'clinic_id'  => $clinic->id,
+                    'name' => $catName,
+                    'status' => 'Active',
+                    'clinic_id' => $clinic->id,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -128,7 +129,7 @@ class AnalyticsMockSeeder extends Seeder
                     ->where('clinic_id', $clinic->id)
                     ->value('id');
 
-                if (!$invId) {
+                if (! $invId) {
                     // Cost and selling price used to be rolled independently, which
                     // left some items priced below cost. Mark the price up from
                     // the cost instead, and fill the stock fields the inventory
@@ -137,23 +138,23 @@ class AnalyticsMockSeeder extends Seeder
 
                     $invId = DB::table('inventories')->insertGetId([
                         'inventory_category_id' => $catId,
-                        'clinic_id'             => $clinic->id,
-                        'item_name'             => $itemName,
-                        'code'                  => 'ANA-' . strtoupper(substr(md5($itemName), 0, 6)),
-                        'sku'                   => 'SKU-' . strtoupper(substr(md5($itemName), 0, 4)),
-                        'stock_level'           => rand(30, 150),
-                        'min_stock_level'       => 10,
-                        'unit'                  => 'pc',
-                        'price'                 => $cost,
-                        'selling_price'         => round($cost * (1 + rand(35, 90) / 100), 2),
-                        'expiration_date'       => now()->addMonths(rand(6, 30))->toDateString(),
-                        'lot_number'            => 'LOT-' . now()->format('Y') . '-' . strtoupper(substr(md5($itemName), 0, 4)),
-                        'batch_number'          => 'B' . strtoupper(substr(md5($itemName), 0, 5)),
-                        'status'                => 'Active',
-                        'is_billable'           => true,
-                        'is_consumable'         => false,
-                        'created_at'            => now(),
-                        'updated_at'            => now(),
+                        'clinic_id' => $clinic->id,
+                        'item_name' => $itemName,
+                        'code' => 'ANA-'.strtoupper(substr(md5($itemName), 0, 6)),
+                        'sku' => 'SKU-'.strtoupper(substr(md5($itemName), 0, 4)),
+                        'stock_level' => rand(30, 150),
+                        'min_stock_level' => 10,
+                        'unit' => 'pc',
+                        'price' => $cost,
+                        'selling_price' => round($cost * (1 + rand(35, 90) / 100), 2),
+                        'expiration_date' => now()->addMonths(rand(6, 30))->toDateString(),
+                        'lot_number' => 'LOT-'.now()->format('Y').'-'.strtoupper(substr(md5($itemName), 0, 4)),
+                        'batch_number' => 'B'.strtoupper(substr(md5($itemName), 0, 5)),
+                        'status' => 'Active',
+                        'is_billable' => true,
+                        'is_consumable' => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
                 $ids[] = $invId;
@@ -172,10 +173,10 @@ class AnalyticsMockSeeder extends Seeder
 
         // Monthly base qty ranges per category (min, max) — grows slightly over time
         $baseQtyRanges = [
-            'Medications'        => [20, 35],
-            'Consumables'        => [35, 55],
-            'Vaccines'           => [25, 40],
-            'Grooming Supplies'  => [12, 22],
+            'Medications' => [20, 35],
+            'Consumables' => [35, 55],
+            'Vaccines' => [25, 40],
+            'Grooming Supplies' => [12, 22],
             'Food & Supplements' => [28, 48],
         ];
 
@@ -183,7 +184,9 @@ class AnalyticsMockSeeder extends Seeder
         foreach ($categoryItems as $catName => $inventoryIds) {
             [$min, $max] = $baseQtyRanges[$catName] ?? [15, 30];
             $itemCount = count($inventoryIds);
-            if ($itemCount === 0) continue;
+            if ($itemCount === 0) {
+                continue;
+            }
 
             for ($m = -11; $m <= 0; $m++) {
                 $monthBase = Carbon::now()->startOfMonth()->addMonths($m);
@@ -197,7 +200,9 @@ class AnalyticsMockSeeder extends Seeder
                     $isLast = ($k === $itemCount - 1);
                     $qty = $isLast ? $remaining : (int) round($remaining * (rand(25, 45) / 100));
                     $remaining -= $qty;
-                    if ($qty <= 0) continue;
+                    if ($qty <= 0) {
+                        continue;
+                    }
 
                     // Split the month's usage across several dates instead of
                     // booking it all on one. A single row per item per month
@@ -212,7 +217,9 @@ class AnalyticsMockSeeder extends Seeder
 
                     for ($i = 0; $i < $parts; $i++) {
                         $partQty = $perPart + ($i === 0 ? $leftover : 0);
-                        if ($partQty <= 0) continue;
+                        if ($partQty <= 0) {
+                            continue;
+                        }
 
                         // Spread over the month, and never past today — a usage
                         // date in the future would sit outside every window the
@@ -225,16 +232,16 @@ class AnalyticsMockSeeder extends Seeder
                         }
 
                         $rows[] = [
-                            'clinic_id'       => $clinic->id,
-                            'inventory_id'    => $invId,
-                            'invoice_id'      => null,
+                            'clinic_id' => $clinic->id,
+                            'inventory_id' => $invId,
+                            'invoice_id' => null,
                             'invoice_item_id' => null,
-                            'quantity_used'   => $partQty,
-                            'usage_date'      => $day->toDateString(),
-                            'source_type'     => 'retail_sale',
-                            'unit_price'      => rand(50, 500),
-                            'created_at'      => now(),
-                            'updated_at'      => now(),
+                            'quantity_used' => $partQty,
+                            'usage_date' => $day->toDateString(),
+                            'source_type' => 'retail_sale',
+                            'unit_price' => rand(50, 500),
+                            'created_at' => now(),
+                            'updated_at' => now(),
                         ];
                     }
                 }
@@ -245,6 +252,6 @@ class AnalyticsMockSeeder extends Seeder
             DB::table('inventory_usage_history')->insert($chunk);
         }
 
-        $this->command->info('AnalyticsMockSeeder: ' . count($rows) . ' usage history rows seeded for ' . count($categoryItems) . ' categories.');
+        $this->command->info('AnalyticsMockSeeder: '.count($rows).' usage history rows seeded for '.count($categoryItems).' categories.');
     }
 }

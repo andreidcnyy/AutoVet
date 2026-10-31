@@ -25,12 +25,16 @@ use Illuminate\Support\Facades\Cache;
 class MaintenanceWindow
 {
     public const KEY_ENABLED = 'maintenance_mode';
+
     public const KEY_STARTS_AT = 'maintenance_starts_at';
+
     public const KEY_ENDS_AT = 'maintenance_ends_at';
+
     public const KEY_MESSAGE = 'maintenance_message';
 
     /** Settings are read on nearly every portal request, so keep them briefly. */
     private const CACHE_KEY = 'maintenance_window_settings';
+
     private const CACHE_SECONDS = 10;
 
     /**
@@ -57,11 +61,11 @@ class MaintenanceWindow
         // A window with an end that has passed is over, whatever the flag says.
         $expired = $enabled && $endsAt !== null && $now->greaterThanOrEqualTo($endsAt);
 
-        $active = $started && !$expired;
-        $upcoming = $enabled && !$started && !$expired;
+        $active = $started && ! $expired;
+        $upcoming = $enabled && ! $started && ! $expired;
 
         return [
-            'enabled' => $enabled && !$expired,
+            'enabled' => $enabled && ! $expired,
             'active' => $active,
             'upcoming' => $upcoming,
             'starts_at' => $startsAt?->toIso8601String(),

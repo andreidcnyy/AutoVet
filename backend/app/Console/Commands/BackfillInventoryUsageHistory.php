@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Invoice;
 use App\Models\InventoryUsageHistory;
+use App\Models\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -19,11 +19,11 @@ class BackfillInventoryUsageHistory extends Command
 
     public function handle(): int
     {
-        $dryRun    = $this->option('dry-run');
+        $dryRun = $this->option('dry-run');
         $processed = 0;
-        $inserted  = 0;
-        $skipped   = 0;
-        $failed    = 0;
+        $inserted = 0;
+        $skipped = 0;
+        $failed = 0;
 
         if ($dryRun) {
             $this->warn('[DRY RUN] No records will be written.');
@@ -48,15 +48,17 @@ class BackfillInventoryUsageHistory extends Command
                         $processed++;
 
                         // Skip items with no inventory linkage (safety check)
-                        if (!$item->inventory_id) {
+                        if (! $item->inventory_id) {
                             $skipped++;
+
                             continue;
                         }
 
                         // Skip items with no quantity recorded
-                        if (!$item->qty || $item->qty <= 0) {
+                        if (! $item->qty || $item->qty <= 0) {
                             $this->line("  [SKIP] Invoice #{$invoice->invoice_number} item #{$item->id}: qty={$item->qty} — skipping zero/null qty.");
                             $skipped++;
+
                             continue;
                         }
 
@@ -66,34 +68,36 @@ class BackfillInventoryUsageHistory extends Command
 
                             if ($alreadyExists) {
                                 $skipped++;
+
                                 continue;
                             }
 
                             if ($dryRun) {
                                 $this->line("  [DRY RUN] Would insert: inventory_id={$item->inventory_id}, invoice_id={$invoice->id}, item_id={$item->id}, qty={$item->qty}, date={$usageDate}");
                                 $inserted++;
+
                                 continue;
                             }
 
                             InventoryUsageHistory::create([
-                                'inventory_id'   => $item->inventory_id,
-                                'invoice_id'     => $invoice->id,
+                                'inventory_id' => $item->inventory_id,
+                                'invoice_id' => $invoice->id,
                                 'invoice_item_id' => $item->id,
-                                'quantity_used'  => $item->qty,
-                                'usage_date'     => $usageDate,
-                                'source_type'    => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
-                                'unit_price'     => $item->unit_price ?? null,
+                                'quantity_used' => $item->qty,
+                                'usage_date' => $usageDate,
+                                'source_type' => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
+                                'unit_price' => $item->unit_price ?? null,
                             ]);
 
                             $inserted++;
 
                         } catch (\Throwable $e) {
                             $failed++;
-                            $this->error("  [FAIL] Invoice #{$invoice->invoice_number} item #{$item->id}: " . $e->getMessage());
+                            $this->error("  [FAIL] Invoice #{$invoice->invoice_number} item #{$item->id}: ".$e->getMessage());
                             Log::error('BackfillInventoryUsageHistory: insert failed', [
-                                'invoice_id'     => $invoice->id,
+                                'invoice_id' => $invoice->id,
                                 'invoice_item_id' => $item->id,
-                                'error'          => $e->getMessage(),
+                                'error' => $e->getMessage(),
                             ]);
                         }
                     }
@@ -109,6 +113,7 @@ class BackfillInventoryUsageHistory extends Command
 
         if ($failed > 0) {
             $this->warn("{$failed} record(s) failed — check laravel.log for details.");
+
             return Command::FAILURE;
         }
 

@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,14 +17,14 @@ return new class extends Migration
         });
 
         $inventories = DB::table('inventories')->get();
-        
+
         $categoryMap = [
             'Medicines' => 'Medications',
         ];
 
         foreach ($inventories as $item) {
             $catName = $item->category;
-            if (!$catName) {
+            if (! $catName) {
                 $catName = 'Uncategorized';
             }
 
@@ -33,8 +33,8 @@ return new class extends Migration
             }
 
             $category = DB::table('mdm_inventory_categories')->where('name', $catName)->first();
-            
-            if (!$category) {
+
+            if (! $category) {
                 $catId = DB::table('mdm_inventory_categories')->insertGetId([
                     'name' => $catName,
                     'status' => 'Active',

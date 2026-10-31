@@ -16,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         foreach (self::TABLES as $table) {
-            if (!Schema::hasColumn($table, 'synthetic_batch')) {
+            if (! Schema::hasColumn($table, 'synthetic_batch')) {
                 Schema::table($table, function (Blueprint $t) {
                     $t->string('synthetic_batch', 64)->nullable()->index();
                 });

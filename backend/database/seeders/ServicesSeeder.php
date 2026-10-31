@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Clinic;
 use App\Models\PetSizeCategory;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class ServicesSeeder extends Seeder
@@ -26,7 +27,7 @@ class ServicesSeeder extends Seeder
             'Imaging',
         ];
 
-        $clinic = \App\Models\Clinic::first();
+        $clinic = Clinic::first();
 
         foreach ($categories as $catName) {
             ServiceCategory::updateOrCreate(
@@ -158,7 +159,7 @@ class ServicesSeeder extends Seeder
             $service->pricingRules()->delete();
 
             foreach ($svc['tiers'] ?? [] as $sizeName => $price) {
-                if (!isset($sizeIds[$sizeName])) {
+                if (! isset($sizeIds[$sizeName])) {
                     continue;
                 }
 

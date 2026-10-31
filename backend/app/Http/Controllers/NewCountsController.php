@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Owner;
 use App\Models\Appointment;
 use App\Models\Invoice;
+use App\Models\Owner;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class NewCountsController extends Controller
 {
@@ -23,22 +23,29 @@ class NewCountsController extends Controller
         if ($request->filled('since_patients')) {
             try {
                 $ts = Carbon::parse($request->input('since_patients'));
-                if ($ts->isToday() && $ts->gt($todayStart)) $pSince = $ts;
-            } catch (\Exception $e) {}
+                if ($ts->isToday() && $ts->gt($todayStart)) {
+                    $pSince = $ts;
+                }
+            } catch (\Exception $e) {
+            }
         }
 
         if ($request->filled('since_appointments')) {
             try {
                 $ts = Carbon::parse($request->input('since_appointments'));
-                if ($ts->isToday() && $ts->gt($todayStart)) $aSince = $ts;
-            } catch (\Exception $e) {}
+                if ($ts->isToday() && $ts->gt($todayStart)) {
+                    $aSince = $ts;
+                }
+            } catch (\Exception $e) {
+            }
         }
 
         $now = now();
+
         return response()->json([
-            'new_patients'     => Owner::where('created_at', '>', $pSince)->where('created_at', '<=', $now)->count(),
+            'new_patients' => Owner::where('created_at', '>', $pSince)->where('created_at', '<=', $now)->count(),
             'new_appointments' => Appointment::where('created_at', '>', $aSince)->where('created_at', '<=', $now)->count(),
-            'draft_invoices'   => Invoice::where('status', 'Draft')->count(),
+            'draft_invoices' => Invoice::where('status', 'Draft')->count(),
         ]);
     }
 }

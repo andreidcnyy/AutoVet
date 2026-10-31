@@ -30,7 +30,7 @@ class ListQuery
     {
         $request->validate([
             'per_page' => 'nullable|integer|min:1',
-            'page'     => 'nullable|integer|min:1',
+            'page' => 'nullable|integer|min:1',
         ]);
 
         return min((int) ($request->input('per_page') ?? $default), $max);
@@ -43,7 +43,7 @@ class ListQuery
     public static function sort(Request $request, array $allowed, string $defaultBy, string $defaultDirection = 'asc'): array
     {
         $request->validate([
-            'sort_by'        => ['nullable', 'string', Rule::in($allowed)],
+            'sort_by' => ['nullable', 'string', Rule::in($allowed)],
             'sort_direction' => ['nullable', 'string', Rule::in(['asc', 'desc', 'ASC', 'DESC'])],
         ]);
 
@@ -56,6 +56,6 @@ class ListQuery
     /** A LIKE pattern matching $term anywhere, with its own % and _ taken literally. */
     public static function contains(?string $term): string
     {
-        return '%' . addcslashes((string) $term, '%_\\') . '%';
+        return '%'.addcslashes((string) $term, '%_\\').'%';
     }
 }

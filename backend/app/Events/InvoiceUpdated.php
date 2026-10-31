@@ -3,7 +3,7 @@
 namespace App\Events;
 
 use App\Models\Invoice;
-use Illuminate\Broadcasting\Channel;
+use App\Support\Channels;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -24,11 +24,11 @@ class InvoiceUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [
-            \App\Support\Channels::admin('invoices', $this->invoice->clinic_id),
+            Channels::admin('invoices', $this->invoice->clinic_id),
         ];
 
         if ($this->invoice->pet?->owner?->user_id) {
-            $channels[] = new PrivateChannel('client.invoices.' . $this->invoice->pet->owner->user_id);
+            $channels[] = new PrivateChannel('client.invoices.'.$this->invoice->pet->owner->user_id);
         }
 
         return $channels;
@@ -42,10 +42,10 @@ class InvoiceUpdated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'id'             => $this->invoice->id,
+            'id' => $this->invoice->id,
             'invoice_number' => $this->invoice->invoice_number,
-            'status'         => $this->invoice->status,
-            'total'          => $this->invoice->total,
+            'status' => $this->invoice->status,
+            'total' => $this->invoice->total,
         ];
     }
 }

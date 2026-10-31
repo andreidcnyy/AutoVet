@@ -18,7 +18,7 @@ class Review extends Model
     ];
 
     protected $casts = [
-        'rating'      => 'integer',
+        'rating' => 'integer',
         'is_approved' => 'boolean',
         'is_featured' => 'boolean',
     ];

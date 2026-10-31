@@ -16,7 +16,7 @@ return new class extends Migration
             if (Schema::hasColumn('appointments', 'patient_id')) {
                 // Drop foreign key first
                 $table->dropForeign(['patient_id']);
-                
+
                 // Rename column
                 $table->renameColumn('patient_id', 'pet_id');
             }

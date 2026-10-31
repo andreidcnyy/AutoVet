@@ -12,19 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('admins', function (Blueprint $table) {
-            if (!Schema::hasColumn('admins', 'deleted_by')) {
+            if (! Schema::hasColumn('admins', 'deleted_by')) {
                 $table->foreignId('deleted_by')->nullable()->constrained('admins')->nullOnDelete();
             }
-            if (!Schema::hasColumn('admins', 'restore_until')) {
+            if (! Schema::hasColumn('admins', 'restore_until')) {
                 $table->timestamp('restore_until')->nullable();
             }
         });
 
         Schema::table('portal_users', function (Blueprint $table) {
-            if (!Schema::hasColumn('portal_users', 'deleted_by')) {
+            if (! Schema::hasColumn('portal_users', 'deleted_by')) {
                 $table->foreignId('deleted_by')->nullable()->constrained('admins')->nullOnDelete();
             }
-            if (!Schema::hasColumn('portal_users', 'restore_until')) {
+            if (! Schema::hasColumn('portal_users', 'restore_until')) {
                 $table->timestamp('restore_until')->nullable();
             }
         });

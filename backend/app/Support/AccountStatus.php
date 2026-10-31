@@ -24,13 +24,13 @@ class AccountStatus
         if ($user instanceof PortalUser) {
             if ($user->status === 'suspended') {
                 return [
-                    'code'    => 'ACCOUNT_SUSPENDED',
+                    'code' => 'ACCOUNT_SUSPENDED',
                     'message' => 'Your account has been temporarily suspended. Please contact the clinic.',
                 ];
             }
             if ($user->status === 'deactivated') {
                 return [
-                    'code'    => 'ACCOUNT_DEACTIVATED',
+                    'code' => 'ACCOUNT_DEACTIVATED',
                     'message' => 'Your account has been deactivated. Please contact the clinic to restore access.',
                 ];
             }
@@ -38,7 +38,7 @@ class AccountStatus
 
         if ($user instanceof Admin && strtolower((string) $user->status) === 'inactive') {
             return [
-                'code'    => 'ACCOUNT_DEACTIVATED',
+                'code' => 'ACCOUNT_DEACTIVATED',
                 'message' => 'This account has been deactivated. Please contact your clinic administrator.',
             ];
         }
@@ -46,11 +46,11 @@ class AccountStatus
         // A clinic switched off by the platform takes its staff and its
         // clients with it. Super admins belong to no clinic and are exempt.
         $isSuperAdmin = $user instanceof Admin && $user->role === Roles::SUPER_ADMIN->value;
-        if (!$isSuperAdmin && $user->clinic_id) {
+        if (! $isSuperAdmin && $user->clinic_id) {
             $status = self::clinicStatus((int) $user->clinic_id);
             if ($status !== null && strtolower($status) !== 'active') {
                 return [
-                    'code'    => 'CLINIC_INACTIVE',
+                    'code' => 'CLINIC_INACTIVE',
                     'message' => 'This clinic is currently inactive. Please contact the clinic for assistance.',
                 ];
             }
@@ -62,8 +62,7 @@ class AccountStatus
     /** Clinic status, cached briefly because the middleware asks on every request. */
     public static function clinicStatus(int $clinicId): ?string
     {
-        return Cache::remember(self::clinicCacheKey($clinicId), 60, fn () =>
-            Clinic::query()->whereKey($clinicId)->value('status')
+        return Cache::remember(self::clinicCacheKey($clinicId), 60, fn () => Clinic::query()->whereKey($clinicId)->value('status')
         );
     }
 

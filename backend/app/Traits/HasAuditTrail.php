@@ -2,8 +2,10 @@
 
 namespace App\Traits;
 
+use App\Models\Admin;
 use App\Models\AuditLog;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 
 trait HasAuditTrail
@@ -31,7 +33,7 @@ trait HasAuditTrail
 
             // Only log user_id if the authenticated user is an Admin
             // because audit_logs.user_id points to the admins table.
-            if ($user instanceof \App\Models\Admin) {
+            if ($user instanceof Admin) {
                 $userId = $user->id;
             }
 
@@ -58,7 +60,7 @@ trait HasAuditTrail
             ]);
         } catch (\Exception $e) {
             // Do not break the main transaction if audit logging fails
-            \Illuminate\Support\Facades\Log::error('Failed to log audit: ' . $e->getMessage());
+            Log::error('Failed to log audit: '.$e->getMessage());
         }
     }
 }

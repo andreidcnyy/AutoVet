@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,7 +17,7 @@ return new class extends Migration
             foreach ($items as $item) {
                 DB::table('inventories')
                     ->where('id', $item->id)
-                    ->update(['code' => 'INV-AUTOGEN-' . str_pad($item->id, 5, '0', STR_PAD_LEFT)]);
+                    ->update(['code' => 'INV-AUTOGEN-'.str_pad($item->id, 5, '0', STR_PAD_LEFT)]);
             }
         });
 

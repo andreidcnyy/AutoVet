@@ -10,6 +10,7 @@ class ClientNotificationMail extends Mailable
     use SerializesModels;
 
     public $messageSubject;
+
     public $messageBody;
 
     /**
@@ -27,9 +28,9 @@ class ClientNotificationMail extends Mailable
     public function build()
     {
         return $this->subject($this->messageSubject)
-                    ->view('emails.client.basic_notification')
-                    ->with([
-                        'body' => $this->messageBody,
-                    ]);
+            ->view('emails.client.basic_notification')
+            ->with([
+                'body' => $this->messageBody,
+            ]);
     }
 }

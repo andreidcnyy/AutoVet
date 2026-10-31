@@ -40,12 +40,12 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->indexes as $table => $set) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
             foreach ($set as $name => $columns) {
-                if ($this->indexExists($table, $name) || !$this->columnsExist($table, $columns)) {
+                if ($this->indexExists($table, $name) || ! $this->columnsExist($table, $columns)) {
                     continue;
                 }
 
@@ -61,12 +61,12 @@ return new class extends Migration
     public function down(): void
     {
         foreach ($this->indexes as $table => $set) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
             foreach ($set as $name => $columns) {
-                if (!$this->indexExists($table, $name)) {
+                if (! $this->indexExists($table, $name)) {
                     continue;
                 }
 
@@ -97,7 +97,7 @@ return new class extends Migration
     private function columnsExist(string $table, array $columns): bool
     {
         foreach ($columns as $column) {
-            if (!Schema::hasColumn($table, $column)) {
+            if (! Schema::hasColumn($table, $column)) {
                 return false;
             }
         }
@@ -118,7 +118,7 @@ return new class extends Migration
             [$table, $column]
         );
 
-        if (!$constrained) {
+        if (! $constrained) {
             return;
         }
 
@@ -126,13 +126,13 @@ return new class extends Migration
         foreach (DB::select("SHOW INDEX FROM `{$table}`") as $row) {
             if ((int) $row->Seq_in_index === 1
                 && $row->Column_name === $column
-                && !array_key_exists($row->Key_name, $this->indexes[$table] ?? [])) {
+                && ! array_key_exists($row->Key_name, $this->indexes[$table] ?? [])) {
                 return;
             }
         }
 
         $fallback = "{$table}_{$column}_fkidx";
-        if (!$this->indexExists($table, $fallback)) {
+        if (! $this->indexExists($table, $fallback)) {
             Schema::table($table, fn ($t) => $t->index([$column], $fallback));
         }
     }
@@ -141,7 +141,7 @@ return new class extends Migration
     {
         try {
             DB::statement("ANALYZE TABLE `{$table}`");
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Not fatal — the index is in place either way.
         }
     }

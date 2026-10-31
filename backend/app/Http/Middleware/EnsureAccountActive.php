@@ -29,24 +29,24 @@ class EnsureAccountActive
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return $next($request);
         }
 
         $token = method_exists($user, 'currentAccessToken') ? $user->currentAccessToken() : null;
-        $isRecoveryToken = $token && method_exists($token, 'can') && !$token->can('*') && $token->can('recover');
+        $isRecoveryToken = $token && method_exists($token, 'can') && ! $token->can('*') && $token->can('recover');
 
-        if ($isRecoveryToken && !$request->is(...self::RECOVERY_ROUTES)) {
+        if ($isRecoveryToken && ! $request->is(...self::RECOVERY_ROUTES)) {
             return response()->json([
                 'message' => 'This account is scheduled for deletion. Recover it to continue.',
-                'code'    => 'ACCOUNT_PENDING_DELETION',
+                'code' => 'ACCOUNT_PENDING_DELETION',
             ], 403);
         }
 
         if ($block = AccountStatus::blockReason($user)) {
             return response()->json([
                 'message' => $block['message'],
-                'code'    => $block['code'],
+                'code' => $block['code'],
             ], 403);
         }
 

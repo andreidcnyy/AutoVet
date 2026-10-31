@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Inventory;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Inventory;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use App\Support\Tenant;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportAnalyticsController extends Controller
 {
@@ -26,7 +27,7 @@ class ReportAnalyticsController extends Controller
         if ($n < 2) {
             return [0, $n === 1 ? $y[0] : 0, 0.0];
         }
-        $x    = range(0, $n - 1);
+        $x = range(0, $n - 1);
         $sumX = array_sum($x);
         $sumY = array_sum($y);
         $sumXY = 0;
@@ -36,11 +37,11 @@ class ReportAnalyticsController extends Controller
             $sumX2 += $x[$i] * $x[$i];
         }
         $denom = ($n * $sumX2) - ($sumX * $sumX);
-        $m     = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
-        $b     = ($sumY - ($m * $sumX)) / $n;
+        $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
+        $b = ($sumY - ($m * $sumX)) / $n;
 
         $meanY = $sumY / $n;
-        $ssTot = array_sum(array_map(fn($v) => pow($v - $meanY, 2), $y));
+        $ssTot = array_sum(array_map(fn ($v) => pow($v - $meanY, 2), $y));
         $ssRes = 0;
         for ($i = 0; $i < $n; $i++) {
             $ssRes += pow($y[$i] - ($m * $i + $b), 2);
@@ -62,7 +63,7 @@ class ReportAnalyticsController extends Controller
     public function transactionTrends(Request $request): JsonResponse
     {
         $months = max(3, min(24, (int) $request->query('months', 12)));
-        $start  = Carbon::now()->startOfMonth()->subMonths($months - 1);
+        $start = Carbon::now()->startOfMonth()->subMonths($months - 1);
 
         $rows = Invoice::where('created_at', '>=', $start)
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count, SUM(total) AS revenue")
@@ -72,13 +73,13 @@ class ReportAnalyticsController extends Controller
             ->keyBy('month');
 
         // Build ordered arrays
-        $labels  = [];
-        $counts  = [];
+        $labels = [];
+        $counts = [];
         $revenues = [];
         for ($i = 0; $i < $months; $i++) {
-            $key       = $start->copy()->addMonths($i)->format('Y-m');
-            $labels[]  = $key;
-            $counts[]  = (int) ($rows[$key]->count   ?? 0);
+            $key = $start->copy()->addMonths($i)->format('Y-m');
+            $labels[] = $key;
+            $counts[] = (int) ($rows[$key]->count ?? 0);
             $revenues[] = (float) ($rows[$key]->revenue ?? 0);
         }
 
@@ -88,37 +89,37 @@ class ReportAnalyticsController extends Controller
         $series = [];
         foreach ($labels as $idx => $key) {
             $series[] = [
-                'month'         => Carbon::createFromFormat('Y-m', $key)->format('M Y'),
-                'actual_count'  => $counts[$idx],
-                'actual_revenue'=> $revenues[$idx],
-                'trend_count'   => round(max(0, $mC * $idx + $bC), 2),
+                'month' => Carbon::createFromFormat('Y-m', $key)->format('M Y'),
+                'actual_count' => $counts[$idx],
+                'actual_revenue' => $revenues[$idx],
+                'trend_count' => round(max(0, $mC * $idx + $bC), 2),
                 'trend_revenue' => round(max(0, $mR * $idx + $bR), 2),
             ];
         }
         // 2-month forecast (null actuals, trend line continues)
         for ($i = 1; $i <= 2; $i++) {
-            $idx      = $months - 1 + $i;
+            $idx = $months - 1 + $i;
             $series[] = [
-                'month'         => Carbon::now()->startOfMonth()->addMonths($i)->format('M Y'),
-                'actual_count'  => null,
-                'actual_revenue'=> null,
-                'trend_count'   => round(max(0, $mC * $idx + $bC), 2),
+                'month' => Carbon::now()->startOfMonth()->addMonths($i)->format('M Y'),
+                'actual_count' => null,
+                'actual_revenue' => null,
+                'trend_count' => round(max(0, $mC * $idx + $bC), 2),
                 'trend_revenue' => round(max(0, $mR * $idx + $bR), 2),
             ];
         }
 
-        $totalCount   = array_sum($counts);
+        $totalCount = array_sum($counts);
         $totalRevenue = array_sum($revenues);
 
         return response()->json([
-            'series'  => $series,
-            'model'   => [
-                'count'   => ['slope' => round($mC, 3), 'intercept' => round($bC, 2), 'r2' => $r2C],
+            'series' => $series,
+            'model' => [
+                'count' => ['slope' => round($mC, 3), 'intercept' => round($bC, 2), 'r2' => $r2C],
                 'revenue' => ['slope' => round($mR, 3), 'intercept' => round($bR, 2), 'r2' => $r2R],
             ],
             'summary' => [
-                'total_invoices'  => $totalCount,
-                'total_revenue'   => $totalRevenue,
+                'total_invoices' => $totalCount,
+                'total_revenue' => $totalRevenue,
                 'avg_per_invoice' => $totalCount > 0 ? round($totalRevenue / $totalCount, 2) : 0,
             ],
         ]);
@@ -131,7 +132,7 @@ class ReportAnalyticsController extends Controller
      */
     public function transactionStats(Request $request): JsonResponse
     {
-        $days  = max(7, min(365, (int) $request->query('days', 30)));
+        $days = max(7, min(365, (int) $request->query('days', 30)));
         $since = Carbon::now()->subDays($days);
 
         $byStatus = Invoice::where('created_at', '>=', $since)
@@ -140,10 +141,9 @@ class ReportAnalyticsController extends Controller
             ->orderByDesc('count')
             ->get();
 
-        $topItems = InvoiceItem::whereHas('invoice', fn($q) =>
-                $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
-                  ->where('created_at', '>=', $since)
-            )
+        $topItems = InvoiceItem::whereHas('invoice', fn ($q) => $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid'])
+            ->where('created_at', '>=', $since)
+        )
             ->selectRaw('name, item_type, COUNT(*) AS times_used, SUM(qty) AS total_qty')
             ->groupBy('name', 'item_type')
             ->orderByDesc('times_used')
@@ -170,10 +170,10 @@ class ReportAnalyticsController extends Controller
     public function inventoryConsumption(Request $request): JsonResponse
     {
         $months = max(3, min(24, (int) $request->query('months', 12)));
-        $start  = Carbon::now()->startOfMonth()->subMonths($months - 1);
+        $start = Carbon::now()->startOfMonth()->subMonths($months - 1);
 
         // DB::table() is not clinic-scoped; restrict it by hand.
-        $usageRows = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
+        $usageRows = Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
             ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
             ->leftJoin('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->where('inventory_usage_history.usage_date', '>=', $start->toDateString())
@@ -198,11 +198,11 @@ class ReportAnalyticsController extends Controller
 
         $result = [];
         foreach ($pivot as $catName => $monthlyData) {
-            $labels  = [];
+            $labels = [];
             $actuals = [];
             for ($i = 0; $i < $months; $i++) {
-                $key       = $start->copy()->addMonths($i)->format('Y-m');
-                $labels[]  = $key;
+                $key = $start->copy()->addMonths($i)->format('Y-m');
+                $labels[] = $key;
                 $actuals[] = $monthlyData[$key] ?? 0.0;
             }
 
@@ -211,33 +211,33 @@ class ReportAnalyticsController extends Controller
             $series = [];
             foreach ($actuals as $idx => $val) {
                 $series[] = [
-                    'month'  => Carbon::createFromFormat('Y-m', $labels[$idx])->format('M Y'),
+                    'month' => Carbon::createFromFormat('Y-m', $labels[$idx])->format('M Y'),
                     'actual' => round($val, 1),
-                    'trend'  => round(max(0, $m * $idx + $b), 1),
+                    'trend' => round(max(0, $m * $idx + $b), 1),
                 ];
             }
             for ($i = 1; $i <= 2; $i++) {
-                $idx      = $months - 1 + $i;
+                $idx = $months - 1 + $i;
                 $series[] = [
-                    'month'  => Carbon::now()->startOfMonth()->addMonths($i)->format('M Y'),
+                    'month' => Carbon::now()->startOfMonth()->addMonths($i)->format('M Y'),
                     'actual' => null,
-                    'trend'  => round(max(0, $m * $idx + $b), 1),
+                    'trend' => round(max(0, $m * $idx + $b), 1),
                 ];
             }
 
             $total = array_sum($actuals);
             $result[] = [
-                'category'       => $catName,
-                'total'          => round($total, 1),
-                'avg_monthly'    => $months > 0 ? round($total / $months, 1) : 0,
-                'trend_direction'=> $m > 0.5 ? 'up' : ($m < -0.5 ? 'down' : 'stable'),
-                'model'          => ['slope' => round($m, 3), 'intercept' => round($b, 2), 'r2' => $r2],
-                'series'         => $series,
+                'category' => $catName,
+                'total' => round($total, 1),
+                'avg_monthly' => $months > 0 ? round($total / $months, 1) : 0,
+                'trend_direction' => $m > 0.5 ? 'up' : ($m < -0.5 ? 'down' : 'stable'),
+                'model' => ['slope' => round($m, 3), 'intercept' => round($b, 2), 'r2' => $r2],
+                'series' => $series,
             ];
         }
 
         // Sort by total consumption descending
-        usort($result, fn($a, $b) => $b['total'] <=> $a['total']);
+        usort($result, fn ($a, $b) => $b['total'] <=> $a['total']);
 
         return response()->json($result);
     }
@@ -251,7 +251,7 @@ class ReportAnalyticsController extends Controller
     {
         $items = Inventory::with(['inventoryCategory', 'latestForecast'])
             ->select('id', 'code', 'item_name', 'stock_level', 'min_stock_level',
-                     'inventory_category_id', 'selling_price', 'supplier')
+                'inventory_category_id', 'selling_price', 'supplier')
             ->get();
 
         // Same rule as the Inventory page, so both show the same number:
@@ -260,53 +260,54 @@ class ReportAnalyticsController extends Controller
         // Low Stock or the product has nothing left at all.
         Inventory::applyLiveForecasts($items);
 
-        $products = $items->groupBy(fn ($i) => trim((string) $i->code) !== '' ? 'code:' . trim($i->code) : 'id:' . $i->id);
+        $products = $items->groupBy(fn ($i) => trim((string) $i->code) !== '' ? 'code:'.trim($i->code) : 'id:'.$i->id);
 
-        $inStock    = 0;
-        $lowStock   = 0;
+        $inStock = 0;
+        $lowStock = 0;
         $outOfStock = 0;
         $alertItems = [];
 
         foreach ($products as $batches) {
             $primary = $batches->sortBy('id')->first();
-            $stock   = (int) $batches->sum(fn ($b) => (int) $b->stock_level);
-            $min     = (int) $primary->min_stock_level;
-            $isLow   = $batches->contains(fn ($b) => $b->latestForecast?->forecast_status === 'Low Stock');
+            $stock = (int) $batches->sum(fn ($b) => (int) $b->stock_level);
+            $min = (int) $primary->min_stock_level;
+            $isLow = $batches->contains(fn ($b) => $b->latestForecast?->forecast_status === 'Low Stock');
 
             if ($stock <= 0) {
                 $outOfStock++;
-                $status  = 'out_of_stock';
+                $status = 'out_of_stock';
                 $deficit = $min + 1;
             } elseif ($isLow) {
                 $lowStock++;
-                $status  = 'low_stock';
+                $status = 'low_stock';
                 $deficit = max(0, $min - $stock + 1);
             } else {
                 $inStock++;
+
                 continue;
             }
 
             $alertItems[] = [
-                'id'         => $primary->id,
-                'name'       => $primary->item_name,
-                'category'   => $primary->inventoryCategory?->name ?? 'Uncategorized',
-                'stock'      => $stock,
-                'min_stock'  => $min,
-                'deficit'    => $deficit,
-                'status'     => $status,
-                'supplier'   => $primary->supplier,
+                'id' => $primary->id,
+                'name' => $primary->item_name,
+                'category' => $primary->inventoryCategory?->name ?? 'Uncategorized',
+                'stock' => $stock,
+                'min_stock' => $min,
+                'deficit' => $deficit,
+                'status' => $status,
+                'supplier' => $primary->supplier,
             ];
         }
 
         // Sort: out_of_stock first, then by deficit descending
-        usort($alertItems, fn($a, $b) => $b['deficit'] <=> $a['deficit']);
+        usort($alertItems, fn ($a, $b) => $b['deficit'] <=> $a['deficit']);
 
         return response()->json([
             'summary' => [
-                'total'       => $products->count(),
-                'in_stock'    => $inStock,
-                'low_stock'   => $lowStock,
-                'out_of_stock'=> $outOfStock,
+                'total' => $products->count(),
+                'in_stock' => $inStock,
+                'low_stock' => $lowStock,
+                'out_of_stock' => $outOfStock,
             ],
             'alert_items' => $alertItems,
         ]);

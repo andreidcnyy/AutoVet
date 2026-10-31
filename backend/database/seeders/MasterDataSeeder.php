@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\InventoryCategory;
 use App\Models\ServiceCategory;
+use Illuminate\Database\Seeder;
 
 class MasterDataSeeder extends Seeder
 {

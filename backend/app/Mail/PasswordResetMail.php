@@ -20,6 +20,6 @@ class PasswordResetMail extends Mailable
     public function build()
     {
         return $this->subject('Reset Your AutoVet Password')
-                    ->view('emails.password_reset');
+            ->view('emails.password_reset');
     }
 }

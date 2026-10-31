@@ -2,14 +2,13 @@
 
 namespace App\Events;
 
+use App\Models\Inventory;
+use App\Support\Channels;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Inventory;
 
 class LowStockDetected implements ShouldBroadcastNow
 {
@@ -28,12 +27,12 @@ class LowStockDetected implements ShouldBroadcastNow
     /**
      * Get the channels the event should broadcast on.
      *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @return array<int, Channel>
      */
     public function broadcastOn(): array
     {
         return [
-            \App\Support\Channels::admin('inventory', $this->inventoryItem->clinic_id),
+            Channels::admin('inventory', $this->inventoryItem->clinic_id),
         ];
     }
 

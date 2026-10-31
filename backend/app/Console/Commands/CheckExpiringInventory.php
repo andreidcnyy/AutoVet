@@ -11,14 +11,15 @@ use Illuminate\Support\Facades\Mail;
 class CheckExpiringInventory extends Command
 {
     protected $signature = 'inventory:check-expiry';
+
     protected $description = 'Send email alerts for inventory items expiring within 30 days';
 
     public function handle()
     {
-        $today    = now()->toDateString();
-        $warn30   = now()->addDays(30)->toDateString();
-        $warn14   = now()->addDays(14)->toDateString();
-        $warn7    = now()->addDays(7)->toDateString();
+        $today = now()->toDateString();
+        $warn30 = now()->addDays(30)->toDateString();
+        $warn14 = now()->addDays(14)->toDateString();
+        $warn7 = now()->addDays(7)->toDateString();
 
         $expiring = Inventory::whereNotNull('expiration_date')
             ->whereBetween('expiration_date', [$today, $warn30])
@@ -27,13 +28,14 @@ class CheckExpiringInventory extends Command
 
         if ($expiring->isEmpty()) {
             $this->info('No expiring items found.');
+
             return 0;
         }
 
         // Group by urgency
-        $urgent   = $expiring->filter(fn($i) => $i->expiration_date->toDateString() <= $warn7);
-        $warning  = $expiring->filter(fn($i) => $i->expiration_date->toDateString() > $warn7 && $i->expiration_date->toDateString() <= $warn14);
-        $upcoming = $expiring->filter(fn($i) => $i->expiration_date->toDateString() > $warn14);
+        $urgent = $expiring->filter(fn ($i) => $i->expiration_date->toDateString() <= $warn7);
+        $warning = $expiring->filter(fn ($i) => $i->expiration_date->toDateString() > $warn7 && $i->expiration_date->toDateString() <= $warn14);
+        $upcoming = $expiring->filter(fn ($i) => $i->expiration_date->toDateString() > $warn14);
 
         // Get all admin emails to notify
         $admins = Admin::whereIn('role', ['admin', 'super_admin'])
@@ -43,29 +45,30 @@ class CheckExpiringInventory extends Command
 
         if (empty($admins)) {
             $this->warn('No admin emails found to notify.');
+
             return 0;
         }
 
         $html = $this->buildEmailHtml($urgent, $warning, $upcoming);
 
-        $subject = 'Inventory Expiry Alert - ' . $expiring->count() . ' item(s) expiring within 30 days';
+        $subject = 'Inventory Expiry Alert - '.$expiring->count().' item(s) expiring within 30 days';
 
         foreach ($admins as $email) {
             try {
                 Mail::mailer('brevo')->to($email)->send(new InventoryExpiryAlertMail($subject, $html));
             } catch (\Exception $e) {
-                $this->warn("Failed to email {$email}: " . $e->getMessage());
+                $this->warn("Failed to email {$email}: ".$e->getMessage());
             }
         }
 
-        $this->info("Expiry alert sent to " . count($admins) . " admin(s) for " . $expiring->count() . " item(s).");
+        $this->info('Expiry alert sent to '.count($admins).' admin(s) for '.$expiring->count().' item(s).');
+
         return 0;
     }
 
     private function buildEmailHtml($urgent, $warning, $upcoming): string
     {
-        $rows = fn($items, $color, $label) => $items->map(fn($i) =>
-            "<tr>
+        $rows = fn ($items, $color, $label) => $items->map(fn ($i) => "<tr>
               <td style='padding:8px 12px;border-bottom:1px solid #f0f0f0'>{$i->item_name}</td>
               <td style='padding:8px 12px;border-bottom:1px solid #f0f0f0'>{$i->stock_level} {$i->unit}</td>
               <td style='padding:8px 12px;border-bottom:1px solid #f0f0f0'>{$i->expiration_date->format('M d, Y')}</td>
@@ -75,8 +78,8 @@ class CheckExpiringInventory extends Command
             </tr>"
         )->implode('');
 
-        $urgentRows   = $rows($urgent,   '#dc2626', 'Expires ≤7 days');
-        $warningRows  = $rows($warning,  '#d97706', 'Expires ≤14 days');
+        $urgentRows = $rows($urgent, '#dc2626', 'Expires ≤7 days');
+        $warningRows = $rows($warning, '#d97706', 'Expires ≤14 days');
         $upcomingRows = $rows($upcoming, '#2563eb', 'Expires ≤30 days');
 
         return <<<HTML

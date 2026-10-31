@@ -6,6 +6,7 @@ use App\Enums\Roles;
 use App\Models\Admin;
 use App\Models\Owner;
 use App\Models\PortalUser;
+use App\Support\AccountStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -24,6 +25,7 @@ class AuthSecurityTest extends TestCase
     private function fresh(): static
     {
         $this->app['auth']->forgetGuards();
+
         return $this;
     }
 
@@ -68,7 +70,7 @@ class AuthSecurityTest extends TestCase
         $user = PortalUser::factory()->create();
 
         $unknown = $this->login('nobody@example.com')->assertStatus(401)->json('error');
-        $wrong   = $this->login($user->email, 'wrong-password')->assertStatus(401)->json('error');
+        $wrong = $this->login($user->email, 'wrong-password')->assertStatus(401)->json('error');
 
         $this->assertSame($unknown, $wrong);
     }
@@ -115,7 +117,7 @@ class AuthSecurityTest extends TestCase
     {
         $admin = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create();
         DB::table('clinics')->where('id', 1)->update(['status' => 'inactive']);
-        \App\Support\AccountStatus::forgetClinic(1);
+        AccountStatus::forgetClinic(1);
 
         $this->login($admin->email)->assertStatus(403)->assertJsonPath('code', 'CLINIC_INACTIVE');
     }

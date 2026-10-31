@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\Roles;
 use App\Models\MedicalRecord;
-use Illuminate\Http\Request;
+use App\Services\ClientNotificationService;
 use App\Traits\IdentifiesPortalOwner;
+use Illuminate\Http\Request;
 
 /**
  * MedicalRecordController
@@ -21,7 +22,7 @@ class MedicalRecordController extends Controller
     protected $clientNotificationService;
 
     public function __construct(
-        \App\Services\ClientNotificationService $clientNotificationService
+        ClientNotificationService $clientNotificationService
     ) {
         $this->clientNotificationService = $clientNotificationService;
         $this->authorizeResource(MedicalRecord::class, 'medical_record');
@@ -34,10 +35,10 @@ class MedicalRecordController extends Controller
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
-                $query->whereHas('pet', function($q) use ($ownerId) {
+                $query->whereHas('pet', function ($q) use ($ownerId) {
                     $q->where('owner_id', $ownerId);
                 });
             }
@@ -57,19 +58,19 @@ class MedicalRecordController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'pet_id'          => 'required|clinic_exists:pets,id',
-            'appointment_id'  => 'nullable|clinic_exists:appointments,id',
-            'vet_id'          => 'nullable|clinic_exists:admins,id',
+            'pet_id' => 'required|clinic_exists:pets,id',
+            'appointment_id' => 'nullable|clinic_exists:appointments,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
             'chief_complaint' => 'nullable|string',
-            'findings'        => 'nullable|string',
-            'diagnosis'       => 'nullable|string',
-            'treatment_plan'  => 'nullable|string',
-            'notes'           => 'nullable|string',
-            'follow_up_date'  => 'nullable|date',
-            'follow_up_time'  => 'nullable',
+            'findings' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'treatment_plan' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'follow_up_date' => 'nullable|date',
+            'follow_up_time' => 'nullable',
         ]);
 
-        if (!isset($validated['vet_id']) || empty($validated['vet_id'])) {
+        if (! isset($validated['vet_id']) || empty($validated['vet_id'])) {
             $user = auth()->user();
             if ($user && $user->role === Roles::VETERINARIAN->value) {
                 $validated['vet_id'] = $user->id;
@@ -91,19 +92,19 @@ class MedicalRecordController extends Controller
     public function update(Request $request, MedicalRecord $medicalRecord)
     {
         $validated = $request->validate([
-            'pet_id'          => 'required|clinic_exists:pets,id',
-            'appointment_id'  => 'nullable|clinic_exists:appointments,id',
-            'vet_id'          => 'nullable|clinic_exists:admins,id',
+            'pet_id' => 'required|clinic_exists:pets,id',
+            'appointment_id' => 'nullable|clinic_exists:appointments,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
             'chief_complaint' => 'nullable|string',
-            'findings'        => 'nullable|string',
-            'diagnosis'       => 'nullable|string',
-            'treatment_plan'  => 'nullable|string',
-            'notes'           => 'nullable|string',
-            'follow_up_date'  => 'nullable|date',
-            'follow_up_time'  => 'nullable',
+            'findings' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'treatment_plan' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'follow_up_date' => 'nullable|date',
+            'follow_up_time' => 'nullable',
         ]);
 
-        if (!isset($validated['vet_id']) || empty($validated['vet_id'])) {
+        if (! isset($validated['vet_id']) || empty($validated['vet_id'])) {
             $user = auth()->user();
             if ($user && $user->role === Roles::VETERINARIAN->value) {
                 $validated['vet_id'] = $user->id;
@@ -121,6 +122,7 @@ class MedicalRecordController extends Controller
     public function destroy(MedicalRecord $medicalRecord)
     {
         $medicalRecord->delete();
+
         return response()->json(null, 204);
     }
 }

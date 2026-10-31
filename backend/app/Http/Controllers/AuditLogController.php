@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
-use App\Enums\Roles;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AuditLogController extends Controller
 {
@@ -12,19 +14,19 @@ class AuditLogController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
             // Increase sort_buffer_size for this session to handle sorting of large data rows
-            \Illuminate\Support\Facades\DB::statement('SET SESSION sort_buffer_size = 1024 * 1024 * 2;'); // 2MB
+            DB::statement('SET SESSION sort_buffer_size = 1024 * 1024 * 2;'); // 2MB
 
             // Use withoutGlobalScopes to manually control the query
             $query = AuditLog::withoutGlobalScopes();
 
             // Apply clinic restriction manually if not super_admin
             if ($user->role !== Roles::SUPER_ADMIN->value) {
-                if (!$user->clinic_id) {
+                if (! $user->clinic_id) {
                     return response()->json(['data' => [], 'total' => 0], 200);
                 }
                 $query->where('clinic_id', $user->clinic_id);
@@ -44,7 +46,7 @@ class AuditLogController extends Controller
 
             if ($request->filled('user_name')) {
                 $query->whereHas('user', function ($q) use ($request) {
-                    $q->withoutGlobalScopes()->where('name', 'like', '%' . $request->input('user_name') . '%');
+                    $q->withoutGlobalScopes()->where('name', 'like', '%'.$request->input('user_name').'%');
                 });
             }
 
@@ -65,19 +67,20 @@ class AuditLogController extends Controller
             }
 
             // Load user relation without scopes
-            $result = $query->with(['user' => function($q) {
+            $result = $query->with(['user' => function ($q) {
                 $q->withoutGlobalScopes();
             }])->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate(20);
 
             return response()->json($result);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("AuditLogController@index Error: " . $e->getMessage(), [
+            Log::error('AuditLogController@index Error: '.$e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
                 'user' => auth()->id(),
-                'request_keys' => array_keys($request->all())
+                'request_keys' => array_keys($request->all()),
             ]);
+
             return response()->json(['message' => 'The audit log could not be loaded.'], 500);
         }
     }

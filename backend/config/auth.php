@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Admin;
+use App\Models\PortalUser;
+
 return [
 
     'defaults' => [
@@ -29,15 +32,15 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model' => Admin::class,
         ],
         'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model' => Admin::class,
         ],
         'portal_users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\PortalUser::class,
+            'model' => PortalUser::class,
         ],
     ],
 

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,24 +15,24 @@ return new class extends Migration
         Schema::table('pets', function (Blueprint $table) {
             // Rename gender to sex
             $table->renameColumn('gender', 'sex');
-            
+
             // Add age_group
             $table->string('age_group')->nullable()->after('date_of_birth');
         });
 
         // Data Migration
-        $pets = \Illuminate\Support\Facades\DB::table('pets')->get();
+        $pets = DB::table('pets')->get();
         foreach ($pets as $pet) {
             $update = [];
-            
+
             // Move weight_value to weight
-            if (isset($pet->weight_value) && !isset($pet->weight)) {
+            if (isset($pet->weight_value) && ! isset($pet->weight)) {
                 $update['weight'] = $pet->weight_value;
             }
 
             // Map size_class to size_category_id
-            if (isset($pet->size_class) && !isset($pet->size_category_id)) {
-                $sizeCat = \Illuminate\Support\Facades\DB::table('pet_size_categories')
+            if (isset($pet->size_class) && ! isset($pet->size_category_id)) {
+                $sizeCat = DB::table('pet_size_categories')
                     ->where('name', $pet->size_class)
                     ->first();
                 if ($sizeCat) {
@@ -39,8 +40,8 @@ return new class extends Migration
                 }
             }
 
-            if (!empty($update)) {
-                \Illuminate\Support\Facades\DB::table('pets')->where('id', $pet->id)->update($update);
+            if (! empty($update)) {
+                DB::table('pets')->where('id', $pet->id)->update($update);
             }
         }
 
@@ -63,15 +64,15 @@ return new class extends Migration
         });
 
         // Reverse data migration
-        $pets = \Illuminate\Support\Facades\DB::table('pets')->get();
+        $pets = DB::table('pets')->get();
         foreach ($pets as $pet) {
-            $sizeCat = \Illuminate\Support\Facades\DB::table('pet_size_categories')
+            $sizeCat = DB::table('pet_size_categories')
                 ->where('id', $pet->size_category_id)
                 ->first();
-            
-            \Illuminate\Support\Facades\DB::table('pets')->where('id', $pet->id)->update([
+
+            DB::table('pets')->where('id', $pet->id)->update([
                 'weight_value' => $pet->weight,
-                'size_class' => $sizeCat ? $sizeCat->name : null
+                'size_class' => $sizeCat ? $sizeCat->name : null,
             ]);
         }
     }

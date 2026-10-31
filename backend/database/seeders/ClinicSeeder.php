@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Clinic;
+use Illuminate\Database\Seeder;
 
 class ClinicSeeder extends Seeder
 {
@@ -29,6 +29,7 @@ class ClinicSeeder extends Seeder
 
         if ($clinic) {
             $clinic->update($details);
+
             return;
         }
 

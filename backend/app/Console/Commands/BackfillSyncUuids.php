@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\LoadsLiveConnection;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Console\Concerns\LoadsLiveConnection;
 use Throwable;
 
 /**
@@ -46,7 +46,7 @@ class BackfillSyncUuids extends Command
         $onLive = $this->option('connection') === 'live';
 
         if ($onLive) {
-            if (!$this->loadLiveEnv()) {
+            if (! $this->loadLiveEnv()) {
                 $this->explainMissingLiveConfig();
 
                 return self::FAILURE;
@@ -57,16 +57,16 @@ class BackfillSyncUuids extends Command
             try {
                 DB::connection('live')->getPdo();
             } catch (Throwable $e) {
-                $this->error('Could not reach the live database: ' . $e->getMessage());
+                $this->error('Could not reach the live database: '.$e->getMessage());
 
                 return self::FAILURE;
             }
 
             $this->newLine();
             $this->line('  <fg=red;options=bold>This writes to PRODUCTION.</>');
-            $this->line('  host: <fg=yellow>' . config('database.connections.live.host') . '</>');
+            $this->line('  host: <fg=yellow>'.config('database.connections.live.host').'</>');
         } elseif ($target = $this->option('database')) {
-            if (!preg_match('/^[A-Za-z0-9_]+$/', $target)) {
+            if (! preg_match('/^[A-Za-z0-9_]+$/', $target)) {
                 $this->error("Refusing to use '{$target}' as a database name.");
 
                 return self::FAILURE;
@@ -77,14 +77,14 @@ class BackfillSyncUuids extends Command
             DB::setDefaultConnection('mysql');
         }
 
-        $this->line('  database: <fg=yellow>' . DB::connection()->getDatabaseName() . '</>'
-            . ($dry ? '  <fg=cyan>(dry run)</>' : ''));
+        $this->line('  database: <fg=yellow>'.DB::connection()->getDatabaseName().'</>'
+            .($dry ? '  <fg=cyan>(dry run)</>' : ''));
         $this->newLine();
 
         // Only the write path against production needs a prompt; a dry run
         // reads nothing but information_schema and row counts.
-        if ($onLive && !$dry && !$this->option('force')
-            && !$this->confirm('  Fill in the missing uuids on production?', false)) {
+        if ($onLive && ! $dry && ! $this->option('force')
+            && ! $this->confirm('  Fill in the missing uuids on production?', false)) {
             $this->line('  Aborted. Nothing was written.');
 
             return self::SUCCESS;
@@ -113,7 +113,7 @@ class BackfillSyncUuids extends Command
                     // One statement for the whole table: MySQL and TiDB both
                     // evaluate UUID() per row, so this cannot collide with the
                     // unique index the way a single reused value would.
-                    if (!$dry) {
+                    if (! $dry) {
                         DB::statement("UPDATE `{$table}` SET `uuid` = UUID() WHERE `uuid` IS NULL");
                     }
                     $u = $pending;
@@ -132,7 +132,7 @@ class BackfillSyncUuids extends Command
                         ? 'COALESCE(`updated_at`, `created_at`, NOW())'
                         : 'COALESCE(`updated_at`, NOW())';
 
-                    if (!$dry) {
+                    if (! $dry) {
                         DB::statement(
                             "UPDATE `{$table}` SET `last_modified_locally_at` = {$expr}
                              WHERE `last_modified_locally_at` IS NULL"
@@ -186,7 +186,7 @@ class BackfillSyncUuids extends Command
         // Only tables that actually have something to fill.
         return array_filter(
             $out,
-            fn($cols, $t) => Schema::hasTable($t)
+            fn ($cols, $t) => Schema::hasTable($t)
                 && (in_array('uuid', $cols, true) || in_array('last_modified_locally_at', $cols, true)),
             ARRAY_FILTER_USE_BOTH
         );

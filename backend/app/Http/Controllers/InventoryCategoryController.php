@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\InventoryCategory;
+use App\Support\ListQuery;
 use Illuminate\Http\Request;
 
 class InventoryCategoryController extends Controller
@@ -12,25 +13,26 @@ class InventoryCategoryController extends Controller
         $query = InventoryCategory::query();
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', \App\Support\ListQuery::contains($request->search));
+            $query->where('name', 'like', ListQuery::contains($request->search));
         }
 
-        [$sortBy, $sortDirection] = \App\Support\ListQuery::sort($request, ['id', 'name', 'status', 'created_at', 'updated_at'], 'name');
+        [$sortBy, $sortDirection] = ListQuery::sort($request, ['id', 'name', 'status', 'created_at', 'updated_at'], 'name');
         $query->orderBy($sortBy, $sortDirection)->orderBy('id');
 
         // Lookup table: screens load it whole into dropdowns, so the ceiling
         // is higher than for paged lists, but there is one.
-        return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 10, \App\Support\ListQuery::MAX_LOOKUP_PER_PAGE)));
+        return response()->json($query->paginate(ListQuery::perPage($request, 10, ListQuery::MAX_LOOKUP_PER_PAGE)));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|unique:mdm_inventory_categories',
-            'status' => 'nullable|string'
+            'status' => 'nullable|string',
         ]);
 
         $category = InventoryCategory::create($validated);
+
         return response()->json($category, 201);
     }
 
@@ -47,17 +49,19 @@ class InventoryCategoryController extends Controller
     public function update(Request $request, InventoryCategory $inventoryCategory)
     {
         $validated = $request->validate([
-            'name' => 'required|string|unique:mdm_inventory_categories,name,' . $inventoryCategory->id,
-            'status' => 'nullable|string'
+            'name' => 'required|string|unique:mdm_inventory_categories,name,'.$inventoryCategory->id,
+            'status' => 'nullable|string',
         ]);
 
         $inventoryCategory->update($validated);
+
         return response()->json($inventoryCategory);
     }
 
     public function destroy(InventoryCategory $inventoryCategory)
     {
         $inventoryCategory->delete();
+
         return response()->json(null, 204);
     }
 }

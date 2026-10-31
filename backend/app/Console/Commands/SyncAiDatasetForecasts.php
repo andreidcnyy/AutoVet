@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Inventory;
+use App\Services\InventoryForecastService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Process;
 
 class SyncAiDatasetForecasts extends Command
 {
@@ -12,6 +15,7 @@ class SyncAiDatasetForecasts extends Command
      * @var string
      */
     protected $signature = 'app:sync-ai-dataset-forecasts {--dataset=inventory.csv : The dataset filename in storage/datasets}';
+
     protected $description = 'Maps AI forecasting datasets to live inventory records using unique codes and populates the database.';
 
     public function handle(): int
@@ -19,8 +23,9 @@ class SyncAiDatasetForecasts extends Command
         $dataset = $this->option('dataset');
         $csvPath = base_path("storage/datasets/{$dataset}");
 
-        if (!file_exists($csvPath)) {
+        if (! file_exists($csvPath)) {
             $this->error("Dataset not found at {$csvPath}");
+
             return Command::FAILURE;
         }
 
@@ -34,6 +39,7 @@ class SyncAiDatasetForecasts extends Command
         if ($codeIndex === false) {
             $this->error("Dataset missing 'code' column. Use update_datasets.py to fix it.");
             fclose($file);
+
             return Command::FAILURE;
         }
 
@@ -44,9 +50,9 @@ class SyncAiDatasetForecasts extends Command
         fclose($file);
 
         $uniqueCodes = array_unique(array_filter($codes));
-        $this->info("Found " . count($uniqueCodes) . " unique codes in dataset.");
+        $this->info('Found '.count($uniqueCodes).' unique codes in dataset.');
 
-        $inventoryForecastService = app(\App\Services\InventoryForecastService::class);
+        $inventoryForecastService = app(InventoryForecastService::class);
         $pythonScriptPath = base_path('ai/forecast.py');
         $pythonExecutable = config('services.ai.python_bin')
             ?: (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? 'python' : 'python3');
@@ -55,11 +61,12 @@ class SyncAiDatasetForecasts extends Command
         $unmatched = 0;
 
         foreach ($uniqueCodes as $code) {
-            $inventory = \App\Models\Inventory::where('code', $code)->first();
+            $inventory = Inventory::where('code', $code)->first();
 
-            if (!$inventory) {
+            if (! $inventory) {
                 $this->warn("  [UNMATCHED] Code {$code} does not exist in live inventory. Skipping.");
                 $unmatched++;
+
                 continue;
             }
 
@@ -68,22 +75,24 @@ class SyncAiDatasetForecasts extends Command
             // Run forecast on the global dataset file for this code
             $minStock = $inventory->min_stock_level ?? 10;
             $command = $pythonExecutable
-                . ' ' . escapeshellarg($pythonScriptPath)
-                . ' ' . escapeshellarg($csvPath)
-                . ' ' . escapeshellarg($minStock)
-                . ' ' . escapeshellarg("--code={$code}")
-                . ' ' . escapeshellarg("--current_stock={$inventory->stock_level}");
+                .' '.escapeshellarg($pythonScriptPath)
+                .' '.escapeshellarg($csvPath)
+                .' '.escapeshellarg($minStock)
+                .' '.escapeshellarg("--code={$code}")
+                .' '.escapeshellarg("--current_stock={$inventory->stock_level}");
 
-            $process = \Illuminate\Support\Facades\Process::run($command);
+            $process = Process::run($command);
 
             if ($process->failed()) {
-                $this->error("    AI script failed for {$code}: " . $process->errorOutput());
+                $this->error("    AI script failed for {$code}: ".$process->errorOutput());
+
                 continue;
             }
 
             $result = json_decode($process->output(), true);
-            if (!$result || isset($result['error'])) {
-                $this->error("    AI result error for {$code}: " . ($result['error'] ?? 'Invalid JSON'));
+            if (! $result || isset($result['error'])) {
+                $this->error("    AI result error for {$code}: ".($result['error'] ?? 'Invalid JSON'));
+
                 continue;
             }
 
@@ -91,7 +100,7 @@ class SyncAiDatasetForecasts extends Command
             // from a live regression prediction. No silent fallback.
             $result['prediction_status'] = 'Dataset-only (no live data)';
             $result['prediction_source'] = 'dataset';
-            $result['message']           = "This forecast was computed from a static dataset, not from live transactions. Live regression prediction is unavailable until enough real usage history is recorded.";
+            $result['message'] = 'This forecast was computed from a static dataset, not from live transactions. Live regression prediction is unavailable until enough real usage history is recorded.';
 
             // Save forecast
             $inventoryForecastService->saveForecast($inventory->id, $result);
@@ -100,8 +109,7 @@ class SyncAiDatasetForecasts extends Command
 
         $this->newLine();
         $this->info("Sync complete. Synced: {$synced}, Unmatched: {$unmatched}");
-        
+
         return Command::SUCCESS;
     }
-
 }

@@ -12,16 +12,16 @@ class SyncOutbox extends Model
     protected $table = 'sync_outbox';
 
     protected $fillable = [
-        'entity_type', 
-        'entity_uuid', 
-        'entity_local_id', 
-        'action_type', 
-        'payload', 
-        'status', 
+        'entity_type',
+        'entity_uuid',
+        'entity_local_id',
+        'action_type',
+        'payload',
+        'status',
         'queued_at',
         'retry_count',
         'error_message',
-        'processed_at'
+        'processed_at',
     ];
 
     protected $casts = [
@@ -33,7 +33,7 @@ class SyncOutbox extends Model
     public function scopePending($query)
     {
         return $query->whereIn('status', ['pending', 'failed'])
-                     ->where('retry_count', '<', 5);
+            ->where('retry_count', '<', 5);
     }
 
     public function scopeOldestFirst($query)
@@ -49,7 +49,7 @@ class SyncOutbox extends Model
     public function markSynced(): void
     {
         $this->update([
-            'status'       => 'synced',
+            'status' => 'synced',
             'processed_at' => now(),
         ]);
     }
@@ -57,9 +57,9 @@ class SyncOutbox extends Model
     public function markFailed(string $errorMessage): void
     {
         $this->update([
-            'status'        => 'failed',
+            'status' => 'failed',
             'error_message' => $errorMessage,
-            'retry_count'   => $this->retry_count + 1,
+            'retry_count' => $this->retry_count + 1,
         ]);
     }
 }

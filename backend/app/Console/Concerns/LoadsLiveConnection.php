@@ -19,7 +19,7 @@ trait LoadsLiveConnection
     {
         $path = base_path('.env.live');
 
-        if (!is_file($path)) {
+        if (! is_file($path)) {
             return (bool) config('database.connections.live.host');
         }
 
@@ -28,7 +28,7 @@ trait LoadsLiveConnection
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
             $line = trim($line);
 
-            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            if ($line === '' || str_starts_with($line, '#') || ! str_contains($line, '=')) {
                 continue;
             }
 
@@ -52,12 +52,11 @@ trait LoadsLiveConnection
                 'database' => $values['LIVE_DB_DATABASE'] ?? null,
                 'username' => $values['LIVE_DB_USERNAME'] ?? null,
                 'password' => $values['LIVE_DB_PASSWORD'] ?? null,
-            ], fn($v) => $v !== null),
+            ], fn ($v) => $v !== null),
             ['options' => extension_loaded('pdo_mysql') ? array_filter([
                 \PDO::MYSQL_ATTR_SSL_CA => $values['LIVE_DB_SSL_CA'] ?? null,
-                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
-                    => filter_var($values['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
-            ], fn($v) => $v !== null && $v !== '') : []]
+                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => filter_var($values['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
+            ], fn ($v) => $v !== null && $v !== '') : []]
         ));
 
         DB::purge('live');

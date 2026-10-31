@@ -2,6 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Admin;
+use App\Models\CmsContent;
+use App\Models\Inventory;
+use App\Models\Owner;
+use App\Models\Pet;
+use App\Models\PortalUser;
+use App\Models\Service;
 use Illuminate\Console\Command;
 
 class CleanupArchivedRecords extends Command
@@ -26,13 +33,13 @@ class CleanupArchivedRecords extends Command
     public function handle()
     {
         $models = [
-            \App\Models\Pet::class,
-            \App\Models\Owner::class,
-            \App\Models\Service::class,
-            \App\Models\Inventory::class,
-            \App\Models\Admin::class,
-            \App\Models\PortalUser::class,
-            \App\Models\CmsContent::class,
+            Pet::class,
+            Owner::class,
+            Service::class,
+            Inventory::class,
+            Admin::class,
+            PortalUser::class,
+            CmsContent::class,
         ];
 
         $totalPurged = 0;

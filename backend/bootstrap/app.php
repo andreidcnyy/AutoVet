@@ -1,13 +1,23 @@
 <?php
 
+use App\Exceptions\UserFacingException;
+use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\CheckMaintenanceMode;
+use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-
+use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,21 +34,21 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Ensure CORS is handled first, before any auth or route middleware
-        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+        $middleware->prepend(HandleCors::class);
 
         // Every response, not just the api group: /media, /horizon and /
         // went out without these headers.
-        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
+        $middleware->append(SecurityHeadersMiddleware::class);
 
         // The 'api' limiter in AppServiceProvider: 300 requests a minute per
         // signed-in user. It was defined but never attached to the routes.
         $middleware->throttleApi();
 
         $middleware->alias([
-            'auth'        => \App\Http\Middleware\Authenticate::class,
-            'role'        => \App\Http\Middleware\RoleMiddleware::class,
-            'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
-            'active'      => \App\Http\Middleware\EnsureAccountActive::class,
+            'auth' => Authenticate::class,
+            'role' => RoleMiddleware::class,
+            'maintenance' => CheckMaintenanceMode::class,
+            'active' => EnsureAccountActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -48,15 +58,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Messages written for the user (out of stock, no price rule, owner
         // has no email). Anything else stays generic below.
-        $exceptions->render(function (\App\Exceptions\UserFacingException $e, Request $request) {
+        $exceptions->render(function (UserFacingException $e, Request $request) {
             return response()->json(['message' => $e->getMessage()], 422);
         });
 
-        $exceptions->render(function (\Throwable $e, Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
             if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
                 return response()->json([
                     'error' => 'Unauthorized',
-                    'message' => 'You do not have permission to access this resource.'
+                    'message' => 'You do not have permission to access this resource.',
                 ], 403);
             }
 
@@ -65,9 +75,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // validation failure into a 500 with no field errors, and every
             // missing record into a 500 instead of a 404.
             if (
-                $e instanceof \Illuminate\Validation\ValidationException
-                || $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
-                || $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+                $e instanceof ValidationException
+                || $e instanceof HttpExceptionInterface
+                || $e instanceof ModelNotFoundException
             ) {
                 return null;
             }
@@ -76,16 +86,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Raw exception messages carry SQL, table names and file paths.
                 // Keep them in the logs; show clients something generic unless
                 // debugging is explicitly switched on.
-                if (!config('app.debug')) {
-                    \Illuminate\Support\Facades\Log::error('[API 500] ' . $e->getMessage(), [
+                if (! config('app.debug')) {
+                    Log::error('[API 500] '.$e->getMessage(), [
                         'exception' => get_class($e),
-                        'file'      => $e->getFile() . ':' . $e->getLine(),
-                        'url'       => $request->fullUrl(),
+                        'file' => $e->getFile().':'.$e->getLine(),
+                        'url' => $request->fullUrl(),
                     ]);
                 }
 
                 return response()->json([
-                    'error'   => 'Server Error',
+                    'error' => 'Server Error',
                     'message' => config('app.debug')
                         ? $e->getMessage()
                         : 'An unexpected error occurred. Please try again or contact support.',
@@ -95,7 +105,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Report unhandled exceptions to Sentry when DSN is configured.
         if (app()->bound('sentry')) {
-            $exceptions->reportable(function (\Throwable $e) {
+            $exceptions->reportable(function (Throwable $e) {
                 app('sentry')->captureException($e);
             });
         }

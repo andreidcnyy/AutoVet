@@ -14,7 +14,7 @@ class LogSmsProvider implements SmsProviderInterface
         Log::channel('single')->info('MOCK SMS SENT', [
             'to' => $to,
             'message' => $message,
-            'status' => 'success'
+            'status' => 'success',
         ]);
 
         return true;

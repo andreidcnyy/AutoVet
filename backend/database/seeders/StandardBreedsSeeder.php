@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use App\Models\Species;
-use App\Models\PetSizeCategory;
 use App\Models\Breed;
 use App\Models\Clinic;
+use App\Models\PetSizeCategory;
+use App\Models\Species;
+use Illuminate\Database\Seeder;
 
 class StandardBreedsSeeder extends Seeder
 {
@@ -64,22 +63,24 @@ class StandardBreedsSeeder extends Seeder
 
         foreach ($data as $speciesName => $sizes) {
             $species = Species::where('name', $speciesName)->where('clinic_id', $clinic->id)->first();
-            if (!$species) continue;
+            if (! $species) {
+                continue;
+            }
 
             foreach ($sizes as $sizeName => $breeds) {
                 $sizeId = $sizeMap[$sizeName] ?? null;
-                
+
                 foreach ($breeds as $breedName) {
                     Breed::updateOrCreate(
                         [
                             'species_id' => $species->id,
                             'name' => $breedName,
-                            'clinic_id' => $clinic->id
+                            'clinic_id' => $clinic->id,
                         ],
                         [
                             'default_size_category_id' => $sizeId,
                             'status' => 'Active',
-                            'clinic_id' => $clinic->id
+                            'clinic_id' => $clinic->id,
                         ]
                     );
                 }

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('sync_outbox')) {
+        if (! Schema::hasTable('sync_outbox')) {
             Schema::create('sync_outbox', function (Blueprint $table) {
                 $table->id();
                 $table->string('entity_type'); // e.g., 'Pet', 'Appointment'

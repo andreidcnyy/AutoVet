@@ -28,7 +28,7 @@ class DashboardCache
     {
         $user ??= auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return "{$base}:guest";
         }
 
@@ -36,7 +36,7 @@ class DashboardCache
             return "{$base}:all";
         }
 
-        return "{$base}:clinic_" . ($user->clinic_id ?? 'none');
+        return "{$base}:clinic_".($user->clinic_id ?? 'none');
     }
 
     /** Clears the clearable dashboard keys for every clinic and the platform view. */

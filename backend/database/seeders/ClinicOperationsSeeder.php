@@ -21,7 +21,6 @@ use App\Models\Service;
 use App\Models\ServiceConsumable;
 use App\Models\Species;
 use App\Models\SystemAnnouncement;
-use App\Models\VetSchedule;
 use App\Models\WeightRange;
 use App\Services\PricingService;
 use Carbon\Carbon;
@@ -50,8 +49,9 @@ class ClinicOperationsSeeder extends Seeder
     public function run(): void
     {
         $clinic = Clinic::first();
-        if (!$clinic) {
+        if (! $clinic) {
             $this->command->warn('ClinicOperationsSeeder: no clinic, skipping.');
+
             return;
         }
 
@@ -60,6 +60,7 @@ class ClinicOperationsSeeder extends Seeder
         $vets = ClinicStaffSeeder::veterinarians($clinic);
         if ($vets->isEmpty()) {
             $this->command->warn('ClinicOperationsSeeder: no veterinarians, skipping.');
+
             return;
         }
 
@@ -100,7 +101,7 @@ class ClinicOperationsSeeder extends Seeder
 
         $petIds = Pet::withTrashed()->whereIn('owner_id', $ownerIds)->pluck('id')->all();
 
-        if (!empty($petIds)) {
+        if (! empty($petIds)) {
             $invoiceIds = Invoice::whereIn('pet_id', $petIds)->pluck('id')->all();
             Review::whereIn('invoice_id', $invoiceIds)->delete();
             InvoiceItem::whereIn('invoice_id', $invoiceIds)->delete();
@@ -122,14 +123,14 @@ class ClinicOperationsSeeder extends Seeder
         Owner::withTrashed()->whereIn('id', $ownerIds)->forceDelete();
 
         PortalUser::withTrashed()
-            ->where('email', 'like', '%' . self::DEMO_EMAIL_DOMAIN)
+            ->where('email', 'like', '%'.self::DEMO_EMAIL_DOMAIN)
             ->forceDelete();
     }
 
     private function demoOwnerIds(): array
     {
         return Owner::withTrashed()
-            ->where('email', 'like', '%' . self::DEMO_EMAIL_DOMAIN)
+            ->where('email', 'like', '%'.self::DEMO_EMAIL_DOMAIN)
             ->pluck('id')
             ->all();
     }
@@ -146,7 +147,7 @@ class ClinicOperationsSeeder extends Seeder
     private function seedServiceConsumables(Clinic $clinic): void
     {
         $map = [
-            'Anti-Rabies Vaccine'   => 'Nobivac Rabies',
+            'Anti-Rabies Vaccine' => 'Nobivac Rabies',
             '5 in 1 Vaccine (Dogs)' => 'Nobivac DHPPi',
             '6 in 1 Vaccine (Dogs)' => 'Nobivac L4',
             '4 in 1 Vaccine (Cats)' => 'Nobivac Tricat Trio',
@@ -154,7 +155,7 @@ class ClinicOperationsSeeder extends Seeder
 
         foreach ($map as $serviceName => $itemNeedle) {
             $service = Service::where('clinic_id', $clinic->id)->where('name', $serviceName)->first();
-            if (!$service) {
+            if (! $service) {
                 continue;
             }
 
@@ -162,10 +163,10 @@ class ClinicOperationsSeeder extends Seeder
             // injection.
             foreach ([$itemNeedle, 'Syringe 3 mL', 'Needle 23G'] as $needle) {
                 $item = Inventory::where('clinic_id', $clinic->id)
-                    ->where('item_name', 'like', $needle . '%')
+                    ->where('item_name', 'like', $needle.'%')
                     ->first();
 
-                if (!$item) {
+                if (! $item) {
                     continue;
                 }
 
@@ -216,9 +217,9 @@ class ClinicOperationsSeeder extends Seeder
             $owner = Owner::create([
                 'clinic_id' => $clinic->id,
                 'name' => $name,
-                'email' => Str::slug($name, '.') . self::DEMO_EMAIL_DOMAIN,
-                'phone' => '09' . rand(100000000, 999999999),
-                'address' => (100 + $index) . ' Mabini Street',
+                'email' => Str::slug($name, '.').self::DEMO_EMAIL_DOMAIN,
+                'phone' => '09'.rand(100000000, 999999999),
+                'address' => (100 + $index).' Mabini Street',
                 'city' => $city,
                 'province' => $province,
                 'zip' => (string) rand(1000, 4999),
@@ -264,7 +265,7 @@ class ClinicOperationsSeeder extends Seeder
 
         foreach (range(1, rand(1, 3)) as $ignored) {
             $species = rand(0, 100) < 65 ? $canine : $feline;
-            if (!$species) {
+            if (! $species) {
                 continue;
             }
 
@@ -297,7 +298,7 @@ class ClinicOperationsSeeder extends Seeder
         return WeightRange::where('status', 'Active')
             ->where('species_id', $speciesId)
             ->where('min_weight', '<=', $weight)
-            ->where(fn($q) => $q->where('max_weight', '>=', $weight)->orWhereNull('max_weight'))
+            ->where(fn ($q) => $q->where('max_weight', '>=', $weight)->orWhereNull('max_weight'))
             ->value('size_category_id');
     }
 
@@ -313,7 +314,7 @@ class ClinicOperationsSeeder extends Seeder
             return;
         }
 
-        $pricing = new PricingService();
+        $pricing = new PricingService;
         $pets = Pet::whereIn('owner_id', $owners->pluck('id'))->get();
 
         $complaints = [
@@ -348,7 +349,7 @@ class ClinicOperationsSeeder extends Seeder
                 $appointment = Appointment::create([
                     'clinic_id' => $clinic->id,
                     'uuid' => (string) Str::uuid(),
-                    'title' => $service->name . ' for ' . $pet->name,
+                    'title' => $service->name.' for '.$pet->name,
                     'date' => $date->toDateString(),
                     'time' => sprintf(
                         '%02d:%02d %s',
@@ -361,7 +362,7 @@ class ClinicOperationsSeeder extends Seeder
                     'service_id' => $service->id,
                     'vet_id' => $service->requires_doctor ? $vet->id : null,
                     'status' => $status,
-                    'is_walk_in' => !$isFuture && rand(0, 100) < 18,
+                    'is_walk_in' => ! $isFuture && rand(0, 100) < 18,
                     'notes' => $complaint,
                     'decline_reason' => $status === 'declined' ? 'Requested slot no longer available.' : null,
                     'created_at' => $date->copy()->subDays(rand(1, 10)),
@@ -443,7 +444,7 @@ class ClinicOperationsSeeder extends Seeder
 
         $monthKey = $date->format('Y-m');
         $sequence[$monthKey] = ($sequence[$monthKey] ?? 0) + 1;
-        $invoiceNumber = "VB-{$monthKey}-" . str_pad((string) $sequence[$monthKey], 4, '0', STR_PAD_LEFT);
+        $invoiceNumber = "VB-{$monthKey}-".str_pad((string) $sequence[$monthKey], 4, '0', STR_PAD_LEFT);
 
         $items = [[
             'item_type' => 'service',
@@ -627,7 +628,7 @@ class ClinicOperationsSeeder extends Seeder
             [$rating, $title, $body] = $written[$index];
             $owner = $invoice->pet?->owner;
 
-            if (!$owner) {
+            if (! $owner) {
                 continue;
             }
 

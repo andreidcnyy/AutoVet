@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use App\Models\Admin;
 use App\Enums\Roles;
+use App\Models\Admin;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -24,16 +23,16 @@ class UserController extends Controller
     private function present(Admin $user): array
     {
         return [
-            'id'                   => $user->id,
-            'clinic_id'            => $user->clinic_id,
-            'name'                 => $user->name,
-            'email'                => $user->email,
-            'role'                 => $user->role,
-            'status'               => $user->status,
-            'avatar'               => $user->avatar,
+            'id' => $user->id,
+            'clinic_id' => $user->clinic_id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'status' => $user->status,
+            'avatar' => $user->avatar,
             'must_change_password' => (bool) $user->must_change_password,
-            'ai_features_enabled'  => (bool) $user->ai_features_enabled,
-            'created_at'           => $user->created_at,
+            'ai_features_enabled' => (bool) $user->ai_features_enabled,
+            'created_at' => $user->created_at,
         ];
     }
 
@@ -73,7 +72,7 @@ class UserController extends Controller
 
         $validated['role'] = $validated['role'] ?? Roles::STAFF->value;
 
-        if (!Roles::canManage($authUser->role, $validated['role'])) {
+        if (! Roles::canManage($authUser->role, $validated['role'])) {
             return $this->forbidden('You cannot create an account with this role.');
         }
 
@@ -81,6 +80,7 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
 
         $user = Admin::create($validated);
+
         return response()->json($this->present($user), 201);
     }
 
@@ -107,7 +107,7 @@ class UserController extends Controller
 
         // Editing your own name or email goes through /profile; here an
         // account may only touch accounts it outranks.
-        if (!$isSelf && !Roles::canManage($authUser->role, $user->role)) {
+        if (! $isSelf && ! Roles::canManage($authUser->role, $user->role)) {
             return $this->forbidden('You cannot modify this account.');
         }
 
@@ -122,11 +122,11 @@ class UserController extends Controller
             'password' => 'nullable|string|min:8',
         ]);
 
-        if (!empty($validated['role']) && $validated['role'] !== $user->role) {
+        if (! empty($validated['role']) && $validated['role'] !== $user->role) {
             if ($isSelf) {
                 return $this->forbidden('You cannot change your own role.');
             }
-            if (!Roles::canManage($authUser->role, $validated['role'])) {
+            if (! Roles::canManage($authUser->role, $validated['role'])) {
                 return $this->forbidden('You cannot assign this role.');
             }
         } else {
@@ -137,7 +137,7 @@ class UserController extends Controller
             return $this->forbidden('You cannot change your own status.');
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             if ($isSelf) {
                 return $this->forbidden('Use Change Password to change your own password.');
             }
@@ -166,12 +166,13 @@ class UserController extends Controller
             return $this->forbidden('You cannot delete your own account.');
         }
 
-        if (!Roles::canManage($authUser->role, $user->role)) {
+        if (! Roles::canManage($authUser->role, $user->role)) {
             return $this->forbidden('You cannot delete this account.');
         }
 
         $user->tokens()->delete();
         $user->delete();
+
         return response()->json(null, 204);
     }
 
@@ -193,7 +194,7 @@ class UserController extends Controller
     {
         $authUser = auth()->user();
 
-        if ((int) $user->id === (int) $authUser->id || !Roles::canManage($authUser->role, $user->role)) {
+        if ((int) $user->id === (int) $authUser->id || ! Roles::canManage($authUser->role, $user->role)) {
             return $this->forbidden('You cannot reset the password of this account.');
         }
 

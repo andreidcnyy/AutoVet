@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\UserFacingException;
 use App\Models\ClientNotification;
-use App\Models\Owner;
+use App\Models\Invoice;
 use App\Models\NotificationTemplate;
+use App\Models\Owner;
 use App\Services\ClientNotificationService;
 use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class ClientNotificationController extends Controller
 {
@@ -43,12 +47,14 @@ class ClientNotificationController extends Controller
     {
         if ($ownerId = $this->getPortalOwnerId()) {
             $notifications = ClientNotification::where('owner_id', $ownerId)
-                ->where('channel', 'email') // Only show in-app/email ones? 
+                ->where('channel', 'email') // Only show in-app/email ones?
                 ->latest()
                 ->limit(50)
                 ->get();
+
             return response()->json($notifications);
         }
+
         return response()->json(['message' => 'Client notifications are only available to client accounts.'], 403);
     }
 
@@ -58,10 +64,12 @@ class ClientNotificationController extends Controller
             $notification = ClientNotification::where('owner_id', $ownerId)
                 ->where('id', $id)
                 ->firstOrFail();
-            
+
             $notification->update(['read_at' => now()]);
+
             return response()->json(['message' => 'Notification marked as read.']);
         }
+
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
@@ -73,14 +81,15 @@ class ClientNotificationController extends Controller
         ]);
 
         $owner = Owner::findOrFail($validated['owner_id']);
-        $invoice = \App\Models\Invoice::findOrFail($validated['invoice_id']);
+        $invoice = Invoice::findOrFail($validated['invoice_id']);
 
         try {
             $notification = $this->service->sendInvoiceEmail($owner, $invoice);
+
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send invoice email: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-invoice', 'the email could not be sent.')),
+                'message' => 'Failed to send invoice email: '.($e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'send-invoice', 'the email could not be sent.')),
             ], 422);
         }
     }
@@ -106,10 +115,11 @@ class ClientNotificationController extends Controller
                 $validated['subject'],
                 'warning'
             );
+
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send warning: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-warning', 'the email could not be sent.')),
+                'message' => 'Failed to send warning: '.($e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'send-warning', 'the email could not be sent.')),
             ], 422);
         }
     }
@@ -122,15 +132,18 @@ class ClientNotificationController extends Controller
                 ->whereNull('read_at')
                 ->latest()
                 ->get();
+
             return response()->json($warnings);
         }
+
         return response()->json(['message' => 'Client notifications are only available to client accounts.'], 403);
     }
 
     /** Logs an unexpected failure and returns the generic text to show instead. */
     private function logged(\Throwable $e, string $context, string $generic): string
     {
-        \Illuminate\Support\Facades\Log::error("[{$context}] " . $e->getMessage(), ['exception' => get_class($e)]);
+        Log::error("[{$context}] ".$e->getMessage(), ['exception' => get_class($e)]);
+
         return $generic;
     }
 
@@ -151,14 +164,14 @@ class ClientNotificationController extends Controller
             'template_id' => 'nullable|clinic_exists:notification_templates,id',
             'custom_message' => 'nullable|string',
             'title' => 'nullable|string',
-            'related_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in($allowedTypes)],
+            'related_type' => ['nullable', 'string', Rule::in($allowedTypes)],
             'related_id' => 'nullable|integer',
         ]);
 
         $owner = Owner::findOrFail($validated['owner_id']);
 
         $relatedModel = null;
-        if (!empty($validated['related_type']) && !empty($validated['related_id'])) {
+        if (! empty($validated['related_type']) && ! empty($validated['related_id'])) {
             try {
                 $relatedModel = $validated['related_type']::findOrFail($validated['related_id']);
             } catch (\Exception $e) {
@@ -169,13 +182,13 @@ class ClientNotificationController extends Controller
         $message = '';
         $title = $validated['title'] ?? 'Notification from AutoVet';
 
-        if (!empty($validated['template_id'])) {
+        if (! empty($validated['template_id'])) {
             $template = NotificationTemplate::findOrFail($validated['template_id']);
             $message = $this->service->interpolateVariables($template->body, [], $owner, $relatedModel);
             if ($template->subject && $validated['channel'] === 'email') {
                 $title = $this->service->interpolateVariables($template->subject, [], $owner, $relatedModel);
             }
-        } else if (!empty($validated['custom_message'])) {
+        } elseif (! empty($validated['custom_message'])) {
             $message = $this->service->interpolateVariables($validated['custom_message'], [], $owner, $relatedModel);
         } else {
             return response()->json(['message' => 'Must provide either custom_message or template_id'], 422);
@@ -183,10 +196,11 @@ class ClientNotificationController extends Controller
 
         try {
             $notification = $this->service->send($owner, $validated['channel'], $message, $title, 'manual', $relatedModel);
+
             return response()->json($notification);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to send notification: ' . ($e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'send-notification', 'the message could not be sent.')),
+                'message' => 'Failed to send notification: '.($e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'send-notification', 'the message could not be sent.')),
             ], 422);
         }
     }

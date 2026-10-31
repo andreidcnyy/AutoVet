@@ -30,6 +30,7 @@ class BackupController extends Controller
     private function clinicScope(Request $request): ?int
     {
         $user = $request->user();
+
         return $user->role === Roles::SUPER_ADMIN->value ? null : (int) $user->clinic_id;
     }
 
@@ -46,8 +47,8 @@ class BackupController extends Controller
         return collect($disk->files($this->folder($request)))
             ->filter(fn ($path) => preg_match(self::FILENAME_PATTERN, basename($path)))
             ->map(fn ($path) => [
-                'filename'   => basename($path),
-                'size'       => $disk->size($path),
+                'filename' => basename($path),
+                'size' => $disk->size($path),
                 'created_at' => date('Y-m-d H:i:s', $disk->lastModified($path)),
             ])
             ->sortByDesc('created_at')
@@ -59,7 +60,8 @@ class BackupController extends Controller
         try {
             return response()->json(['data' => $this->listBackups($request)]);
         } catch (\Throwable $e) {
-            Log::error('Listing backups failed: ' . $e->getMessage(), ['exception' => get_class($e)]);
+            Log::error('Listing backups failed: '.$e->getMessage(), ['exception' => get_class($e)]);
+
             return response()->json(['message' => 'Backups could not be listed right now.'], 500);
         }
     }
@@ -77,14 +79,16 @@ class BackupController extends Controller
         try {
             $exitCode = Artisan::call('db:backup', $clinicId ? ['--clinic' => $clinicId] : []);
         } catch (\Throwable $e) {
-            Log::error('Backup threw: ' . $e->getMessage(), ['exception' => get_class($e)]);
+            Log::error('Backup threw: '.$e->getMessage(), ['exception' => get_class($e)]);
+
             return response()->json(['message' => 'The backup could not be created. Please try again.'], 500);
         }
 
         $elapsed = round(microtime(true) - $startedAt, 1);
 
         if ($exitCode !== 0) {
-            Log::error("Backup command failed after {$elapsed}s (exit {$exitCode}): " . trim(Artisan::output()));
+            Log::error("Backup command failed after {$elapsed}s (exit {$exitCode}): ".trim(Artisan::output()));
+
             return response()->json(['message' => 'The backup could not be created. Please try again.'], 500);
         }
 
@@ -94,25 +98,26 @@ class BackupController extends Controller
         // it to the list without a second GET request.
         return response()->json([
             'message' => 'CSV backup created successfully.',
-            'backup'  => $this->listBackups($request)->first(),
+            'backup' => $this->listBackups($request)->first(),
         ], 201);
     }
 
     public function destroy(Request $request, $filename)
     {
         $path = $this->resolve($request, $filename);
-        if (!$path) {
+        if (! $path) {
             return response()->json(['message' => 'Backup file not found.'], 404);
         }
 
         $this->disk()->delete($path);
+
         return response()->json(['message' => 'Backup deleted successfully.']);
     }
 
     public function download(Request $request, $filename)
     {
         $path = $this->resolve($request, $filename);
-        if (!$path) {
+        if (! $path) {
             return response()->json(['message' => 'Backup file not found.'], 404);
         }
 
@@ -123,11 +128,12 @@ class BackupController extends Controller
     private function resolve(Request $request, $filename): ?string
     {
         $filename = basename((string) $filename);
-        if (!preg_match(self::FILENAME_PATTERN, $filename)) {
+        if (! preg_match(self::FILENAME_PATTERN, $filename)) {
             return null;
         }
 
-        $path = ltrim($this->folder($request) . '/' . $filename, '/');
+        $path = ltrim($this->folder($request).'/'.$filename, '/');
+
         return $this->disk()->exists($path) ? $path : null;
     }
 }

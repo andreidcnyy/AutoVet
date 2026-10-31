@@ -2,24 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Invoice;
-use App\Models\Pet;
+use App\Enums\Roles;
+use App\Jobs\RefreshInventoryForecast;
 use App\Models\Appointment;
+use App\Models\ClientNotification;
 use App\Models\Inventory;
+use App\Models\InventoryForecast;
+use App\Models\InventoryUsageHistory;
+use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Service;
+use App\Models\MedicalRecord;
+use App\Models\Notification;
 use App\Models\Owner;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Pet;
+use App\Models\Service;
+use App\Models\Setting;
+use App\Services\InventoryForecastService;
+use App\Support\DashboardCache;
+use App\Support\ListQuery;
+use App\Support\Tenant;
+use App\Traits\IdentifiesPortalOwner;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Services\InventoryForecastService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Artisan;
-use App\Traits\IdentifiesPortalOwner;
-use App\Models\ClientNotification;
-use App\Support\DashboardCache;
 
 class DashboardController extends Controller
 {
@@ -35,27 +44,27 @@ class DashboardController extends Controller
     public function getPortalOverview(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['pets' => [], 'appointments' => [], 'notifications' => []]);
         }
         // Clients only. Staff ids overlap portal ids, so a staff call used to
         // cache clinic-wide data under the key a client with the same id reads.
-        if (!method_exists($user, 'isOwner') || !$user->isOwner()) {
+        if (! method_exists($user, 'isOwner') || ! $user->isOwner()) {
             return response()->json(['message' => 'The portal overview is for client accounts.'], 403);
         }
         $userId = $user->id;
 
         return response()->json(Cache::remember("portal_overview_{$userId}", 60, function () use ($request) {
-            $petController = app(\App\Http\Controllers\PetController::class);
-            $apptController = app(\App\Http\Controllers\AppointmentController::class);
-            
+            $petController = app(PetController::class);
+            $apptController = app(AppointmentController::class);
+
             // Re-use existing controller logic to respect traits and filters
             $pets = $petController->index($request)->original;
-            
+
             $apptRequest = new Request(['upcoming' => true]);
-            $apptRequest->setUserResolver(fn() => $request->user());
+            $apptRequest->setUserResolver(fn () => $request->user());
             $appointments = $apptController->index($apptRequest)->original;
-            
+
             $notifications = $this->getNotifications($request)->original;
 
             return [
@@ -85,22 +94,23 @@ class DashboardController extends Controller
         $sub = function (array $query) use ($request) {
             $r = Request::create($request->path(), 'GET', $query);
             $r->setUserResolver(fn () => $request->user());
+
             return $r;
         };
 
         $sections = [
-            'stats'                => fn () => $this->getStats(),
-            'notifications'        => fn () => $this->getNotifications($request),
-            'appointments_today'   => fn () => $this->appointmentsToday($sub(['per_page' => 100])),
-            'monthly_clients'      => fn () => $this->getMonthlyClients(),
-            'items_by_category'    => fn () => $this->getItemsByCategory(),
+            'stats' => fn () => $this->getStats(),
+            'notifications' => fn () => $this->getNotifications($request),
+            'appointments_today' => fn () => $this->appointmentsToday($sub(['per_page' => 100])),
+            'monthly_clients' => fn () => $this->getMonthlyClients(),
+            'items_by_category' => fn () => $this->getItemsByCategory(),
             'services_by_category' => fn () => $this->getServicesByCategory(),
         ];
 
-        if (in_array($user->role ?? null, \App\Enums\Roles::adminRoles(), true)) {
+        if (in_array($user->role ?? null, Roles::adminRoles(), true)) {
             $sales = app(SalesReportController::class);
             $sections['revenue_summary'] = fn () => $sales->getRevenueSummary($sub(['days' => 30]));
-            $sections['top_services']    = fn () => $sales->getTopServices($sub(['limit' => 5]));
+            $sections['top_services'] = fn () => $sales->getTopServices($sub(['limit' => 5]));
             $sections['recent_invoices'] = fn () => app(InvoiceController::class)->index($sub(['per_page' => 7, 'page' => 1]));
         }
 
@@ -112,13 +122,13 @@ class DashboardController extends Controller
                 $response = $build();
                 $data[$key] = $response instanceof JsonResponse ? $response->getData(true) : $response;
             } catch (\Throwable $e) {
-                Log::error("[dashboard-summary] {$key}: " . $e->getMessage(), ['exception' => get_class($e)]);
+                Log::error("[dashboard-summary] {$key}: ".$e->getMessage(), ['exception' => get_class($e)]);
                 $errors[$key] = 'This section could not be loaded.';
             }
         }
 
         return response()->json([
-            'data'   => (object) $data,
+            'data' => (object) $data,
             'errors' => (object) $errors,
         ]);
     }
@@ -129,7 +139,7 @@ class DashboardController extends Controller
         $range = $request->query('range', '6 Months');
         $monthsToFetch = $range == 'Year' ? 12 : 6;
 
-        return response()->json(Cache::remember("dashboard_overview_staff_{$userId}_{$monthsToFetch}", 300, function () use ($request, $range, $monthsToFetch) {
+        return response()->json(Cache::remember("dashboard_overview_staff_{$userId}_{$monthsToFetch}", 300, function () use ($request) {
             return [
                 'status' => [
                     'timestamp' => now()->toIso8601String(),
@@ -148,9 +158,9 @@ class DashboardController extends Controller
      */
     public function getInventoryForecast()
     {
-        $data = \Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_inventory_forecast'), 3600, function () {
+        $data = Cache::remember(DashboardCache::key('dashboard_inventory_forecast'), 3600, function () {
             // Find the most critical inventory item based on highest risk saved forecast
-            $savedForecast = \App\Models\InventoryForecast::with('inventory')
+            $savedForecast = InventoryForecast::with('inventory')
                 ->orderByRaw("FIELD(forecast_status, 'Critical', 'Reorder Soon', 'Safe', 'Insufficient Data')")
                 ->orderBy('days_until_stockout', 'ASC')
                 ->first();
@@ -159,12 +169,12 @@ class DashboardController extends Controller
                 $item = $savedForecast->inventory;
                 $forecastStatus = $savedForecast->forecast_status;
 
-                $analysisMessage = "AI Insight: " . ($savedForecast->notes ?? "Model indicates a {$forecastStatus} status.");
+                $analysisMessage = 'AI Insight: '.($savedForecast->notes ?? "Model indicates a {$forecastStatus} status.");
                 if ($savedForecast->prediction_source === 'dataset') {
-                    $analysisMessage .= " (Dataset Prediction Active)";
+                    $analysisMessage .= ' (Dataset Prediction Active)';
                 }
 
-                $growthLabel = "Avg: " . round($savedForecast->average_daily_consumption, 1) . " unit/day";
+                $growthLabel = 'Avg: '.round($savedForecast->average_daily_consumption, 1).' unit/day';
 
                 return [
                     'item_name' => $item->item_name,
@@ -175,14 +185,14 @@ class DashboardController extends Controller
                     'prediction_status' => $savedForecast->prediction_source === 'dataset' ? 'Using dataset-based prediction' : 'Live Sync',
                     'average_daily_consumption' => $savedForecast->average_daily_consumption,
                     'days_until_stockout' => $savedForecast->days_until_stockout,
-                    'chart_data' => null // Can be populated if chart is strictly required
+                    'chart_data' => null, // Can be populated if chart is strictly required
                 ];
             }
 
             // Fallback if no forecast exists: pick item with lowest stock
             $item = Inventory::orderByRaw('(stock_level - min_stock_level) ASC')->first();
 
-            if (!$item) {
+            if (! $item) {
                 return null;
             }
 
@@ -191,31 +201,30 @@ class DashboardController extends Controller
                 'recommended_stock' => $item->min_stock_level * 2,
                 'current_stock' => $item->stock_level,
                 'growth_label' => 'No Data',
-                'analysis' => "No AI forecast records found for this item yet. Record sales to activate.",
+                'analysis' => 'No AI forecast records found for this item yet. Record sales to activate.',
                 'prediction_status' => 'Insufficient Data',
                 'average_daily_consumption' => 0,
                 'days_until_stockout' => null,
-                'chart_data' => null
+                'chart_data' => null,
             ];
         });
 
-        if (!$data) {
+        if (! $data) {
             return response()->json(['message' => 'No inventory items found.'], 404);
         }
-        
+
         return response()->json($data);
     }
-
 
     /**
      * Get AI planning hints for appointments.
      */
     public function getAppointmentForecast()
     {
-        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_appointment_forecast'), 300, function () {
+        return response()->json(Cache::remember(DashboardCache::key('dashboard_appointment_forecast'), 300, function () {
             // Fetch 16 weeks for training; chart displays the most recent 8
             $startDate = now()->startOfWeek()->subWeeks(15);
-            $counts = \App\Models\Appointment::where('date', '>=', $startDate->toDateString())
+            $counts = Appointment::where('date', '>=', $startDate->toDateString())
                 ->select(DB::raw('date'), DB::raw('count(*) as count'))
                 ->groupBy('date')
                 ->get()
@@ -238,10 +247,12 @@ class DashboardController extends Controller
             $weeklyData = array_slice($allWeeklyData, -8);
 
             // Linear regression helper: returns [slope, intercept, r2]
-            $fitLR = function(array $x, array $y): array {
+            $fitLR = function (array $x, array $y): array {
                 $n = count($x);
-                $sumX = array_sum($x); $sumY = array_sum($y);
-                $sumXY = 0; $sumX2 = 0;
+                $sumX = array_sum($x);
+                $sumY = array_sum($y);
+                $sumXY = 0;
+                $sumX2 = 0;
                 for ($i = 0; $i < $n; $i++) {
                     $sumXY += $x[$i] * $y[$i];
                     $sumX2 += $x[$i] * $x[$i];
@@ -250,12 +261,13 @@ class DashboardController extends Controller
                 $m = $denom != 0 ? (($n * $sumXY) - ($sumX * $sumY)) / $denom : 0;
                 $b = ($sumY - ($m * $sumX)) / $n;
                 $meanY = $n > 0 ? $sumY / $n : 0;
-                $ssTot = array_sum(array_map(fn($yi) => pow($yi - $meanY, 2), $y));
+                $ssTot = array_sum(array_map(fn ($yi) => pow($yi - $meanY, 2), $y));
                 $ssRes = 0;
                 for ($i = 0; $i < $n; $i++) {
                     $ssRes += pow($y[$i] - ($m * $x[$i] + $b), 2);
                 }
                 $r2 = $ssTot > 0 ? round(1 - ($ssRes / $ssTot), 4) : 0.0;
+
                 return [$m, $b, $r2];
             };
 
@@ -266,17 +278,17 @@ class DashboardController extends Controller
 
             $_MIN_SPLIT = 10;
             if ($n >= $_MIN_SPLIT) {
-                $split = (int)floor($n * 0.8);
+                $split = (int) floor($n * 0.8);
                 $xTrain = array_slice($xValues, 0, $split);
                 $yTrain = array_slice($yValues, 0, $split);
-                $xTest  = array_slice($xValues, $split);
-                $yTest  = array_slice($yValues, $split);
+                $xTest = array_slice($xValues, $split);
+                $yTest = array_slice($yValues, $split);
 
                 [$evalM, $evalB] = $fitLR($xTrain, $yTrain);
 
                 // Score eval model on held-out test weeks
                 $meanYTest = array_sum($yTest) / count($yTest);
-                $ssTotTest = array_sum(array_map(fn($yi) => pow($yi - $meanYTest, 2), $yTest));
+                $ssTotTest = array_sum(array_map(fn ($yi) => pow($yi - $meanYTest, 2), $yTest));
                 $ssResTest = 0;
                 $absResTest = 0;
                 foreach ($xTest as $idx => $xi) {
@@ -286,7 +298,7 @@ class DashboardController extends Controller
                 }
                 $testR2 = $ssTotTest > 0 ? round(1 - ($ssResTest / $ssTotTest), 4) : 0.0;
                 $rmse = round(sqrt($ssResTest / count($yTest)), 4);
-                $mae  = round($absResTest / count($yTest), 4);
+                $mae = round($absResTest / count($yTest), 4);
                 $validationMethod = '80/20 holdout';
 
                 [$m, $b, $r2] = $fitLR($xValues, $yValues);
@@ -304,7 +316,7 @@ class DashboardController extends Controller
                     $absRes += abs($err);
                 }
                 $rmse = $n > 0 ? round(sqrt($ssRes / $n), 4) : null;
-                $mae  = $n > 0 ? round($absRes / $n, 4) : null;
+                $mae = $n > 0 ? round($absRes / $n, 4) : null;
             }
 
             // Forecast next 2 weeks
@@ -314,7 +326,7 @@ class DashboardController extends Controller
             // Build week labels for chart (last 8 weeks + 2 forecast weeks)
             $weekLabels = [];
             for ($i = 7; $i >= 0; $i--) {
-                $weekLabels[] = 'W' . now()->startOfWeek()->subWeeks($i)->format('M d');
+                $weekLabels[] = 'W'.now()->startOfWeek()->subWeeks($i)->format('M d');
             }
             $weekLabels[] = 'Next wk';
             $weekLabels[] = 'Wk +2';
@@ -322,7 +334,7 @@ class DashboardController extends Controller
             $chartData = array_merge($weeklyData, [$forecastNext1, $forecastNext2]);
 
             // AI Intelligence Progress (Threshold: 3 weeks with data)
-            $weeksWithData = count(array_filter($weeklyData, fn($val) => $val > 0));
+            $weeksWithData = count(array_filter($weeklyData, fn ($val) => $val > 0));
             $progressPercent = min(100, round(($weeksWithData / 3) * 100));
             $needed = max(0, 3 - $weeksWithData);
 
@@ -330,10 +342,10 @@ class DashboardController extends Controller
             $days = [];
             for ($i = 0; $i < 7; $i++) {
                 $date = now()->addDays($i);
-                $count = $counts[$date->toDateString()] ?? \App\Models\Appointment::where('date', $date->toDateString())->count();
+                $count = $counts[$date->toDateString()] ?? Appointment::where('date', $date->toDateString())->count();
                 $days[] = [
                     'label' => $date->format('D'),
-                    'date'  => $date->toDateString(),
+                    'date' => $date->toDateString(),
                     'count' => $count,
                 ];
             }
@@ -343,64 +355,63 @@ class DashboardController extends Controller
             $insight = 'Clinic appointment volume is stable. Standard operations recommended.';
             if ($m > 1) {
                 $pct = round(($forecastNext1 - max(1, $lastWeekCount)) / max(1, $lastWeekCount) * 100);
-                $insight = "Appointments are trending upward. Model projects {$forecastNext1} appointments next week" . ($pct > 0 ? " (+{$pct}% vs this week)." : '.');
+                $insight = "Appointments are trending upward. Model projects {$forecastNext1} appointments next week".($pct > 0 ? " (+{$pct}% vs this week)." : '.');
             } elseif ($m < -1) {
-                $insight = "Appointment volume is trending downward. Consider sending client reminders to fill the schedule.";
+                $insight = 'Appointment volume is trending downward. Consider sending client reminders to fill the schedule.';
             }
 
             // Hints
             $hints = [];
             if ($forecastNext1 > $lastWeekCount * 1.2) {
-                $hints[] = "Consider scheduling additional staff or extending hours next week.";
+                $hints[] = 'Consider scheduling additional staff or extending hours next week.';
             }
-            $overdueFollowups = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
+            $overdueFollowups = MedicalRecord::whereNotNull('follow_up_date')
                 ->where('follow_up_date', '<', now()->toDateString())
                 ->count();
             if ($overdueFollowups > 0) {
                 $hints[] = "There are {$overdueFollowups} overdue patient follow-ups. Assign staff to contact owners.";
             }
-            $lowStock = \App\Models\Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
+            $lowStock = Inventory::whereColumn('stock_level', '<=', 'min_stock_level')->count();
             if ($lowStock > 0) {
                 $hints[] = "Refill {$lowStock} low-stock items before busy appointment days.";
             }
             if (empty($hints)) {
-                $hints[] = "No critical warnings. Clinic is operating normally.";
+                $hints[] = 'No critical warnings. Clinic is operating normally.';
             }
 
             return [
-                'insight'         => $insight,
-                'hints'           => $hints,
+                'insight' => $insight,
+                'hints' => $hints,
                 'ai_intelligence_progress' => $progressPercent,
-                'message' => $progressPercent < 100 
-                    ? "AI Intelligence: {$progressPercent}% — Need {$needed} more week" . ($needed > 1 ? 's' : '') . " of data for live projection."
-                    : "AI Analysis Active.",
-                'model'           => [
-                    'slope'             => round($m, 4),
-                    'intercept'         => round($b, 4),
-                    'r2'                => $r2,
-                    'test_r2'           => $testR2,
-                    'rmse'              => $rmse,
-                    'mae'               => $mae,
+                'message' => $progressPercent < 100
+                    ? "AI Intelligence: {$progressPercent}% — Need {$needed} more week".($needed > 1 ? 's' : '').' of data for live projection.'
+                    : 'AI Analysis Active.',
+                'model' => [
+                    'slope' => round($m, 4),
+                    'intercept' => round($b, 4),
+                    'r2' => $r2,
+                    'test_r2' => $testR2,
+                    'rmse' => $rmse,
+                    'mae' => $mae,
                     'validation_method' => $validationMethod,
-                    'forecast_week_1'   => $forecastNext1,
-                    'forecast_week_2'   => $forecastNext2,
-                    'algorithm'         => 'Simple Linear Regression',
+                    'forecast_week_1' => $forecastNext1,
+                    'forecast_week_2' => $forecastNext2,
+                    'algorithm' => 'Simple Linear Regression',
                 ],
-                'weekly_chart'    => [
+                'weekly_chart' => [
                     'labels' => $weekLabels,
-                    'data'   => $chartData,
+                    'data' => $chartData,
                 ],
-                'daily_next7'     => $days,
+                'daily_next7' => $days,
             ];
         }));
     }
 
-
     public function getPatientVisitPredictions()
     {
-        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key('dashboard_patient_visit_predictions'), 300, function () {
+        return response()->json(Cache::remember(DashboardCache::key('dashboard_patient_visit_predictions'), 300, function () {
             // Overdue follow-ups: follow_up_date is in the past, load pet + owner
-            $overdue = \App\Models\MedicalRecord::with(['pet.owner'])
+            $overdue = MedicalRecord::with(['pet.owner'])
                 ->whereNotNull('follow_up_date')
                 ->where('follow_up_date', '<', now()->toDateString())
                 ->orderBy('follow_up_date', 'asc')
@@ -408,7 +419,7 @@ class DashboardController extends Controller
                 ->get();
 
             // Upcoming follow-ups: follow_up_date within next 30 days
-            $upcoming = \App\Models\MedicalRecord::with(['pet.owner'])
+            $upcoming = MedicalRecord::with(['pet.owner'])
                 ->whereNotNull('follow_up_date')
                 ->whereBetween('follow_up_date', [now()->toDateString(), now()->addDays(30)->toDateString()])
                 ->orderBy('follow_up_date', 'asc')
@@ -418,39 +429,42 @@ class DashboardController extends Controller
             $formatRecord = function ($record, $tone) {
                 $daysAgo = now()->diffInDays($record->follow_up_date, false);
                 if ($tone === 'danger') {
-                    $statusLabel = abs((int)$daysAgo) . 'd overdue';
+                    $statusLabel = abs((int) $daysAgo).'d overdue';
                 } else {
-                    $statusLabel = (int)$daysAgo . 'd away';
+                    $statusLabel = (int) $daysAgo.'d away';
                 }
+
                 return [
-                    'pet'          => $record->pet->name ?? 'Unknown',
-                    'owner'        => $record->pet->owner->last_name ?? ($record->pet->owner->name ?? 'Unknown'),
-                    'follow_up'    => $record->follow_up_date?->toDateString(),
+                    'pet' => $record->pet->name ?? 'Unknown',
+                    'owner' => $record->pet->owner->last_name ?? ($record->pet->owner->name ?? 'Unknown'),
+                    'follow_up' => $record->follow_up_date?->toDateString(),
                     'status_label' => $statusLabel,
-                    'tone'         => $tone,
-                    'diagnosis'    => $record->diagnosis ?? null,
+                    'tone' => $tone,
+                    'diagnosis' => $record->diagnosis ?? null,
                 ];
             };
 
             $results = [];
-            foreach ($overdue as $r)  { $results[] = $formatRecord($r, 'danger'); }
+            foreach ($overdue as $r) {
+                $results[] = $formatRecord($r, 'danger');
+            }
             foreach ($upcoming as $r) {
                 $days = now()->diffInDays($r->follow_up_date, false);
                 $tone = $days <= 5 ? 'warning' : ($days <= 14 ? 'info' : 'success');
                 $results[] = $formatRecord($r, $tone);
             }
 
-            $totalOverdue = \App\Models\MedicalRecord::whereNotNull('follow_up_date')
+            $totalOverdue = MedicalRecord::whereNotNull('follow_up_date')
                 ->where('follow_up_date', '<', now()->toDateString())
                 ->count();
 
             return [
-                'patients'      => $results,
+                'patients' => $results,
                 'total_overdue' => $totalOverdue,
-                'total_upcoming'=> $upcoming->count(),
-                'summary'       => $totalOverdue > 0
+                'total_upcoming' => $upcoming->count(),
+                'summary' => $totalOverdue > 0
                     ? "{$totalOverdue} pets are overdue for follow-up visits."
-                    : "No overdue follow-ups. All patients are on schedule.",
+                    : 'No overdue follow-ups. All patients are on schedule.',
             ];
         }));
     }
@@ -466,8 +480,7 @@ class DashboardController extends Controller
             $q->where('email', '!=', 'dataset.seeder@autovet.ai');
         })->count();
 
-        $totalOwners = \App\Models\Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
-
+        $totalOwners = Owner::where('email', '!=', 'dataset.seeder@autovet.ai')->count();
 
         // Compared with where() rather than whereDate() throughout this file.
         // `date` is a DATE NOT NULL column, so DATE(date) is the value itself
@@ -477,8 +490,8 @@ class DashboardController extends Controller
         // like invoices.created_at the two are genuinely different, which is
         // why those call sites are left alone.
         // Each card counts exactly what its list shows: both come from trackerQuery().
-        $apptsToday        = $this->trackerQuery('today')->count();
-        $apptsUpcoming     = $this->trackerQuery('upcoming')->count();
+        $apptsToday = $this->trackerQuery('today')->count();
+        $apptsUpcoming = $this->trackerQuery('upcoming')->count();
         $cancelledDeclined = $this->trackerQuery('cancelled')->count();
 
         return response()->json([
@@ -504,16 +517,16 @@ class DashboardController extends Controller
                 'id' => 'stat-appts-today',
                 'title' => 'Appointments Today',
                 'value' => $apptsToday,
-                'detail' => 'Confirmed for ' . \Carbon\Carbon::now($tz)->format('M d'),
+                'detail' => 'Confirmed for '.Carbon::now($tz)->format('M d'),
                 'iconName' => 'FiCalendar',
                 'iconBg' => 'bg-emerald-100 dark:bg-emerald-900/30',
                 'iconColor' => 'text-emerald-600 dark:text-emerald-400',
             ],
             [
                 'id' => 'stat-appts-upcoming',
-                'title' => "Appointments Tomorrow",
+                'title' => 'Appointments Tomorrow',
                 'value' => $apptsUpcoming,
-                'detail' => 'Confirmed for ' . \Carbon\Carbon::now($tz)->addDay()->format('M d'),
+                'detail' => 'Confirmed for '.Carbon::now($tz)->addDay()->format('M d'),
                 'iconName' => 'FiClock',
                 'iconBg' => 'bg-indigo-100 dark:bg-indigo-900/30',
                 'iconColor' => 'text-indigo-600 dark:text-indigo-400',
@@ -522,11 +535,11 @@ class DashboardController extends Controller
                 'id' => 'stat-cancelled',
                 'title' => 'Cancelled / Declined',
                 'value' => $cancelledDeclined,
-                'detail' => 'Inactive for ' . \Carbon\Carbon::now($tz)->format('M d'),
+                'detail' => 'Inactive for '.Carbon::now($tz)->format('M d'),
                 'iconName' => 'FiXCircle',
                 'iconBg' => 'bg-rose-100 dark:bg-rose-900/30',
                 'iconColor' => 'text-rose-600 dark:text-rose-400',
-            ]
+            ],
         ]);
     }
 
@@ -539,13 +552,14 @@ class DashboardController extends Controller
         // key, so any string made a new entry — and "Year" never matched the
         // _12 key the forecast refresh clears.
         $monthsToFetch = in_array($request->query('range'), ['Year', '12'], true) ? 12 : 6;
-        return response()->json(\Illuminate\Support\Facades\Cache::remember(DashboardCache::key("dashboard_inventory_consumption_{$monthsToFetch}"), 3600, function () use ($monthsToFetch) {
+
+        return response()->json(Cache::remember(DashboardCache::key("dashboard_inventory_consumption_{$monthsToFetch}"), 3600, function () use ($monthsToFetch) {
             $futureMonths = 2;
 
             $timeline = [];
             $now = Carbon::now()->startOfMonth();
             $startMonth = $now->copy()->subMonths($monthsToFetch - 1);
-            
+
             for ($i = 0; $i < $monthsToFetch; $i++) {
                 $timeline[] = ['date' => $startMonth->copy()->addMonths($i), 'is_future' => false];
             }
@@ -557,18 +571,18 @@ class DashboardController extends Controller
             // forecast learns from (invoice sales, service consumables and
             // stock corrections). Invoice items only when it is empty.
             // DB::table() is not clinic-scoped; restrict it by hand.
-            $usage = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
+            $usage = Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
                 ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
-                ->whereIn('inventory_usage_history.source_type', \App\Models\InventoryUsageHistory::FORECASTING_SAFE_SOURCES)
+                ->whereIn('inventory_usage_history.source_type', InventoryUsageHistory::FORECASTING_SAFE_SOURCES)
                 ->where('inventory_usage_history.usage_date', '>=', $startMonth->toDateString())
                 ->selectRaw('YEAR(inventory_usage_history.usage_date) as year, MONTH(inventory_usage_history.usage_date) as month, SUM(inventory_usage_history.quantity_used) as total_qty')
                 ->groupBy('year', 'month')
                 ->get();
 
             if ($usage->isEmpty()) {
-                $usage = InvoiceItem::whereHas('invoice', function($q) {
-                        $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
-                    })
+                $usage = InvoiceItem::whereHas('invoice', function ($q) {
+                    $q->whereIn('status', ['Finalized', 'Paid', 'Partially Paid']);
+                })
                     ->select(
                         DB::raw('YEAR(created_at) as year'),
                         DB::raw('MONTH(created_at) as month'),
@@ -584,7 +598,7 @@ class DashboardController extends Controller
 
             if ($usage->count() > 0) {
                 foreach ($usage as $u) {
-                    $key = $u->year . '-' . str_pad($u->month, 2, '0', STR_PAD_LEFT);
+                    $key = $u->year.'-'.str_pad($u->month, 2, '0', STR_PAD_LEFT);
                     $actualData[$key] = (float) $u->total_qty;
                 }
             } else {
@@ -593,18 +607,18 @@ class DashboardController extends Controller
                 if (file_exists($datasetPath)) {
                     $handle = fopen($datasetPath, 'r');
                     $header = fgetcsv($handle);
-                    
+
                     // Column indices: index 3 is usage_date, index 4 is quantity_used
-                    while (($row = fgetcsv($handle)) !== FALSE) {
+                    while (($row = fgetcsv($handle)) !== false) {
                         try {
                             $dateStr = $row[3];
-                            $qtyUsed = (float)($row[4] ?? 0);
-                            
+                            $qtyUsed = (float) ($row[4] ?? 0);
+
                             // Expected format: DD/MM/YYYY
                             $date = Carbon::createFromFormat('d/m/Y', $dateStr);
                             $key = $date->format('Y-m');
-                            
-                            if (!isset($actualData[$key])) {
+
+                            if (! isset($actualData[$key])) {
                                 $actualData[$key] = 0;
                             }
                             $actualData[$key] += $qtyUsed;
@@ -613,9 +627,9 @@ class DashboardController extends Controller
                         }
                     }
                     fclose($handle);
-                    
+
                     // Only flag as dataset if we actually got data
-                    if (!empty($actualData)) {
+                    if (! empty($actualData)) {
                         $isDataset = true;
                     }
                 }
@@ -625,15 +639,15 @@ class DashboardController extends Controller
             $xValues = [];
             $yValues = [];
             foreach ($timeline as $index => $item) {
-                if (!$item['is_future']) {
+                if (! $item['is_future']) {
                     $key = $item['date']->format('Y-m');
                     // If using dataset, we might need to map to the historical months if the timeline is modern
                     // But usually the dataset contains data for specific years.
-                    // If the clinic is "new", the timeline is current months. 
+                    // If the clinic is "new", the timeline is current months.
                     // If the dataset is from 2025 and it's 2026, we should probably return the "best fit" from dataset or just the fixed labels.
                     // For the demo, if actualData has keys, we use them.
                     $val = $actualData[$key] ?? 0;
-                    
+
                     // If fallback is on, but the keys don't match the current timeline (e.g. dataset is old),
                     // we pick the "last available" N months from the dataset to show *something* on the chart.
                     if ($isDataset && $val == 0) {
@@ -668,7 +682,7 @@ class DashboardController extends Controller
             $results = [
                 'data' => [],
                 'is_dataset_prediction' => $isDataset,
-                'prediction_source' => $isDataset ? 'dataset' : 'live'
+                'prediction_source' => $isDataset ? 'dataset' : 'live',
             ];
 
             foreach ($timeline as $index => $item) {
@@ -679,7 +693,7 @@ class DashboardController extends Controller
                     $results['data'][] = [
                         'month' => $item['date']->format('M'),
                         'actual' => null,
-                        'forecast' => round($forecastValue, 1)
+                        'forecast' => round($forecastValue, 1),
                     ];
                 } else {
                     $val = isset($yValues[$index]) ? $yValues[$index] : 0;
@@ -687,7 +701,7 @@ class DashboardController extends Controller
                     $results['data'][] = [
                         'month' => $item['date']->format('M'),
                         'actual' => $val,
-                        'forecast' => round($forecastValue, 1)
+                        'forecast' => round($forecastValue, 1),
                     ];
                 }
             }
@@ -696,31 +710,34 @@ class DashboardController extends Controller
         }));
     }
 
-
     /**
      * Get recent notifications.
      */
     public function getNotifications(Request $request)
     {
         $user = $request->user();
-        if (!$user) return response()->json([]);
-        
+        if (! $user) {
+            return response()->json([]);
+        }
+
         $showAll = $request->query('all') === '1';
         $cacheKey = $this->notificationCacheKey($user, $showAll);
 
-        return response()->json(\Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($request, $user, $showAll) {
+        return response()->json(Cache::remember($cacheKey, 30, function () use ($user, $showAll) {
             if ($user->isOwner()) {
                 $ownerId = $this->getPortalOwnerId();
-                if (!$ownerId) return [];
+                if (! $ownerId) {
+                    return [];
+                }
 
                 $notifications = [];
 
                 // 1. Fetch from ClientNotification
                 $query = ClientNotification::where('owner_id', $ownerId);
-                if (!$showAll) {
+                if (! $showAll) {
                     $query->whereNull('read_at');
                 }
-                
+
                 $dbNotifications = $query->latest()->limit(50)->get();
 
                 foreach ($dbNotifications as $notif) {
@@ -743,7 +760,7 @@ class DashboardController extends Controller
                     }
 
                     $notifications[] = [
-                        'id' => 'notif-' . $notif->id,
+                        'id' => 'notif-'.$notif->id,
                         'db_id' => $notif->id,
                         'iconName' => $iconName,
                         'tone' => $tone,
@@ -751,36 +768,36 @@ class DashboardController extends Controller
                         'message' => $notif->message,
                         'read_at' => $notif->read_at,
                         'time' => $notif->created_at->diffForHumans(),
-                        'created_at' => $notif->created_at->toDateTimeString()
+                        'created_at' => $notif->created_at->toDateTimeString(),
                     ];
                 }
 
-                if (!$showAll) {
+                if (! $showAll) {
                     // 2. Virtual: Overdue follow-ups
-                    $overdueFollowups = \App\Models\MedicalRecord::whereHas('pet', function($q) use ($ownerId) {
-                            $q->where('owner_id', $ownerId);
-                        })
+                    $overdueFollowups = MedicalRecord::whereHas('pet', function ($q) use ($ownerId) {
+                        $q->where('owner_id', $ownerId);
+                    })
                         ->whereNotNull('follow_up_date')
                         ->where('follow_up_date', '<', now()->toDateString())
                         ->with('pet')
                         ->get();
-                    
+
                     foreach ($overdueFollowups as $record) {
                         $notifications[] = [
-                            'id' => 'followup-' . $record->id,
+                            'id' => 'followup-'.$record->id,
                             'db_id' => $record->id,
                             'iconName' => 'FiPlusCircle',
                             'tone' => 'danger',
                             'title' => 'Follow-up Overdue',
-                            'message' => "{$record->pet->name} is overdue for a follow-up visit (since " . $record->follow_up_date->format('M d') . ").",
+                            'message' => "{$record->pet->name} is overdue for a follow-up visit (since ".$record->follow_up_date->format('M d').').',
                             'time' => $record->follow_up_date->diffForHumans(),
-                            'created_at' => $record->follow_up_date->toDateTimeString()
+                            'created_at' => $record->follow_up_date->toDateTimeString(),
                         ];
                     }
                 }
 
                 // Sort by created_at desc
-                usort($notifications, function($a, $b) {
+                usort($notifications, function ($a, $b) {
                     return strcmp($b['created_at'], $a['created_at']);
                 });
 
@@ -793,13 +810,13 @@ class DashboardController extends Controller
             // write time keeps one alert per item, but an item that stops
             // triggering leaves its last alert behind forever; this retires
             // those. Rate-limited so it runs about hourly, not per request.
-            if (\Illuminate\Support\Facades\Cache::add('notifications:auto-clear-lock', 1, now()->addHour())) {
-                \App\Models\Notification::autoClearStale();
+            if (Cache::add('notifications:auto-clear-lock', 1, now()->addHour())) {
+                Notification::autoClearStale();
             }
 
-            $query = \App\Models\Notification::orderBy('created_at', 'desc');
-            
-            if (!$showAll) {
+            $query = Notification::orderBy('created_at', 'desc');
+
+            if (! $showAll) {
                 $query->whereNull('read_at');
             }
 
@@ -823,7 +840,7 @@ class DashboardController extends Controller
                 if ($notif->type === 'LowStockAlert' || $notif->type === 'StockAdjustment') {
                     $iconName = ($notif->type === 'LowStockAlert') ? 'FiAlertTriangle' : 'FiPackage';
                     $tone = ($notif->type === 'LowStockAlert' || (isset($notif->data['quantity']) && $notif->data['quantity'] < 0)) ? 'danger' : 'success';
-                    
+
                     if ($notif->type === 'StockAdjustment') {
                         if (str_contains($notif->message, 'decreased') || str_contains($notif->message, 'deducted')) {
                             $tone = 'danger';
@@ -836,9 +853,15 @@ class DashboardController extends Controller
                     $tone = 'success';
                 } elseif (str_contains($notif->type, 'Appointment')) {
                     $iconName = 'FiCalendar';
-                    if ($notif->type === 'AppointmentPending') $tone = 'info';
-                    if ($notif->type === 'AppointmentApproved') $tone = 'success';
-                    if ($notif->type === 'AppointmentDeclined') $tone = 'danger';
+                    if ($notif->type === 'AppointmentPending') {
+                        $tone = 'info';
+                    }
+                    if ($notif->type === 'AppointmentApproved') {
+                        $tone = 'success';
+                    }
+                    if ($notif->type === 'AppointmentDeclined') {
+                        $tone = 'danger';
+                    }
                 } elseif ($notif->type === 'InvoiceFinalized') {
                     $iconName = 'FiFileText';
                     $tone = 'success';
@@ -849,7 +872,7 @@ class DashboardController extends Controller
                 }
 
                 $notifications[] = [
-                    'id' => 'notif-' . $notif->id,
+                    'id' => 'notif-'.$notif->id,
                     'db_id' => $notif->id,
                     'iconName' => $iconName,
                     'tone' => $tone,
@@ -857,18 +880,18 @@ class DashboardController extends Controller
                     'message' => $notif->message,
                     'read_at' => $notif->read_at,
                     'time' => $notif->created_at->diffForHumans(),
-                    'created_at' => $notif->created_at->toDateTimeString()
+                    'created_at' => $notif->created_at->toDateTimeString(),
                 ];
             }
+
             return $notifications;
         }));
     }
 
-
     public function markNotificationsRead(Request $request)
     {
-        $query = \App\Models\Notification::whereNull('read_at');
-        
+        $query = Notification::whereNull('read_at');
+
         if ($request->user()) {
             $query->where(function ($q) use ($request) {
                 $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
@@ -890,9 +913,9 @@ class DashboardController extends Controller
         try {
             // Strip 'notif-' prefix if present
             $dbId = str_replace('notif-', '', $id);
-            
-            $notification = \App\Models\Notification::where('id', $dbId);
-            
+
+            $notification = Notification::where('id', $dbId);
+
             if ($request->user()) {
                 $notification->where(function ($q) use ($request) {
                     $q->whereNull('user_id')->orWhere('user_id', $request->user()->id);
@@ -900,7 +923,7 @@ class DashboardController extends Controller
             }
 
             $notification->update(['read_at' => now()]);
-            
+
             // Clear cache
             if ($request->user()) {
                 $this->forgetNotificationCache($request->user());
@@ -908,7 +931,8 @@ class DashboardController extends Controller
 
             return response()->json(['status' => 'success']);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to dismiss notification: " . $e->getMessage());
+            Log::error('Failed to dismiss notification: '.$e->getMessage());
+
             return response()->json(['message' => 'The notification could not be dismissed.'], 500);
         }
     }
@@ -924,13 +948,14 @@ class DashboardController extends Controller
     private function notificationCacheKey($user, bool $all): string
     {
         $kind = (method_exists($user, 'isOwner') && $user->isOwner()) ? 'portal' : 'staff';
-        return "dashboard_notifications_{$kind}_{$user->id}" . ($all ? '_all' : '');
+
+        return "dashboard_notifications_{$kind}_{$user->id}".($all ? '_all' : '');
     }
 
     private function forgetNotificationCache($user): void
     {
-        \Illuminate\Support\Facades\Cache::forget($this->notificationCacheKey($user, false));
-        \Illuminate\Support\Facades\Cache::forget($this->notificationCacheKey($user, true));
+        Cache::forget($this->notificationCacheKey($user, false));
+        Cache::forget($this->notificationCacheKey($user, true));
     }
 
     /**
@@ -943,32 +968,32 @@ class DashboardController extends Controller
      */
     public function runForecastSync(): JsonResponse
     {
-        $aiEnabled = \App\Models\Setting::where('key', 'enable_ai_forecasting')->value('value');
+        $aiEnabled = Setting::where('key', 'enable_ai_forecasting')->value('value');
         if ($aiEnabled === 'false') {
             return response()->json(['status' => 'disabled', 'message' => 'AI forecasting is currently disabled.'], 503);
         }
 
         try {
             $inventoryIds = Inventory::whereNotNull('code')->pluck('id')->toArray();
-            
+
             if (empty($inventoryIds)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No inventory items with valid codes found for AI analysis.'
+                    'message' => 'No inventory items with valid codes found for AI analysis.',
                 ], 400);
             }
 
             // Dispatch background job
-            \App\Jobs\RefreshInventoryForecast::dispatch($inventoryIds, 'dashboard_sync');
+            RefreshInventoryForecast::dispatch($inventoryIds, 'dashboard_sync');
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'AI Batch Forecast started in background. The dashboard will update as processing continues.',
-                'total_items' => count($inventoryIds)
+                'total_items' => count($inventoryIds),
             ]);
 
         } catch (\Throwable $e) {
-            Log::error("[AI-CONTROLLER-ERROR] Failed to dispatch sync forecast: " . $e->getMessage());
+            Log::error('[AI-CONTROLLER-ERROR] Failed to dispatch sync forecast: '.$e->getMessage());
 
             return response()->json([
                 'status' => 'error',
@@ -992,22 +1017,25 @@ class DashboardController extends Controller
 
         try {
             $userId = auth()->id();
-            if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
+            if (! $userId) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
 
             // The model, not DB::table(), so the clinic scope applies and one
             // clinic cannot mark another clinic's alerts as read.
-            \App\Models\Notification::query()
-                ->where(function($q) use ($userId) {
+            Notification::query()
+                ->where(function ($q) use ($userId) {
                     $q->where('user_id', $userId)->orWhereNull('user_id');
                 })
                 ->whereNull('read_at')
                 ->update(['read_at' => now()]);
-            
+
             $this->forgetNotificationCache($u);
 
             return response()->json(['message' => 'All notifications marked as read.']);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to mark notifications as read: " . $e->getMessage());
+            Log::error('Failed to mark notifications as read: '.$e->getMessage());
+
             return response()->json(['message' => 'Notifications could not be updated.'], 500);
         }
     }
@@ -1024,13 +1052,15 @@ class DashboardController extends Controller
 
         try {
             $userId = auth()->id();
-            if (!$userId) return response()->json(['error' => 'Unauthorized'], 401);
+            if (! $userId) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
 
             // Mark both personal and system alerts as read
             // The model, not DB::table(), so the clinic scope applies and one
             // clinic cannot mark another clinic's alerts as read.
-            \App\Models\Notification::query()
-                ->where(function($q) use ($userId) {
+            Notification::query()
+                ->where(function ($q) use ($userId) {
                     $q->where('user_id', $userId)->orWhereNull('user_id');
                 })
                 ->whereNull('read_at')
@@ -1040,7 +1070,8 @@ class DashboardController extends Controller
 
             return response()->json(['message' => 'Notifications cleared from dashboard. History preserved.']);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to clear notifications: " . $e->getMessage());
+            Log::error('Failed to clear notifications: '.$e->getMessage());
+
             return response()->json(['message' => 'Notifications could not be updated.'], 500);
         }
     }
@@ -1054,16 +1085,16 @@ class DashboardController extends Controller
      *   upcoming  - active bookings dated tomorrow
      *   cancelled - cancelled / declined bookings dated today
      */
-    private function trackerQuery(string $tracker): \Illuminate\Database\Eloquent\Builder
+    private function trackerQuery(string $tracker): Builder
     {
         [$dayOffset, $statuses] = match ($tracker) {
-            'today'     => [0, Appointment::ACTIVE_STATUSES],
-            'upcoming'  => [1, Appointment::ACTIVE_STATUSES],
+            'today' => [0, Appointment::ACTIVE_STATUSES],
+            'upcoming' => [1, Appointment::ACTIVE_STATUSES],
             'cancelled' => [0, Appointment::CANCELLED_STATUSES],
         };
 
         return Appointment::query()
-            ->where('date', \Carbon\Carbon::now('Asia/Manila')->addDays($dayOffset)->toDateString())
+            ->where('date', Carbon::now('Asia/Manila')->addDays($dayOffset)->toDateString())
             ->whereIn('status', $statuses)
             ->whereHas('pet.owner', fn ($q) => $q->realClients());
     }
@@ -1071,7 +1102,7 @@ class DashboardController extends Controller
     public function appointmentsToday(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
 
         $appointments = $this->trackerQuery('today')
             ->with(['pet.owner', 'service'])
@@ -1079,26 +1110,26 @@ class DashboardController extends Controller
             ->orderBy('id')
             ->paginate($perPage);
 
-        $items = collect($appointments->items())->map(fn($a) => [
-            'id'          => $a->id,
-            'time'        => Carbon::parse($a->time)->format('h:i A'),
-            'pet_name'    => optional($a->pet)->name        ?? 'N/A',
-            'owner_name'  => optional($a->pet?->owner)->name ?? 'N/A',
-            'service'     => optional($a->service)->name    ?? 'N/A',
-            'category'    => optional($a->service)->category ?? 'N/A',
-            'status'      => $a->status,
+        $items = collect($appointments->items())->map(fn ($a) => [
+            'id' => $a->id,
+            'time' => Carbon::parse($a->time)->format('h:i A'),
+            'pet_name' => optional($a->pet)->name ?? 'N/A',
+            'owner_name' => optional($a->pet?->owner)->name ?? 'N/A',
+            'service' => optional($a->service)->name ?? 'N/A',
+            'category' => optional($a->service)->category ?? 'N/A',
+            'status' => $a->status,
         ]);
 
         return response()->json([
-            'label'        => 'Appointments Today',
-            'date'         => \Carbon\Carbon::now($tz)->format('F d, Y'),
-            'count'        => $appointments->total(),
+            'label' => 'Appointments Today',
+            'date' => Carbon::now($tz)->format('F d, Y'),
+            'count' => $appointments->total(),
             'appointments' => $items,
-            'pagination'   => [
+            'pagination' => [
                 'current_page' => $appointments->currentPage(),
-                'last_page'    => $appointments->lastPage(),
-                'per_page'     => $appointments->perPage(),
-                'total'        => $appointments->total(),
+                'last_page' => $appointments->lastPage(),
+                'per_page' => $appointments->perPage(),
+                'total' => $appointments->total(),
             ],
         ]);
     }
@@ -1106,7 +1137,7 @@ class DashboardController extends Controller
     public function appointmentsUpcoming(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
         $appointments = $this->trackerQuery('upcoming')
             ->with(['pet.owner', 'service'])
             ->orderBy('date', 'asc')
@@ -1114,89 +1145,89 @@ class DashboardController extends Controller
             ->orderBy('id')
             ->paginate($perPage);
 
-        $items = collect($appointments->items())->map(fn($a) => [
-            'id'         => $a->id,
-            'date'       => Carbon::parse($a->date)->format('M d, Y'),
-            'time'       => Carbon::parse($a->time)->format('h:i A'),
-            'pet_name'   => optional($a->pet)->name    ?? 'N/A',
-            'owner_name' => optional($a->pet?->owner)->name  ?? 'N/A',
-            'service'    => optional($a->service)->name    ?? 'N/A',
-            'category'   => optional($a->service)->category ?? 'N/A',
-            'status'     => $a->status,
+        $items = collect($appointments->items())->map(fn ($a) => [
+            'id' => $a->id,
+            'date' => Carbon::parse($a->date)->format('M d, Y'),
+            'time' => Carbon::parse($a->time)->format('h:i A'),
+            'pet_name' => optional($a->pet)->name ?? 'N/A',
+            'owner_name' => optional($a->pet?->owner)->name ?? 'N/A',
+            'service' => optional($a->service)->name ?? 'N/A',
+            'category' => optional($a->service)->category ?? 'N/A',
+            'status' => $a->status,
         ]);
 
         return response()->json([
-            'label'        => 'Appointments Tomorrow',
-            'date'         => \Carbon\Carbon::now($tz)->addDay()->format('F d, Y'),
-            'count'        => $appointments->total(),
+            'label' => 'Appointments Tomorrow',
+            'date' => Carbon::now($tz)->addDay()->format('F d, Y'),
+            'count' => $appointments->total(),
             'appointments' => $items,
-            'pagination'   => [
+            'pagination' => [
                 'current_page' => $appointments->currentPage(),
-                'last_page'    => $appointments->lastPage(),
-                'per_page'     => $appointments->perPage(),
-                'total'        => $appointments->total(),
+                'last_page' => $appointments->lastPage(),
+                'per_page' => $appointments->perPage(),
+                'total' => $appointments->total(),
             ],
         ]);
     }
 
     public function petsList(Request $request): JsonResponse
     {
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
         $pets = Pet::with(['owner', 'species', 'breed'])
-            ->whereHas('owner', function($q) {
+            ->whereHas('owner', function ($q) {
                 $q->where('email', '!=', 'dataset.seeder@autovet.ai');
             })
             ->orderBy('name', 'asc')
             ->orderBy('id')
             ->paginate($perPage);
 
-        $items = collect($pets->items())->map(fn($p) => [
-            'id'         => $p->id,
-            'name'       => $p->name,
-            'species'    => optional($p->species)->name ?? 'N/A',
-            'breed'      => optional($p->breed)->name   ?? 'N/A',
-            'owner_name' => optional($p->owner)->name   ?? 'N/A',
+        $items = collect($pets->items())->map(fn ($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'species' => optional($p->species)->name ?? 'N/A',
+            'breed' => optional($p->breed)->name ?? 'N/A',
+            'owner_name' => optional($p->owner)->name ?? 'N/A',
         ]);
 
         return response()->json([
             'label' => 'Total Pets',
             'count' => $pets->total(),
-            'pets'  => $items,
-            'pagination'   => [
+            'pets' => $items,
+            'pagination' => [
                 'current_page' => $pets->currentPage(),
-                'last_page'    => $pets->lastPage(),
-                'per_page'     => $pets->perPage(),
-                'total'        => $pets->total(),
+                'last_page' => $pets->lastPage(),
+                'per_page' => $pets->perPage(),
+                'total' => $pets->total(),
             ],
         ]);
     }
 
     public function clientsList(Request $request): JsonResponse
     {
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
         $clients = Owner::withCount('pets')
             ->where('email', '!=', 'dataset.seeder@autovet.ai')
             ->orderBy('name', 'asc')
             ->orderBy('id')
             ->paginate($perPage);
 
-        $items = collect($clients->items())->map(fn($o) => [
-            'id'        => $o->id,
-            'name'      => $o->name,
-            'email'     => $o->email    ?? 'N/A',
-            'phone'     => $o->phone    ?? 'N/A',
+        $items = collect($clients->items())->map(fn ($o) => [
+            'id' => $o->id,
+            'name' => $o->name,
+            'email' => $o->email ?? 'N/A',
+            'phone' => $o->phone ?? 'N/A',
             'pet_count' => $o->pets_count,
         ]);
 
         return response()->json([
-            'label'   => 'Total Clients',
-            'count'   => $clients->total(),
+            'label' => 'Total Clients',
+            'count' => $clients->total(),
             'clients' => $items,
-            'pagination'   => [
+            'pagination' => [
                 'current_page' => $clients->currentPage(),
-                'last_page'    => $clients->lastPage(),
-                'per_page'     => $clients->perPage(),
-                'total'        => $clients->total(),
+                'last_page' => $clients->lastPage(),
+                'per_page' => $clients->perPage(),
+                'total' => $clients->total(),
             ],
         ]);
     }
@@ -1204,49 +1235,48 @@ class DashboardController extends Controller
     public function appointmentsCancelled(Request $request): JsonResponse
     {
         $tz = 'Asia/Manila';
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
         $appointments = $this->trackerQuery('cancelled')
             ->with(['pet.owner', 'service'])
             ->orderBy('updated_at', 'desc')
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
-        $items = collect($appointments->items())->map(fn($a) => [
-            'id'             => $a->id,
-            'date'           => Carbon::parse($a->date)->format('M d, Y'),
-            'time'           => $a->time ? Carbon::parse($a->time)->format('h:i A') : 'N/A',
-            'pet_name'       => optional($a->pet)->name   ?? 'N/A',
-            'owner_name'     => optional($a->pet?->owner)->name ?? 'N/A',
-            'service'        => optional($a->service)->name ?? 'N/A',
-            'status'         => $a->status,
+        $items = collect($appointments->items())->map(fn ($a) => [
+            'id' => $a->id,
+            'date' => Carbon::parse($a->date)->format('M d, Y'),
+            'time' => $a->time ? Carbon::parse($a->time)->format('h:i A') : 'N/A',
+            'pet_name' => optional($a->pet)->name ?? 'N/A',
+            'owner_name' => optional($a->pet?->owner)->name ?? 'N/A',
+            'service' => optional($a->service)->name ?? 'N/A',
+            'status' => $a->status,
             'decline_reason' => $a->notes ?? null,
         ]);
 
         return response()->json([
-            'label'        => 'Cancelled / Declined',
-            'date'         => \Carbon\Carbon::now($tz)->format('F d, Y'),
-            'count'        => $appointments->total(),
+            'label' => 'Cancelled / Declined',
+            'date' => Carbon::now($tz)->format('F d, Y'),
+            'count' => $appointments->total(),
             'appointments' => $items,
-            'pagination'   => [
+            'pagination' => [
                 'current_page' => $appointments->currentPage(),
-                'last_page'    => $appointments->lastPage(),
-                'per_page'     => $appointments->perPage(),
-                'total'        => $appointments->total(),
+                'last_page' => $appointments->lastPage(),
+                'per_page' => $appointments->perPage(),
+                'total' => $appointments->total(),
             ],
         ]);
     }
 
     public function getForecastStatus(): JsonResponse
     {
-        $status = \Illuminate\Support\Facades\Cache::get('forecast_batch_status');
-        
+        $status = Cache::get('forecast_batch_status');
+
         return response()->json($status ?: [
             'is_running' => false,
             'message' => 'No active analysis in progress.',
-            'percent' => 0
+            'percent' => 0,
         ]);
     }
-
 
     /**
      * Monthly new client (owner) registrations — last 12 months.
@@ -1268,7 +1298,7 @@ class DashboardController extends Controller
 
         $hasData = $rows->sum() > 0;
 
-        if (!$hasData) {
+        if (! $hasData) {
             // Fallback: use the actual date range of owner registrations
             $oldest = Owner::min('created_at');
             if ($oldest) {
@@ -1308,7 +1338,7 @@ class DashboardController extends Controller
     public function getItemsByCategory(): JsonResponse
     {
         // DB::table() is not clinic-scoped; restrict it by hand.
-        $data = \App\Support\Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
+        $data = Tenant::scope(DB::table('inventory_usage_history'), 'inventories.clinic_id')
             ->join('inventories', 'inventory_usage_history.inventory_id', '=', 'inventories.id')
             ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
             ->select(
@@ -1324,7 +1354,7 @@ class DashboardController extends Controller
         }
 
         // Fallback: derive from invoice_items when usage history is not yet populated
-        $fallback = \App\Support\Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
+        $fallback = Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('inventories', 'invoice_items.inventory_id', '=', 'inventories.id')
             ->join('mdm_inventory_categories', 'inventories.inventory_category_id', '=', 'mdm_inventory_categories.id')
@@ -1346,7 +1376,7 @@ class DashboardController extends Controller
      */
     public function getServicesByCategory(): JsonResponse
     {
-        $data = \App\Support\Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
+        $data = Tenant::scope(DB::table('invoice_items'), 'invoices.clinic_id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('services', 'invoice_items.service_id', '=', 'services.id')
             ->whereIn('invoices.status', ['Finalized', 'Paid', 'Partially Paid'])

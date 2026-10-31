@@ -3,12 +3,14 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class BackupDatabaseCommand extends Command
 {
     protected $signature = 'db:backup {--clinic= : Export only the rows that belong to this clinic}';
+
     protected $description = 'Backup key clinic data as CSV files inside a tar.gz archive';
 
     private const TABLES = [
@@ -73,9 +75,9 @@ class BackupDatabaseCommand extends Command
      * row when its parent belongs to the clinic.
      */
     private const CHILD_TABLES = [
-        'appointment_services'   => ['appointment_id', 'appointments'],
-        'service_prices'         => ['service_id', 'services'],
-        'invoice_items'          => ['invoice_id', 'invoices'],
+        'appointment_services' => ['appointment_id', 'appointments'],
+        'service_prices' => ['service_id', 'services'],
+        'invoice_items' => ['invoice_id', 'invoices'],
         'inventory_transactions' => ['inventory_id', 'inventories'],
     ];
 
@@ -97,13 +99,13 @@ class BackupDatabaseCommand extends Command
         // The archive is built in the system temp folder and then handed to
         // the backups disk, so the same code writes to a local folder or a
         // private bucket.
-        $basename = 'backup_' . date('Y_m_d_H_i_s');
-        $workDir  = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'autovet_backup_' . bin2hex(random_bytes(4));
+        $basename = 'backup_'.date('Y_m_d_H_i_s');
+        $workDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'autovet_backup_'.bin2hex(random_bytes(4));
         mkdir($workDir, 0700, true);
-        $tarPath  = $workDir . DIRECTORY_SEPARATOR . $basename . '.tar';
-        $gzPath   = $tarPath . '.gz';
+        $tarPath = $workDir.DIRECTORY_SEPARATOR.$basename.'.tar';
+        $gzPath = $tarPath.'.gz';
 
-        $this->info("Creating CSV backup...");
+        $this->info('Creating CSV backup...');
 
         try {
             $phar = new \PharData($tarPath);
@@ -114,11 +116,12 @@ class BackupDatabaseCommand extends Command
                     // Determine which columns to keep (drop internal/technical ones)
                     $columns = array_values(array_filter(
                         DB::connection()->getSchemaBuilder()->getColumnListing($table),
-                        fn($c) => !in_array(strtolower($c), self::EXCLUDE_COLUMNS, true)
+                        fn ($c) => ! in_array(strtolower($c), self::EXCLUDE_COLUMNS, true)
                     ));
 
                     if (empty($columns)) {
                         $this->warn("  ! Skipped {$table}: no exportable columns");
+
                         continue;
                     }
 
@@ -128,13 +131,14 @@ class BackupDatabaseCommand extends Command
                     // `avatar` off the wire entirely — this runs against a remote
                     // database in production, where both matter.
                     $tmp = tempnam(sys_get_temp_dir(), 'bk_');
-                    $fh  = fopen($tmp, 'w');
-                    fwrite($fh, implode(',', array_map(fn($c) => '"' . $c . '"', $columns)) . "\n");
+                    $fh = fopen($tmp, 'w');
+                    fwrite($fh, implode(',', array_map(fn ($c) => '"'.$c.'"', $columns))."\n");
 
                     $query = $this->scopedQuery($table, $clinicId);
                     if ($query === null) {
                         fclose($fh);
                         $this->warn("  ! Skipped {$table}: cannot tell which clinic its rows belong to");
+
                         continue;
                     }
 
@@ -143,17 +147,20 @@ class BackupDatabaseCommand extends Command
                         $row = (array) $row;
                         $values = array_map(function ($c) use ($row) {
                             $v = $row[$c] ?? null;
-                            if ($v === null) return '';
+                            if ($v === null) {
+                                return '';
+                            }
                             $v = (string) $v;
                             // A cell starting with = + - @ is run as a formula
                             // when the CSV is opened in a spreadsheet, and
                             // these cells hold client-typed text.
-                            if ($v !== '' && in_array($v[0], ['=', '+', '-', '@'], true) && !is_numeric($v)) {
-                                $v = "'" . $v;
+                            if ($v !== '' && in_array($v[0], ['=', '+', '-', '@'], true) && ! is_numeric($v)) {
+                                $v = "'".$v;
                             }
-                            return '"' . str_replace('"', '""', $v) . '"';
+
+                            return '"'.str_replace('"', '""', $v).'"';
                         }, $columns);
-                        fwrite($fh, implode(',', $values) . "\n");
+                        fwrite($fh, implode(',', $values)."\n");
                         $count++;
                     }
                     fclose($fh);
@@ -161,9 +168,11 @@ class BackupDatabaseCommand extends Command
                     $phar->addFile($tmp, "{$table}.csv");
                     $this->info("  + {$table}.csv ({$count} rows)");
                 } catch (\Exception $e) {
-                    $this->warn("  ! Skipped {$table}: " . $e->getMessage());
+                    $this->warn("  ! Skipped {$table}: ".$e->getMessage());
                 } finally {
-                    if ($tmp !== null && file_exists($tmp)) unlink($tmp);
+                    if ($tmp !== null && file_exists($tmp)) {
+                        unlink($tmp);
+                    }
                 }
             }
 
@@ -171,24 +180,30 @@ class BackupDatabaseCommand extends Command
             unset($phar);
             @unlink($tarPath);
 
-            $target = ltrim($folder . '/' . $basename . '.tar.gz', '/');
+            $target = ltrim($folder.'/'.$basename.'.tar.gz', '/');
             $stream = fopen($gzPath, 'rb');
             try {
                 Storage::disk('backups')->writeStream($target, $stream);
             } finally {
-                if (is_resource($stream)) fclose($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
             }
         } catch (\Throwable $e) {
-            $this->error("Failed to create backup: " . $e->getMessage());
+            $this->error('Failed to create backup: '.$e->getMessage());
+
             return 1;
         } finally {
             foreach ([$tarPath, $gzPath] as $file) {
-                if (file_exists($file)) @unlink($file);
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
             }
             @rmdir($workDir);
         }
 
         $this->info("Backup successfully created: {$basename}.tar.gz");
+
         return 0;
     }
 
@@ -198,7 +213,7 @@ class BackupDatabaseCommand extends Command
      * belongs to, so a clinic-only backup leaves it out rather than leaking
      * every clinic's rows into it.
      */
-    private function scopedQuery(string $table, ?int $clinicId): ?\Illuminate\Database\Query\Builder
+    private function scopedQuery(string $table, ?int $clinicId): ?Builder
     {
         $query = DB::table($table);
         if ($clinicId === null) {

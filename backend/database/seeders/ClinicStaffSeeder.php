@@ -23,7 +23,7 @@ class ClinicStaffSeeder extends Seeder
     public function run(): void
     {
         $clinic = Clinic::first();
-        if (!$clinic) {
+        if (! $clinic) {
             return;
         }
 
@@ -37,7 +37,7 @@ class ClinicStaffSeeder extends Seeder
 
         foreach ($people as $person) {
             Admin::updateOrCreate(
-                ['email' => $person['email'] . self::EMAIL_DOMAIN],
+                ['email' => $person['email'].self::EMAIL_DOMAIN],
                 [
                     'name' => $person['name'],
                     'password' => Hash::make('password123'),
@@ -79,7 +79,7 @@ class ClinicStaffSeeder extends Seeder
                         'end_time' => $isSaturday ? '12:00:00' : '17:00:00',
                         'break_start' => $isSaturday ? null : '12:00:00',
                         'break_end' => $isSaturday ? null : '13:00:00',
-                        'is_available' => !$isRestDay,
+                        'is_available' => ! $isRestDay,
                         'max_appointments' => $isSaturday ? 8 : 16,
                     ]
                 );

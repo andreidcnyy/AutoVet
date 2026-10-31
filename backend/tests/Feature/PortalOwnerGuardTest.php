@@ -19,7 +19,9 @@ class PortalOwnerGuardTest extends TestCase
     use RefreshDatabase;
 
     private PortalUser $client;
+
     private Pet $pet;
+
     private Service $service;
 
     protected function setUp(): void

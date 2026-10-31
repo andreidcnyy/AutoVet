@@ -55,14 +55,14 @@ return new class extends Migration
         });
 
         // Classify known cloud-syncable keys
-        if (!empty(self::CLOUD_SYNCABLE_KEYS)) {
+        if (! empty(self::CLOUD_SYNCABLE_KEYS)) {
             DB::table('settings')
                 ->whereIn('key', self::CLOUD_SYNCABLE_KEYS)
                 ->update(['sync_scope' => 'cloud_syncable']);
         }
 
         // Classify system-internal keys
-        if (!empty(self::SYSTEM_INTERNAL_KEYS)) {
+        if (! empty(self::SYSTEM_INTERNAL_KEYS)) {
             DB::table('settings')
                 ->whereIn('key', self::SYSTEM_INTERNAL_KEYS)
                 ->update(['sync_scope' => 'system_internal']);

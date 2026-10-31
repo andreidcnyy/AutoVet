@@ -41,7 +41,7 @@ return [
             'strict' => env('DB_STRICT', false),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                 // Reuse the connection between requests instead of building a
                 // new one each time. TiDB Serverless charges ~240ms for the TLS
                 // handshake and auth, which Laravel otherwise pays on every
@@ -52,7 +52,7 @@ return [
                 // identical to never setting it — so this is off unless asked
                 // for, and can be switched back from the Render dashboard
                 // without a code change.
-                \PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', false),
+                PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', false),
             ]) : [],
         ],
 
@@ -81,9 +81,9 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // TiDB Serverless requires TLS. Point this at a CA bundle; on
                 // Windows, cacert.pem from the PHP install works.
-                \PDO::MYSQL_ATTR_SSL_CA => env('LIVE_DB_SSL_CA'),
-                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('LIVE_DB_SSL_VERIFY', true),
-            ], fn($v) => $v !== null && $v !== '') : [],
+                PDO::MYSQL_ATTR_SSL_CA => env('LIVE_DB_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('LIVE_DB_SSL_VERIFY', true),
+            ], fn ($v) => $v !== null && $v !== '') : [],
         ],
 
         'pgsql' => [

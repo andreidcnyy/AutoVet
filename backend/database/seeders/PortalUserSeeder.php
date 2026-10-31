@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Clinic;
+use App\Models\Owner;
+use App\Models\PortalUser;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use App\Models\Owner;
-use App\Enums\Roles;
 
 class PortalUserSeeder extends Seeder
 {
@@ -15,10 +16,10 @@ class PortalUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $clinic = \App\Models\Clinic::first();
+        $clinic = Clinic::first();
 
         // 1. Create the Portal User in the portal_users table
-        $user = \App\Models\PortalUser::updateOrCreate(
+        $user = PortalUser::updateOrCreate(
             ['email' => 'portal@autovet.com', 'clinic_id' => $clinic->id],
             [
                 'name' => 'John Doe (Pet Owner)',
@@ -29,7 +30,7 @@ class PortalUserSeeder extends Seeder
         );
 
         // 2. Create the associated Owner record
-        \App\Models\Owner::updateOrCreate(
+        Owner::updateOrCreate(
             ['email' => 'portal@autovet.com', 'clinic_id' => $clinic->id],
             [
                 'name' => 'John Doe',

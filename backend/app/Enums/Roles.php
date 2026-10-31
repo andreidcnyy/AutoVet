@@ -10,11 +10,11 @@ namespace App\Enums;
  */
 enum Roles: string
 {
-    case SUPER_ADMIN  = 'super_admin';
+    case SUPER_ADMIN = 'super_admin';
     case CLINIC_ADMIN = 'clinic_admin';
     case VETERINARIAN = 'veterinarian';
-    case STAFF        = 'staff';
-    case OWNER        = 'owner'; // Portal Client
+    case STAFF = 'staff';
+    case OWNER = 'owner'; // Portal Client
 
     /**
      * Roles that can perform administrative write operations.
@@ -75,11 +75,11 @@ enum Roles: string
     public static function rank(?string $role): int
     {
         return match ($role) {
-            self::SUPER_ADMIN->value  => 4,
+            self::SUPER_ADMIN->value => 4,
             self::CLINIC_ADMIN->value => 3,
             self::VETERINARIAN->value => 2,
-            self::STAFF->value        => 1,
-            default                   => 0,
+            self::STAFF->value => 1,
+            default => 0,
         };
     }
 
@@ -91,7 +91,7 @@ enum Roles: string
      */
     public static function canManage(?string $actorRole, ?string $targetRole): bool
     {
-        $actor  = self::rank($actorRole);
+        $actor = self::rank($actorRole);
         $target = self::rank($targetRole);
 
         if ($target === 0) {

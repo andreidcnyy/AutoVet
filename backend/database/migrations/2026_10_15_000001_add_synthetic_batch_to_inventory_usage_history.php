@@ -27,7 +27,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasColumn('inventory_usage_history', 'synthetic_batch')) {
+        if (! Schema::hasColumn('inventory_usage_history', 'synthetic_batch')) {
             return;
         }
 

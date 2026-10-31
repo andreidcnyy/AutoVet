@@ -2,24 +2,30 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Enums\Roles;
 use App\Models\Admin;
+use App\Models\Appointment;
 use App\Models\Owner;
-use App\Models\Species;
 use App\Models\Pet;
 use App\Models\Service;
+use App\Models\Species;
 use App\Models\VetSchedule;
-use App\Enums\Roles;
-use Carbon\Carbon; // Import Carbon
+use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+ // Import Carbon
 
 class AppointmentIntegrityTest extends TestCase
 {
     use RefreshDatabase;
 
     protected Admin $adminUser;
+
     protected Admin $vetUser;
+
     protected $appointmentDate; // Store date for consistent testing
+
     protected $appointmentDayOfWeek; // Store day of week for consistent testing
 
     protected function setUp(): void
@@ -36,7 +42,7 @@ class AppointmentIntegrityTest extends TestCase
         // Create a VetSchedule for the vet user on the chosen day.
         VetSchedule::create([
             'user_id' => $this->vetUser->id,
-            'day_of_week' => $this->appointmentDayOfWeek, 
+            'day_of_week' => $this->appointmentDayOfWeek,
             'start_time' => '09:00:00',
             'end_time' => '17:00:00',
             'is_available' => true,
@@ -54,7 +60,7 @@ class AppointmentIntegrityTest extends TestCase
             'species_id' => $species->id,
             'weight' => 10,
             'weight_unit' => 'kg',
-            'date_of_birth' => now()->subYears(2)->format('Y-m-d') // Add a DOB to avoid Pet::saving issues
+            'date_of_birth' => now()->subYears(2)->format('Y-m-d'), // Add a DOB to avoid Pet::saving issues
         ]);
 
         $service = Service::create(['name' => 'Consultation', 'base_price' => 500]);
@@ -75,13 +81,13 @@ class AppointmentIntegrityTest extends TestCase
             'date' => $this->appointmentDate->format('Y-m-d'), // Use consistent date
             'time' => '10:00', // Match validation rule H:i
             'status' => 'pending',
-            'notes' => 'Test appointment'
+            'notes' => 'Test appointment',
         ];
 
         $response = $this->postJson('/api/appointments', $data);
 
         $response->assertStatus(201)
-                 ->assertJsonPath('status', 'pending');
+            ->assertJsonPath('status', 'pending');
     }
 
     public function test_prevents_double_booking_for_same_pet(): void
@@ -92,13 +98,13 @@ class AppointmentIntegrityTest extends TestCase
         $time = '14:00'; // Match validation rule H:i
 
         // Create the first appointment
-        \App\Models\Appointment::create([
+        Appointment::create([
             'pet_id' => $petId,
             'service_id' => $serviceId,
             'vet_id' => $vetId,
             'date' => $date,
             'time' => $time, // Use H:i format
-            'title' => 'First'
+            'title' => 'First',
         ]);
 
         // Attempt to create a second appointment at the same time for the same pet
@@ -108,31 +114,31 @@ class AppointmentIntegrityTest extends TestCase
             'vet_id' => $vetId,
             'date' => $date,
             'time' => $time, // Ensure time format consistency
-            'notes' => 'Second (Double)'
+            'notes' => 'Second (Double)',
         ];
 
         $response = $this->postJson('/api/appointments', $data);
 
         $response->assertStatus(422)
-                 ->assertJson(['message' => 'This vet already has an appointment at this time.']);
+            ->assertJson(['message' => 'This vet already has an appointment at this time.']);
     }
 
     public function test_appointment_status_can_be_updated(): void
     {
         $this->actingAs($this->adminUser);
         [$petId, $serviceId, $vetId] = $this->createDependencies();
-        
+
         $date = $this->appointmentDate->format('Y-m-d'); // Use consistent date
         $time = '11:00'; // Match validation rule H:i
 
         // Create an appointment
-        $appointment = \App\Models\Appointment::create([
+        $appointment = Appointment::create([
             'pet_id' => $petId,
             'service_id' => $serviceId,
             'vet_id' => $vetId,
             'date' => $date,
             'time' => $time, // Ensure time format consistency
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         // Update the status, passing all required fields
@@ -142,10 +148,10 @@ class AppointmentIntegrityTest extends TestCase
             'vet_id' => $appointment->vet_id,
             'date' => $appointment->date,
             'time' => $appointment->time, // Ensure time format consistency
-            'status' => 'completed' // The field to be updated
+            'status' => 'completed', // The field to be updated
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonPath('status', 'completed');
+            ->assertJsonPath('status', 'completed');
     }
 }

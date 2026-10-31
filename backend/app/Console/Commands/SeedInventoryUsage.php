@@ -73,16 +73,18 @@ class SeedInventoryUsage extends Command
     {
         $connection = 'mysql';
         if ($this->option('live')) {
-            if (!$this->loadLiveEnv()) {
+            if (! $this->loadLiveEnv()) {
                 $this->explainMissingLiveConfig();
+
                 return self::FAILURE;
             }
             $connection = 'live';
         }
         $db = DB::connection($connection);
 
-        if (!Schema::connection($connection)->hasColumn('inventory_usage_history', 'synthetic_batch')) {
+        if (! Schema::connection($connection)->hasColumn('inventory_usage_history', 'synthetic_batch')) {
             $this->error('inventory_usage_history.synthetic_batch is missing. Run the migrations on this database first.');
+
             return self::FAILURE;
         }
 
@@ -92,7 +94,8 @@ class SeedInventoryUsage extends Command
             $deleted = $this->option('dry-run')
                 ? $db->table('inventory_usage_history')->where('synthetic_batch', $batch)->count()
                 : $db->table('inventory_usage_history')->where('synthetic_batch', $batch)->delete();
-            $this->info(($this->option('dry-run') ? 'Would delete ' : 'Deleted ') . "{$deleted} row(s) of batch {$batch} on [{$connection}].");
+            $this->info(($this->option('dry-run') ? 'Would delete ' : 'Deleted ')."{$deleted} row(s) of batch {$batch} on [{$connection}].");
+
             return self::SUCCESS;
         }
 
@@ -105,6 +108,7 @@ class SeedInventoryUsage extends Command
 
         if ($to->lt($from) || $refTo->lt($refFrom)) {
             $this->error('Each period must end on or after its start.');
+
             return self::FAILURE;
         }
 
@@ -124,6 +128,7 @@ class SeedInventoryUsage extends Command
 
         if ($items->isEmpty()) {
             $this->error('No inventory items with a code were found.');
+
             return self::FAILURE;
         }
 
@@ -165,10 +170,10 @@ class SeedInventoryUsage extends Command
             $q = (float) ($refTotals[$item->id] ?? 0);
             $prior = $categoryMean($item->category);
             $rates[$item->id] = [
-                'lambda'         => ($q + $k * $prior) / ($days + $k),
-                'quantity'       => $q,
-                'category_mean'  => $prior,
-                'source'         => $q > 0 ? 'own history' : 'no sales in reference (category prior only)',
+                'lambda' => ($q + $k * $prior) / ($days + $k),
+                'quantity' => $q,
+                'category_mean' => $prior,
+                'source' => $q > 0 ? 'own history' : 'no sales in reference (category prior only)',
             ];
         }
 
@@ -198,7 +203,8 @@ class SeedInventoryUsage extends Command
             ->map(fn ($v) => (float) $v);
         // Full months only: a partial first or last month would look like a dip.
         $monthly = $monthly->filter(function ($total, $ym) use ($coverageFrom, $refTo) {
-            $start = CarbonImmutable::parse($ym . '-01');
+            $start = CarbonImmutable::parse($ym.'-01');
+
             return $start->gte($coverageFrom) && $start->endOfMonth()->startOfDay()->lte($refTo);
         });
         $growth = 0.0;
@@ -211,6 +217,7 @@ class SeedInventoryUsage extends Command
 
         $expectedOn = function (int $itemId, CarbonImmutable $day) use ($rates, $weights, $growth, $midpoint): float {
             $months = $midpoint->diffInDays($day, false) / 30.4375;
+
             return $rates[$itemId]['lambda'] * $weights[$day->dayOfWeekIso % 7 + 1] * (1 + $growth) ** $months;
         };
 
@@ -257,7 +264,7 @@ class SeedInventoryUsage extends Command
                     // Draw for every day so the sequence does not depend on which
                     // days are skipped; then keep only gap-week days with no record.
                     $qty = ForecastMetrics::poisson($expectedOn($item->id, $day), fn () => $this->uniform());
-                    if (!$week['gap'] || isset($hasRow[$item->id][$day->toDateString()])) {
+                    if (! $week['gap'] || isset($hasRow[$item->id][$day->toDateString()])) {
                         continue;
                     }
                     $perItem[$item->id]['days'] = ($perItem[$item->id]['days'] ?? 0) + 1;
@@ -268,17 +275,17 @@ class SeedInventoryUsage extends Command
                     }
                     $stamp = $day->setTime(17, 0)->toDateTimeString();
                     $rows[] = [
-                        'clinic_id'       => $item->clinic_id,
-                        'inventory_id'    => $item->id,
-                        'invoice_id'      => null,
+                        'clinic_id' => $item->clinic_id,
+                        'inventory_id' => $item->id,
+                        'invoice_id' => null,
                         'invoice_item_id' => null,
-                        'quantity_used'   => $qty,
-                        'usage_date'      => $day->toDateString(),
-                        'source_type'     => $consumedInService ? 'service_consumable' : 'retail_sale',
-                        'unit_price'      => ((float) $item->selling_price) > 0 ? $item->selling_price : null,
+                        'quantity_used' => $qty,
+                        'usage_date' => $day->toDateString(),
+                        'source_type' => $consumedInService ? 'service_consumable' : 'retail_sale',
+                        'unit_price' => ((float) $item->selling_price) > 0 ? $item->selling_price : null,
                         'synthetic_batch' => $batch,
-                        'created_at'      => $stamp,
-                        'updated_at'      => $stamp,
+                        'created_at' => $stamp,
+                        'updated_at' => $stamp,
                     ];
                 }
             }
@@ -293,24 +300,25 @@ class SeedInventoryUsage extends Command
             count($gapWeeks), count($weeks), count($rows), array_sum(array_column($rows, 'quantity_used'))));
 
         $report = [
-            'database'        => $connection,
-            'batch'           => $batch,
-            'seed'            => (int) $this->option('seed'),
-            'window'          => [$from->toDateString(), $to->toDateString()],
-            'reference'       => [$coverageFrom->toDateString(), $refTo->toDateString(), $days],
-            'growth_monthly'  => $growth,
-            'monthly_totals'  => $monthly->all(),
+            'database' => $connection,
+            'batch' => $batch,
+            'seed' => (int) $this->option('seed'),
+            'window' => [$from->toDateString(), $to->toDateString()],
+            'reference' => [$coverageFrom->toDateString(), $refTo->toDateString(), $days],
+            'growth_monthly' => $growth,
+            'monthly_totals' => $monthly->all(),
             'weekday_weights' => ['sun' => $weights[1], 'mon' => $weights[2], 'tue' => $weights[3], 'wed' => $weights[4],
-                                  'thu' => $weights[5], 'fri' => $weights[6], 'sat' => $weights[7]],
+                'thu' => $weights[5], 'fri' => $weights[6], 'sat' => $weights[7]],
             'appointments_by_weekday' => $byWeekday->all(),
-            'gap_threshold'   => $threshold,
-            'prior_days'      => $k,
-            'weeks'           => array_map(fn ($k, $w) => ['week_of' => $k, 'real' => $w['real'], 'expected' => round($w['expected'], 2), 'filled' => $w['gap']],
-                                    array_keys($weeks), $weeks),
-            'items'           => $items->map(function ($item) use ($rates, $perItem) {
+            'gap_threshold' => $threshold,
+            'prior_days' => $k,
+            'weeks' => array_map(fn ($k, $w) => ['week_of' => $k, 'real' => $w['real'], 'expected' => round($w['expected'], 2), 'filled' => $w['gap']],
+                array_keys($weeks), $weeks),
+            'items' => $items->map(function ($item) use ($rates, $perItem) {
                 $s = $perItem[$item->id] ?? ['days' => 0, 'sum' => 0, 'sumsq' => 0];
                 $mean = $s['days'] ? $s['sum'] / $s['days'] : 0;
                 $var = $s['days'] ? $s['sumsq'] / $s['days'] - $mean ** 2 : 0;
+
                 return [
                     'id' => $item->id, 'code' => $item->code, 'name' => $item->item_name, 'category' => $item->category,
                     'reference_quantity' => $rates[$item->id]['quantity'],
@@ -320,8 +328,8 @@ class SeedInventoryUsage extends Command
                     'generated_mean_per_day' => $mean, 'generated_variance' => $var,
                 ];
             })->values()->all(),
-            'rows_written'    => $this->option('dry-run') ? 0 : count($rows),
-            'rows_planned'    => count($rows),
+            'rows_written' => $this->option('dry-run') ? 0 : count($rows),
+            'rows_planned' => count($rows),
         ];
 
         if ($path = $this->option('report')) {
@@ -331,6 +339,7 @@ class SeedInventoryUsage extends Command
 
         if ($this->option('dry-run')) {
             $this->warn('Dry run: nothing written.');
+
             return self::SUCCESS;
         }
 
@@ -339,7 +348,7 @@ class SeedInventoryUsage extends Command
                 $db->table('inventory_usage_history')->insert($chunk);
             }
         });
-        $this->info('Written ' . count($rows) . " row(s) labelled {$batch}.");
+        $this->info('Written '.count($rows)." row(s) labelled {$batch}.");
 
         return self::SUCCESS;
     }
@@ -348,7 +357,7 @@ class SeedInventoryUsage extends Command
     private function uniform(): float
     {
         $this->randState = (1664525 * $this->randState + 1013904223) % 4294967296;
+
         return ($this->randState + 1) / 4294967297;
     }
-
 }

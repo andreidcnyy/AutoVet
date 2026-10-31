@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Owner only needs softDeletes
         Schema::table('owners', function (Blueprint $table) {
-            if (!Schema::hasColumn('owners', 'deleted_at')) {
+            if (! Schema::hasColumn('owners', 'deleted_at')) {
                 $table->softDeletes();
             }
         });
@@ -22,13 +22,13 @@ return new class extends Migration
         $fullTables = ['appointments', 'medical_records'];
         foreach ($fullTables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName) {
-                if (!Schema::hasColumn($tableName, 'deleted_at')) {
+                if (! Schema::hasColumn($tableName, 'deleted_at')) {
                     $table->softDeletes();
                 }
-                if (!Schema::hasColumn($tableName, 'deleted_by')) {
+                if (! Schema::hasColumn($tableName, 'deleted_by')) {
                     $table->foreignId('deleted_by')->nullable()->constrained('users')->nullOnDelete();
                 }
-                if (!Schema::hasColumn($tableName, 'restore_until')) {
+                if (! Schema::hasColumn($tableName, 'restore_until')) {
                     $table->timestamp('restore_until')->nullable();
                 }
             });
@@ -53,7 +53,7 @@ return new class extends Migration
                     $table->dropColumn('restore_until');
                 }
                 if (Schema::hasColumn($tableName, 'deleted_by')) {
-                    $table->dropForeign([$tableName . '_deleted_by_foreign']);
+                    $table->dropForeign([$tableName.'_deleted_by_foreign']);
                     $table->dropColumn('deleted_by');
                 }
                 if (Schema::hasColumn($tableName, 'deleted_at')) {

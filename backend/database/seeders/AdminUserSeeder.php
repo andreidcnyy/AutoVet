@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Roles;
+use App\Models\Admin;
+use App\Models\Clinic;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Admin;
-use App\Enums\Roles;
-
 
 class AdminUserSeeder extends Seeder
 {
@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $clinic = \App\Models\Clinic::first();
+        $clinic = Clinic::first();
 
         Admin::updateOrCreate(
             ['email' => 'admin@autovet.com'],

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Species extends Model
 {
     use HasAuditTrail, HasClinic;
+
     protected $fillable = ['clinic_id', 'name', 'status'];
 
     public function breeds()

@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Exceptions\UserFacingException;
+use App\Mail\ClientNotificationMail;
+use App\Mail\InvoiceMail;
+use App\Models\Appointment;
 use App\Models\ClientNotification;
+use App\Models\Invoice;
+use App\Models\MedicalRecord;
 use App\Models\NotificationTemplate;
 use App\Models\Owner;
 use App\Services\Sms\SmsProviderInterface;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\ClientNotificationMail;
 
 class ClientNotificationService
 {
@@ -28,8 +33,8 @@ class ClientNotificationService
             ->where('is_active', true)
             ->first();
 
-        if (!$template) {
-            throw new \App\Exceptions\UserFacingException("No active $channel template found for event '$eventKey'.");
+        if (! $template) {
+            throw new UserFacingException("No active $channel template found for event '$eventKey'.");
         }
 
         $subject = $this->interpolateVariables($template->subject ?? '', $variables, $owner, $relatedModel);
@@ -58,14 +63,14 @@ class ClientNotificationService
         try {
             if ($channel === 'email') {
                 if (empty($owner->email)) {
-                    throw new \App\Exceptions\UserFacingException("Owner has no email address.");
+                    throw new UserFacingException('Owner has no email address.');
                 }
 
                 // Dynamically select mailer
                 $mailer = 'smtp';
-                
-                $isAppointment = ($relatedModel instanceof \App\Models\Appointment) || ($notification->related_type === 'App\Models\Appointment');
-                $isInvoice = ($relatedModel instanceof \App\Models\Invoice) || ($notification->related_type === 'App\Models\Invoice');
+
+                $isAppointment = ($relatedModel instanceof Appointment) || ($notification->related_type === 'App\Models\Appointment');
+                $isInvoice = ($relatedModel instanceof Invoice) || ($notification->related_type === 'App\Models\Invoice');
 
                 if ($isAppointment) {
                     if (str_contains(strtolower($eventKey ?? ''), 'reminder') || str_contains(strtolower($title ?? ''), 'reminder')) {
@@ -82,11 +87,11 @@ class ClientNotificationService
                 Mail::mailer($mailer)->to($owner->email)->send(new ClientNotificationMail($title ?? 'Notification', $message));
             } elseif ($channel === 'sms') {
                 if (empty($owner->phone)) {
-                    throw new \App\Exceptions\UserFacingException("Owner has no phone number.");
+                    throw new UserFacingException('Owner has no phone number.');
                 }
                 $this->smsProvider->sendSms($owner->phone, $message);
             } else {
-                throw new \App\Exceptions\UserFacingException("Unsupported notification channel: $channel");
+                throw new UserFacingException("Unsupported notification channel: $channel");
             }
 
             $notification->update([
@@ -111,7 +116,7 @@ class ClientNotificationService
     {
         $invoice->load(['items', 'pet.owner']);
 
-        Mail::mailer('invoice')->to($owner->email)->send(new \App\Mail\InvoiceMail($invoice, null));
+        Mail::mailer('invoice')->to($owner->email)->send(new InvoiceMail($invoice, null));
 
         return ClientNotification::create([
             'owner_id' => $owner->id,
@@ -129,41 +134,47 @@ class ClientNotificationService
     /**
      * Notify client about a medical record update via email (Brevo).
      */
-    public function notifyMedicalRecordUpdate(\App\Models\MedicalRecord $record)
+    public function notifyMedicalRecordUpdate(MedicalRecord $record)
     {
         $pet = $record->pet;
-        if (!$pet || !$pet->owner) return;
+        if (! $pet || ! $pet->owner) {
+            return;
+        }
 
         $owner = $pet->owner;
-        if (empty($owner->email)) return;
+        if (empty($owner->email)) {
+            return;
+        }
 
         try {
-            $template = \App\Models\NotificationTemplate::where('event_key', 'medical_summary_notice')
+            $template = NotificationTemplate::where('event_key', 'medical_summary_notice')
                 ->where('channel', 'email')
                 ->where('is_active', true)
                 ->first();
 
-            if (!$template) return;
+            if (! $template) {
+                return;
+            }
 
             $subject = $this->interpolateVariables($template->subject ?? 'Medical Record Summary', [], $owner, $record);
-            $body    = $this->interpolateVariables($template->body, [], $owner, $record);
+            $body = $this->interpolateVariables($template->body, [], $owner, $record);
 
-            \Mail::mailer('brevo')->to($owner->email)->send(new \App\Mail\ClientNotificationMail($subject, $body));
+            \Mail::mailer('brevo')->to($owner->email)->send(new ClientNotificationMail($subject, $body));
 
             ClientNotification::create([
-                'clinic_id'    => $owner->clinic_id,
-                'owner_id'     => $owner->id,
-                'channel'      => 'email',
-                'type'         => 'automated',
-                'title'        => $subject,
-                'message'      => $body,
-                'status'       => 'sent',
-                'sent_at'      => now(),
+                'clinic_id' => $owner->clinic_id,
+                'owner_id' => $owner->id,
+                'channel' => 'email',
+                'type' => 'automated',
+                'title' => $subject,
+                'message' => $body,
+                'status' => 'sent',
+                'sent_at' => now(),
                 'related_type' => get_class($record),
-                'related_id'   => $record->id,
+                'related_id' => $record->id,
             ]);
         } catch (\Exception $e) {
-            \Log::error("Medical record email notification failed: " . $e->getMessage());
+            \Log::error('Medical record email notification failed: '.$e->getMessage());
         }
     }
 
@@ -178,7 +189,7 @@ class ClientNotificationService
         }
 
         // 2. Model-specific variables
-        if ($relatedModel instanceof \App\Models\Appointment) {
+        if ($relatedModel instanceof Appointment) {
             $variables['date_scheduled'] = $relatedModel->date;
             $variables['arrival_time'] = $relatedModel->time;
             $variables['date'] = $relatedModel->date;
@@ -187,14 +198,14 @@ class ClientNotificationService
             $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
         }
 
-        if ($relatedModel instanceof \App\Models\MedicalRecord) {
+        if ($relatedModel instanceof MedicalRecord) {
             $variables['patient'] = $relatedModel->pet->name ?? 'Pet';
             $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
             $variables['findings'] = $relatedModel->findings;
             $variables['diagnosis'] = $relatedModel->diagnosis;
         }
 
-        if ($relatedModel instanceof \App\Models\Invoice) {
+        if ($relatedModel instanceof Invoice) {
             $variables['invoice_number'] = $relatedModel->invoice_number;
             $variables['total'] = $relatedModel->total;
             $variables['pet_name'] = $relatedModel->pet->name ?? 'Pet';
@@ -204,7 +215,7 @@ class ClientNotificationService
 
         // 3. Final replacement
         foreach ($variables as $key => $value) {
-            $text = str_replace('{' . $key . '}', (string)$value, $text);
+            $text = str_replace('{'.$key.'}', (string) $value, $text);
         }
 
         return $text;

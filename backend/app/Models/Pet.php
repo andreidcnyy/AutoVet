@@ -2,28 +2,18 @@
 
 namespace App\Models;
 
+use App\Exceptions\UserFacingException;
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use App\Models\WeightRange;
-use App\Models\Species;
-use App\Models\PetSizeCategory;
-use App\Models\Breed;
-use App\Models\Appointment;
-use App\Models\MedicalRecord;
-use App\Models\Invoice;
-
-use App\Traits\HasClinic;
 
 class Pet extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
 
     protected static function boot()
     {
@@ -37,7 +27,7 @@ class Pet extends Model
                     ->where('min_weight', '<=', $pet->weight)
                     ->where(function ($query) use ($pet) {
                         $query->where('max_weight', '>=', $pet->weight)
-                              ->orWhereNull('max_weight');
+                            ->orWhereNull('max_weight');
                     })
                     ->first();
 
@@ -52,21 +42,21 @@ class Pet extends Model
                     $dob = Carbon::parse($pet->date_of_birth);
                     $now = now();
                     $ageInMonths = $dob->diffInMonths($now);
-                    
+
                     $species = Species::find($pet->species_id);
                     $speciesName = $species ? $species->name : 'Default';
-                    
+
                     // Define thresholds (in months)
                     $thresholds = [
                         'Canine' => ['Baby' => 5, 'Young' => 11, 'Adult' => 72],
                         'Feline' => ['Baby' => 5, 'Young' => 11, 'Adult' => 108],
                         'Rabbit' => ['Baby' => 3, 'Young' => 11, 'Adult' => 48],
-                        'Bird'   => ['Baby' => 3, 'Young' => 11, 'Adult' => 84],
-                        'Default'=> ['Baby' => 6, 'Young' => 12, 'Adult' => 84],
+                        'Bird' => ['Baby' => 3, 'Young' => 11, 'Adult' => 84],
+                        'Default' => ['Baby' => 6, 'Young' => 12, 'Adult' => 84],
                     ];
-                    
+
                     $t = $thresholds[$speciesName] ?? $thresholds['Default'];
-                    
+
                     if ($ageInMonths <= $t['Baby']) {
                         $pet->age_group = 'Baby';
                     } elseif ($ageInMonths <= $t['Young']) {
@@ -108,7 +98,7 @@ class Pet extends Model
 
         return $invoices
             ->whereIn('status', ['Paid', 'Partially Paid', 'Finalized'])
-            ->sum(function($invoice) {
+            ->sum(function ($invoice) {
                 return (float) ($invoice->formatted_amount_paid ?? $invoice->amount_paid ?? 0);
             });
     }
@@ -116,11 +106,12 @@ class Pet extends Model
     public function getTotalDueAttribute()
     {
         $invoices = $this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get();
+
         return $invoices->sum('total');
     }
 
     protected $casts = [
-        'synced_at'                => 'datetime',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 
@@ -198,7 +189,7 @@ class Pet extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if ($this->medicalRecords()->exists() || $this->invoices()->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this pet because it is referenced by existing medical records or invoices.");
+            throw new UserFacingException('Cannot permanently delete this pet because it is referenced by existing medical records or invoices.');
         }
     }
 }

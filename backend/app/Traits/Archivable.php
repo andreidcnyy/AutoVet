@@ -9,7 +9,7 @@ trait Archivable
     public static function bootArchivable()
     {
         static::deleting(function ($model) {
-            if (!$model->isForceDeleting() && in_array('deleted_by', $model->getFillable()) && auth()->check()) {
+            if (! $model->isForceDeleting() && in_array('deleted_by', $model->getFillable()) && auth()->check()) {
                 $model->deleted_by = Auth::id();
                 $model->restore_until = now()->addDays(60);
                 $model->saveQuietly(); // save without triggering other events just to persist these fields

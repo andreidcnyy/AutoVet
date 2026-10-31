@@ -20,10 +20,11 @@ class NotificationTemplateController extends Controller
             'event_key' => 'nullable|string|max:100',
             'subject' => 'nullable|string|max:255',
             'body' => 'required|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $template = NotificationTemplate::create($validated);
+
         return response()->json($template, 201);
     }
 
@@ -45,16 +46,18 @@ class NotificationTemplateController extends Controller
             'event_key' => 'nullable|string|max:100',
             'subject' => 'nullable|string|max:255',
             'body' => 'required|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $template->update($validated);
+
         return response()->json($template);
     }
 
     public function destroy(NotificationTemplate $template)
     {
         $template->delete();
+
         return response()->json(['message' => 'Template deleted']);
     }
 }

@@ -14,16 +14,16 @@ enum SyncStatus: string
     case LOCAL_ONLY = 'local_only';
 
     /** Modified since last successful sync; waiting to be uploaded. */
-    case PENDING    = 'pending_sync';
+    case PENDING = 'pending_sync';
 
     /** Successfully synchronized with the cloud server. */
-    case SYNCED     = 'synced';
+    case SYNCED = 'synced';
 
     /** A conflict was detected between local and cloud versions. */
-    case CONFLICT   = 'conflict';
+    case CONFLICT = 'conflict';
 
     /** Sync was attempted but failed; will retry. */
-    case FAILED     = 'failed';
+    case FAILED = 'failed';
 
     /**
      * Returns true if this record needs to be sent to cloud.

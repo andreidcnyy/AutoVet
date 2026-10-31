@@ -2,16 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Owner;
-use App\Models\Pet;
-use App\Models\Species;
+use App\Models\Appointment;
 use App\Models\Breed;
 use App\Models\Clinic;
-use App\Models\Appointment;
-use App\Models\Invoice;
+use App\Models\Owner;
+use App\Models\Pet;
 use App\Models\Service;
+use App\Models\Species;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -20,7 +19,9 @@ class BulkProductionMockSeeder extends Seeder
     public function run(): void
     {
         $clinic = Clinic::first();
-        if (!$clinic) return;
+        if (! $clinic) {
+            return;
+        }
 
         // TARGET: 50 Total Clients, 101 Total Pets
         $currentOwnersCount = Owner::withoutGlobalScopes()->count();
@@ -32,8 +33,12 @@ class BulkProductionMockSeeder extends Seeder
 
         $canine = Species::where('name', 'Canine')->first();
         $feline = Species::where('name', 'Feline')->first();
-        if (!$canine) $canine = Species::create(['name' => 'Canine', 'status' => 'Active', 'clinic_id' => $clinic->id]);
-        if (!$feline) $feline = Species::create(['name' => 'Feline', 'status' => 'Active', 'clinic_id' => $clinic->id]);
+        if (! $canine) {
+            $canine = Species::create(['name' => 'Canine', 'status' => 'Active', 'clinic_id' => $clinic->id]);
+        }
+        if (! $feline) {
+            $feline = Species::create(['name' => 'Feline', 'status' => 'Active', 'clinic_id' => $clinic->id]);
+        }
 
         $breeds = Breed::all();
         $vets = ClinicStaffSeeder::veterinarians($clinic);
@@ -49,10 +54,10 @@ class BulkProductionMockSeeder extends Seeder
 
         for ($i = 1; $i <= $ownersToCreate; $i++) {
             $owner = Owner::create([
-                'name' => "Production Client " . ($currentOwnersCount + $i),
-                'email' => "client.prod." . ($currentOwnersCount + $i) . "@autovet.ph",
-                'phone' => "0917" . str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT),
-                'address' => "Metro Manila",
+                'name' => 'Production Client '.($currentOwnersCount + $i),
+                'email' => 'client.prod.'.($currentOwnersCount + $i).'@autovet.ph',
+                'phone' => '0917'.str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT),
+                'address' => 'Metro Manila',
                 'clinic_id' => $clinic->id,
             ]);
 
@@ -66,9 +71,9 @@ class BulkProductionMockSeeder extends Seeder
                 $species = rand(0, 1) == 0 ? $canine : $feline;
                 $speciesBreeds = $breeds->where('species_id', $species->id);
                 $breed = $speciesBreeds->count() > 0 ? $speciesBreeds->random() : Breed::first();
-                
+
                 $pet = Pet::create([
-                    'name' => "Pet " . ($currentOwnersCount + $i) . "-{$j}",
+                    'name' => 'Pet '.($currentOwnersCount + $i)."-{$j}",
                     'owner_id' => $owner->id,
                     'species_id' => $species->id,
                     'breed_id' => $breed->id,
@@ -89,7 +94,7 @@ class BulkProductionMockSeeder extends Seeder
                     'status' => 'Healthy',
                     'clinic_id' => $clinic->id,
                     'created_at' => now(),
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
 
                 $totalPets++;
@@ -106,7 +111,7 @@ class BulkProductionMockSeeder extends Seeder
                         'pet_id' => $pet->id,
                         'service_id' => $svc->id,
                         'vet_id' => ($svc->requires_doctor && $vets->isNotEmpty()) ? $vets->random()->id : null,
-                        'title' => $svc->category . ' for ' . $pet->name,
+                        'title' => $svc->category.' for '.$pet->name,
                         'category' => $svc->category,
                         'date' => $monthDate->copy()->subDays(rand(1, 25))->toDateString(),
                         'time' => '09:00 AM',

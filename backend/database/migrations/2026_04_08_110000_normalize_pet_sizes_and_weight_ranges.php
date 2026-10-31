@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -15,7 +13,7 @@ return new class extends Migration
         // 1. Identify and fix UNLINKED weight ranges
         // Find a fallback size (e.g. Medium) if unlinked and active
         $mediumSize = DB::table('pet_size_categories')->where('name', 'Medium')->first();
-        
+
         if ($mediumSize) {
             DB::table('weight_ranges')
                 ->where('status', 'Active')
@@ -29,7 +27,7 @@ return new class extends Migration
             ->whereNotNull('weight')
             ->whereNotNull('species_id')
             ->get();
-        
+
         foreach ($pets as $pet) {
             $range = DB::table('weight_ranges')
                 ->where('status', 'Active')
@@ -37,7 +35,7 @@ return new class extends Migration
                 ->where('min_weight', '<=', $pet->weight)
                 ->where(function ($query) use ($pet) {
                     $query->where('max_weight', '>=', $pet->weight)
-                          ->orWhereNull('max_weight');
+                        ->orWhereNull('max_weight');
                 })
                 ->first();
 
@@ -45,7 +43,7 @@ return new class extends Migration
                 if ($pet->size_category_id != $range->size_category_id) {
                     DB::table('pets')->where('id', $pet->id)->update([
                         'size_category_id' => $range->size_category_id,
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ]);
                 }
             }

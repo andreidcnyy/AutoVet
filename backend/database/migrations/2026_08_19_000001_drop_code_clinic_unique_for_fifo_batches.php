@@ -32,7 +32,7 @@ return new class extends Migration
     private function blockingUniqueIndexes(): array
     {
         return collect(Schema::getIndexes('inventories'))
-            ->filter(fn($i) => ($i['unique'] ?? false) && in_array('code', $i['columns'], true))
+            ->filter(fn ($i) => ($i['unique'] ?? false) && in_array('code', $i['columns'], true))
             ->pluck('name')
             ->all();
     }
@@ -40,7 +40,7 @@ return new class extends Migration
     private function indexExistsNamed(string $name): bool
     {
         return collect(Schema::getIndexes('inventories'))
-            ->contains(fn($i) => $i['name'] === $name);
+            ->contains(fn ($i) => $i['name'] === $name);
     }
 
     /**
@@ -59,7 +59,7 @@ return new class extends Migration
     {
         // Add the replacement index first so `code` is never left unindexed —
         // FIFO looks batches up by code on every invoice finalization.
-        if (!$this->indexExistsNamed('inventories_code_clinic_id_index')) {
+        if (! $this->indexExistsNamed('inventories_code_clinic_id_index')) {
             Schema::table('inventories', function (Blueprint $table) {
                 $table->index(['code', 'clinic_id']);
             });
@@ -70,7 +70,7 @@ return new class extends Migration
 
         $found = $this->blockingUniqueIndexes();
         $this->report($found
-            ? 'unique index(es) constraining code: ' . implode(', ', $found)
+            ? 'unique index(es) constraining code: '.implode(', ', $found)
             : 'no unique index constrains code (nothing to drop)');
 
         foreach ($found as $name) {
@@ -84,10 +84,10 @@ return new class extends Migration
 
         // Fail loudly rather than leave a half-applied schema recorded as "Ran".
         $remaining = $this->blockingUniqueIndexes();
-        if (!empty($remaining)) {
-            throw new \RuntimeException(
-                'Could not drop unique index(es) on inventories.code: ' . implode(', ', $remaining)
-                . '. FIFO batching requires multiple rows per code.'
+        if (! empty($remaining)) {
+            throw new RuntimeException(
+                'Could not drop unique index(es) on inventories.code: '.implode(', ', $remaining)
+                .'. FIFO batching requires multiple rows per code.'
             );
         }
 
@@ -108,9 +108,9 @@ return new class extends Migration
             ->count();
 
         if ($dupes > 0) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Cannot restore unique(code, clinic_id): {$dupes} product(s) already have multiple batches. "
-                . 'Consolidate batches before rolling this migration back.'
+                .'Consolidate batches before rolling this migration back.'
             );
         }
 

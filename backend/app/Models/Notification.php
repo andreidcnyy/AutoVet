@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use App\Traits\HasClinic;
+use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
@@ -44,7 +43,7 @@ class Notification extends Model
      */
     public static function supersedeUnreadFor(string $type, ?int $clinicId, ?int $inventoryId): int
     {
-        if (!$inventoryId) {
+        if (! $inventoryId) {
             return 0;
         }
 

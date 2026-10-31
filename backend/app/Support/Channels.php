@@ -18,6 +18,6 @@ class Channels
     {
         $clinicId ??= auth()->user()?->clinic_id;
 
-        return new PrivateChannel('admin.' . ($clinicId ?: 'none') . '.' . $topic);
+        return new PrivateChannel('admin.'.($clinicId ?: 'none').'.'.$topic);
     }
 }

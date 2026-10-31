@@ -13,11 +13,11 @@ trait HasClinic
      */
     protected static function bootHasClinic(): void
     {
-        static::addGlobalScope(new ClinicScope());
+        static::addGlobalScope(new ClinicScope);
 
         // Automatically set clinic_id on creation
         static::creating(function ($model) {
-            if (!$model->clinic_id && auth()->check()) {
+            if (! $model->clinic_id && auth()->check()) {
                 $model->clinic_id = auth()->user()->clinic_id;
             }
         });

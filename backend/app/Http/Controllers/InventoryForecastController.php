@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Inventory;
-use App\Models\InventoryForecast;
+use App\Models\Setting;
 use App\Services\InventoryForecastService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class InventoryForecastController extends Controller
 {
@@ -20,19 +20,20 @@ class InventoryForecastController extends Controller
     /**
      * Get inventory stockout forecast for a specific inventory item.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Inventory  $inventory
-     * @return \Illuminate\Http\JsonResponse
+     * @param  Request  $request
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     private function forecastingEnabled(): bool
     {
-        $val = \App\Models\Setting::where('key', 'enable_ai_forecasting')->value('value');
+        $val = Setting::where('key', 'enable_ai_forecasting')->value('value');
+
         return $val !== 'false';
     }
 
     public function forecast(Request $request, Inventory $inventory): JsonResponse
     {
-        if (!$this->forecastingEnabled()) {
+        if (! $this->forecastingEnabled()) {
             return response()->json(['message' => 'AI forecasting is currently disabled.'], 503);
         }
 
@@ -66,22 +67,22 @@ class InventoryForecastController extends Controller
             'limit' => 'sometimes|integer|min:1|max:100',
         ]);
 
-        $limit     = (int) $request->query('limit', 20);
+        $limit = (int) $request->query('limit', 20);
         $forecasts = $this->inventoryForecastService->getForecastHistory($inventory->id, $limit);
 
         return response()->json([
             'inventory_id' => $inventory->id,
-            'item_name'    => $inventory->item_name,
-            'total'        => $forecasts->count(),
-            'forecasts'    => $forecasts->map(fn ($f) => [
-                'id'                         => $f->id,
-                'predicted_demand'           => $f->predicted_demand,
-                'days_until_stockout'        => $f->days_until_stockout,
-                'predicted_stockout_date'    => $f->predicted_stockout_date,
+            'item_name' => $inventory->item_name,
+            'total' => $forecasts->count(),
+            'forecasts' => $forecasts->map(fn ($f) => [
+                'id' => $f->id,
+                'predicted_demand' => $f->predicted_demand,
+                'days_until_stockout' => $f->days_until_stockout,
+                'predicted_stockout_date' => $f->predicted_stockout_date,
                 'suggested_reorder_quantity' => $f->suggested_reorder_quantity,
-                'generated_at'               => $f->generated_at,
-                'model_used'                 => $f->model_used,
-                'notes'                      => $f->notes,
+                'generated_at' => $f->generated_at,
+                'model_used' => $f->model_used,
+                'notes' => $f->notes,
             ]),
         ]);
     }
@@ -94,27 +95,27 @@ class InventoryForecastController extends Controller
      */
     public function savedForecast(Inventory $inventory): JsonResponse
     {
-        if (!$this->forecastingEnabled()) {
+        if (! $this->forecastingEnabled()) {
             return response()->json(['message' => 'AI forecasting is currently disabled.'], 503);
         }
 
         $forecast = $this->inventoryForecastService->getLatestSavedForecast($inventory->id);
 
-        if (!$forecast) {
+        if (! $forecast) {
             return response()->json([
-                'inventory_id'               => $inventory->id,
-                'item_name'                  => $inventory->item_name,
-                'predicted_demand'           => 0,
-                'days_until_stockout'        => null,
-                'predicted_stockout_date'    => null,
+                'inventory_id' => $inventory->id,
+                'item_name' => $inventory->item_name,
+                'predicted_demand' => 0,
+                'days_until_stockout' => null,
+                'predicted_stockout_date' => null,
                 'suggested_reorder_quantity' => null,
-                'generated_at'               => null,
-                'model_used'                 => null,
-                'notes'                      => null,
-                'prediction_status'          => 'No Forecast Available',
-                'average_daily_consumption'  => 0,
-                'predicted_monthly_sales'    => 0,
-                'message'                    => 'No saved forecast exists for this item yet. Trigger a forecast refresh or finalize an invoice containing this item.',
+                'generated_at' => null,
+                'model_used' => null,
+                'notes' => null,
+                'prediction_status' => 'No Forecast Available',
+                'average_daily_consumption' => 0,
+                'predicted_monthly_sales' => 0,
+                'message' => 'No saved forecast exists for this item yet. Trigger a forecast refresh or finalize an invoice containing this item.',
             ]);
         }
 
@@ -133,45 +134,45 @@ class InventoryForecastController extends Controller
             $daysLeft = ($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0;
             $predictedDate = now()->addDays($daysLeft)->format('Y-m-d');
             $status = ($daysLeft < 7) ? 'Critical' : (($daysLeft < 14) ? 'Reorder Soon' : 'Safe');
-            
+
             // Override message if it was "Critical" but stock is now healthy
             if ($currentStock > $minStock && (strpos($message, 'at or below minimum') !== false || strpos($message, 'out of stock') !== false)) {
-                $message = "Demand analysis indicates stock is currently healthy based on recent usage rates.";
+                $message = 'Demand analysis indicates stock is currently healthy based on recent usage rates.';
             }
         } elseif ($currentStock <= $minStock) {
             $daysLeft = 0;
             $predictedDate = now()->format('Y-m-d');
             $status = 'Critical';
-            $message = "Stock is currently at or below minimum level.";
+            $message = 'Stock is currently at or below minimum level.';
         }
 
         return response()->json([
-            'inventory_id'               => $forecast->inventory_id,
-            'item_name'                  => $inventory->item_name,
-            'predicted_demand'           => $avgDaily,
-            'days_until_stockout'        => $daysLeft,
-            'predicted_stockout_date'    => $predictedDate,
+            'inventory_id' => $forecast->inventory_id,
+            'item_name' => $inventory->item_name,
+            'predicted_demand' => $avgDaily,
+            'days_until_stockout' => $daysLeft,
+            'predicted_stockout_date' => $predictedDate,
             'suggested_reorder_quantity' => $forecast->suggested_reorder_quantity,
-            'generated_at'               => $forecast->generated_at,
-            'model_used'                 => $forecast->model_used,
-            'notes'                      => $message,
-            'message'                    => $message,
-            'forecast_status'            => $status,
-            'prediction_status'          => $forecast->prediction_source === 'dataset' 
-                                            ? 'Using dataset-based prediction' 
+            'generated_at' => $forecast->generated_at,
+            'model_used' => $forecast->model_used,
+            'notes' => $message,
+            'message' => $message,
+            'forecast_status' => $status,
+            'prediction_status' => $forecast->prediction_source === 'dataset'
+                                            ? 'Using dataset-based prediction'
                                             : ($forecast->forecast_status === 'Insufficient Data' ? 'Insufficient Data' : 'Synced Dataset Insight'),
-            'average_daily_consumption'  => $avgDaily,
-            'predicted_daily_sales'      => $forecast->predicted_daily_sales,
-            'predicted_weekly_sales'     => round($avgDaily * 7, 2),
-            'predicted_monthly_sales'    => round($avgDaily * 30, 2), // Strictly recalculated
-            'estimated_monthly_revenue'  => $forecast->estimated_monthly_revenue,
-            'prediction_source'          => $forecast->prediction_source,
-            'is_live_synced'             => true,
-            'current_stock'              => $currentStock,
-            'min_stock_level'            => $minStock,
-            'confidence_score'           => $forecast->confidence_score !== null ? (float) $forecast->confidence_score : null,
-            'trend_fit_score'            => $forecast->trend_fit_score !== null ? (float) $forecast->trend_fit_score : null,
-            'estimated_monthly_revenue'  => $forecast->estimated_monthly_revenue !== null ? (float) $forecast->estimated_monthly_revenue : null,
+            'average_daily_consumption' => $avgDaily,
+            'predicted_daily_sales' => $forecast->predicted_daily_sales,
+            'predicted_weekly_sales' => round($avgDaily * 7, 2),
+            'predicted_monthly_sales' => round($avgDaily * 30, 2), // Strictly recalculated
+            'estimated_monthly_revenue' => $forecast->estimated_monthly_revenue,
+            'prediction_source' => $forecast->prediction_source,
+            'is_live_synced' => true,
+            'current_stock' => $currentStock,
+            'min_stock_level' => $minStock,
+            'confidence_score' => $forecast->confidence_score !== null ? (float) $forecast->confidence_score : null,
+            'trend_fit_score' => $forecast->trend_fit_score !== null ? (float) $forecast->trend_fit_score : null,
+            'estimated_monthly_revenue' => $forecast->estimated_monthly_revenue !== null ? (float) $forecast->estimated_monthly_revenue : null,
         ]);
     }
 }

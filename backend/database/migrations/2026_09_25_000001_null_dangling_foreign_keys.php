@@ -42,7 +42,7 @@ return new class extends Migration
         foreach ($this->nullableForeignKeys() as $fk) {
             [$table, $column, $parent, $parentKey] = $fk;
 
-            if (!Schema::hasTable($table) || !Schema::hasTable($parent)) {
+            if (! Schema::hasTable($table) || ! Schema::hasTable($parent)) {
                 continue;
             }
 
@@ -110,7 +110,7 @@ return new class extends Migration
             [DB::getDatabaseName()]
         );
 
-        return array_map(fn($r) => [
+        return array_map(fn ($r) => [
             $r->TABLE_NAME,
             $r->COLUMN_NAME,
             $r->REFERENCED_TABLE_NAME,

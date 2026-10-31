@@ -15,7 +15,7 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 

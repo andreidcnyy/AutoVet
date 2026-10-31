@@ -12,6 +12,7 @@ class SeedInventoryUsageTest extends TestCase
     use RefreshDatabase;
 
     private int $itemA;
+
     private int $itemB;
 
     protected function setUp(): void

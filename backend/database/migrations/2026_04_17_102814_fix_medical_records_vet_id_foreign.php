@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -18,14 +18,14 @@ return new class extends Migration
                 SELECT CONSTRAINT_NAME 
                 FROM information_schema.KEY_COLUMN_USAGE 
                 WHERE TABLE_NAME = 'medical_records' 
-                AND TABLE_SCHEMA = '" . config('database.connections.mysql.database') . "' 
+                AND TABLE_SCHEMA = '".config('database.connections.mysql.database')."' 
                 AND CONSTRAINT_NAME = 'medical_records_vet_id_foreign'
             ");
 
-            if (!empty($fks)) {
+            if (! empty($fks)) {
                 $table->dropForeign(['vet_id']);
             }
-            
+
             // Re-link to admins table
             $table->foreign('vet_id')->references('id')->on('admins')->onDelete('set null');
         });

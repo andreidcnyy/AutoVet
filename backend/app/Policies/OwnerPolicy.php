@@ -3,9 +3,6 @@
 namespace App\Policies;
 
 use App\Models\Owner;
-use App\Models\Admin;
-use App\Models\PortalUser;
-use App\Enums\Roles;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class OwnerPolicy
@@ -13,7 +10,7 @@ class OwnerPolicy
     /**
      * Admins and employees bypass all checks.
      */
-    public function before(Authenticatable $user, string $ability): bool|null
+    public function before(Authenticatable $user, string $ability): ?bool
     {
         if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
             return true;

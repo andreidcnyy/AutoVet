@@ -20,7 +20,9 @@ class InvoiceRulesTest extends TestCase
     use RefreshDatabase;
 
     private Pet $pet;
+
     private Service $service;
+
     private Appointment $appointment;
 
     protected function setUp(): void
@@ -57,15 +59,15 @@ class InvoiceRulesTest extends TestCase
 
     public function test_numbers_follow_the_highest_existing_one(): void
     {
-        $prefix = 'VB-' . now()->format('Y-m') . '-';
+        $prefix = 'VB-'.now()->format('Y-m').'-';
         Invoice::create([
-            'clinic_id' => 2, 'invoice_number' => $prefix . '0007', 'pet_id' => $this->pet->id, 'status' => 'Draft',
+            'clinic_id' => 2, 'invoice_number' => $prefix.'0007', 'pet_id' => $this->pet->id, 'status' => 'Draft',
             'subtotal' => 1, 'discount_type' => 'fixed', 'discount_value' => 0, 'tax_rate' => 12, 'total' => 1, 'amount_paid' => 0,
         ]);
 
         $this->postJson('/api/invoices', $this->invoicePayload())
             ->assertCreated()
-            ->assertJsonPath('invoice_number', $prefix . '0008');
+            ->assertJsonPath('invoice_number', $prefix.'0008');
     }
 
     public function test_finalized_invoice_cannot_go_back_to_draft(): void

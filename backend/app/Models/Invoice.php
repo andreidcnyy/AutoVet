@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 
-use App\Traits\HasClinic;
-
 class Invoice extends Model
 {
-    use HasSyncFields, HasAuditTrail, HasClinic;
+    use HasAuditTrail, HasClinic, HasSyncFields;
 
     /** The VAT rate these prices already include. */
     public const VAT_RATE = 0.12;
@@ -53,11 +52,12 @@ class Invoice extends Model
         if ($this->amount_paid <= 0 && in_array($this->status, ['Paid', 'Finalized'])) {
             return (float) $this->total;
         }
+
         return (float) $this->amount_paid;
     }
 
     protected $casts = [
-        'synced_at'                => 'datetime',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 

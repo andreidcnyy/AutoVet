@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use App\Exceptions\UserFacingException;
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
-use App\Traits\HasClinic;
-
 class Inventory extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
+
     protected $fillable = [
         'clinic_id',
         'item_name',
@@ -46,17 +47,17 @@ class Inventory extends Model
     protected $appends = ['stock_status', 'is_expired', 'days_until_expiry'];
 
     protected $casts = [
-        'stock_level'              => 'integer',
-        'min_stock_level'          => 'integer',
-        'price'                    => 'decimal:2',
-        'selling_price'            => 'decimal:2',
-        'is_sellable'              => 'boolean',
-        'is_service_usable'        => 'boolean',
-        'is_billable'              => 'boolean',
-        'is_consumable'            => 'boolean',
-        'deduct_on_finalize'       => 'boolean',
-        'expiration_date'          => 'date',
-        'synced_at'                => 'datetime',
+        'stock_level' => 'integer',
+        'min_stock_level' => 'integer',
+        'price' => 'decimal:2',
+        'selling_price' => 'decimal:2',
+        'is_sellable' => 'boolean',
+        'is_service_usable' => 'boolean',
+        'is_billable' => 'boolean',
+        'is_consumable' => 'boolean',
+        'deduct_on_finalize' => 'boolean',
+        'expiration_date' => 'date',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 
@@ -77,7 +78,7 @@ class Inventory extends Model
         if ($this->stock_level <= 0) {
             return 'Out of Stock';
         }
-        
+
         if ($this->stock_level <= ($this->min_stock_level ?? 0)) {
             return 'Low Stock';
         }
@@ -90,8 +91,13 @@ class Inventory extends Model
      */
     public function getStockStatusAttribute(): string
     {
-        if ($this->stock_level <= 0) return 'out_of_stock';
-        if ($this->stock_level <= ($this->min_stock_level ?? 0)) return 'low_stock';
+        if ($this->stock_level <= 0) {
+            return 'out_of_stock';
+        }
+        if ($this->stock_level <= ($this->min_stock_level ?? 0)) {
+            return 'low_stock';
+        }
+
         return 'in_stock';
     }
 
@@ -106,7 +112,7 @@ class Inventory extends Model
      */
     public function getIsExpiredAttribute(): bool
     {
-        if (!$this->expiration_date) {
+        if (! $this->expiration_date) {
             return false;
         }
 
@@ -119,7 +125,7 @@ class Inventory extends Model
      */
     public function getDaysUntilExpiryAttribute(): ?int
     {
-        if (!$this->expiration_date) {
+        if (! $this->expiration_date) {
             return null;
         }
 
@@ -157,12 +163,16 @@ class Inventory extends Model
 
         foreach ($items as $item) {
             $forecast = $item->latestForecast;
-            if (!$forecast) continue;
+            if (! $forecast) {
+                continue;
+            }
 
-            $avgDaily     = (float) ($forecast->average_daily_consumption ?? 0);
+            $avgDaily = (float) ($forecast->average_daily_consumption ?? 0);
             $currentStock = (float) $item->stock_level;
-            $minStock     = (float) ($item->min_stock_level ?? 0);
-            if ($avgDaily <= 0) continue;
+            $minStock = (float) ($item->min_stock_level ?? 0);
+            if ($avgDaily <= 0) {
+                continue;
+            }
 
             $daysLeft = ($currentStock > $minStock) ? ceil(($currentStock - $minStock) / $avgDaily) : 0;
             $forecast->days_until_stockout = (int) $daysLeft;
@@ -184,21 +194,26 @@ class Inventory extends Model
     public function hasOnlyInitialStockTransaction(): bool
     {
         $count = $this->transactions()->count();
-        if ($count === 0) return true;
-        if ($count > 1) return false;
-        
+        if ($count === 0) {
+            return true;
+        }
+        if ($count > 1) {
+            return false;
+        }
+
         $tx = $this->transactions()->first();
+
         return $tx->transaction_type === 'Stock In' && $tx->remarks === 'Initial Stock';
     }
 
     public function preventPermanentDeletionIfReferenced()
     {
         if (DB::table('invoice_items')->where('inventory_id', $this->id)->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this inventory item because it is referenced in past invoices.");
+            throw new UserFacingException('Cannot permanently delete this inventory item because it is referenced in past invoices.');
         }
-        
-        if (!$this->hasOnlyInitialStockTransaction()) {
-            throw new \Exception("This item cannot be permanently deleted because it already has inventory activity beyond its initial stock entry.");
+
+        if (! $this->hasOnlyInitialStockTransaction()) {
+            throw new \Exception('This item cannot be permanently deleted because it already has inventory activity beyond its initial stock entry.');
         }
     }
 }

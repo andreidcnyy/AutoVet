@@ -2,28 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\InvoiceUpdated;
+use App\Exceptions\UserFacingException;
 use App\Mail\ReviewRequestMail;
+use App\Models\Appointment;
+use App\Models\Inventory;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
+use App\Models\Pet;
+use App\Models\Scopes\ClinicScope;
+use App\Models\Service;
+use App\Services\ClientNotificationService;
 use App\Services\InvoiceFinalizationService;
+use App\Services\PricingService;
+use App\Support\ListQuery;
+use App\Traits\IdentifiesPortalOwner;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
-use App\Traits\IdentifiesPortalOwner;
 
 class InvoiceController extends Controller
 {
     use IdentifiesPortalOwner;
 
     protected $pricingService;
+
     protected $finalizationService;
+
     protected $clientNotificationService;
 
     public function __construct(
-        \App\Services\PricingService $pricingService,
-        \App\Services\InvoiceFinalizationService $finalizationService,
-        \App\Services\ClientNotificationService $clientNotificationService
+        PricingService $pricingService,
+        InvoiceFinalizationService $finalizationService,
+        ClientNotificationService $clientNotificationService
     ) {
         $this->pricingService = $pricingService;
         $this->finalizationService = $finalizationService;
@@ -37,12 +52,15 @@ class InvoiceController extends Controller
      */
     private function resolveServiceDate($appointmentId): ?string
     {
-        if (!$appointmentId) return null;
-        $appt = \App\Models\Appointment::withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+        if (! $appointmentId) {
+            return null;
+        }
+        $appt = Appointment::withoutGlobalScope(ClinicScope::class)
             ->withTrashed()
             ->find($appointmentId);
+
         return ($appt && $appt->date)
-            ? \Illuminate\Support\Carbon::parse($appt->date)->format('Y-m-d')
+            ? Carbon::parse($appt->date)->format('Y-m-d')
             : null;
     }
 
@@ -54,24 +72,24 @@ class InvoiceController extends Controller
         $user = auth()->user();
         $query = Invoice::select([
             'id', 'invoice_number', 'pet_id', 'appointment_id', 'service_date', 'status', 'report_type', 'total',
-            'amount_paid', 'discount_value', 'created_at', 'updated_at'
+            'amount_paid', 'discount_value', 'created_at', 'updated_at',
         ])
-        ->with([
-            'pet' => function($q) {
-                $q->select('id', 'name', 'owner_id', 'species_id', 'breed_id');
-            },
-            'pet.species:id,name',
-            'pet.breed:id,name',
-            'pet.owner:id,name',
-            // Bypass ClinicScope (portal owners have no/mismatched clinic_id, which
-            // would otherwise force this relation to null) and withTrashed so the
-            // service date always resolves. Safe: invoices are already owner-scoped.
-            'appointment' => fn ($q) => $q
-                ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
-                ->withTrashed()
-                ->select('id', 'date'),
-        ])
-        ->withCount('items');
+            ->with([
+                'pet' => function ($q) {
+                    $q->select('id', 'name', 'owner_id', 'species_id', 'breed_id');
+                },
+                'pet.species:id,name',
+                'pet.breed:id,name',
+                'pet.owner:id,name',
+                // Bypass ClinicScope (portal owners have no/mismatched clinic_id, which
+                // would otherwise force this relation to null) and withTrashed so the
+                // service date always resolves. Safe: invoices are already owner-scoped.
+                'appointment' => fn ($q) => $q
+                    ->withoutGlobalScope(ClinicScope::class)
+                    ->withTrashed()
+                    ->select('id', 'date'),
+            ])
+            ->withCount('items');
 
         // Optionally include non-hidden items (for report generation)
         if ($request->boolean('with_items')) {
@@ -83,15 +101,15 @@ class InvoiceController extends Controller
         // Transaction reports must have a real pet/owner; inventory reports have no pet
         $query->where(function ($q) {
             $q->where('report_type', 'inventory')
-              ->orWhereNull('report_type')
-              ->orWhere(function ($q2) {
-                  $q2->where(function ($q3) {
-                      $q3->where('report_type', 'transaction')
-                         ->orWhereNull('report_type');
-                  })->whereHas('pet.owner', function ($oq) {
-                      $oq->realClients();
-                  });
-              });
+                ->orWhereNull('report_type')
+                ->orWhere(function ($q2) {
+                    $q2->where(function ($q3) {
+                        $q3->where('report_type', 'transaction')
+                            ->orWhereNull('report_type');
+                    })->whereHas('pet.owner', function ($oq) {
+                        $oq->realClients();
+                    });
+                });
         });
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
@@ -99,7 +117,7 @@ class InvoiceController extends Controller
             $query->whereRaw('LOWER(status) != ?', ['draft']);
 
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
                 $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -109,13 +127,13 @@ class InvoiceController extends Controller
         }
 
         $request->validate([
-            'date_from'      => 'nullable|date',
-            'date_to'        => 'nullable|date',
-            'owner_id'       => 'nullable|integer',
-            'pet_id'         => 'nullable|integer',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+            'owner_id' => 'nullable|integer',
+            'pet_id' => 'nullable|integer',
             'appointment_id' => 'nullable|integer',
-            'search'         => 'nullable|string|max:255',
-            'status'         => 'nullable|string|max:50',
+            'search' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:50',
         ]);
 
         // Date range filter. filled(), not has(): an empty ?date_from= used to
@@ -153,13 +171,13 @@ class InvoiceController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('invoice_number', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhereHas('pet', function ($pq) use ($search) {
-                      $pq->where('name', 'like', \App\Support\ListQuery::contains($search))
-                        ->orWhereHas('owner', function ($oq) use ($search) {
-                            $oq->where('name', 'like', \App\Support\ListQuery::contains($search));
-                        });
-                  });
+                $q->where('invoice_number', 'like', ListQuery::contains($search))
+                    ->orWhereHas('pet', function ($pq) use ($search) {
+                        $pq->where('name', 'like', ListQuery::contains($search))
+                            ->orWhereHas('owner', function ($oq) use ($search) {
+                                $oq->where('name', 'like', ListQuery::contains($search));
+                            });
+                    });
             });
         }
 
@@ -170,7 +188,7 @@ class InvoiceController extends Controller
         $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
 
         if ($request->has('per_page')) {
-            return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 15)));
+            return response()->json($query->paginate(ListQuery::perPage($request, 15)));
         }
 
         return response()->json($query->get());
@@ -212,9 +230,9 @@ class InvoiceController extends Controller
         ]);
 
         if ($validated['discount_value'] > $validated['subtotal'] && $validated['discount_type'] === 'fixed') {
-             throw ValidationException::withMessages(['discount_value' => 'Discount cannot exceed subtotal.']);
+            throw ValidationException::withMessages(['discount_value' => 'Discount cannot exceed subtotal.']);
         }
-        
+
         if ($validated['status'] === 'Finalized' && $validated['subtotal'] <= 0 && ($validated['report_type'] ?? null) !== 'inventory') {
             throw ValidationException::withMessages(['subtotal' => 'Cannot finalize an invoice with 0 subtotal.']);
         }
@@ -223,10 +241,10 @@ class InvoiceController extends Controller
         // saved at the same moment could pick the same number and the second
         // failed on the unique index. The lock serialises numbering until the
         // row is committed.
-        $numberLock = \Illuminate\Support\Facades\Cache::lock('invoice-number', 30);
+        $numberLock = Cache::lock('invoice-number', 30);
         try {
             $numberLock->block(10);
-        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+        } catch (LockTimeoutException $e) {
             return response()->json(['message' => 'Another invoice is being saved. Please try again.'], 409);
         }
 
@@ -235,7 +253,7 @@ class InvoiceController extends Controller
         try {
             $invoiceNumber = $this->nextInvoiceNumber();
 
-            $pet = isset($validated['pet_id']) ? \App\Models\Pet::findOrFail($validated['pet_id']) : null;
+            $pet = isset($validated['pet_id']) ? Pet::findOrFail($validated['pet_id']) : null;
 
             // Update pet weight if provided
             if ($pet && isset($validated['pet_weight'])) {
@@ -248,18 +266,18 @@ class InvoiceController extends Controller
 
             foreach ($validated['items'] as $itemData) {
                 if ($itemData['item_type'] === 'service') {
-                    $service = \App\Models\Service::find($itemData['service_id']);
+                    $service = Service::find($itemData['service_id']);
                     if ($service && $service->pricing_mode !== 'manual') {
                         try {
                             $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
                         } catch (\Throwable $e) {
-                            throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
+                            throw ValidationException::withMessages(['items' => $e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
                         }
                     }
                 } else {
                     $service = null;
                     if ($itemData['item_type'] === 'inventory') {
-                        $invItem = \App\Models\Inventory::find($itemData['inventory_id']);
+                        $invItem = Inventory::find($itemData['inventory_id']);
                         if ($invItem && $invItem->selling_price > 0) {
                             $itemData['unit_price'] = (float) $invItem->selling_price;
                         }
@@ -277,22 +295,22 @@ class InvoiceController extends Controller
                         $itemsToCreate[] = [
                             'item_type' => 'inventory',
                             'inventory_id' => $consumable->inventory_id,
-                            'name' => $consumable->inventory?->item_name ?? "Consumable",
+                            'name' => $consumable->inventory?->item_name ?? 'Consumable',
                             'qty' => $consumable->quantity * $itemData['qty'],
                             'unit_price' => 0,
                             'amount' => 0,
                             'is_hidden' => true,
-                            'notes' => "Linked consumable for {$service->name}"
+                            'notes' => "Linked consumable for {$service->name}",
                         ];
                     }
                 }
             }
 
             // Determine status logic based on backend rules
-            $discount = ($validated['discount_type'] === 'percentage') 
-                ? $calculatedSubtotal * ($validated['discount_value'] / 100) 
+            $discount = ($validated['discount_type'] === 'percentage')
+                ? $calculatedSubtotal * ($validated['discount_value'] / 100)
                 : $validated['discount_value'];
-            
+
             $taxable = $calculatedSubtotal - $discount;
             // Prices are VAT-inclusive: the 12% is already inside each line
             // amount, so it is extracted for reporting rather than added on top.
@@ -305,7 +323,7 @@ class InvoiceController extends Controller
             $finalStatus = $validated['status'];
             if ($finalStatus === 'Finalized' && $validated['amount_paid'] >= $calculatedTotal) {
                 $finalStatus = 'Paid';
-            } else if ($finalStatus === 'Finalized' && $validated['amount_paid'] > 0) {
+            } elseif ($finalStatus === 'Finalized' && $validated['amount_paid'] > 0) {
                 $finalStatus = 'Partially Paid';
             }
 
@@ -333,6 +351,7 @@ class InvoiceController extends Controller
             // Inventory reports are stock snapshots — skip finalization (no stock deduction) and email
             if ($isInventoryReport) {
                 DB::commit();
+
                 return response()->json($invoice->load('items'), 201);
             }
 
@@ -340,12 +359,12 @@ class InvoiceController extends Controller
             try {
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
-                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
+                Log::warning("Finalization warning on invoice #{$invoice->id}: ".$e->getMessage());
+                throw ValidationException::withMessages(['items' => $e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
-                \App\Models\Appointment::where('id', $invoice->appointment_id)
+                Appointment::where('id', $invoice->appointment_id)
                     ->whereIn('status', ['approved', 'Approved'])
                     ->update(['status' => 'completed']);
             }
@@ -362,13 +381,14 @@ class InvoiceController extends Controller
                         }
                     }
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
+                    Log::warning('Failed to send automated invoice notification: '.$e->getMessage());
                 }
             }
 
             DB::commit();
             // Broadcast AFTER commit so portal refetch sees the committed row.
-            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
+            broadcast(new InvoiceUpdated($invoice))->toOthers();
+
             return response()->json($invoice->load('pet', 'items'), 201);
         } catch (ValidationException $e) {
             DB::rollBack();
@@ -376,10 +396,11 @@ class InvoiceController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             // No request payload in the log: it carries client details.
-            \Illuminate\Support\Facades\Log::error("Invoice creation failed: " . $e->getMessage(), [
+            Log::error('Invoice creation failed: '.$e->getMessage(), [
                 'exception' => get_class($e),
                 'stack' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'message' => 'Failed to create report.',
             ], 500);
@@ -397,15 +418,16 @@ class InvoiceController extends Controller
      */
     private function nextInvoiceNumber(): string
     {
-        $prefix = 'VB-' . now()->format('Y-m') . '-';
+        $prefix = 'VB-'.now()->format('Y-m').'-';
 
         $latest = Invoice::withoutGlobalScopes()
-            ->where('invoice_number', 'like', $prefix . '%')
+            ->where('invoice_number', 'like', $prefix.'%')
             ->orderByDesc('invoice_number')
             ->value('invoice_number');
 
         $next = $latest ? intval(substr($latest, -4)) + 1 : 1;
-        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+
+        return $prefix.str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -420,7 +442,7 @@ class InvoiceController extends Controller
         // They are loaded unscoped because species and breeds are clinic-scoped
         // while portal clients carry no matching clinic_id, which would empty
         // the relations again. Safe: the invoice is already caller-restricted.
-        $unscoped = fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class);
+        $unscoped = fn ($q) => $q->withoutGlobalScope(ClinicScope::class);
 
         return response()->json($invoice->load([
             'pet' => $unscoped,
@@ -429,7 +451,7 @@ class InvoiceController extends Controller
             'pet.breed' => $unscoped,
             'items',
             'appointment' => fn ($q) => $q
-                ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+                ->withoutGlobalScope(ClinicScope::class)
                 ->withTrashed(),
         ]));
     }
@@ -440,7 +462,7 @@ class InvoiceController extends Controller
     public function update(Request $request, Invoice $invoice)
     {
         if (in_array($invoice->status, ['Paid', 'Cancelled'])) {
-             return response()->json(['message' => 'Cannot modify a Paid or Cancelled invoice.'], 409);
+            return response()->json(['message' => 'Cannot modify a Paid or Cancelled invoice.'], 409);
         }
 
         $validated = $request->validate([
@@ -475,16 +497,17 @@ class InvoiceController extends Controller
         }
 
         if ($invoice->status === 'Finalized' && $validated['status'] === 'Finalized') {
-             // If already finalized, only allow payment updates
-             $apptId = $validated['appointment_id'] ?? $invoice->appointment_id;
-             $invoice->update([
-                 'amount_paid' => $validated['amount_paid'],
-                 'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
-                 'appointment_id' => $apptId,
-                 'service_date' => $invoice->service_date ?? $this->resolveServiceDate($apptId),
-             ]);
-             broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
-             return response()->json($invoice->load('pet', 'items'));
+            // If already finalized, only allow payment updates
+            $apptId = $validated['appointment_id'] ?? $invoice->appointment_id;
+            $invoice->update([
+                'amount_paid' => $validated['amount_paid'],
+                'payment_method' => $validated['payment_method'] ?? $invoice->payment_method,
+                'appointment_id' => $apptId,
+                'service_date' => $invoice->service_date ?? $this->resolveServiceDate($apptId),
+            ]);
+            broadcast(new InvoiceUpdated($invoice))->toOthers();
+
+            return response()->json($invoice->load('pet', 'items'));
         }
 
         DB::beginTransaction();
@@ -505,18 +528,18 @@ class InvoiceController extends Controller
                 $service = null;
                 foreach ($validated['items'] as $itemData) {
                     if ($itemData['item_type'] === 'service') {
-                        $service = \App\Models\Service::find($itemData['service_id']);
+                        $service = Service::find($itemData['service_id']);
                         if ($service && $service->pricing_mode !== 'manual') {
                             try {
                                 $itemData['unit_price'] = $this->pricingService->calculatePrice($service, $pet, 1, null, $validated['pet_weight'] ?? null);
                             } catch (\Throwable $e) {
-                                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
+                                throw ValidationException::withMessages(['items' => $e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-pricing', 'A price could not be worked out for one of the services.')]);
                             }
                         }
                     } else {
                         $service = null;
                         if ($itemData['item_type'] === 'inventory') {
-                            $invItem = \App\Models\Inventory::find($itemData['inventory_id']);
+                            $invItem = Inventory::find($itemData['inventory_id']);
                             if ($invItem && $invItem->selling_price > 0) {
                                 $itemData['unit_price'] = (float) $invItem->selling_price;
                             }
@@ -534,12 +557,12 @@ class InvoiceController extends Controller
                             $itemsToUpdate[] = [
                                 'item_type' => 'inventory',
                                 'inventory_id' => $consumable->inventory_id,
-                                'name' => $consumable->inventory?->item_name ?? "Consumable",
+                                'name' => $consumable->inventory?->item_name ?? 'Consumable',
                                 'qty' => $consumable->quantity * $itemData['qty'],
                                 'unit_price' => 0,
                                 'amount' => 0,
                                 'is_hidden' => true,
-                                'notes' => "Linked consumable for {$service->name}"
+                                'notes' => "Linked consumable for {$service->name}",
                             ];
                         }
                     }
@@ -549,10 +572,10 @@ class InvoiceController extends Controller
             }
 
             // Recalculate total based on backend rules
-            $discount = ($validated['discount_type'] === 'percentage') 
-                ? $calculatedSubtotal * ($validated['discount_value'] / 100) 
+            $discount = ($validated['discount_type'] === 'percentage')
+                ? $calculatedSubtotal * ($validated['discount_value'] / 100)
                 : $validated['discount_value'];
-            
+
             $taxable = $calculatedSubtotal - $discount;
             // VAT-inclusive: see store(). The 12% is extracted, never added.
             $validated['tax_rate'] = 12.00;
@@ -602,12 +625,12 @@ class InvoiceController extends Controller
             try {
                 $this->finalizationService->finalizeInvoice($invoice);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Finalization warning on invoice #{$invoice->id}: " . $e->getMessage());
-                throw ValidationException::withMessages(['items' => $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
+                Log::warning("Finalization warning on invoice #{$invoice->id}: ".$e->getMessage());
+                throw ValidationException::withMessages(['items' => $e instanceof UserFacingException ? $e->getMessage() : $this->logged($e, 'invoice-finalize', 'The invoice could not be finalized.')]);
             }
 
             if (in_array($invoice->status, ['Finalized', 'Paid', 'Partially Paid']) && $invoice->appointment_id) {
-                \App\Models\Appointment::where('id', $invoice->appointment_id)
+                Appointment::where('id', $invoice->appointment_id)
                     ->whereIn('status', ['approved', 'Approved'])
                     ->update(['status' => 'completed']);
             }
@@ -619,20 +642,22 @@ class InvoiceController extends Controller
                         $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                     }
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("Failed to send automated invoice notification: " . $e->getMessage());
+                    Log::warning('Failed to send automated invoice notification: '.$e->getMessage());
                 }
             }
 
             DB::commit();
             // Broadcast AFTER commit so portal refetch sees the committed row.
-            broadcast(new \App\Events\InvoiceUpdated($invoice))->toOthers();
+            broadcast(new InvoiceUpdated($invoice))->toOthers();
+
             return response()->json($invoice->load('pet', 'items'));
         } catch (ValidationException $e) {
             DB::rollBack();
             throw $e;
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Illuminate\Support\Facades\Log::error("Invoice update failed: " . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
+            Log::error('Invoice update failed: '.$e->getMessage(), ['stack' => $e->getTraceAsString()]);
+
             return response()->json(['message' => 'Failed to update report.'], 500);
         }
     }
@@ -640,10 +665,10 @@ class InvoiceController extends Controller
     /** Logs an unexpected failure and returns the generic text to show instead. */
     private function logged(\Throwable $e, string $context, string $generic): string
     {
-        \Illuminate\Support\Facades\Log::error("[{$context}] " . $e->getMessage(), ['exception' => get_class($e)]);
+        Log::error("[{$context}] ".$e->getMessage(), ['exception' => get_class($e)]);
+
         return $generic;
     }
-
 
     /**
      * Remove the specified invoice.

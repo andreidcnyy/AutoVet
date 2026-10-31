@@ -24,6 +24,7 @@ class ApiRateLimitTest extends TestCase
     {
         $this->app['auth']->forgetGuards();
         Sanctum::actingAs($user, ['*']);
+
         return $this;
     }
 
@@ -42,7 +43,7 @@ class ApiRateLimitTest extends TestCase
 
     public function test_staff_and_client_with_the_same_id_do_not_share_a_limit(): void
     {
-        $staff  = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['id' => 900]);
+        $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['id' => 900]);
         $client = PortalUser::factory()->create(['id' => 900]);
 
         $this->as($staff)->getJson('/api/user')->assertHeader('X-RateLimit-Remaining', 299);

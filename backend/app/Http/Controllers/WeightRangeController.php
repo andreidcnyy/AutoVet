@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WeightRange;
+use App\Support\ListQuery;
 use Illuminate\Http\Request;
 
 class WeightRangeController extends Controller
@@ -16,15 +17,15 @@ class WeightRangeController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('label', 'like', \App\Support\ListQuery::contains($request->search));
+            $query->where('label', 'like', ListQuery::contains($request->search));
         }
 
-        [$sortBy, $sortDirection] = \App\Support\ListQuery::sort($request, ['id', 'label', 'min_weight', 'max_weight', 'size_category_id', 'species_id', 'status', 'created_at', 'updated_at'], 'min_weight');
+        [$sortBy, $sortDirection] = ListQuery::sort($request, ['id', 'label', 'min_weight', 'max_weight', 'size_category_id', 'species_id', 'status', 'created_at', 'updated_at'], 'min_weight');
         $query->orderBy($sortBy, $sortDirection)->orderBy('id');
 
         // Lookup table: screens load it whole into dropdowns, so the ceiling
         // is higher than for paged lists, but there is one.
-        return response()->json($query->paginate(\App\Support\ListQuery::perPage($request, 10, \App\Support\ListQuery::MAX_LOOKUP_PER_PAGE)));
+        return response()->json($query->paginate(ListQuery::perPage($request, 10, ListQuery::MAX_LOOKUP_PER_PAGE)));
     }
 
     public function store(Request $request)
@@ -36,17 +37,18 @@ class WeightRangeController extends Controller
             'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
             'size_category_id' => 'required|clinic_exists:pet_size_categories,id',
-            'status' => 'required|string'
+            'status' => 'required|string',
         ]);
 
         if ($conflict = $this->findConflict($validated)) {
             return response()->json([
                 'message' => $this->formatConflictMessage($conflict),
-                'errors' => ['min_weight' => ['Range overlap detected.']]
+                'errors' => ['min_weight' => ['Range overlap detected.']],
             ], 422);
         }
-        
+
         $range = WeightRange::create($validated);
+
         return response()->json($range->load(['sizeCategory', 'species']), 201);
     }
 
@@ -67,7 +69,7 @@ class WeightRangeController extends Controller
         \Log::info('WeightRangeController@update', [
             'id' => $id,
             'model_id' => $weightRange->id,
-            'request_data' => $request->all()
+            'request_data' => $request->all(),
         ]);
 
         $validated = $request->validate([
@@ -77,30 +79,32 @@ class WeightRangeController extends Controller
             'max_weight' => 'nullable|numeric|gt:min_weight',
             'unit' => 'required|string',
             'size_category_id' => 'required|clinic_exists:pet_size_categories,id',
-            'status' => 'required|string'
+            'status' => 'required|string',
         ]);
 
         if ($conflict = $this->findConflict($validated, $weightRange->id)) {
             \Log::warning('Conflict detected during update', [
                 'exclude_id' => $weightRange->id,
                 'conflict_id' => $conflict->id,
-                'conflict_label' => $conflict->label
+                'conflict_label' => $conflict->label,
             ]);
-            
+
             // Final safety check: if for some reason the query still returned the same record
             if ($conflict->id == $weightRange->id) {
                 \Log::error('CRITICAL: findConflict returned the excluded ID despite where clause.');
                 $weightRange->update($validated);
+
                 return response()->json($weightRange->load(['sizeCategory', 'species']));
             }
 
             return response()->json([
                 'message' => $this->formatConflictMessage($conflict),
-                'errors' => ['min_weight' => ['Range overlap detected.']]
+                'errors' => ['min_weight' => ['Range overlap detected.']],
             ], 422);
         }
 
         $weightRange->update($validated);
+
         return response()->json($weightRange->load(['sizeCategory', 'species']));
     }
 
@@ -109,7 +113,7 @@ class WeightRangeController extends Controller
         \Log::debug('WeightRangeController@findConflict', [
             'exclude_id' => $excludeId,
             'species_id' => $data['species_id'] ?? null,
-            'unit' => $data['unit'] ?? null
+            'unit' => $data['unit'] ?? null,
         ]);
 
         if ($data['status'] !== 'Active') {
@@ -128,14 +132,14 @@ class WeightRangeController extends Controller
         $newMin = $data['min_weight'];
         $newMax = $data['max_weight'];
 
-        return $query->where(function($q) use ($newMin, $newMax) {
-            $q->where(function($sq) use ($newMax) {
+        return $query->where(function ($q) use ($newMin, $newMax) {
+            $q->where(function ($sq) use ($newMax) {
                 if ($newMax !== null) {
                     $sq->where('min_weight', '<', $newMax);
                 }
-            })->where(function($sq) use ($newMin) {
+            })->where(function ($sq) use ($newMin) {
                 $sq->whereNull('max_weight')
-                   ->orWhere('max_weight', '>', $newMin);
+                    ->orWhere('max_weight', '>', $newMin);
             });
         })->first();
     }
@@ -146,13 +150,14 @@ class WeightRangeController extends Controller
         $max = $conflict->max_weight === null ? '∞' : number_format($conflict->max_weight, 2);
         $size = $conflict->sizeCategory?->name ?? 'Unlinked';
         $species = $conflict->species?->name ?? 'Unknown';
-        
+
         return "Conflicts with existing {$species} range: {$min} - {$max} ({$size})";
     }
 
     public function destroy(WeightRange $weightRange)
     {
         $weightRange->delete();
+
         return response()->json(null, 204);
     }
 }

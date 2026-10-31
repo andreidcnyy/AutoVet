@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-
-use App\Models\Clinic;
-use App\Models\Admin;
-use App\Models\SystemAnnouncement;
-use App\Models\AuditLog;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use App\Enums\Roles;
+use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\AuditLog;
+use App\Models\Clinic;
+use App\Models\StoredFile;
+use App\Models\SystemAnnouncement;
+use App\Support\AccountStatus;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SuperAdminDashboardController extends Controller
 {
@@ -39,6 +43,7 @@ class SuperAdminDashboardController extends Controller
     public function clinics(): JsonResponse
     {
         $clinics = Clinic::orderBy('created_at', 'desc')->get();
+
         return response()->json($clinics);
     }
 
@@ -49,32 +54,33 @@ class SuperAdminDashboardController extends Controller
     {
         $clinic->status = $clinic->status === 'active' ? 'inactive' : 'active';
         $clinic->save();
-        \App\Support\AccountStatus::forgetClinic($clinic->id);
+        AccountStatus::forgetClinic($clinic->id);
 
         return response()->json([
             'message' => "Clinic status updated to {$clinic->status}",
-            'clinic' => $clinic
+            'clinic' => $clinic,
         ]);
     }
 
     /**
      * Register a new clinic
      */
-    private function uploadClinicLogo(\Illuminate\Http\UploadedFile $file): ?string
+    private function uploadClinicLogo(UploadedFile $file): ?string
     {
         try {
             $ext = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
-            $name = 'clinics/logos/' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $name = 'clinics/logos/'.time().'_'.bin2hex(random_bytes(4)).'.'.$ext;
             $contents = file_get_contents($file->getRealPath());
             if ($contents === false) {
                 throw new \RuntimeException('Could not read uploaded file from temp path');
             }
             $mime = $file->getMimeType() ?: 'image/png';
-            \App\Models\StoredFile::store($name, $contents, $mime);
-            \Illuminate\Support\Facades\Log::info('uploadClinicLogo OK: ' . $name);
+            StoredFile::store($name, $contents, $mime);
+            Log::info('uploadClinicLogo OK: '.$name);
+
             return $name;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('uploadClinicLogo EXCEPTION: ' . $e->getMessage());
+            Log::error('uploadClinicLogo EXCEPTION: '.$e->getMessage());
             throw $e;
         }
     }
@@ -98,17 +104,17 @@ class SuperAdminDashboardController extends Controller
         if ($request->hasFile('logo')) {
             $validated['logo'] = $this->uploadClinicLogo($request->file('logo'));
         } else {
-            \Illuminate\Support\Facades\Log::warning('storeClinic: no logo file in request. files=' . json_encode(array_keys($request->allFiles())));
+            Log::warning('storeClinic: no logo file in request. files='.json_encode(array_keys($request->allFiles())));
         }
 
         $clinic = Clinic::create([
             ...$validated,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         return response()->json([
             'message' => 'Clinic registered successfully',
-            'clinic' => $clinic
+            'clinic' => $clinic,
         ], 201);
     }
 
@@ -120,7 +126,7 @@ class SuperAdminDashboardController extends Controller
         $validated = $request->validate([
             'clinic_name' => 'required|string|max:255',
             'owner_name' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:clinics,email,' . $clinic->id,
+            'email' => 'required|email|unique:clinics,email,'.$clinic->id,
             'contact_number' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'address' => 'nullable|string',
@@ -132,16 +138,16 @@ class SuperAdminDashboardController extends Controller
         if ($request->hasFile('logo')) {
             $validated['logo'] = $this->uploadClinicLogo($request->file('logo'));
         } else {
-            \Illuminate\Support\Facades\Log::warning('updateClinic: no logo file in request. files=' . json_encode(array_keys($request->allFiles())));
+            Log::warning('updateClinic: no logo file in request. files='.json_encode(array_keys($request->allFiles())));
         }
 
         $clinic->update(array_merge($validated, [
-            'logo' => $validated['logo'] ?? $clinic->logo
+            'logo' => $validated['logo'] ?? $clinic->logo,
         ]));
 
         return response()->json([
             'message' => 'Clinic updated successfully',
-            'clinic' => $clinic
+            'clinic' => $clinic,
         ]);
     }
 
@@ -152,15 +158,15 @@ class SuperAdminDashboardController extends Controller
     {
         // Delete clinic logo if exists
         if ($clinic->logo) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($clinic->logo);
+            Storage::disk('public')->delete($clinic->logo);
         }
 
-        // We use forceDelete because the model uses SoftDeletes, 
+        // We use forceDelete because the model uses SoftDeletes,
         // and the user specifically wants to "actually delete" it.
         $clinic->forceDelete();
 
         return response()->json([
-            'message' => 'Clinic and all associated data permanently deleted.'
+            'message' => 'Clinic and all associated data permanently deleted.',
         ]);
     }
 
@@ -185,10 +191,10 @@ class SuperAdminDashboardController extends Controller
     public function storeClinicUser(Request $request, Clinic $clinic): JsonResponse
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:admins,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email',
             'password' => 'required|string|min:8',
-            'role'     => ['required', 'string', Rule::in([
+            'role' => ['required', 'string', Rule::in([
                 Roles::CLINIC_ADMIN->value,
                 Roles::VETERINARIAN->value,
                 Roles::STAFF->value,
@@ -196,12 +202,12 @@ class SuperAdminDashboardController extends Controller
         ]);
 
         $admin = Admin::create([
-            'name'       => $validated['name'],
-            'email'      => $validated['email'],
-            'password'   => Hash::make($validated['password']),
-            'role'       => $validated['role'],
-            'clinic_id'  => $clinic->id,
-            'status'     => 'active',
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'clinic_id' => $clinic->id,
+            'status' => 'active',
         ]);
 
         return response()->json(['message' => 'User created successfully.', 'admin' => $admin], 201);
@@ -227,17 +233,17 @@ class SuperAdminDashboardController extends Controller
     public function storeSuperAdmin(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:admins,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email',
             'password' => 'required|string|min:8',
         ]);
 
         $admin = Admin::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => Roles::SUPER_ADMIN->value,
-            'status'   => 'active',
+            'role' => Roles::SUPER_ADMIN->value,
+            'status' => 'active',
         ]);
 
         return response()->json(['message' => 'Super Admin created successfully.', 'admin' => $admin], 201);
@@ -258,7 +264,7 @@ class SuperAdminDashboardController extends Controller
 
         $admin->update([
             'password' => Hash::make($request->password),
-            'must_change_password' => true // Force them to change it on next login
+            'must_change_password' => true, // Force them to change it on next login
         ]);
 
         return response()->json(['message' => 'Password reset successfully. Admin must change it on next login.']);
@@ -276,7 +282,7 @@ class SuperAdminDashboardController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$admin) {
+        if (! $admin) {
             return response()->json(['message' => 'No active clinic admin found for this clinic to impersonate.'], 404);
         }
 
@@ -287,18 +293,18 @@ class SuperAdminDashboardController extends Controller
 
         try {
             AuditLog::create([
-                'clinic_id'  => $clinic->id,
-                'user_id'    => auth()->id(),
-                'action'     => 'impersonated',
+                'clinic_id' => $clinic->id,
+                'user_id' => auth()->id(),
+                'action' => 'impersonated',
                 'model_type' => Admin::class,
-                'model_id'   => $admin->id,
+                'model_id' => $admin->id,
                 'old_values' => null,
                 'new_values' => ['impersonated_admin' => $admin->email, 'expires_at' => now()->addHour()->toIso8601String()],
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Impersonation audit failed: ' . $e->getMessage());
+            Log::warning('Impersonation audit failed: '.$e->getMessage());
         }
 
         return response()->json([
@@ -315,7 +321,7 @@ class SuperAdminDashboardController extends Controller
     public function systemLogs(Request $request): JsonResponse
     {
         $query = AuditLog::withoutGlobalScopes()
-            ->with(['user' => function($q) {
+            ->with(['user' => function ($q) {
                 $q->withoutGlobalScopes()->select('id', 'name', 'email', 'role', 'clinic_id');
             }]);
 
@@ -336,6 +342,7 @@ class SuperAdminDashboardController extends Controller
     public function announcements(): JsonResponse
     {
         $announcements = SystemAnnouncement::orderBy('created_at', 'desc')->get();
+
         return response()->json($announcements);
     }
 
@@ -357,8 +364,8 @@ class SuperAdminDashboardController extends Controller
             ...$validated,
             'type' => $validated['type'] ?? 'info',
             'target' => $validated['target'] ?? 'admin',
-            'active_until' => !empty($validated['active_until']) ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
-            'created_by' => auth()->id()
+            'active_until' => ! empty($validated['active_until']) ? Carbon::parse($validated['active_until'])->utc() : null,
+            'created_by' => auth()->id(),
         ]);
 
         return response()->json(['message' => 'Announcement broadcasted successfully', 'announcement' => $announcement], 201);
@@ -382,7 +389,7 @@ class SuperAdminDashboardController extends Controller
             ...$validated,
             'type' => $validated['type'] ?? 'info',
             'target' => $validated['target'] ?? $announcement->target,
-            'active_until' => !empty($validated['active_until']) ? \Carbon\Carbon::parse($validated['active_until'])->utc() : null,
+            'active_until' => ! empty($validated['active_until']) ? Carbon::parse($validated['active_until'])->utc() : null,
         ]);
 
         return response()->json(['message' => 'Announcement updated successfully', 'announcement' => $announcement]);
@@ -394,6 +401,7 @@ class SuperAdminDashboardController extends Controller
     public function destroyAnnouncement(SystemAnnouncement $announcement): JsonResponse
     {
         $announcement->delete();
+
         return response()->json(['message' => 'Announcement removed.']);
     }
 }

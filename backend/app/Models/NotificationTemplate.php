@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationTemplate extends Model
 {
-    use HasFactory, HasClinic;
+    use HasClinic, HasFactory;
 
     protected $fillable = [
         'clinic_id',

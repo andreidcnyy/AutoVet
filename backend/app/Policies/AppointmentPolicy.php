@@ -2,9 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Appointment;
 use App\Enums\Roles;
-use Illuminate\Auth\Access\Response;
+use App\Models\Appointment;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class AppointmentPolicy
@@ -12,7 +11,7 @@ class AppointmentPolicy
     /**
      * Perform pre-authorization checks.
      */
-    public function before(Authenticatable $user, string $ability): bool|null
+    public function before(Authenticatable $user, string $ability): ?bool
     {
         if (method_exists($user, 'isFullAdmin') && $user->isFullAdmin()) {
             return true;
@@ -29,6 +28,7 @@ class AppointmentPolicy
         if (method_exists($user, 'hasRole')) {
             return $user->hasRole(...Roles::all());
         }
+
         return true;
     }
 
@@ -57,6 +57,7 @@ class AppointmentPolicy
         if (method_exists($user, 'hasRole')) {
             return $user->hasRole(...Roles::all());
         }
+
         return true;
     }
 

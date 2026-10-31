@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\Roles;
 use App\Http\Controllers\DashboardController;
 use App\Models\Admin;
+use App\Services\InventoryForecastService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -54,8 +56,9 @@ class DashboardSummaryTest extends TestCase
     {
         // Make the "items by category" section throw; the rest must survive.
         $this->app->bind(DashboardController::class, function ($app) {
-            return new class($app->make(\App\Services\InventoryForecastService::class)) extends DashboardController {
-                public function getItemsByCategory(): \Illuminate\Http\JsonResponse
+            return new class($app->make(InventoryForecastService::class)) extends DashboardController
+            {
+                public function getItemsByCategory(): JsonResponse
                 {
                     throw new \RuntimeException('boom');
                 }

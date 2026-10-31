@@ -100,6 +100,7 @@ class ForecastMetricsTest extends TestCase
         $state = 12345;
         $uniform = function () use (&$state) {
             $state = (1664525 * $state + 1013904223) % 4294967296;
+
             return ($state + 1) / 4294967297;
         };
 

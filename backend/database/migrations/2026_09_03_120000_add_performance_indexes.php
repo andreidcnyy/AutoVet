@@ -50,12 +50,12 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->indexes as $table => $sets) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
             foreach ($sets as $columns) {
-                if (!$this->columnsExist($table, $columns)) {
+                if (! $this->columnsExist($table, $columns)) {
                     continue;
                 }
                 if ($this->leadingIndexExists($table, $columns[0], count($columns))) {
@@ -65,7 +65,7 @@ return new class extends Migration
                 $name = $this->indexName($table, $columns);
                 try {
                     Schema::table($table, fn ($t) => $t->index($columns, $name));
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // A pre-existing equivalent index under another name is fine.
                     DB::connection()->getSchemaBuilder(); // no-op, keeps the loop going
                 }
@@ -76,7 +76,7 @@ return new class extends Migration
     public function down(): void
     {
         foreach ($this->indexes as $table => $sets) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
@@ -84,7 +84,7 @@ return new class extends Migration
                 $name = $this->indexName($table, $columns);
                 try {
                     Schema::table($table, fn ($t) => $t->dropIndex($name));
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Never created, or already gone.
                 }
             }
@@ -94,7 +94,7 @@ return new class extends Migration
     private function columnsExist(string $table, array $columns): bool
     {
         foreach ($columns as $column) {
-            if (!Schema::hasColumn($table, $column)) {
+            if (! Schema::hasColumn($table, $column)) {
                 return false;
             }
         }
@@ -125,6 +125,6 @@ return new class extends Migration
 
     private function indexName(string $table, array $columns): string
     {
-        return substr($table . '_' . implode('_', $columns) . '_idx', 0, 64);
+        return substr($table.'_'.implode('_', $columns).'_idx', 0, 64);
     }
 };

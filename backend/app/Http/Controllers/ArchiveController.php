@@ -2,8 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
+use App\Exceptions\UserFacingException;
+use App\Models\Admin;
+use App\Models\CmsContent;
+use App\Models\Inventory;
+use App\Models\Owner;
+use App\Models\Pet;
+use App\Models\PortalUser;
+use App\Models\Service;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ArchiveController extends Controller
 {
@@ -13,13 +23,13 @@ class ArchiveController extends Controller
     protected function getModelClass($type)
     {
         $map = [
-            'pets' => \App\Models\Pet::class,
-            'owners' => \App\Models\Owner::class,
-            'services' => \App\Models\Service::class,
-            'inventories' => \App\Models\Inventory::class,
-            'admins' => \App\Models\Admin::class,
-            'portal_users' => \App\Models\PortalUser::class,
-            'cms' => \App\Models\CmsContent::class,
+            'pets' => Pet::class,
+            'owners' => Owner::class,
+            'services' => Service::class,
+            'inventories' => Inventory::class,
+            'admins' => Admin::class,
+            'portal_users' => PortalUser::class,
+            'cms' => CmsContent::class,
         ];
 
         return $map[strtolower($type)] ?? null;
@@ -35,7 +45,7 @@ class ArchiveController extends Controller
     private function denyAccountTypeUnlessManager(Request $request, string $type)
     {
         if (in_array(strtolower($type), self::ACCOUNT_TYPES, true)
-            && !in_array($request->user()->role, \App\Enums\Roles::managerRoles(), true)) {
+            && ! in_array($request->user()->role, Roles::managerRoles(), true)) {
             return response()->json(['message' => 'Only an administrator can manage archived accounts.'], 403);
         }
 
@@ -54,21 +64,22 @@ class ArchiveController extends Controller
         // Include both new flow (deletion_requested_at set) and old flow (soft-deleted only).
         // withTrashed() rather than withoutGlobalScopes(): the latter also
         // dropped the clinic scope and listed every clinic's clients.
-        $items = \App\Models\PortalUser::withTrashed()
+        $items = PortalUser::withTrashed()
             ->where(function ($q) {
                 $q->whereNotNull('deletion_requested_at')
-                  ->orWhereNotNull('deleted_at');
+                    ->orWhereNotNull('deleted_at');
             })
             ->orderByRaw('COALESCE(deletion_requested_at, deleted_at) DESC')
             ->orderByDesc('id')
             ->paginate(20);
 
         $items->getCollection()->transform(function ($user) {
-            $deletionDate  = $user->deletion_requested_at ?? $user->deleted_at;
-            $deadline      = $deletionDate->copy()->addDays(30);
+            $deletionDate = $user->deletion_requested_at ?? $user->deleted_at;
+            $deadline = $deletionDate->copy()->addDays(30);
             $daysRemaining = max(0, (int) ceil(now()->diffInDays($deadline)));
-            $user->days_remaining        = $daysRemaining;
+            $user->days_remaining = $daysRemaining;
             $user->deletion_requested_at = $deletionDate;
+
             return $user;
         });
 
@@ -84,10 +95,10 @@ class ArchiveController extends Controller
             return $denied;
         }
 
-        $user = \App\Models\PortalUser::withTrashed()
+        $user = PortalUser::withTrashed()
             ->where(function ($q) {
                 $q->whereNotNull('deletion_requested_at')
-                  ->orWhereNotNull('deleted_at');
+                    ->orWhereNotNull('deleted_at');
             })
             ->findOrFail($id);
 
@@ -107,7 +118,7 @@ class ArchiveController extends Controller
     public function index(Request $request, $type)
     {
         $modelClass = $this->getModelClass($type);
-        if (!$modelClass) {
+        if (! $modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
         }
         if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
@@ -122,6 +133,7 @@ class ArchiveController extends Controller
         }
 
         $items = $query->orderBy('deleted_at', 'desc')->orderByDesc('id')->paginate(20);
+
         return response()->json($items);
     }
 
@@ -131,7 +143,7 @@ class ArchiveController extends Controller
     public function restore(Request $request, $type, $id)
     {
         $modelClass = $this->getModelClass($type);
-        if (!$modelClass) {
+        if (! $modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
         }
         if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
@@ -156,7 +168,7 @@ class ArchiveController extends Controller
     public function forceDelete(Request $request, $type, $id)
     {
         $modelClass = $this->getModelClass($type);
-        if (!$modelClass) {
+        if (! $modelClass) {
             return response()->json(['message' => 'Invalid archive type'], 400);
         }
         if ($denied = $this->denyAccountTypeUnlessManager($request, $type)) {
@@ -167,22 +179,24 @@ class ArchiveController extends Controller
 
         try {
             $item->forceDelete();
+
             return response()->json(['message' => 'Item permanently deleted.']);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Log the actual error for debugging but don't show it to the user
-            \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
-            
+            Log::error("Purge failure for {$type} ID {$id}: ".$e->getMessage());
+
             return response()->json([
-                'message' => 'Cannot permanently delete this item because it is referenced in other database records.'
+                'message' => 'Cannot permanently delete this item because it is referenced in other database records.',
             ], 409);
-        } catch (\App\Exceptions\UserFacingException $e) {
+        } catch (UserFacingException $e) {
             // preventPermanentDeletionIfReferenced() explains what still
             // refers to the record.
             return response()->json(['message' => $e->getMessage()], 409);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Purge failure for {$type} ID {$id}: " . $e->getMessage());
+            Log::error("Purge failure for {$type} ID {$id}: ".$e->getMessage());
+
             return response()->json([
-                'message' => 'Cannot permanently delete this item due to existing dependencies.'
+                'message' => 'Cannot permanently delete this item due to existing dependencies.',
             ], 409);
         }
     }

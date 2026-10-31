@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     protected $tables = [
-        'pets', 'owners', 'services', 'inventories', 'users', 'cms_contents'
+        'pets', 'owners', 'services', 'inventories', 'users', 'cms_contents',
     ];
 
     /**
@@ -18,10 +18,10 @@ return new class extends Migration
         foreach ($this->tables as $tableName) {
             if (Schema::hasTable($tableName)) {
                 Schema::table($tableName, function (Blueprint $table) {
-                    if (!Schema::hasColumn($table->getTable(), 'deleted_by')) {
+                    if (! Schema::hasColumn($table->getTable(), 'deleted_by')) {
                         $table->foreignId('deleted_by')->nullable()->constrained('users')->nullOnDelete();
                     }
-                    if (!Schema::hasColumn($table->getTable(), 'restore_until')) {
+                    if (! Schema::hasColumn($table->getTable(), 'restore_until')) {
                         $table->timestamp('restore_until')->nullable();
                     }
                 });
@@ -41,7 +41,7 @@ return new class extends Migration
                         $table->dropColumn('restore_until');
                     }
                     if (Schema::hasColumn($tableName, 'deleted_by')) {
-                        $table->dropForeign([$tableName . '_deleted_by_foreign']);
+                        $table->dropForeign([$tableName.'_deleted_by_foreign']);
                         $table->dropColumn('deleted_by');
                     }
                 });

@@ -2,20 +2,21 @@
 
 namespace App\Mail;
 
+use App\Models\Setting;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-
-use Illuminate\Mail\Mailables\Attachment;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $invoice;
+
     public $clinic;
 
     /**
@@ -24,9 +25,9 @@ class InvoiceMail extends Mailable
     public function __construct($invoice, $clinic = null)
     {
         $this->invoice = $invoice;
-        if (!$clinic) {
-            $settings = \App\Models\Setting::all()->pluck('value', 'key');
-            $this->clinic = (object)[
+        if (! $clinic) {
+            $settings = Setting::all()->pluck('value', 'key');
+            $this->clinic = (object) [
                 'clinic_name' => $settings['clinic_name'] ?? config('app.name'),
                 'address' => $settings['clinic_address'] ?? '',
                 'phone_number' => $settings['clinic_phone'] ?? '',
@@ -43,7 +44,7 @@ class InvoiceMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Invoice #' . ($this->invoice->invoice_number ?? $this->invoice->id) . ' from ' . ($this->clinic->clinic_name ?? config('app.name')),
+            subject: 'Invoice #'.($this->invoice->invoice_number ?? $this->invoice->id).' from '.($this->clinic->clinic_name ?? config('app.name')),
         );
     }
 
@@ -60,17 +61,17 @@ class InvoiceMail extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {
         $pdf = Pdf::loadView('emails.invoice', [
             'invoice' => $this->invoice,
-            'clinic' => $this->clinic
+            'clinic' => $this->clinic,
         ]);
 
         return [
-            Attachment::fromData(fn () => $pdf->output(), 'Invoice-' . ($this->invoice->invoice_number ?? $this->invoice->id) . '.pdf')
+            Attachment::fromData(fn () => $pdf->output(), 'Invoice-'.($this->invoice->invoice_number ?? $this->invoice->id).'.pdf')
                 ->withMime('application/pdf'),
         ];
     }

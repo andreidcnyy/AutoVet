@@ -47,8 +47,8 @@ class BenchmarkInventoryForecast extends Command
     protected $description = 'Score the inventory forecast (R², RMSE, MAE, 80/20 holdout) for every item';
 
     private const BASELINES = [
-        'average'        => 'Average method',
-        'naive'          => 'Naive method',
+        'average' => 'Average method',
+        'naive' => 'Naive method',
         'moving_average' => '7-day moving average',
     ];
 
@@ -58,8 +58,9 @@ class BenchmarkInventoryForecast extends Command
     {
         $connection = 'mysql';
         if ($this->option('live')) {
-            if (!$this->loadLiveEnv()) {
+            if (! $this->loadLiveEnv()) {
                 $this->explainMissingLiveConfig();
+
                 return self::FAILURE;
             }
             $connection = 'live';
@@ -97,6 +98,7 @@ class BenchmarkInventoryForecast extends Command
 
             if ($days->count() < 3) {
                 $results[] = $result + ['status' => 'Insufficient Data'];
+
                 continue;
             }
 
@@ -126,33 +128,33 @@ class BenchmarkInventoryForecast extends Command
             }
 
             $results[] = $result + [
-                'status'          => 'Scored',
-                'method'          => $h['method'],
-                'train_points'    => $h['train_points'],
-                'test_points'     => $h['test_points'],
-                'train_r2'        => $h['train_r2'],
-                'test_r2'         => $h['test_r2'],
-                'rmse'            => $h['rmse'],
-                'mae'             => $h['mae'],
-                'baseline_rmse'   => $h['baseline_rmse'],
-                'baseline_mae'    => $h['baseline_mae'],
-                'average_mae'     => $h['average_mae'] ?? null,
-                'average_rmse'    => $h['average_rmse'] ?? null,
-                'naive_mae'       => $h['naive_mae'] ?? null,
-                'naive_rmse'      => $h['naive_rmse'] ?? null,
-                'moving_average_mae'  => $h['moving_average_mae'] ?? null,
+                'status' => 'Scored',
+                'method' => $h['method'],
+                'train_points' => $h['train_points'],
+                'test_points' => $h['test_points'],
+                'train_r2' => $h['train_r2'],
+                'test_r2' => $h['test_r2'],
+                'rmse' => $h['rmse'],
+                'mae' => $h['mae'],
+                'baseline_rmse' => $h['baseline_rmse'],
+                'baseline_mae' => $h['baseline_mae'],
+                'average_mae' => $h['average_mae'] ?? null,
+                'average_rmse' => $h['average_rmse'] ?? null,
+                'naive_mae' => $h['naive_mae'] ?? null,
+                'naive_rmse' => $h['naive_rmse'] ?? null,
+                'moving_average_mae' => $h['moving_average_mae'] ?? null,
                 'moving_average_rmse' => $h['moving_average_rmse'] ?? null,
-                'fitted_r2'       => $h['fitted_r2'] ?? null,
-                'fitted_rmse'     => $h['fitted_rmse'] ?? null,
-                'fitted_mae'      => $h['fitted_mae'] ?? null,
-                'confidence'      => ForecastMetrics::confidenceLabel($h['train_r2']),
-                'learned_rate'    => $slopeAll,
-                'train_rate'      => $h['slope'],
+                'fitted_r2' => $h['fitted_r2'] ?? null,
+                'fitted_rmse' => $h['fitted_rmse'] ?? null,
+                'fitted_mae' => $h['fitted_mae'] ?? null,
+                'confidence' => ForecastMetrics::confidenceLabel($h['train_r2']),
+                'learned_rate' => $slopeAll,
+                'train_rate' => $h['slope'],
                 'observed_test_rate' => $observedRate,
-                'rate_error'      => $rateError,
-                'stock'           => (float) $item->stock_level,
-                'min_stock'       => (float) $item->min_stock_level,
-                'days_to_min'     => $slopeAll > 0 ? (int) ceil(max(0, $item->stock_level - $item->min_stock_level) / $slopeAll) : null,
+                'rate_error' => $rateError,
+                'stock' => (float) $item->stock_level,
+                'min_stock' => (float) $item->min_stock_level,
+                'days_to_min' => $slopeAll > 0 ? (int) ceil(max(0, $item->stock_level - $item->min_stock_level) / $slopeAll) : null,
             ];
         }
 
@@ -160,47 +162,50 @@ class BenchmarkInventoryForecast extends Command
         $holdout = array_values(array_filter($scored, fn ($r) => $r['test_r2'] !== null));
         $median = function (array $values) {
             $values = array_values(array_filter($values, fn ($v) => $v !== null));
-            if (!$values) return null;
+            if (! $values) {
+                return null;
+            }
             sort($values);
             $n = count($values);
+
             return $n % 2 ? $values[intdiv($n, 2)] : ($values[$n / 2 - 1] + $values[$n / 2]) / 2;
         };
 
         $summary = [
-            'database'          => $connection,
-            'window'            => [$from->toDateString(), $asOf->toDateString()],
-            'real_only'         => (bool) $this->option('real-only'),
-            'items'             => count($results),
-            'scored'            => count($scored),
+            'database' => $connection,
+            'window' => [$from->toDateString(), $asOf->toDateString()],
+            'real_only' => (bool) $this->option('real-only'),
+            'items' => count($results),
+            'scored' => count($scored),
             'insufficient_data' => count($results) - count($scored),
-            'with_80_20_holdout'=> count($holdout),
-            'confidence'        => array_count_values(array_column($scored, 'confidence')) + ['High' => 0, 'Medium' => 0, 'Low' => 0],
-            'median_train_r2'   => $median(array_column($scored, 'train_r2')),
-            'median_test_r2'    => $median(array_column($holdout, 'test_r2')),
-            'median_rmse'       => $median(array_column($holdout, 'rmse')),
-            'median_mae'        => $median(array_column($holdout, 'mae')),
+            'with_80_20_holdout' => count($holdout),
+            'confidence' => array_count_values(array_column($scored, 'confidence')) + ['High' => 0, 'Medium' => 0, 'Low' => 0],
+            'median_train_r2' => $median(array_column($scored, 'train_r2')),
+            'median_test_r2' => $median(array_column($holdout, 'test_r2')),
+            'median_rmse' => $median(array_column($holdout, 'rmse')),
+            'median_mae' => $median(array_column($holdout, 'mae')),
             'median_baseline_mae' => $median(array_column($holdout, 'baseline_mae')),
             'median_baseline_rmse' => $median(array_column($holdout, 'baseline_rmse')),
-            'baselines'         => collect(self::BASELINES)->mapWithKeys(fn ($label, $key) => [$key => [
-                'median_mae'      => $median(array_column($holdout, "{$key}_mae")),
-                'median_rmse'     => $median(array_column($holdout, "{$key}_rmse")),
-                'model_wins_mae'  => count(array_filter($holdout, fn ($r) => $r['mae'] < $r["{$key}_mae"])),
+            'baselines' => collect(self::BASELINES)->mapWithKeys(fn ($label, $key) => [$key => [
+                'median_mae' => $median(array_column($holdout, "{$key}_mae")),
+                'median_rmse' => $median(array_column($holdout, "{$key}_rmse")),
+                'model_wins_mae' => count(array_filter($holdout, fn ($r) => $r['mae'] < $r["{$key}_mae"])),
                 'model_wins_rmse' => count(array_filter($holdout, fn ($r) => $r['rmse'] < $r["{$key}_rmse"])),
             ]])->all(),
             'median_fitted_r2' => $median(array_column($holdout, 'fitted_r2')),
             'median_fitted_mae' => $median(array_column($holdout, 'fitted_mae')),
             'median_fitted_rmse' => $median(array_column($holdout, 'fitted_rmse')),
             'median_rate_error' => $median(array_column($holdout, 'rate_error')),
-            'median_data_points'=> $median(array_column($results, 'data_points')),
+            'median_data_points' => $median(array_column($results, 'data_points')),
         ];
 
         $this->line("Database: [{$connection}]  Window: {$summary['window'][0]} to {$summary['window'][1]}"
-            . ($summary['real_only'] ? '  (real rows only)' : ''));
+            .($summary['real_only'] ? '  (real rows only)' : ''));
         $this->table(['Items', 'Scored', 'Insufficient', '80/20', 'High', 'Medium', 'Low', 'Med. R²', 'Med. test R²', 'Med. MAE', 'Med. rate error'], [[
             $summary['items'], $summary['scored'], $summary['insufficient_data'], $summary['with_80_20_holdout'],
             $summary['confidence']['High'], $summary['confidence']['Medium'], $summary['confidence']['Low'],
             self::fmt($summary['median_train_r2']), self::fmt($summary['median_test_r2']),
-            self::fmt($summary['median_mae']), $summary['median_rate_error'] !== null ? number_format($summary['median_rate_error'] * 100, 1) . '%' : '-',
+            self::fmt($summary['median_mae']), $summary['median_rate_error'] !== null ? number_format($summary['median_rate_error'] * 100, 1).'%' : '-',
         ]]);
 
         $rows = [['Linear regression (AutoVet)', self::fmt($summary['median_mae']), self::fmt($summary['median_rmse']), '-', '-']];

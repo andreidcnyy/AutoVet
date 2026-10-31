@@ -2,11 +2,12 @@
 
 namespace App\Models\Scopes;
 
+use App\Enums\Roles;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Support\Facades\Auth;
-use App\Enums\Roles;
+use Illuminate\Support\Facades\Log;
 
 class ClinicScope implements Scope
 {
@@ -16,7 +17,7 @@ class ClinicScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         // If we are in console (Artisan commands, Jobs), we might not have a user.
-        // In that case, we should manually set the clinic context if needed, 
+        // In that case, we should manually set the clinic context if needed,
         // or bypass if it's a global operation.
         if (app()->runningInConsole()) {
             return;
@@ -38,17 +39,17 @@ class ClinicScope implements Scope
 
             // Everyone else is restricted to their clinic
             if (isset($user->clinic_id)) {
-                $builder->where($model->getTable() . '.clinic_id', '=', $user->clinic_id);
+                $builder->where($model->getTable().'.clinic_id', '=', $user->clinic_id);
             } else {
-                // If user is authenticated but has no clinic_id and is not super_admin, 
+                // If user is authenticated but has no clinic_id and is not super_admin,
                 // this might be an edge case or misconfiguration.
                 // We should probably still restrict them to nothing or log it.
                 // For now, if they are not super admin and have no clinic, they see nothing from clinic-scoped tables.
                 $builder->whereRaw('1 = 0');
-                
+
                 // Only log if not in a high-volume context to avoid log flooding
-                if (!app()->isProduction()) {
-                    \Illuminate\Support\Facades\Log::warning("ClinicScope applied to user without clinic_id: " . $user->id);
+                if (! app()->isProduction()) {
+                    Log::warning('ClinicScope applied to user without clinic_id: '.$user->id);
                 }
             }
         }

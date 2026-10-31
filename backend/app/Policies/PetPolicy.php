@@ -2,9 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Pet;
 use App\Enums\Roles;
-use Illuminate\Auth\Access\Response;
+use App\Models\Pet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 class PetPolicy
@@ -12,7 +11,7 @@ class PetPolicy
     /**
      * Perform pre-authorization checks.
      */
-    public function before(Authenticatable $user, string $ability): bool|null
+    public function before(Authenticatable $user, string $ability): ?bool
     {
         if (method_exists($user, 'isFullAdmin') && $user->isFullAdmin()) {
             return true;
@@ -29,6 +28,7 @@ class PetPolicy
         if (method_exists($user, 'hasRole')) {
             return $user->hasRole(...Roles::all());
         }
+
         return true; // Default for portal users
     }
 

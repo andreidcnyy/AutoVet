@@ -77,20 +77,20 @@ class SyncLiveDatabase extends Command
             return self::FAILURE;
         }
 
-        if (!$this->loadLiveEnv()) {
+        if (! $this->loadLiveEnv()) {
             $this->error('No live connection configured. See backend/.env.live.example.');
 
             return self::FAILURE;
         }
 
-        if (!$this->selectTarget()) {
+        if (! $this->selectTarget()) {
             return self::FAILURE;
         }
 
         try {
             DB::connection('live')->getPdo();
         } catch (Throwable $e) {
-            $this->error('Could not reach the live database: ' . $e->getMessage());
+            $this->error('Could not reach the live database: '.$e->getMessage());
 
             return self::FAILURE;
         }
@@ -127,7 +127,7 @@ class SyncLiveDatabase extends Command
         $touched = $stats['inserted'] + $stats['updated'] + $stats['deleted'];
 
         if ($touched === 0) {
-            if (!$this->option('quiet-when-clean')) {
+            if (! $this->option('quiet-when-clean')) {
                 $this->info("  Already up to date with live ({$elapsed}s).");
             }
 
@@ -145,8 +145,8 @@ class SyncLiveDatabase extends Command
         );
 
         $this->newLine();
-        $this->info('  Synced ' . $summary);
-        Log::info('db:sync-live ' . $summary);
+        $this->info('  Synced '.$summary);
+        Log::info('db:sync-live '.$summary);
 
         return self::SUCCESS;
     }
@@ -165,7 +165,7 @@ class SyncLiveDatabase extends Command
             Schema::getColumnListing($table)
         ));
 
-        if (!in_array('id', $columns, true)) {
+        if (! in_array('id', $columns, true)) {
             // Without a key there is nothing to diff against; a full copy is
             // db:pull-live's job, not this command's.
             return $none;
@@ -233,7 +233,7 @@ class SyncLiveDatabase extends Command
             }
         }
 
-        if (!$this->option('no-delete') && $toDelete !== []) {
+        if (! $this->option('no-delete') && $toDelete !== []) {
             foreach (array_chunk($toDelete, (int) $this->option('chunk')) as $slice) {
                 $result['deleted'] += DB::table($table)->whereIn('id', $slice)->delete();
             }
@@ -257,7 +257,7 @@ class SyncLiveDatabase extends Command
     private function fetchRows(string $table, array $columns, array $ids): array
     {
         return array_map(
-            fn($row) => (array) $row,
+            fn ($row) => (array) $row,
             DB::connection('live')->table($table)->select($columns)->whereIn('id', $ids)->get()->all()
         );
     }
@@ -266,24 +266,24 @@ class SyncLiveDatabase extends Command
     private function tables(): array
     {
         $liveTables = array_map(
-            fn($row) => array_values((array) $row)[0],
+            fn ($row) => array_values((array) $row)[0],
             DB::connection('live')->select('SHOW TABLES')
         );
 
         return array_values(array_filter(
             $liveTables,
-            fn($t) => !in_array($t, self::SKIP_TABLES, true) && Schema::hasTable($t)
+            fn ($t) => ! in_array($t, self::SKIP_TABLES, true) && Schema::hasTable($t)
         ));
     }
 
     private function selectTarget(): bool
     {
         $target = $this->option('database');
-        if (!$target) {
+        if (! $target) {
             return true;
         }
 
-        if (!preg_match('/^[A-Za-z0-9_]+$/', $target)) {
+        if (! preg_match('/^[A-Za-z0-9_]+$/', $target)) {
             $this->error("Refusing to use '{$target}' as a database name.");
 
             return false;
@@ -293,7 +293,7 @@ class SyncLiveDatabase extends Command
         DB::purge('mysql');
         DB::setDefaultConnection('mysql');
 
-        if (!Schema::hasTable('migrations')) {
+        if (! Schema::hasTable('migrations')) {
             $this->error("'{$target}' has no schema. Run db:pull-live first to create it.");
 
             return false;
@@ -306,14 +306,14 @@ class SyncLiveDatabase extends Command
     private function loadLiveEnv(): bool
     {
         $path = base_path('.env.live');
-        if (!is_file($path)) {
+        if (! is_file($path)) {
             return (bool) config('database.connections.live.host');
         }
 
         $o = [];
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
             $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            if ($line === '' || str_starts_with($line, '#') || ! str_contains($line, '=')) {
                 continue;
             }
             [$k, $v] = explode('=', $line, 2);
@@ -335,12 +335,11 @@ class SyncLiveDatabase extends Command
                 'database' => $o['LIVE_DB_DATABASE'] ?? null,
                 'username' => $o['LIVE_DB_USERNAME'] ?? null,
                 'password' => $o['LIVE_DB_PASSWORD'] ?? null,
-            ], fn($v) => $v !== null),
+            ], fn ($v) => $v !== null),
             ['options' => extension_loaded('pdo_mysql') ? array_filter([
                 \PDO::MYSQL_ATTR_SSL_CA => $o['LIVE_DB_SSL_CA'] ?? null,
-                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
-                    => filter_var($o['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
-            ], fn($v) => $v !== null && $v !== '') : []]
+                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => filter_var($o['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
+            ], fn ($v) => $v !== null && $v !== '') : []]
         ));
 
         DB::purge('live');

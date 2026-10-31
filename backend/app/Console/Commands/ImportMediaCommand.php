@@ -27,10 +27,11 @@ class ImportMediaCommand extends Command
     public function handle(): int
     {
         $root = storage_path('app/public');
-        $scan = $this->option('path') ? $root . '/' . trim($this->option('path'), '/') : $root;
+        $scan = $this->option('path') ? $root.'/'.trim($this->option('path'), '/') : $root;
 
-        if (!is_dir($scan)) {
+        if (! is_dir($scan)) {
             $this->error("Not a directory: {$scan}");
+
             return self::FAILURE;
         }
 
@@ -43,15 +44,17 @@ class ImportMediaCommand extends Command
             // forward slashes, no leading slash.
             $relative = str_replace('\\', '/', substr($file->getRealPath(), strlen($root) + 1));
 
-            if (!$this->option('force') && StoredFile::where('path', $relative)->exists()) {
+            if (! $this->option('force') && StoredFile::where('path', $relative)->exists()) {
                 $this->line("  <fg=gray>skip</> {$relative} (already imported)");
                 $skipped++;
+
                 continue;
             }
 
             if ($this->option('dry-run')) {
                 $this->line("  <fg=yellow>would import</> {$relative} ({$file->getSize()} bytes)");
                 $imported++;
+
                 continue;
             }
 
@@ -59,6 +62,7 @@ class ImportMediaCommand extends Command
             if ($bytes === false) {
                 $this->line("  <fg=red>fail</> {$relative} (unreadable)");
                 $failed++;
+
                 continue;
             }
 
@@ -92,11 +96,11 @@ class ImportMediaCommand extends Command
 
         return match (strtolower($extension)) {
             'jpg', 'jpeg' => 'image/jpeg',
-            'png'         => 'image/png',
-            'gif'         => 'image/gif',
-            'webp'        => 'image/webp',
-            'svg'         => 'image/svg+xml',
-            default       => 'application/octet-stream',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            default => 'application/octet-stream',
         };
     }
 }

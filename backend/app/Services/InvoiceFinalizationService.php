@@ -2,26 +2,29 @@
 
 namespace App\Services;
 
+use App\Events\InventoryUpdated;
+use App\Events\LowStockDetected;
+use App\Exceptions\UserFacingException;
 use App\Jobs\RefreshInventoryForecast;
-use App\Models\Invoice;
+use App\Models\Admin;
 use App\Models\Inventory;
 use App\Models\InventoryTransaction;
 use App\Models\InventoryUsageHistory;
-use App\Models\Admin;
-use App\Events\LowStockDetected;
+use App\Models\Invoice;
 use App\Traits\HasInternalNotifications;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceFinalizationService
 {
     use HasInternalNotifications;
+
     /**
      * Finalize an invoice and deduct inventory stock.
-     * 
-     * @param Invoice $invoice
+     *
      * @return void
+     *
      * @throws Exception
      */
     public function finalizeInvoice(Invoice $invoice)
@@ -45,12 +48,12 @@ class InvoiceFinalizationService
                 if ($item->inventory_id) {
                     $originalItem = Inventory::where('id', $item->inventory_id)->lockForUpdate()->first();
 
-                    if (!$originalItem) {
-                        throw new \App\Exceptions\UserFacingException("Inventory item not found for ID: {$item->inventory_id}");
+                    if (! $originalItem) {
+                        throw new UserFacingException("Inventory item not found for ID: {$item->inventory_id}");
                     }
 
                     // For inventory type items, we only deduct if the flag is set
-                    if ($item->item_type === 'inventory' && !$originalItem->deduct_on_finalize) {
+                    if ($item->item_type === 'inventory' && ! $originalItem->deduct_on_finalize) {
                         continue;
                     }
 
@@ -58,7 +61,7 @@ class InvoiceFinalizationService
                     // If no code, we fall back to just the original item
                     $itemCode = $originalItem->code;
                     $batches = [];
-                    
+
                     if ($itemCode) {
                         $batches = Inventory::where('code', $itemCode)
                             ->where('stock_level', '>', 0)
@@ -80,13 +83,13 @@ class InvoiceFinalizationService
                     // Stock shortage handling depends on item type.
                     if ($totalAvailable < $qtyToDeduct) {
                         if ($item->item_type === 'service') {
-                            \Illuminate\Support\Facades\Log::warning(
+                            Log::warning(
                                 "[INVOICE-SERVICE-CONSUMABLE-SHORTAGE] Skipping deduction for invoice #{$invoice->invoice_number}",
                                 [
                                     'inventory_id' => $originalItem->id,
-                                    'item_name'    => $originalItem->item_name,
-                                    'required'     => $qtyToDeduct,
-                                    'available'    => $totalAvailable,
+                                    'item_name' => $originalItem->item_name,
+                                    'required' => $qtyToDeduct,
+                                    'available' => $totalAvailable,
                                 ]
                             );
 
@@ -105,27 +108,31 @@ class InvoiceFinalizationService
                         }
 
                         if ($totalAvailable <= 0) {
-                            throw new \App\Exceptions\UserFacingException("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
+                            throw new UserFacingException("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
                         }
 
-                        throw new \App\Exceptions\UserFacingException("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
+                        throw new UserFacingException("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
                     }
 
                     // Perform FIFO Deduction
                     foreach ($batches as $batchItem) {
-                        if ($qtyToDeduct <= 0) break;
+                        if ($qtyToDeduct <= 0) {
+                            break;
+                        }
 
                         $deductFromThisBatch = min($batchItem->stock_level, $qtyToDeduct);
-                        if ($deductFromThisBatch <= 0) continue;
+                        if ($deductFromThisBatch <= 0) {
+                            continue;
+                        }
 
                         $oldStock = $batchItem->stock_level;
                         $batchItem->stock_level -= $deductFromThisBatch;
                         $batchItem->save();
-                        
+
                         $qtyToDeduct -= $deductFromThisBatch;
 
                         // Broadcast inventory update
-                        event(new \App\Events\InventoryUpdated($batchItem));
+                        event(new InventoryUpdated($batchItem));
 
                         // Log the transaction
                         InventoryTransaction::create([
@@ -134,19 +141,19 @@ class InvoiceFinalizationService
                             'quantity' => -$deductFromThisBatch,
                             'previous_stock' => $oldStock,
                             'new_stock' => $batchItem->stock_level,
-                            'remarks' => "Deducted (FIFO) from Invoice #{$invoice->invoice_number} (" . ucfirst($item->item_type) . " item)",
-                            'created_by' => auth()->id() ?? (Admin::first()->id ?? null)
+                            'remarks' => "Deducted (FIFO) from Invoice #{$invoice->invoice_number} (".ucfirst($item->item_type).' item)',
+                            'created_by' => auth()->id() ?? (Admin::first()->id ?? null),
                         ]);
 
                         // Record clean sale-based usage history
                         InventoryUsageHistory::create([
                             'invoice_item_id' => $item->id,
                             'inventory_id' => $batchItem->id,
-                            'invoice_id'   => $invoice->id,
+                            'invoice_id' => $invoice->id,
                             'quantity_used' => $deductFromThisBatch,
-                            'usage_date'   => $usageDate,
-                            'source_type'  => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
-                            'unit_price'   => $item->unit_price ?? $batchItem->selling_price,
+                            'usage_date' => $usageDate,
+                            'source_type' => $item->item_type === 'service' ? 'service_consumable' : 'retail_sale',
+                            'unit_price' => $item->unit_price ?? $batchItem->selling_price,
                         ]);
 
                         $affectedInventoryIds[] = $batchItem->id;
@@ -173,12 +180,11 @@ class InvoiceFinalizationService
             $invoice->stock_deducted = true;
             $invoice->save();
 
-
             // Internal admin notification for invoice finalization
             $this->createInternalNotification(
                 'InvoiceFinalized',
                 'Invoice Finalized',
-                "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has been finalized. Total: ₱" . number_format($invoice->total, 2),
+                "Invoice #{$invoice->invoice_number} for {$invoice->pet->name} has been finalized. Total: ₱".number_format($invoice->total, 2),
                 ['invoice_id' => $invoice->id]
             );
         });
@@ -189,15 +195,15 @@ class InvoiceFinalizationService
             $invoice->items->pluck('inventory_id')->filter()->toArray()
         ));
 
-        if (!empty($affectedInventoryIds)) {
+        if (! empty($affectedInventoryIds)) {
             try {
                 RefreshInventoryForecast::dispatch($affectedInventoryIds, 'invoice_finalization');
-                \Illuminate\Support\Facades\Log::info(
+                Log::info(
                     '[QUEUE DISPATCHED] AI Inventory Forecast Refresh queued on "default" queue.',
                     ['invoice_number' => $invoice->invoice_number, 'inventory_count' => count($affectedInventoryIds)]
                 );
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error(
+                Log::error(
                     '[QUEUE DISPATCH FAILED] AI Forecast could not be queued.',
                     ['invoice_number' => $invoice->invoice_number, 'error' => $e->getMessage()]
                 );

@@ -12,15 +12,17 @@ class RestoreDatabaseCommand extends Command
      * @var string
      */
     protected $signature = 'db:restore {file}';
+
     protected $description = 'Restore the database using mysql command';
 
     public function handle()
     {
         $filename = basename($this->argument('file'));
-        $fullPath = storage_path('app/backups/' . $filename);
+        $fullPath = storage_path('app/backups/'.$filename);
 
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             $this->error("Backup file not found at: {$fullPath}");
+
             return;
         }
 
@@ -36,25 +38,25 @@ class RestoreDatabaseCommand extends Command
             $mysqlPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
         }
 
-        $passwordArg = $dbPass ? '--password=' . escapeshellarg($dbPass) : '';
+        $passwordArg = $dbPass ? '--password='.escapeshellarg($dbPass) : '';
         $command = escapeshellarg($mysqlPath)
-            . ' --host=' . escapeshellarg($dbHost)
-            . ' --port=' . escapeshellarg($dbPort)
-            . ' --user=' . escapeshellarg($dbUser)
-            . ' ' . $passwordArg
-            . ' ' . escapeshellarg($dbName)
-            . ' < ' . escapeshellarg($fullPath);
+            .' --host='.escapeshellarg($dbHost)
+            .' --port='.escapeshellarg($dbPort)
+            .' --user='.escapeshellarg($dbUser)
+            .' '.$passwordArg
+            .' '.escapeshellarg($dbName)
+            .' < '.escapeshellarg($fullPath);
 
         $this->info("Restoring backup from {$fullPath}...");
-        
+
         $output = [];
         $returnVar = 0;
         exec($command, $output, $returnVar);
 
         if ($returnVar === 0) {
-            $this->info("Backup successfully restored.");
+            $this->info('Backup successfully restored.');
         } else {
-            $this->error("Restore failed.");
+            $this->error('Restore failed.');
         }
     }
 }

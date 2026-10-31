@@ -2,20 +2,18 @@
 
 namespace App\Models;
 
+use App\Exceptions\UserFacingException;
 use App\Traits\Archivable;
 use App\Traits\HasAuditTrail;
+use App\Traits\HasClinic;
 use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Pet;
-use App\Models\PortalUser;
-
-use App\Traits\HasClinic;
 
 class Owner extends Model
 {
-    use SoftDeletes, HasSyncFields, Archivable, HasAuditTrail, HasClinic;
-    
+    use Archivable, HasAuditTrail, HasClinic, HasSyncFields, SoftDeletes;
+
     protected $fillable = [
         'clinic_id',
         'name', 'phone', 'email', 'address', 'city', 'province', 'zip', 'user_id',
@@ -26,7 +24,7 @@ class Owner extends Model
     ];
 
     protected $casts = [
-        'synced_at'                => 'datetime',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 
@@ -43,7 +41,7 @@ class Owner extends Model
     public function preventPermanentDeletionIfReferenced()
     {
         if ($this->pets()->exists()) {
-            throw new \App\Exceptions\UserFacingException("Cannot permanently delete this owner because they still have registered pets.");
+            throw new UserFacingException('Cannot permanently delete this owner because they still have registered pets.');
         }
     }
 
@@ -61,10 +59,10 @@ class Owner extends Model
         // The seeded rows always have an address, so a missing one is real.
         return $query->where(function ($q) {
             $q->whereNull('email')
-              ->orWhere(function ($inner) {
-                  $inner->where('email', '!=', 'dataset.seeder@autovet.ai')
+                ->orWhere(function ($inner) {
+                    $inner->where('email', '!=', 'dataset.seeder@autovet.ai')
                         ->where('email', 'not like', 'client.prod.%@autovet.ph');
-              });
+                });
         });
     }
 }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('size_class'); // Small, Medium, Large, Giant
             $table->decimal('price', 10, 2);
             $table->timestamps();
-            
+
             $table->unique(['service_id', 'size_class']);
         });
 

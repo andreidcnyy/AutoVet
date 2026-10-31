@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use App\Traits\HasClinic;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryForecast extends Model
 {
@@ -35,16 +34,16 @@ class InventoryForecast extends Model
     ];
 
     protected $casts = [
-        'predicted_demand'          => 'decimal:2',
+        'predicted_demand' => 'decimal:2',
         'average_daily_consumption' => 'decimal:2',
-        'predicted_stockout_date'   => 'date',
-        'generated_at'              => 'datetime',
-        'predicted_daily_sales'     => 'decimal:2',
-        'predicted_weekly_sales'    => 'decimal:2',
-        'predicted_monthly_sales'   => 'decimal:2',
+        'predicted_stockout_date' => 'date',
+        'generated_at' => 'datetime',
+        'predicted_daily_sales' => 'decimal:2',
+        'predicted_weekly_sales' => 'decimal:2',
+        'predicted_monthly_sales' => 'decimal:2',
         'estimated_monthly_revenue' => 'decimal:2',
-        'trend_fit_score'           => 'decimal:4',
-        'confidence_score'          => 'decimal:4',
+        'trend_fit_score' => 'decimal:4',
+        'confidence_score' => 'decimal:4',
     ];
 
     public function inventory()

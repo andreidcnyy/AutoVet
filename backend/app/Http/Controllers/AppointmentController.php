@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Appointment;
-use App\Models\VetSchedule;
+use App\Events\AppointmentCreated;
+use App\Events\AppointmentDeleted;
+use App\Events\AppointmentStatusUpdated;
 use App\Models\Admin;
+use App\Models\Appointment;
+use App\Models\Pet;
+use App\Models\Service;
+use App\Models\VetSchedule;
+use App\Services\ClientNotificationService;
+use App\Support\ListQuery;
 use App\Traits\HasInternalNotifications;
 use App\Traits\IdentifiesPortalOwner;
+use Carbon\Carbon;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {
@@ -26,7 +36,7 @@ class AppointmentController extends Controller
     protected $clientNotificationService;
 
     public function __construct(
-        \App\Services\ClientNotificationService $clientNotificationService
+        ClientNotificationService $clientNotificationService
     ) {
         $this->clientNotificationService = $clientNotificationService;
     }
@@ -34,7 +44,7 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
         // Use with() for eager loading to prevent N+1 queries.
         // select() only columns needed for the list to reduce memory usage.
         $query = Appointment::select('id', 'title', 'date', 'time', 'status', 'is_walk_in', 'notes', 'decline_reason', 'pet_id', 'service_id', 'vet_id', 'created_at')
@@ -48,14 +58,14 @@ class AppointmentController extends Controller
 
         // Always hide AI Training Records from the list for Admins/Staff
         // but keep them in the DB for forecasting logic.
-        $query->whereHas('pet.owner', function($q) {
+        $query->whereHas('pet.owner', function ($q) {
             $q->realClients();
         });
 
         // Access control: Portal users only see their own appointments
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
                 $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -95,7 +105,7 @@ class AppointmentController extends Controller
             $status = $request->status;
             if ($status === 'upcoming') {
                 $query->where('date', '>=', now()->toDateString())
-                      ->whereNotIn('status', ['cancelled', 'declined', 'completed']);
+                    ->whereNotIn('status', ['cancelled', 'declined', 'completed']);
             } elseif ($status === 'past') {
                 $query->where('date', '<', now()->toDateString());
             } elseif ($status === 'invoiceable') {
@@ -114,33 +124,33 @@ class AppointmentController extends Controller
         // Search functionality (title, pet name, owner name)
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhereHas('pet', function($pq) use ($search) {
-                      $pq->where('name', 'like', \App\Support\ListQuery::contains($search))
-                        ->orWhereHas('owner', function($oq) use ($search) {
-                            $oq->where('name', 'like', \App\Support\ListQuery::contains($search));
-                        });
-                  });
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', ListQuery::contains($search))
+                    ->orWhereHas('pet', function ($pq) use ($search) {
+                        $pq->where('name', 'like', ListQuery::contains($search))
+                            ->orWhereHas('owner', function ($oq) use ($search) {
+                                $oq->where('name', 'like', ListQuery::contains($search));
+                            });
+                    });
             });
         }
 
         // If no specific status is requested, or if 'all' is requested,
         // we still want to hide 'Scheduled' (mock) data by default to keep the UI clean.
         // USER REQUEST: Only show APPROVED and CANCELLED (which includes Declined) by default
-        if (!$request->has('status') || $request->status === 'all') {
-             $query->whereIn('status', self::DEFAULT_VISIBLE_STATUSES);
+        if (! $request->has('status') || $request->status === 'all') {
+            $query->whereIn('status', self::DEFAULT_VISIBLE_STATUSES);
         }
 
         $request->validate([
             'date_from' => 'nullable|date',
-            'date_to'   => 'nullable|date',
-            'date'      => 'nullable|date',
-            'pet_id'    => 'nullable|integer',
-            'owner_id'  => 'nullable|integer',
-            'vet_id'    => 'nullable|integer',
-            'service_id'=> 'nullable|integer',
-            'search'    => 'nullable|string|max:255',
+            'date_to' => 'nullable|date',
+            'date' => 'nullable|date',
+            'pet_id' => 'nullable|integer',
+            'owner_id' => 'nullable|integer',
+            'vet_id' => 'nullable|integer',
+            'service_id' => 'nullable|integer',
+            'search' => 'nullable|string|max:255',
         ]);
 
         if ($request->filled('date_from')) {
@@ -159,8 +169,8 @@ class AppointmentController extends Controller
         // Default sort by newest request first
         $query->orderBy('id', 'desc');
 
-        $perPage = \App\Support\ListQuery::perPage($request, 15);
-        
+        $perPage = ListQuery::perPage($request, 15);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -176,7 +186,7 @@ class AppointmentController extends Controller
 
         // A calendar shows at most a few weeks; a year is generous. An
         // unbounded range grouped every appointment ever made.
-        if (\Carbon\Carbon::parse($request->date_from)->diffInDays(\Carbon\Carbon::parse($request->date_to)) > 400) {
+        if (Carbon::parse($request->date_from)->diffInDays(Carbon::parse($request->date_to)) > 400) {
             return response()->json(['message' => 'The date range can be at most 400 days.'], 422);
         }
 
@@ -187,7 +197,7 @@ class AppointmentController extends Controller
             // calendar counted hidden 'Scheduled' rows too, so a day could
             // advertise appointments and then open to "No records found".
             ->whereIn('status', self::DEFAULT_VISIBLE_STATUSES)
-            ->whereHas('pet.owner', function($q) {
+            ->whereHas('pet.owner', function ($q) {
                 $q->realClients();
             })
             ->groupBy('date');
@@ -195,7 +205,7 @@ class AppointmentController extends Controller
         $summaryUser = auth()->user();
         if ($summaryUser && method_exists($summaryUser, 'isOwner') && $summaryUser->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
                 $query->whereHas('pet', function ($q) use ($ownerId) {
@@ -227,24 +237,24 @@ class AppointmentController extends Controller
         $this->authorize('create', Appointment::class);
 
         $validated = $request->validate([
-            'title'       => 'nullable|string|max:255',
-            'date'        => 'required|date',
-            'time'        => 'required|date_format:H:i',
-            'category'    => 'nullable|string|max:100',
-            'notes'       => 'nullable|string',
-            'status'      => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
-            'is_walk_in'  => 'nullable|boolean',
-            'pet_id'      => 'required|clinic_exists:pets,id',
-            'service_id'  => 'nullable|clinic_exists:services,id',
+            'title' => 'nullable|string|max:255',
+            'date' => 'required|date',
+            'time' => 'required|date_format:H:i',
+            'category' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
+            'is_walk_in' => 'nullable|boolean',
+            'pet_id' => 'required|clinic_exists:pets,id',
+            'service_id' => 'nullable|clinic_exists:services,id',
             'service_ids' => 'nullable|array',
             'service_ids.*' => 'clinic_exists:services,id',
-            'vet_id'      => 'nullable|clinic_exists:admins,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
         ], [
-            'pet_id.required' => 'A pet must be selected for the appointment.'
+            'pet_id.required' => 'A pet must be selected for the appointment.',
         ]);
 
         // Resolve primary service_id from service_ids array if not set directly
-        if (empty($validated['service_id']) && !empty($validated['service_ids'])) {
+        if (empty($validated['service_id']) && ! empty($validated['service_ids'])) {
             $validated['service_id'] = $validated['service_ids'][0];
         }
         if (empty($validated['service_id'])) {
@@ -252,8 +262,8 @@ class AppointmentController extends Controller
         }
 
         if ($ownerId = $this->getPortalOwnerId()) {
-            $pet = \App\Models\Pet::find($validated['pet_id']);
-            if (!$pet || $pet->owner_id != $ownerId) {
+            $pet = Pet::find($validated['pet_id']);
+            if (! $pet || $pet->owner_id != $ownerId) {
                 return response()->json(['message' => 'You can only book appointments for your own pets.'], 403);
             }
 
@@ -274,12 +284,12 @@ class AppointmentController extends Controller
                 ->count();
             if ($activeCount >= $MAX_PER_DAY) {
                 return response()->json([
-                    'message' => "This pet already has {$MAX_PER_DAY} appointment(s) booked for this day. Please choose a different date."
+                    'message' => "This pet already has {$MAX_PER_DAY} appointment(s) booked for this day. Please choose a different date.",
                 ], 422);
             }
         }
 
-        $service = \App\Models\Service::find($validated['service_id']);
+        $service = Service::find($validated['service_id']);
 
         // Default title to service name if not provided
         if (empty($validated['title'])) {
@@ -292,46 +302,46 @@ class AppointmentController extends Controller
         }
 
         // Validate vet schedule if vet_id is provided
-        if (!empty($validated['vet_id'])) {
+        if (! empty($validated['vet_id'])) {
             $dayOfWeek = date('l', strtotime($validated['date']));
             $schedule = VetSchedule::where('user_id', $validated['vet_id'])
-                            ->where('day_of_week', $dayOfWeek)
-                            ->where('is_available', true)
-                            ->first();
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_available', true)
+                ->first();
 
-            if (!$schedule) {
+            if (! $schedule) {
                 // Fetch available days to provide a better error message
                 $availableDays = VetSchedule::where('user_id', $validated['vet_id'])
-                                    ->where('is_available', true)
-                                    ->pluck('day_of_week')
-                                    ->toArray();
-                
+                    ->where('is_available', true)
+                    ->pluck('day_of_week')
+                    ->toArray();
+
                 $vetName = Admin::find($validated['vet_id'])->name ?? 'the vet';
                 $message = "{$vetName} is not available on {$dayOfWeek}s.";
-                if (!empty($availableDays)) {
-                    $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
+                if (! empty($availableDays)) {
+                    $message .= ' They are usually available on: '.implode(', ', $availableDays).'.';
                 }
-                
+
                 return response()->json(['message' => $message], 422);
             }
 
             $time = date('H:i:s', strtotime($validated['time']));
             if ($time < $schedule->start_time || $time > $schedule->end_time) {
-                 return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
+                return response()->json(['message' => "Selected time is outside of vet's available hours (".date('g:i A', strtotime($schedule->start_time)).' - '.date('g:i A', strtotime($schedule->end_time)).').'], 422);
             }
 
             if ($schedule->break_start && $schedule->break_end) {
                 if ($time >= $schedule->break_start && $time <= $schedule->break_end) {
-                    return response()->json(['message' => 'Selected time falls during the vet\'s break period (' . date('g:i A', strtotime($schedule->break_start)) . " - " . date('g:i A', strtotime($schedule->break_end)) . ")."], 422);
+                    return response()->json(['message' => 'Selected time falls during the vet\'s break period ('.date('g:i A', strtotime($schedule->break_start)).' - '.date('g:i A', strtotime($schedule->break_end)).').'], 422);
                 }
             }
 
             // Check for double booking for this vet
             $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
-                                                ->where('date', $validated['date'])
-                                                ->where('time', $validated['time'])
-                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
-                                                ->first();
+                ->where('date', $validated['date'])
+                ->where('time', $validated['time'])
+                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+                ->first();
             if ($existingVetAppointment) {
                 return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
             }
@@ -339,10 +349,10 @@ class AppointmentController extends Controller
 
         // Check for double booking for this pet
         $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
-                                            ->where('date', $validated['date'])
-                                            ->where('time', $validated['time'])
-                                            ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
-                                            ->first();
+            ->where('date', $validated['date'])
+            ->where('time', $validated['time'])
+            ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+            ->first();
         if ($existingPetAppointment) {
             return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
         }
@@ -351,7 +361,7 @@ class AppointmentController extends Controller
         unset($validated['service_ids']);
 
         // Walk-ins skip the pending queue and are immediately approved
-        if (!empty($validated['is_walk_in'])) {
+        if (! empty($validated['is_walk_in'])) {
             $validated['status'] = 'approved';
         }
 
@@ -363,12 +373,13 @@ class AppointmentController extends Controller
                 if (Appointment::slotIsFull($validated['date'], $validated['time'])) {
                     return null;
                 }
+
                 return Appointment::create($validated);
             });
-        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+        } catch (LockTimeoutException $e) {
             return response()->json(['message' => 'Many people are booking this time right now. Please try again.'], 409);
         }
-        if (!$appointment) {
+        if (! $appointment) {
             return response()->json(['message' => Appointment::slotFullMessage()], 422);
         }
 
@@ -378,13 +389,13 @@ class AppointmentController extends Controller
         $this->invalidatePortalCache($appointment->pet?->owner_id);
 
         // Broadcast appointment creation
-        event(new \App\Events\AppointmentCreated($appointment));
+        event(new AppointmentCreated($appointment));
 
         // Create internal notification for admins
         $this->createInternalNotification(
             'AppointmentPending',
             'New Appointment Request',
-            "A new appointment for {$appointment->pet->name} has been requested for " . date('M d, Y', strtotime($appointment->date)) . " at " . date('g:i A', strtotime($appointment->time)) . ".",
+            "A new appointment for {$appointment->pet->name} has been requested for ".date('M d, Y', strtotime($appointment->date)).' at '.date('g:i A', strtotime($appointment->time)).'.',
             ['appointment_id' => $appointment->id]
         );
 
@@ -399,14 +410,14 @@ class AppointmentController extends Controller
                     [
                         'date' => $appointment->date,
                         'time' => $appointment->time,
-                        'title' => $appointment->title
+                        'title' => $appointment->title,
                     ],
                     'automated',
                     $appointment
                 );
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Failed to send automated appointment notification: " . $e->getMessage());
+            Log::warning('Failed to send automated appointment notification: '.$e->getMessage());
         }
 
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']), 201);
@@ -415,6 +426,7 @@ class AppointmentController extends Controller
     public function show(Appointment $appointment)
     {
         $this->authorize('view', $appointment);
+
         return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
     }
 
@@ -423,18 +435,18 @@ class AppointmentController extends Controller
         $this->authorize('update', $appointment);
 
         $validated = $request->validate([
-            'title'         => 'nullable|string|max:255',
-            'date'          => 'sometimes|required|date',
-            'time'          => 'sometimes|required|date_format:H:i',
-            'category'      => 'nullable|string|max:100',
-            'notes'         => 'nullable|string',
-            'status'        => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
-            'is_walk_in'    => 'nullable|boolean',
-            'pet_id'        => 'sometimes|required|clinic_exists:pets,id',
-            'service_id'    => 'nullable|clinic_exists:services,id',
-            'service_ids'   => 'nullable|array',
+            'title' => 'nullable|string|max:255',
+            'date' => 'sometimes|required|date',
+            'time' => 'sometimes|required|date_format:H:i',
+            'category' => 'nullable|string|max:100',
+            'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:pending,approved,completed,cancelled,no_show',
+            'is_walk_in' => 'nullable|boolean',
+            'pet_id' => 'sometimes|required|clinic_exists:pets,id',
+            'service_id' => 'nullable|clinic_exists:services,id',
+            'service_ids' => 'nullable|array',
             'service_ids.*' => 'clinic_exists:services,id',
-            'vet_id'        => 'nullable|clinic_exists:admins,id',
+            'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
 
         // A client may only cancel their own upcoming booking. Every other
@@ -444,107 +456,107 @@ class AppointmentController extends Controller
             if (($validated['status'] ?? null) !== 'cancelled' || count($validated) !== 1) {
                 return response()->json(['message' => 'You can only cancel an appointment. Please contact the clinic to change it.'], 403);
             }
-            if (!in_array(strtolower((string) $appointment->status), ['pending', 'approved'], true)) {
+            if (! in_array(strtolower((string) $appointment->status), ['pending', 'approved'], true)) {
                 return response()->json(['message' => 'This appointment can no longer be cancelled.'], 409);
             }
 
             $appointment->update(['status' => 'cancelled']);
             $this->invalidatePortalCache($appointment->pet?->owner_id);
             try {
-                event(new \App\Events\AppointmentStatusUpdated($appointment));
+                event(new AppointmentStatusUpdated($appointment));
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Cancel broadcast failed: ' . $e->getMessage());
+                Log::warning('Cancel broadcast failed: '.$e->getMessage());
             }
 
             return response()->json($appointment->load(['pet', 'service', 'services', 'vet:id,name']));
         }
 
         if (isset($validated['service_id'])) {
-            $service = \App\Models\Service::find($validated['service_id']);
+            $service = Service::find($validated['service_id']);
             if ($service && empty($validated['category'])) {
                 $validated['category'] = $service->category;
             }
         }
 
-        if (!empty($validated['vet_id']) && !empty($validated['date']) && !empty($validated['time'])) {
+        if (! empty($validated['vet_id']) && ! empty($validated['date']) && ! empty($validated['time'])) {
             $dayOfWeek = date('l', strtotime($validated['date']));
             $schedule = VetSchedule::where('user_id', $validated['vet_id'])
-                            ->where('day_of_week', $dayOfWeek)
-                            ->where('is_available', true)
-                            ->first();
+                ->where('day_of_week', $dayOfWeek)
+                ->where('is_available', true)
+                ->first();
 
-            if (!$schedule) {
+            if (! $schedule) {
                 $availableDays = VetSchedule::where('user_id', $validated['vet_id'])
-                                    ->where('is_available', true)
-                                    ->pluck('day_of_week')
-                                    ->toArray();
-                
+                    ->where('is_available', true)
+                    ->pluck('day_of_week')
+                    ->toArray();
+
                 $vetName = Admin::find($validated['vet_id'])->name ?? 'the vet';
                 $message = "{$vetName} is not available on {$dayOfWeek}s.";
-                if (!empty($availableDays)) {
-                    $message .= " They are usually available on: " . implode(', ', $availableDays) . ".";
+                if (! empty($availableDays)) {
+                    $message .= ' They are usually available on: '.implode(', ', $availableDays).'.';
                 }
-                
+
                 return response()->json(['message' => $message], 422);
             }
 
             $time = date('H:i:s', strtotime($validated['time']));
             if ($time < $schedule->start_time || $time > $schedule->end_time) {
-                 return response()->json(['message' => "Selected time is outside of vet's available hours (" . date('g:i A', strtotime($schedule->start_time)) . " - " . date('g:i A', strtotime($schedule->end_time)) . ")."], 422);
+                return response()->json(['message' => "Selected time is outside of vet's available hours (".date('g:i A', strtotime($schedule->start_time)).' - '.date('g:i A', strtotime($schedule->end_time)).').'], 422);
             }
 
             if ($schedule->break_start && $schedule->break_end) {
                 if ($time >= $schedule->break_start && $time <= $schedule->break_end) {
-                    return response()->json(['message' => 'Selected time falls during the vet\'s break period (' . date('g:i A', strtotime($schedule->break_start)) . " - " . date('g:i A', strtotime($schedule->break_end)) . ")."], 422);
+                    return response()->json(['message' => 'Selected time falls during the vet\'s break period ('.date('g:i A', strtotime($schedule->break_start)).' - '.date('g:i A', strtotime($schedule->break_end)).').'], 422);
                 }
             }
 
             // Check for double booking for this vet
             $existingVetAppointment = Appointment::where('vet_id', $validated['vet_id'])
-                                                ->where('date', $validated['date'])
-                                                ->where('time', $validated['time'])
-                                                ->where('id', '!=', $appointment->id)
-                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
-                                                ->first();
+                ->where('date', $validated['date'])
+                ->where('time', $validated['time'])
+                ->where('id', '!=', $appointment->id)
+                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+                ->first();
             if ($existingVetAppointment) {
                 return response()->json(['message' => 'This vet already has an appointment at this time.'], 422);
             }
         }
 
         // Check for double booking for this pet
-        if (!empty($validated['pet_id']) && !empty($validated['date']) && !empty($validated['time'])) {
+        if (! empty($validated['pet_id']) && ! empty($validated['date']) && ! empty($validated['time'])) {
             $existingPetAppointment = Appointment::where('pet_id', $validated['pet_id'])
-                                                ->where('date', $validated['date'])
-                                                ->where('time', $validated['time'])
-                                                ->where('id', '!=', $appointment->id)
-                                                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
-                                                ->first();
+                ->where('date', $validated['date'])
+                ->where('time', $validated['time'])
+                ->where('id', '!=', $appointment->id)
+                ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+                ->first();
             if ($existingPetAppointment) {
                 return response()->json(['message' => 'This pet already has an appointment at this time.'], 422);
             }
         }
 
-        if (!empty($validated['service_id']) && empty($validated['title'])) {
-            $service = \App\Models\Service::find($validated['service_id']);
+        if (! empty($validated['service_id']) && empty($validated['title'])) {
+            $service = Service::find($validated['service_id']);
             $validated['title'] = $service ? $service->name : 'General Consultation';
         }
 
         $serviceIds = $validated['service_ids'] ?? null;
         unset($validated['service_ids']);
 
-        if (!empty($validated['service_id']) && $serviceIds === null) {
+        if (! empty($validated['service_id']) && $serviceIds === null) {
             $serviceIds = [$validated['service_id']];
         }
 
         // Moving into a slot, or becoming approved in one (an undone no-show,
         // say), has to respect the slot limit just like a new booking.
-        $newDate    = $validated['date'] ?? $appointment->date;
-        $newTime    = $validated['time'] ?? $appointment->time;
-        $newStatus  = strtolower($validated['status'] ?? $appointment->status ?? '');
-        $slotMoved  = (isset($validated['date']) && date('Y-m-d', strtotime($validated['date'])) !== date('Y-m-d', strtotime($appointment->date)))
+        $newDate = $validated['date'] ?? $appointment->date;
+        $newTime = $validated['time'] ?? $appointment->time;
+        $newStatus = strtolower($validated['status'] ?? $appointment->status ?? '');
+        $slotMoved = (isset($validated['date']) && date('Y-m-d', strtotime($validated['date'])) !== date('Y-m-d', strtotime($appointment->date)))
                    || (isset($validated['time']) && Appointment::normaliseSlotTime($validated['time']) !== Appointment::normaliseSlotTime($appointment->time));
         $nowApproved = $newStatus === 'approved' && strtolower($appointment->status ?? '') !== 'approved';
-        $needsSlot  = in_array($newStatus, ['pending', 'approved'], true) && ($slotMoved || $nowApproved);
+        $needsSlot = in_array($newStatus, ['pending', 'approved'], true) && ($slotMoved || $nowApproved);
 
         if ($needsSlot) {
             try {
@@ -553,12 +565,13 @@ class AppointmentController extends Controller
                         return false;
                     }
                     $appointment->update($validated);
+
                     return true;
                 });
-            } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            } catch (LockTimeoutException $e) {
                 return response()->json(['message' => 'Many people are booking this time right now. Please try again.'], 409);
             }
-            if (!$fits) {
+            if (! $fits) {
                 return response()->json(['message' => Appointment::slotFullMessage()], 422);
             }
         } else {
@@ -578,7 +591,7 @@ class AppointmentController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'vet_id' => 'nullable|clinic_exists:admins,id'
+            'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
 
         // Every slot-holding visit that day, clinic-wide, with its status. The
@@ -589,7 +602,7 @@ class AppointmentController extends Controller
             ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
             ->get(['time', 'vet_id', 'status'])
             ->map(fn ($a) => [
-                'time'   => Appointment::normaliseSlotTime($a->time),
+                'time' => Appointment::normaliseSlotTime($a->time),
                 'vet_id' => $a->vet_id,
                 'status' => strtolower($a->status),
             ]);
@@ -600,14 +613,14 @@ class AppointmentController extends Controller
     public function destroy(Appointment $appointment)
     {
         $this->authorize('delete', $appointment);
-        $ownerId    = $appointment->pet?->owner_id;
+        $ownerId = $appointment->pet?->owner_id;
         $portalUserId = $appointment->pet?->owner?->user_id;
         $appointmentId = $appointment->id;
         $appointment->delete();
 
         $this->invalidatePortalCache($ownerId);
 
-        event(new \App\Events\AppointmentDeleted($appointmentId, $portalUserId));
+        event(new AppointmentDeleted($appointmentId, $portalUserId));
 
         return response()->json(null, 204);
     }

@@ -3,6 +3,9 @@
 namespace App\Support;
 
 use App\Enums\Roles;
+use App\Models\Admin;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
 /**
  * Clinic restriction for queries the global ClinicScope cannot reach:
@@ -23,7 +26,7 @@ class Tenant
     {
         $user = auth()->user();
 
-        if (!$user instanceof \App\Models\Admin || $user->role === Roles::SUPER_ADMIN->value) {
+        if (! $user instanceof Admin || $user->role === Roles::SUPER_ADMIN->value) {
             return null;
         }
 
@@ -43,9 +46,9 @@ class Tenant
      * clinic_id. Without it, staff could attach records to another clinic's
      * pets, owners or services by id.
      */
-    public static function exists(string $table, string $column = 'id'): \Illuminate\Validation\Rules\Exists
+    public static function exists(string $table, string $column = 'id'): Exists
     {
-        $rule = \Illuminate\Validation\Rule::exists($table, $column);
+        $rule = Rule::exists($table, $column);
         $clinicId = self::clinicId();
 
         return $clinicId === null ? $rule : $rule->where('clinic_id', $clinicId);

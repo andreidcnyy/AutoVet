@@ -3,6 +3,8 @@
 namespace App\Traits;
 
 use App\Models\Owner;
+use App\Models\Scopes\ClinicScope;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 trait IdentifiesPortalOwner
@@ -14,28 +16,32 @@ trait IdentifiesPortalOwner
     protected function getPortalOwnerId()
     {
         $user = auth()->user();
-        if (!$user || !method_exists($user, 'isOwner') || !$user->isOwner()) {
+        if (! $user || ! method_exists($user, 'isOwner') || ! $user->isOwner()) {
             return null;
         }
 
-        if (!$user->owner) {
+        if (! $user->owner) {
             // Use a transaction + lock to prevent race conditions creating duplicate owners
             $owner = DB::transaction(function () use ($user) {
                 $owner = $this->findExistingOwner('user_id', $user->id);
-                if ($owner) return $this->reclaimOwner($owner, $user);
+                if ($owner) {
+                    return $this->reclaimOwner($owner, $user);
+                }
 
                 $owner = $this->findExistingOwner('email', $user->email);
-                if ($owner) return $this->reclaimOwner($owner, $user);
+                if ($owner) {
+                    return $this->reclaimOwner($owner, $user);
+                }
 
                 return Owner::create([
-                    'name'     => $user->name,
-                    'email'    => $user->email,
-                    'phone'    => $user->phone ?? '00000000000',
-                    'address'  => $user->address ?? 'N/A',
-                    'city'     => $user->city ?? 'N/A',
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? '00000000000',
+                    'address' => $user->address ?? 'N/A',
+                    'city' => $user->city ?? 'N/A',
                     'province' => $user->province ?? 'N/A',
-                    'zip'      => $user->zip ?? '0000',
-                    'user_id'  => $user->id,
+                    'zip' => $user->zip ?? '0000',
+                    'user_id' => $user->id,
                 ]);
             });
             $user->setRelation('owner', $owner);
@@ -61,7 +67,7 @@ trait IdentifiesPortalOwner
         }
 
         return Owner::withTrashed()
-            ->withoutGlobalScope(\App\Models\Scopes\ClinicScope::class)
+            ->withoutGlobalScope(ClinicScope::class)
             ->lockForUpdate()
             ->where($column, $value)
             ->first();
@@ -93,14 +99,14 @@ trait IdentifiesPortalOwner
         if ($ownerId) {
             $owner = Owner::find($ownerId);
             if ($owner && $owner->user_id) {
-                \Illuminate\Support\Facades\Cache::forget("portal_overview_{$owner->user_id}");
+                Cache::forget("portal_overview_{$owner->user_id}");
             }
         }
 
         // Also invalidate for the currently authenticated user if they are an owner
         $user = auth()->user();
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
-            \Illuminate\Support\Facades\Cache::forget("portal_overview_{$user->id}");
+            Cache::forget("portal_overview_{$user->id}");
         }
     }
 }

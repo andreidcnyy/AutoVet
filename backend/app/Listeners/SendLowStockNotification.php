@@ -2,19 +2,24 @@
 
 namespace App\Listeners;
 
+use App\Enums\Roles;
 use App\Events\LowStockDetected;
 use App\Mail\InventoryExpiryAlertMail;
 use App\Models\Admin;
-use App\Enums\Roles;
-use Illuminate\Support\Facades\Mail;
+use App\Models\Clinic;
+use App\Models\Notification;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendLowStockNotification
 {
     public function handle(LowStockDetected $event): void
     {
-        $enabled = \App\Models\Setting::where('key', 'enable_low_stock_alerts')->value('value');
-        if ($enabled === 'false') return;
+        $enabled = Setting::where('key', 'enable_low_stock_alerts')->value('value');
+        if ($enabled === 'false') {
+            return;
+        }
 
         $item = $event->inventoryItem;
 
@@ -25,18 +30,18 @@ class SendLowStockNotification
         // Replace any earlier unread low-stock alert for this same item, so a
         // repeatedly-triggering item holds one slot in the bell rather than one
         // per trigger.
-        \App\Models\Notification::supersedeUnreadFor('LowStockAlert', $item->clinic_id, $item->id);
+        Notification::supersedeUnreadFor('LowStockAlert', $item->clinic_id, $item->id);
 
         // In-app notification
-        \App\Models\Notification::create([
+        Notification::create([
             'clinic_id' => $item->clinic_id,
-            'type'    => 'LowStockAlert',
-            'title'   => $urgencyLabel,
+            'type' => 'LowStockAlert',
+            'title' => $urgencyLabel,
             'message' => "{$item->item_name} (SKU: {$item->sku}) is now at {$item->stock_level} units (threshold: {$item->min_stock_level})",
-            'data'    => [
-                'inventory_id'   => $item->id,
-                'stock_level'    => $item->stock_level,
-                'min_stock_level'=> $item->min_stock_level,
+            'data' => [
+                'inventory_id' => $item->id,
+                'stock_level' => $item->stock_level,
+                'min_stock_level' => $item->min_stock_level,
             ],
         ]);
 
@@ -47,9 +52,11 @@ class SendLowStockNotification
             ->pluck('email')
             ->toArray();
 
-        if (empty($emails)) return;
+        if (empty($emails)) {
+            return;
+        }
 
-        $clinicName = \App\Models\Clinic::find($item->clinic_id)?->clinic_name ?? 'AutoVet';
+        $clinicName = Clinic::find($item->clinic_id)?->clinic_name ?? 'AutoVet';
         $subject = "[{$urgencyLabel}] {$item->item_name} — {$clinicName} Inventory Alert";
         $html = <<<HTML
 <!DOCTYPE html>
@@ -95,7 +102,7 @@ HTML;
             try {
                 Mail::mailer('brevo')->to($email)->send(new InventoryExpiryAlertMail($subject, $html));
             } catch (\Exception $e) {
-                Log::warning("[LowStock] Failed to email {$email}: " . $e->getMessage());
+                Log::warning("[LowStock] Failed to email {$email}: ".$e->getMessage());
             }
         }
     }

@@ -20,10 +20,10 @@ class MigratePatientsToOwnersAndPetsSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            
+
             $speciesName = $patient->species ?: 'Unknown';
             $speciesObj = DB::table('species')->where('name', $speciesName)->first();
-            if (!$speciesObj) {
+            if (! $speciesObj) {
                 $speciesId = DB::table('species')->insertGetId([
                     'name' => $speciesName,
                     'created_at' => now(),
@@ -34,9 +34,9 @@ class MigratePatientsToOwnersAndPetsSeeder extends Seeder
             }
 
             $breedId = null;
-            if (!empty($patient->breed)) {
+            if (! empty($patient->breed)) {
                 $breedObj = DB::table('breeds')->where('name', $patient->breed)->where('species_id', $speciesId)->first();
-                if (!$breedObj) {
+                if (! $breedObj) {
                     $breedId = DB::table('breeds')->insertGetId([
                         'species_id' => $speciesId,
                         'name' => $patient->breed,

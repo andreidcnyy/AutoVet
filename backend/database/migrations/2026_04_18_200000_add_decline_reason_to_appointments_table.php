@@ -4,11 +4,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('appointments', function (Blueprint $table) {
-            if (!Schema::hasColumn('appointments', 'decline_reason')) {
+            if (! Schema::hasColumn('appointments', 'decline_reason')) {
                 $table->text('decline_reason')->nullable()->after('notes');
             }
         });

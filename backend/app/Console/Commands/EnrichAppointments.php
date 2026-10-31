@@ -2,11 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Appointment;
-use App\Models\Service;
 use App\Models\Invoice;
-use Illuminate\Support\Facades\DB;
+use App\Models\Service;
+use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class EnrichAppointments extends Command
@@ -31,14 +30,15 @@ class EnrichAppointments extends Command
     public function handle()
     {
         $dryRun = $this->option('dry-run');
-        
-        $this->info($dryRun ? "Starting DRY RUN enrichment audit..." : "Starting historical data enrichment...");
+
+        $this->info($dryRun ? 'Starting DRY RUN enrichment audit...' : 'Starting historical data enrichment...');
 
         $appointments = Appointment::whereNull('service_id')->get();
         $totalScanned = $appointments->count();
-        
+
         if ($totalScanned === 0) {
-            $this->info("No uncategorized appointments found.");
+            $this->info('No uncategorized appointments found.');
+
             return 0;
         }
 
@@ -51,8 +51,8 @@ class EnrichAppointments extends Command
                 'Vaccination' => 0,
                 'Grooming' => 0,
                 'Laboratory' => 0,
-                'Other' => 0
-            ]
+                'Other' => 0,
+            ],
         ];
 
         $uncertainRecords = [];
@@ -81,8 +81,8 @@ class EnrichAppointments extends Command
             }
 
             // Tier 2: Keyword Matching (if Tier 1 failed)
-            if (!$targetServiceId) {
-                $category = $this->inferCategory($appointment->title . ' ' . $appointment->notes);
+            if (! $targetServiceId) {
+                $category = $this->inferCategory($appointment->title.' '.$appointment->notes);
                 if ($category) {
                     $targetCategory = $category;
                     // Find a suitable service for this category
@@ -98,11 +98,11 @@ class EnrichAppointments extends Command
                 $stats['mapped']++;
                 $service = Service::find($targetServiceId);
                 $stats['categories'][$service->category ?? 'Other']++;
-                
-                if (!$dryRun) {
+
+                if (! $dryRun) {
                     $appointment->update([
                         'service_id' => $targetServiceId,
-                        'category' => $service->category
+                        'category' => $service->category,
                     ]);
                 }
             } else {
@@ -110,7 +110,7 @@ class EnrichAppointments extends Command
                 $uncertainRecords[] = [
                     'id' => $appointment->id,
                     'title' => $appointment->title,
-                    'notes' => Str::limit($appointment->notes, 30)
+                    'notes' => Str::limit($appointment->notes, 30),
                 ];
             }
         }
@@ -120,7 +120,7 @@ class EnrichAppointments extends Command
         $this->table(['Metric', 'Count'], [
             ['Total Scanned', $stats['total']],
             ['Successfully Mapped', $stats['mapped']],
-            ['Uncertain / Needs Review', $stats['uncertain']]
+            ['Uncertain / Needs Review', $stats['uncertain']],
         ]);
 
         $this->info("\n--- MAPPING BY CATEGORY ---");
@@ -150,11 +150,13 @@ class EnrichAppointments extends Command
 
         // Laboratory (Specific phrases first)
         $labPhrases = [
-            'complete blood count', 'comprehensive blood test', 'hormonal test', 
-            'test kit', 'blood chemistry', 'blood test', 'fecalysis', 'urinalysis'
+            'complete blood count', 'comprehensive blood test', 'hormonal test',
+            'test kit', 'blood chemistry', 'blood test', 'fecalysis', 'urinalysis',
         ];
         foreach ($labPhrases as $phrase) {
-            if (str_contains($text, $phrase)) return 'Laboratory';
+            if (str_contains($text, $phrase)) {
+                return 'Laboratory';
+            }
         }
         if (str_contains($text, 'cbc') || str_contains($text, 'lab') || str_contains($text, 'laboratory')) {
             return 'Laboratory';
@@ -169,19 +171,25 @@ class EnrichAppointments extends Command
         }
         $vaccKeywords = ['vaccine', 'vaccination', 'vaxx', 'shot', 'rabies', 'deworm'];
         foreach ($vaccKeywords as $kw) {
-            if (str_contains($text, $kw)) return 'Vaccination';
+            if (str_contains($text, $kw)) {
+                return 'Vaccination';
+            }
         }
 
         // Grooming
         $groomKeywords = ['bath', 'haircut', 'trim', 'spa', 'grooming', 'groom'];
         foreach ($groomKeywords as $kw) {
-            if (str_contains($text, $kw)) return 'Grooming';
+            if (str_contains($text, $kw)) {
+                return 'Grooming';
+            }
         }
 
         // Consultation
         $consultKeywords = ['checkup', 'follow-up', 'consult', 'check', 'visit'];
         foreach ($consultKeywords as $kw) {
-            if (str_contains($text, $kw)) return 'Consultation';
+            if (str_contains($text, $kw)) {
+                return 'Consultation';
+            }
         }
 
         return null;
@@ -190,18 +198,24 @@ class EnrichAppointments extends Command
     private function findBestServiceMatch($category, $title, $categoryMap)
     {
         $catKey = strtolower($category);
-        if (!isset($categoryMap[$catKey])) return null;
+        if (! isset($categoryMap[$catKey])) {
+            return null;
+        }
 
         $servicesInCat = $categoryMap[$catKey];
-        
+
         // Exact name match
         foreach ($servicesInCat as $s) {
-            if (stripos($title, $s->name) !== false) return $s;
+            if (stripos($title, $s->name) !== false) {
+                return $s;
+            }
         }
 
         // Default to first match or a generic one if exists
         foreach ($servicesInCat as $s) {
-            if (stripos($s->name, 'general') !== false) return $s;
+            if (stripos($s->name, 'general') !== false) {
+                return $s;
+            }
         }
 
         return $servicesInCat[0];

@@ -8,6 +8,7 @@ use App\Models\Owner;
 use App\Models\Service;
 use App\Models\Species;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -42,7 +43,7 @@ class ErrorHandlingTest extends TestCase
     {
         // A CSV whose rows do not match the header used to abort the import
         // with the raw PHP error in the response.
-        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('owners.csv', "name,phone,email\nOnly two,cells\n");
+        $file = UploadedFile::fake()->createWithContent('owners.csv', "name,phone,email\nOnly two,cells\n");
 
         $this->postJson('/api/import/owners', ['file' => $file])
             ->assertStatus(422)

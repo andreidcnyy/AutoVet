@@ -58,7 +58,7 @@ class PullLiveDatabase extends Command
 
         $this->loadLiveEnv();
 
-        if (!config('database.connections.live.host')) {
+        if (! config('database.connections.live.host')) {
             $this->error('No live connection configured.');
             $this->newLine();
             $this->line('Copy backend/.env.live.example to backend/.env.live and fill in the values from');
@@ -74,7 +74,7 @@ class PullLiveDatabase extends Command
             return self::FAILURE;
         }
 
-        if (!$this->prepareTarget()) {
+        if (! $this->prepareTarget()) {
             return self::FAILURE;
         }
 
@@ -83,10 +83,10 @@ class PullLiveDatabase extends Command
 
         $this->newLine();
         $this->line("  from  <fg=yellow>{$liveHost}</> (read-only)");
-        $this->line("  into  <fg=yellow>{$localName}</> on " . config('database.connections.mysql.host'));
+        $this->line("  into  <fg=yellow>{$localName}</> on ".config('database.connections.mysql.host'));
         $this->newLine();
 
-        if (!$this->option('force') && !$this->confirm("Every row in the local '{$localName}' database will be replaced. Continue?")) {
+        if (! $this->option('force') && ! $this->confirm("Every row in the local '{$localName}' database will be replaced. Continue?")) {
             $this->line('Aborted.');
 
             return self::SUCCESS;
@@ -95,12 +95,12 @@ class PullLiveDatabase extends Command
         try {
             DB::connection('live')->getPdo();
         } catch (Throwable $e) {
-            $this->error('Could not reach the live database: ' . $e->getMessage());
+            $this->error('Could not reach the live database: '.$e->getMessage());
 
             return self::FAILURE;
         }
 
-        if (!$this->confirmSchemaDrift()) {
+        if (! $this->confirmSchemaDrift()) {
             return self::FAILURE;
         }
 
@@ -133,11 +133,11 @@ class PullLiveDatabase extends Command
     private function prepareTarget(): bool
     {
         $target = $this->option('database');
-        if (!$target) {
+        if (! $target) {
             return true;
         }
 
-        if (!preg_match('/^[A-Za-z0-9_]+$/', $target)) {
+        if (! preg_match('/^[A-Za-z0-9_]+$/', $target)) {
             $this->error("Refusing to use '{$target}' as a database name.");
 
             return false;
@@ -154,7 +154,7 @@ class PullLiveDatabase extends Command
                 "CREATE DATABASE IF NOT EXISTS `{$target}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             );
         } catch (Throwable $e) {
-            $this->error("Could not create '{$target}': " . $e->getMessage());
+            $this->error("Could not create '{$target}': ".$e->getMessage());
 
             return false;
         }
@@ -163,7 +163,7 @@ class PullLiveDatabase extends Command
         DB::purge('mysql');
         DB::setDefaultConnection('mysql');
 
-        if (!Schema::hasTable('migrations')) {
+        if (! Schema::hasTable('migrations')) {
             $this->line("  Migrating fresh database <fg=yellow>{$target}</> ...");
             $this->call('migrate', ['--force' => true, '--database' => 'mysql']);
         }
@@ -180,7 +180,7 @@ class PullLiveDatabase extends Command
     private function loadLiveEnv(): void
     {
         $path = base_path('.env.live');
-        if (!is_file($path)) {
+        if (! is_file($path)) {
             return;
         }
 
@@ -188,13 +188,13 @@ class PullLiveDatabase extends Command
 
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
             $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            if ($line === '' || str_starts_with($line, '#') || ! str_contains($line, '=')) {
                 continue;
             }
 
             [$key, $value] = explode('=', $line, 2);
             $key = trim($key);
-            if (!str_starts_with($key, 'LIVE_DB_')) {
+            if (! str_starts_with($key, 'LIVE_DB_')) {
                 continue;
             }
 
@@ -213,12 +213,11 @@ class PullLiveDatabase extends Command
                 'database' => $overrides['LIVE_DB_DATABASE'] ?? null,
                 'username' => $overrides['LIVE_DB_USERNAME'] ?? null,
                 'password' => $overrides['LIVE_DB_PASSWORD'] ?? null,
-            ], fn($v) => $v !== null),
+            ], fn ($v) => $v !== null),
             ['options' => extension_loaded('pdo_mysql') ? array_filter([
                 \PDO::MYSQL_ATTR_SSL_CA => $overrides['LIVE_DB_SSL_CA'] ?? null,
-                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT
-                    => filter_var($overrides['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
-            ], fn($v) => $v !== null && $v !== '') : []]
+                \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => filter_var($overrides['LIVE_DB_SSL_VERIFY'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
+            ], fn ($v) => $v !== null && $v !== '') : []]
         ));
 
         DB::purge('live');
@@ -243,7 +242,7 @@ class PullLiveDatabase extends Command
         $localOnly = array_diff($local, $live);
 
         if ($liveOnly === [] && $localOnly === []) {
-            $this->line('  Schema matches: ' . count($live) . ' migrations on both sides.');
+            $this->line('  Schema matches: '.count($live).' migrations on both sides.');
 
             return true;
         }
@@ -282,7 +281,7 @@ class PullLiveDatabase extends Command
             : null;
 
         $liveTables = array_map(
-            fn($row) => array_values((array) $row)[0],
+            fn ($row) => array_values((array) $row)[0],
             DB::connection('live')->select('SHOW TABLES')
         );
 
@@ -291,11 +290,12 @@ class PullLiveDatabase extends Command
             if (in_array($table, self::SKIP_TABLES, true)) {
                 continue;
             }
-            if ($only !== null && !in_array($table, $only, true)) {
+            if ($only !== null && ! in_array($table, $only, true)) {
                 continue;
             }
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 $this->warn("  skipping {$table} — not present locally");
+
                 continue;
             }
             $out[] = $table;
@@ -329,6 +329,7 @@ class PullLiveDatabase extends Command
 
                 if ($columns === []) {
                     $this->warn("  skipping {$table} — no columns in common");
+
                     continue;
                 }
 
@@ -339,12 +340,12 @@ class PullLiveDatabase extends Command
 
                 if ($liveTotal > 0) {
                     $bar = $this->output->createProgressBar($liveTotal);
-                    $bar->setFormat("  %message:-26s% %current%/%max% [%bar%]");
+                    $bar->setFormat('  %message:-26s% %current%/%max% [%bar%]');
                     $bar->setMessage($table);
                     $bar->start();
 
                     $handle = function ($rows) use ($table, &$written, $bar) {
-                        $batch = array_map(fn($row) => (array) $row, $rows->all());
+                        $batch = array_map(fn ($row) => (array) $row, $rows->all());
                         DB::table($table)->insert($batch);
                         $written += count($batch);
                         $bar->advance(count($batch));
@@ -378,7 +379,6 @@ class PullLiveDatabase extends Command
         return $result;
     }
 
-
     /**
      * Live password hashes belong to real accounts whose passwords nobody here
      * knows, so a pulled copy is unusable until they are overwritten locally.
@@ -390,7 +390,7 @@ class PullLiveDatabase extends Command
         $this->newLine();
 
         foreach (['admins', 'portal_users'] as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
             $n = DB::table($table)->update(['password' => $hash]);
@@ -401,11 +401,11 @@ class PullLiveDatabase extends Command
     /** @param array<string,array{live:int,local:int}> $copied */
     private function report(array $copied): void
     {
-        $mismatched = array_filter($copied, fn($c) => $c['live'] !== $c['local']);
+        $mismatched = array_filter($copied, fn ($c) => $c['live'] !== $c['local']);
 
         $this->newLine();
-        $this->line('  <fg=green>Copied ' . count($copied) . ' tables, '
-            . number_format(array_sum(array_column($copied, 'local'))) . ' rows.</>');
+        $this->line('  <fg=green>Copied '.count($copied).' tables, '
+            .number_format(array_sum(array_column($copied, 'local'))).' rows.</>');
 
         if ($mismatched !== []) {
             $this->newLine();

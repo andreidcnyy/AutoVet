@@ -10,6 +10,4 @@ namespace App\Exceptions;
  * SQL, table names or file paths, so callers log it and answer with a
  * generic message instead. Rendered as 422 by bootstrap/app.php.
  */
-class UserFacingException extends \RuntimeException
-{
-}
+class UserFacingException extends \RuntimeException {}

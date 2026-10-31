@@ -43,9 +43,10 @@ class NormalizeMediaPathsCommand extends Command
         $total = 0;
 
         foreach (self::TARGETS as [$table, $column]) {
-            if (!DB::getSchemaBuilder()->hasTable($table)
-                || !DB::getSchemaBuilder()->hasColumn($table, $column)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)
+                || ! DB::getSchemaBuilder()->hasColumn($table, $column)) {
                 $this->line("  <fg=gray>skip</> {$table}.{$column} (not present)");
+
                 continue;
             }
 
@@ -56,7 +57,7 @@ class NormalizeMediaPathsCommand extends Command
 
             foreach ($rows as $row) {
                 $value = $row->{$column};
-                if (!is_string($value) || !preg_match(self::SUPABASE_URL, trim($value), $m)) {
+                if (! is_string($value) || ! preg_match(self::SUPABASE_URL, trim($value), $m)) {
                     continue;
                 }
 
@@ -78,7 +79,7 @@ class NormalizeMediaPathsCommand extends Command
                     $mark
                 ));
 
-                if (!$dry) {
+                if (! $dry) {
                     DB::table($table)->where('id', $row->id)->update([$column => $path]);
                 }
                 $total++;

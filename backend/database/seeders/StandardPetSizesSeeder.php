@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PetSizeCategory;
+use Illuminate\Database\Seeder;
 
 class StandardPetSizesSeeder extends Seeder
 {
@@ -17,31 +17,31 @@ class StandardPetSizesSeeder extends Seeder
                 'name' => 'Extra Small',
                 'sort_order' => 1,
                 'status' => 'Active',
-                'description' => 'Very small pets (e.g. small birds, hamsters)'
+                'description' => 'Very small pets (e.g. small birds, hamsters)',
             ],
             [
                 'name' => 'Small',
                 'sort_order' => 2,
                 'status' => 'Active',
-                'description' => 'Small pets (e.g. cats, small dogs)'
+                'description' => 'Small pets (e.g. cats, small dogs)',
             ],
             [
                 'name' => 'Medium',
                 'sort_order' => 3,
                 'status' => 'Active',
-                'description' => 'Medium sized pets (e.g. medium dogs)'
+                'description' => 'Medium sized pets (e.g. medium dogs)',
             ],
             [
                 'name' => 'Large',
                 'sort_order' => 4,
                 'status' => 'Active',
-                'description' => 'Large pets (e.g. large dogs)'
+                'description' => 'Large pets (e.g. large dogs)',
             ],
             [
                 'name' => 'Giant',
                 'sort_order' => 5,
                 'status' => 'Active',
-                'description' => 'Extra large/giant breeds'
+                'description' => 'Extra large/giant breeds',
             ],
         ];
 

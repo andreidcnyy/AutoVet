@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
+use App\Events\AppointmentStatusUpdated;
+use App\Exceptions\UserFacingException;
 use App\Models\Appointment;
-use Illuminate\Http\Request;
 use App\Services\ClientNotificationService;
 use App\Traits\HasInternalNotifications;
 use App\Traits\IdentifiesPortalOwner;
-use App\Enums\Roles;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AppointmentStatusController extends Controller
@@ -19,7 +22,7 @@ class AppointmentStatusController extends Controller
     public function __construct(ClientNotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
-        $this->middleware('role:' . implode(',', Roles::adminRoles()));
+        $this->middleware('role:'.implode(',', Roles::adminRoles()));
     }
 
     public function approve(Request $request, Appointment $appointment)
@@ -34,14 +37,15 @@ class AppointmentStatusController extends Controller
                 }
                 $appointment->status = 'approved';
                 $appointment->save();
+
                 return true;
             });
-        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+        } catch (LockTimeoutException $e) {
             return response()->json(['message' => 'Another approval for this time is in progress. Please try again.'], 409);
         }
-        if (!$approved) {
+        if (! $approved) {
             return response()->json([
-                'message' => 'This time slot already has ' . Appointment::SLOT_CAPACITY . ' approved appointments. Decline this request or move it to another time.',
+                'message' => 'This time slot already has '.Appointment::SLOT_CAPACITY.' approved appointments. Decline this request or move it to another time.',
             ], 422);
         }
 
@@ -61,7 +65,7 @@ class AppointmentStatusController extends Controller
             'reason' => 'required|string|min:10|max:1000',
         ], [
             'reason.required' => 'A decline reason is required.',
-            'reason.min'      => 'Decline reason must be at least 10 characters.',
+            'reason.min' => 'Decline reason must be at least 10 characters.',
         ]);
 
         $appointment->status = 'declined';
@@ -104,12 +108,14 @@ class AppointmentStatusController extends Controller
                 'manual',
                 $appointment
             );
-             return response()->json(['message' => 'Reminder sent successfully.']);
+
+            return response()->json(['message' => 'Reminder sent successfully.']);
         } catch (\Exception $e) {
-            Log::error("Failed to send reminder: " . $e->getMessage());
-            $message = $e instanceof \App\Exceptions\UserFacingException ? $e->getMessage() : 'the email could not be sent.';
-            return response()->json(['message' => 'Failed to send reminder: ' . $message],
-                $e instanceof \App\Exceptions\UserFacingException ? 422 : 500);
+            Log::error('Failed to send reminder: '.$e->getMessage());
+            $message = $e instanceof UserFacingException ? $e->getMessage() : 'the email could not be sent.';
+
+            return response()->json(['message' => 'Failed to send reminder: '.$message],
+                $e instanceof UserFacingException ? 422 : 500);
         }
     }
 
@@ -132,27 +138,29 @@ class AppointmentStatusController extends Controller
         try {
             $this->invalidatePortalCache($appointment->pet?->owner_id);
         } catch (\Throwable $e) {
-            Log::error("[{$type}] Failed to clear portal cache: " . $e->getMessage());
+            Log::error("[{$type}] Failed to clear portal cache: ".$e->getMessage());
         }
 
         try {
-            event(new \App\Events\AppointmentStatusUpdated($appointment));
+            event(new AppointmentStatusUpdated($appointment));
         } catch (\Throwable $e) {
-            Log::error("[{$type}] Failed to broadcast status update: " . $e->getMessage());
+            Log::error("[{$type}] Failed to broadcast status update: ".$e->getMessage());
         }
 
         try {
             $this->createInternalNotification(
                 $type,
                 $title,
-                "Appointment for {$petName} on " . date('M d, Y', strtotime($appointment->date)) . " {$verb}.",
+                "Appointment for {$petName} on ".date('M d, Y', strtotime($appointment->date))." {$verb}.",
                 ['appointment_id' => $appointment->id]
             );
         } catch (\Throwable $e) {
-            Log::error("[{$type}] Failed to create staff notification: " . $e->getMessage());
+            Log::error("[{$type}] Failed to create staff notification: ".$e->getMessage());
         }
 
-        if (!$emailKey) return;
+        if (! $emailKey) {
+            return;
+        }
 
         try {
             $owner = $appointment->pet?->owner;
@@ -160,7 +168,7 @@ class AppointmentStatusController extends Controller
                 $this->notificationService->sendFromTemplate($owner, $emailKey, 'email', $emailVars, 'automated', $appointment);
             }
         } catch (\Throwable $e) {
-            Log::error("[{$type}] Failed to email owner: " . $e->getMessage());
+            Log::error("[{$type}] Failed to email owner: ".$e->getMessage());
         }
     }
 }

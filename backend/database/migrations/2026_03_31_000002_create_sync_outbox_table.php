@@ -30,7 +30,7 @@ return new class extends Migration
 
             // Queue state
             $table->enum('status', ['pending', 'processing', 'synced', 'failed'])
-                  ->default('pending');
+                ->default('pending');
             $table->unsignedTinyInteger('retry_count')->default(0);
             $table->text('error_message')->nullable();
 

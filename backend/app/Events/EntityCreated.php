@@ -2,9 +2,8 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use App\Support\Channels;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -14,14 +13,16 @@ class EntityCreated implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $entityType;
+
     public $data;
+
     protected $clinicId;
 
     /**
      * Create a new event instance.
-     * 
-     * @param string $entityType e.g., 'pet', 'owner'
-     * @param mixed $data
+     *
+     * @param  string  $entityType  e.g., 'pet', 'owner'
+     * @param  mixed  $data
      */
     public function __construct($entityType, $data = null)
     {
@@ -36,7 +37,7 @@ class EntityCreated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            \App\Support\Channels::admin('notifications', $this->clinicId),
+            Channels::admin('notifications', $this->clinicId),
         ];
     }
 

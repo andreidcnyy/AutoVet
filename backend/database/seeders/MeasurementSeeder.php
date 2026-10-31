@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Clinic;
 use App\Models\PetSizeCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\WeightRange;
-use App\Models\Clinic;
+use Illuminate\Database\Seeder;
 
 class MeasurementSeeder extends Seeder
 {

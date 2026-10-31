@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use App\Models\SyncOutbox;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,11 +14,11 @@ class SyncService
      */
     public function pushToPortal(): void
     {
-        if (!config('services.sync.is_clinic')) {
+        if (! config('services.sync.is_clinic')) {
             return;
         }
 
-        $syncEnabled = \App\Models\Setting::where('key', 'enable_cloud_sync')->value('value');
+        $syncEnabled = Setting::where('key', 'enable_cloud_sync')->value('value');
         if ($syncEnabled === 'false') {
             return;
         }
@@ -41,15 +42,15 @@ class SyncService
         $entry->markProcessing();
 
         try {
-            $url = config('services.sync.portal_url') . '/api/sync/receive';
+            $url = config('services.sync.portal_url').'/api/sync/receive';
             $secret = config('services.sync.secret');
 
             $payload = [
-                'entity_type'     => $entry->entity_type,
-                'entity_uuid'     => $entry->entity_uuid,
-                'action_type'     => $entry->action_type,
-                'data'            => $entry->payload,
-                'timestamp'       => now()->timestamp,
+                'entity_type' => $entry->entity_type,
+                'entity_uuid' => $entry->entity_uuid,
+                'action_type' => $entry->action_type,
+                'data' => $entry->payload,
+                'timestamp' => now()->timestamp,
             ];
 
             // Sign the payload
@@ -61,16 +62,16 @@ class SyncService
 
             if ($response->successful()) {
                 $entry->markSynced();
-                
+
                 // Also update the source model's sync status
                 $this->updateSourceModelStatus($entry);
             } else {
-                $entry->markFailed('Portal returned status: ' . $response->status() . ' - ' . $response->body());
+                $entry->markFailed('Portal returned status: '.$response->status().' - '.$response->body());
             }
         } catch (\Throwable $e) {
             $entry->markFailed($e->getMessage());
-            Log::error('[SyncService] Sync failed for entry ' . $entry->id, [
-                'error' => $e->getMessage()
+            Log::error('[SyncService] Sync failed for entry '.$entry->id, [
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -80,7 +81,7 @@ class SyncService
      */
     private function updateSourceModelStatus(SyncOutbox $entry): void
     {
-        $modelClass = "App\\Models\\" . $entry->entity_type;
+        $modelClass = 'App\\Models\\'.$entry->entity_type;
         if (class_exists($modelClass)) {
             $model = $modelClass::where('uuid', $entry->entity_uuid)->first();
             if ($model && method_exists($model, 'markAsSynced')) {

@@ -20,7 +20,7 @@ return new class extends Migration
             if ($hasUnique) {
                 $table->dropUnique(['code']);
             }
-            
+
             $table->index('code');
         });
     }

@@ -29,10 +29,11 @@ class VetScheduleController extends Controller
             'break_start' => 'nullable',
             'break_end' => 'nullable',
             'is_available' => 'boolean',
-            'max_appointments' => 'nullable|integer'
+            'max_appointments' => 'nullable|integer',
         ]);
 
         $schedule = VetSchedule::create($validated);
+
         return response()->json($schedule->load('vet'), 201);
     }
 
@@ -45,7 +46,7 @@ class VetScheduleController extends Controller
             'end_time' => 'required',
             'break_start' => 'nullable',
             'break_end' => 'nullable',
-            'max_appointments' => 'nullable|integer'
+            'max_appointments' => 'nullable|integer',
         ]);
 
         $userId = $validated['user_id'];
@@ -60,12 +61,12 @@ class VetScheduleController extends Controller
             $created = [];
             foreach ($days as $day) {
                 $created[] = VetSchedule::create([
-                    'user_id'      => $userId,
-                    'day_of_week'  => $day,
-                    'start_time'   => $validated['start_time'],
-                    'end_time'     => $validated['end_time'],
-                    'break_start'  => $validated['break_start'] ?? null,
-                    'break_end'    => $validated['break_end'] ?? null,
+                    'user_id' => $userId,
+                    'day_of_week' => $day,
+                    'start_time' => $validated['start_time'],
+                    'end_time' => $validated['end_time'],
+                    'break_start' => $validated['break_start'] ?? null,
+                    'break_end' => $validated['break_end'] ?? null,
                     'max_appointments' => $validated['max_appointments'] ?? null,
                     'is_available' => true,
                 ]);
@@ -90,16 +91,18 @@ class VetScheduleController extends Controller
             'break_start' => 'nullable',
             'break_end' => 'nullable',
             'is_available' => 'boolean',
-            'max_appointments' => 'nullable|integer'
+            'max_appointments' => 'nullable|integer',
         ]);
 
         $vetSchedule->update($validated);
+
         return response()->json($vetSchedule->load('vet'));
     }
 
     public function destroy(VetSchedule $vetSchedule)
     {
         $vetSchedule->delete();
+
         return response()->json(null, 204);
     }
 }

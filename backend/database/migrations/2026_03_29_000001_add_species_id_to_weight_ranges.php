@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Add species_id to weight_ranges table
-        if (!Schema::hasColumn('weight_ranges', 'species_id')) {
+        if (! Schema::hasColumn('weight_ranges', 'species_id')) {
             Schema::table('weight_ranges', function (Blueprint $table) {
                 $table->foreignId('species_id')->nullable()->after('label')->constrained('species')->onDelete('cascade');
             });
@@ -24,7 +24,7 @@ return new class extends Migration
         $speciesMap = [];
         foreach ($speciesNames as $name) {
             $id = DB::table('species')->where('name', $name)->value('id');
-            if (!$id) {
+            if (! $id) {
                 $id = DB::table('species')->insertGetId([
                     'name' => $name,
                     'status' => 'Active',
@@ -39,7 +39,7 @@ return new class extends Migration
         $sizeMap = [];
         foreach ($sizeNames as $name) {
             $id = DB::table('pet_size_categories')->where('name', $name)->value('id');
-            if (!$id) {
+            if (! $id) {
                 $id = DB::table('pet_size_categories')->insertGetId([
                     'name' => $name,
                     'status' => 'Active',
@@ -102,7 +102,7 @@ return new class extends Migration
                     ->where('unit', 'kg')
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     DB::table('weight_ranges')->insert([
                         'species_id' => $speciesId,
                         'label' => $range['label'],

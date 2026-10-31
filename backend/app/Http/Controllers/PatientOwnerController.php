@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\EntityCreated;
+use App\Models\Admin;
+use App\Models\Invoice;
 use App\Models\Owner;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Models\PortalUser;
+use App\Support\ListQuery;
 use App\Traits\IdentifiesPortalOwner;
+use Illuminate\Http\Request;
 
 class PatientOwnerController extends Controller
 {
@@ -23,28 +27,31 @@ class PatientOwnerController extends Controller
                 ->where('email', '!=', 'dataset.seeder@autovet.ai');
             if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
                 $ownerId = $this->getPortalOwnerId();
-                if (!$ownerId) return response()->json([]);
+                if (! $ownerId) {
+                    return response()->json([]);
+                }
                 $query->where('id', $ownerId);
             }
             if ($request->filled('search')) {
                 $search = $request->get('search');
-                $query->where(function($q) use ($search) {
-                    $q->where('name', 'like', \App\Support\ListQuery::contains($search))
-                      ->orWhere('phone', 'like', \App\Support\ListQuery::contains($search))
-                      ->orWhere('email', 'like', \App\Support\ListQuery::contains($search))
-                      ->orWhereHas('pets', fn($p) => $p->where('name', 'like', \App\Support\ListQuery::contains($search)));
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', ListQuery::contains($search))
+                        ->orWhere('phone', 'like', ListQuery::contains($search))
+                        ->orWhere('email', 'like', ListQuery::contains($search))
+                        ->orWhereHas('pets', fn ($p) => $p->where('name', 'like', ListQuery::contains($search)));
                 });
             }
+
             return response()->json($query->orderBy('name')->get());
         }
 
         // Optimized query with required relationships and total paid sum calculation
         $query = Owner::with(['pets', 'user'])
             ->addSelect([
-                'total_paid_sum' => \App\Models\Invoice::selectRaw('IFNULL(SUM(total), 0)')
+                'total_paid_sum' => Invoice::selectRaw('IFNULL(SUM(total), 0)')
                     ->join('pets', 'pets.id', '=', 'invoices.pet_id')
                     ->whereColumn('pets.owner_id', 'owners.id')
-                    ->whereIn('invoices.status', ['Paid', 'Finalized'])
+                    ->whereIn('invoices.status', ['Paid', 'Finalized']),
             ]);
 
         // Always hide AI Training Records from the list for Admins/Staff
@@ -52,7 +59,7 @@ class PatientOwnerController extends Controller
 
         if ($user && method_exists($user, 'isOwner') && $user->isOwner()) {
             $ownerId = $this->getPortalOwnerId();
-            if (!$ownerId) {
+            if (! $ownerId) {
                 $query->whereRaw('0 = 1');
             } else {
                 $query->where('id', $ownerId);
@@ -62,15 +69,15 @@ class PatientOwnerController extends Controller
         // Add Search functionality
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('phone', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('email', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('address', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('city', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('province', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhere('zip', 'like', \App\Support\ListQuery::contains($search))
-                  ->orWhereHas('pets', fn($p) => $p->where('name', 'like', \App\Support\ListQuery::contains($search)));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', ListQuery::contains($search))
+                    ->orWhere('phone', 'like', ListQuery::contains($search))
+                    ->orWhere('email', 'like', ListQuery::contains($search))
+                    ->orWhere('address', 'like', ListQuery::contains($search))
+                    ->orWhere('city', 'like', ListQuery::contains($search))
+                    ->orWhere('province', 'like', ListQuery::contains($search))
+                    ->orWhere('zip', 'like', ListQuery::contains($search))
+                    ->orWhereHas('pets', fn ($p) => $p->where('name', 'like', ListQuery::contains($search)));
             });
         }
 
@@ -81,7 +88,7 @@ class PatientOwnerController extends Controller
 
         $query->orderBy('id', 'desc');
 
-        $perPage = \App\Support\ListQuery::perPage($request, 10);
+        $perPage = ListQuery::perPage($request, 10);
         $paginated = $query->paginate($perPage);
 
         return response()->json($paginated);
@@ -93,13 +100,13 @@ class PatientOwnerController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if ($user instanceof \App\Models\PortalUser) {
-             return response()->json(['message' => 'Unauthorized'], 403);
+        if ($user instanceof PortalUser) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|size:11', 
+            'phone' => 'required|string|size:11',
             'email' => 'nullable|string|email:rfc,dns|max:255',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
@@ -110,21 +117,21 @@ class PatientOwnerController extends Controller
         if (Owner::where('phone', $validated['phone'])->exists()) {
             return response()->json([
                 'message' => 'An owner with this phone number already exists.',
-                'errors' => ['phone' => ['This phone number is already registered.']]
+                'errors' => ['phone' => ['This phone number is already registered.']],
             ], 422);
         }
 
-        if (!empty($validated['email']) && Owner::where('email', $validated['email'])->exists()) {
+        if (! empty($validated['email']) && Owner::where('email', $validated['email'])->exists()) {
             return response()->json([
                 'message' => 'An owner with this email already exists.',
-                'errors' => ['email' => ['This email is already registered to another owner.']]
+                'errors' => ['email' => ['This email is already registered to another owner.']],
             ], 422);
         }
 
         $owner = Owner::create($validated);
 
         // Broadcast for real-time dashboard stats
-        event(new \App\Events\EntityCreated('owner', $owner->id));
+        event(new EntityCreated('owner', $owner->id));
 
         return response()->json($owner, 201);
 
@@ -133,7 +140,7 @@ class PatientOwnerController extends Controller
     public function show(Owner $owner)
     {
         // Portal users can only view their own owner record
-        if (auth()->user() instanceof \App\Models\PortalUser) {
+        if (auth()->user() instanceof PortalUser) {
             if ($owner->id !== $this->getPortalOwnerId()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
@@ -141,13 +148,14 @@ class PatientOwnerController extends Controller
 
         $owner->load(['pets.species', 'pets.breed', 'pets.sizeCategory', 'pets.invoices', 'pets.appointments']);
         $owner->pets->each->append(['total_paid', 'total_due', 'last_visit', 'next_due']);
+
         return response()->json($owner);
     }
 
     public function update(Request $request, Owner $owner)
     {
         // Portal users can only update their own owner record
-        if (auth()->user() instanceof \App\Models\PortalUser) {
+        if (auth()->user() instanceof PortalUser) {
             if ($owner->id !== $this->getPortalOwnerId()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
@@ -170,16 +178,16 @@ class PatientOwnerController extends Controller
         // login: copying a blank one locked the client out, and a taken one
         // failed on the unique index after the owner had already been saved.
         if ($owner->user_id) {
-            $user = \App\Models\PortalUser::find($owner->user_id);
+            $user = PortalUser::find($owner->user_id);
             if ($user) {
                 $sync = array_intersect_key($validated, array_flip(['name', 'phone', 'address', 'city', 'province', 'zip']));
 
                 $email = $validated['email'] ?? null;
                 $emailTaken = $email && (
-                    \App\Models\PortalUser::withTrashed()->where('email', $email)->where('id', '!=', $user->id)->exists()
-                    || \App\Models\Admin::where('email', $email)->exists()
+                    PortalUser::withTrashed()->where('email', $email)->where('id', '!=', $user->id)->exists()
+                    || Admin::where('email', $email)->exists()
                 );
-                if ($email && !$emailTaken) {
+                if ($email && ! $emailTaken) {
                     $sync['email'] = $email;
                 }
 
@@ -189,17 +197,19 @@ class PatientOwnerController extends Controller
 
         $owner->load(['pets.species', 'pets.breed', 'pets.sizeCategory', 'pets.invoices', 'pets.appointments']);
         $owner->pets->each->append(['total_paid', 'total_due', 'last_visit', 'next_due']);
+
         return response()->json($owner);
     }
 
     public function destroy(Owner $owner)
     {
         // Portal users cannot delete owner records
-        if (auth()->user() instanceof \App\Models\PortalUser) {
+        if (auth()->user() instanceof PortalUser) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
         $owner->delete();
+
         return response()->json(null, 204);
     }
 

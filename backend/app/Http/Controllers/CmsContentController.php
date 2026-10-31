@@ -29,7 +29,7 @@ class CmsContentController extends Controller
         $query = CmsContent::ordered();
 
         if ($request->filled('type')) {
-            $request->validate(['type' => 'string|in:' . implode(',', CmsContent::validTypes())]);
+            $request->validate(['type' => 'string|in:'.implode(',', CmsContent::validTypes())]);
             $query->where('type', $request->type);
         }
 
@@ -50,15 +50,16 @@ class CmsContentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type'          => 'required|string|in:' . implode(',', CmsContent::validTypes()),
-            'title'         => 'required|string|max:255',
-            'body'          => 'nullable|string',
-            'image_path'    => 'nullable|string|max:255',
-            'is_published'  => 'boolean',
+            'type' => 'required|string|in:'.implode(',', CmsContent::validTypes()),
+            'title' => 'required|string|max:255',
+            'body' => 'nullable|string',
+            'image_path' => 'nullable|string|max:255',
+            'is_published' => 'boolean',
             'display_order' => 'integer|min:0',
         ]);
 
         $content = CmsContent::create($validated);
+
         return response()->json($content, 201);
     }
 
@@ -69,7 +70,7 @@ class CmsContentController extends Controller
      */
     public function show(CmsContent $cmsContent)
     {
-        if (!$cmsContent->is_published && ($u = auth()->user()) && method_exists($u, 'isOwner') && $u->isOwner()) {
+        if (! $cmsContent->is_published && ($u = auth()->user()) && method_exists($u, 'isOwner') && $u->isOwner()) {
             abort(404);
         }
 
@@ -85,15 +86,16 @@ class CmsContentController extends Controller
     public function update(Request $request, CmsContent $cmsContent)
     {
         $validated = $request->validate([
-            'type'          => 'sometimes|string|in:' . implode(',', CmsContent::validTypes()),
-            'title'         => 'sometimes|string|max:255',
-            'body'          => 'nullable|string',
-            'image_path'    => 'nullable|string|max:255',
-            'is_published'  => 'boolean',
+            'type' => 'sometimes|string|in:'.implode(',', CmsContent::validTypes()),
+            'title' => 'sometimes|string|max:255',
+            'body' => 'nullable|string',
+            'image_path' => 'nullable|string|max:255',
+            'is_published' => 'boolean',
             'display_order' => 'integer|min:0',
         ]);
 
         $cmsContent->update($validated);
+
         return response()->json($cmsContent);
     }
 
@@ -106,6 +108,7 @@ class CmsContentController extends Controller
     public function destroy(CmsContent $cmsContent)
     {
         $cmsContent->delete();
+
         return response()->json(null, 204);
     }
 }

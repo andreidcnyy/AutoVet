@@ -4,24 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Enums\Roles;
 use App\Events\EntityCreated;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use App\Models\Admin;
 use App\Models\Owner;
 use App\Models\PortalUser;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
     public function show()
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
         // Expose whether a password is set so the portal can show "Set" vs "Change"
         // password (Google sign-up accounts start with no password).
         $data = $user->toArray();
-        $data['has_password'] = !empty($user->password);
+        $data['has_password'] = ! empty($user->password);
+
         return response()->json($data);
     }
 
@@ -34,14 +37,14 @@ class ProfileController extends Controller
             ->select(['id', 'name', 'ip_address', 'user_agent', 'last_used_at', 'created_at'])
             ->latest()
             ->get()
-            ->map(fn($token) => [
-                'id'           => $token->id,
-                'name'         => $token->name,
-                'ip_address'   => $token->ip_address,
-                'user_agent'   => $token->user_agent,
+            ->map(fn ($token) => [
+                'id' => $token->id,
+                'name' => $token->name,
+                'ip_address' => $token->ip_address,
+                'user_agent' => $token->user_agent,
                 'last_used_at' => $token->last_used_at,
-                'created_at'   => $token->created_at,
-                'is_current'   => $token->id === $currentTokenId,
+                'created_at' => $token->created_at,
+                'is_current' => $token->id === $currentTokenId,
             ]);
 
         return response()->json($devices);
@@ -58,7 +61,7 @@ class ProfileController extends Controller
 
         $deleted = $user->tokens()->where('id', $tokenId)->delete();
 
-        if (!$deleted) {
+        if (! $deleted) {
             return response()->json(['error' => 'Session not found.'], 404);
         }
 
@@ -80,19 +83,19 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'phone'    => 'required|string|size:11',
-            'address'  => 'required|string|max:500',
+            'phone' => 'required|string|size:11',
+            'address' => 'required|string|max:500',
             'province' => 'required|string|max:255',
-            'city'     => 'required|string|max:255',
-            'zip'      => 'nullable|string|max:10',
+            'city' => 'required|string|max:255',
+            'zip' => 'nullable|string|max:10',
         ]);
 
         $user->update($validated);
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Profile completed.',
-            'user'    => $user->fresh(),
+            'user' => $user->fresh(),
         ]);
     }
 
@@ -100,7 +103,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if (!($user instanceof PortalUser)) {
+        if (! ($user instanceof PortalUser)) {
             return response()->json(['error' => 'Only portal users can delete their account.'], 403);
         }
 
@@ -121,7 +124,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if (!($user instanceof PortalUser)) {
+        if (! ($user instanceof PortalUser)) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
@@ -134,14 +137,14 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Your account has been recovered successfully.',
-            'token'   => $token,
+            'token' => $token,
         ]);
     }
 
     public function update(Request $request)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -154,10 +157,10 @@ class ProfileController extends Controller
         $emailChanging = strcasecmp((string) $request->input('email'), (string) $user->email) !== 0;
 
         $rules = [
-            'name'  => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255',
-                \Illuminate\Validation\Rule::unique($table, 'email')->ignore($user->id),
-                \Illuminate\Validation\Rule::unique($otherTable, 'email')->whereNull('deleted_at'),
+                Rule::unique($table, 'email')->ignore($user->id),
+                Rule::unique($otherTable, 'email')->whereNull('deleted_at'),
             ],
             'avatar' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/(jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+\/]+=*$/i'],
         ];
@@ -181,17 +184,17 @@ class ProfileController extends Controller
             if ($request->filled('phone')) {
                 $digits = preg_replace('/\D/', '', (string) $request->input('phone'));
                 if (str_starts_with($digits, '63') && strlen($digits) === 12) {
-                    $digits = '0' . substr($digits, 2);
+                    $digits = '0'.substr($digits, 2);
                 }
                 $request->merge(['phone' => $digits]);
             }
 
             $rules += [
-                'phone'    => 'sometimes|nullable|string|max:20',
-                'address'  => 'sometimes|nullable|string|max:500',
-                'city'     => 'sometimes|nullable|string|max:255',
+                'phone' => 'sometimes|nullable|string|max:20',
+                'address' => 'sometimes|nullable|string|max:500',
+                'city' => 'sometimes|nullable|string|max:255',
                 'province' => 'sometimes|nullable|string|max:255',
-                'zip'      => 'sometimes|nullable|string|max:10',
+                'zip' => 'sometimes|nullable|string|max:10',
             ];
         }
 
@@ -202,24 +205,24 @@ class ProfileController extends Controller
         // Changing the sign-in address takes the current password, so a
         // borrowed or stolen session cannot quietly move the account (and the
         // password-reset link) to an address the attacker controls.
-        if ($emailChanging && !empty($user->password)) {
+        if ($emailChanging && ! empty($user->password)) {
             $rules['current_password'] = 'required|string';
         }
 
         $validated = $request->validate($rules);
 
-        if ($emailChanging && !empty($user->password)
-            && !\Illuminate\Support\Facades\Hash::check($validated['current_password'], $user->password)) {
+        if ($emailChanging && ! empty($user->password)
+            && ! Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'The current password is incorrect.',
-                'errors'  => ['current_password' => ['The current password is incorrect.']],
+                'errors' => ['current_password' => ['The current password is incorrect.']],
             ], 422);
         }
         unset($validated['current_password']);
 
         // Belt and braces: never let a role survive from an unauthorised caller,
         // even if a future rule change reintroduces it.
-        if (!$canManageRoles) {
+        if (! $canManageRoles) {
             unset($validated['role']);
         }
 
@@ -233,7 +236,9 @@ class ProfileController extends Controller
                     array_intersect_key($validated, array_flip(['name', 'email', 'phone', 'address', 'city', 'province', 'zip'])),
                     fn ($v) => $v !== null && $v !== ''
                 );
-                if ($syncData) $owner->update($syncData);
+                if ($syncData) {
+                    $owner->update($syncData);
+                }
             }
             Cache::forget("portal_overview_{$user->id}");
         }
@@ -245,7 +250,7 @@ class ProfileController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Profile updated successfully',
-            'user' => $user->fresh()
+            'user' => $user->fresh(),
         ]);
     }
 }

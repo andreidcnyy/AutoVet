@@ -27,12 +27,12 @@ class SyncToPortal extends Command
     public function handle(SyncService $syncService): void
     {
         $this->info('Starting synchronization to portal...');
-        
+
         try {
             $syncService->pushToPortal();
             $this->info('Synchronization check complete.');
         } catch (\Exception $e) {
-            $this->error('Synchronization failed: ' . $e->getMessage());
+            $this->error('Synchronization failed: '.$e->getMessage());
         }
     }
 }

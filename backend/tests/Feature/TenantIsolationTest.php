@@ -5,7 +5,11 @@ namespace Tests\Feature;
 use App\Enums\Roles;
 use App\Models\Admin;
 use App\Models\Notification;
+use App\Models\Owner;
+use App\Models\Pet;
 use App\Models\PortalUser;
+use App\Models\Service;
+use App\Models\Species;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
@@ -29,12 +33,13 @@ class TenantIsolationTest extends TestCase
     {
         $this->app['auth']->forgetGuards();
         Sanctum::actingAs($user, ['*']);
+
         return $this;
     }
 
     public function test_staff_and_client_with_the_same_id_do_not_share_notifications(): void
     {
-        $staff  = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['id' => 900]);
+        $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['id' => 900]);
         $client = PortalUser::factory()->create(['id' => 900]);
 
         Notification::create([
@@ -52,10 +57,10 @@ class TenantIsolationTest extends TestCase
     public function test_staff_cannot_reference_another_clinics_pet(): void
     {
         $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['clinic_id' => 1]);
-        $owner = \App\Models\Owner::create(['clinic_id' => 2, 'name' => 'Other', 'phone' => '09222222222']);
-        $species = \App\Models\Species::create(['clinic_id' => 2, 'name' => 'Cat']);
-        $pet = \App\Models\Pet::create(['clinic_id' => 2, 'owner_id' => $owner->id, 'name' => 'Tom', 'species_id' => $species->id, 'weight' => 3, 'weight_unit' => 'kg']);
-        $service = \App\Models\Service::create(['clinic_id' => 1, 'name' => 'Consultation', 'base_price' => 500]);
+        $owner = Owner::create(['clinic_id' => 2, 'name' => 'Other', 'phone' => '09222222222']);
+        $species = Species::create(['clinic_id' => 2, 'name' => 'Cat']);
+        $pet = Pet::create(['clinic_id' => 2, 'owner_id' => $owner->id, 'name' => 'Tom', 'species_id' => $species->id, 'weight' => 3, 'weight_unit' => 'kg']);
+        $service = Service::create(['clinic_id' => 1, 'name' => 'Consultation', 'base_price' => 500]);
 
         $this->as($staff)->postJson('/api/appointments', [
             'pet_id' => $pet->id, 'service_id' => $service->id,
@@ -72,7 +77,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_staff_channels_are_per_clinic(): void
     {
-        $staff  = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['clinic_id' => 1]);
+        $staff = Admin::factory()->role(Roles::CLINIC_ADMIN->value)->create(['clinic_id' => 1]);
         $client = PortalUser::factory()->create();
 
         $channels = (fn () => $this->channels)->call(Broadcast::driver());

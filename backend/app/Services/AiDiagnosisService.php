@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Log;
 class AiDiagnosisService
 {
     private string $apiKey;
+
     private string $model = 'claude-sonnet-4-6';
+
     private string $apiUrl = 'https://api.anthropic.com/v1/messages';
 
     public function __construct()
@@ -18,7 +20,7 @@ class AiDiagnosisService
 
     public function getSupportSuggestions(array $petProfile, string $symptoms): array
     {
-        if (!$this->apiKey) {
+        if (! $this->apiKey) {
             return ['error' => 'AI service is not configured.'];
         }
 
@@ -26,35 +28,38 @@ class AiDiagnosisService
 
         try {
             $response = Http::withHeaders([
-                'x-api-key'         => $this->apiKey,
+                'x-api-key' => $this->apiKey,
                 'anthropic-version' => '2023-06-01',
-                'content-type'      => 'application/json',
+                'content-type' => 'application/json',
             ])->post($this->apiUrl, [
-                'model'      => $this->model,
+                'model' => $this->model,
                 'max_tokens' => 1024,
-                'messages'   => [
+                'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
             ]);
 
-            if (!$response->successful()) {
-                Log::error('[AI-DIAGNOSIS] API error: ' . $response->body());
+            if (! $response->successful()) {
+                Log::error('[AI-DIAGNOSIS] API error: '.$response->body());
+
                 return ['error' => 'AI service returned an error. Please try again.'];
             }
 
             $content = $response->json('content.0.text', '');
+
             return $this->parseResponse($content);
 
         } catch (\Throwable $e) {
-            Log::error('[AI-DIAGNOSIS] Exception: ' . $e->getMessage());
+            Log::error('[AI-DIAGNOSIS] Exception: '.$e->getMessage());
+
             return ['error' => 'AI service is temporarily unavailable.'];
         }
     }
 
     private function buildPrompt(array $pet, string $symptoms): string
     {
-        $history = !empty($pet['medical_history'])
-            ? implode("\n", array_map(fn($r) => "- {$r}", $pet['medical_history']))
+        $history = ! empty($pet['medical_history'])
+            ? implode("\n", array_map(fn ($r) => "- {$r}", $pet['medical_history']))
             : 'No prior records on file.';
 
         return <<<PROMPT

@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Service;
+use App\Exceptions\UserFacingException;
 use App\Models\Pet;
-use App\Models\ServicePrice;
+use App\Models\Service;
+use App\Models\WeightRange;
 
 class PricingService
 {
@@ -23,13 +24,13 @@ class PricingService
 
         if ($service->pricing_type === 'size_based' && isset($pet)) {
             $petSizeId = $pet->size_category_id;
-            
+
             if ($petSizeId) {
                 $rule = $service->pricingRules()
                     ->where('basis_type', 'size')
                     ->where('reference_id', $petSizeId)
                     ->first();
-                
+
                 if ($rule) {
                     return (float) $rule->price * $quantity;
                 }
@@ -45,22 +46,22 @@ class PricingService
                 }
             }
 
-            throw new \App\Exceptions\UserFacingException("No pricing rule configured for service '{$service->name}' for pet size.");
+            throw new UserFacingException("No pricing rule configured for service '{$service->name}' for pet size.");
         }
 
         if ($service->pricing_type === 'weight_based' && isset($pet)) {
             $petWeight = $weight ?? (float) $pet->weight;
-            
+
             if ($petWeight === null || $petWeight <= 0) {
-                throw new \App\Exceptions\UserFacingException("Pet weight is required for weight-based service '{$service->name}'.");
+                throw new UserFacingException("Pet weight is required for weight-based service '{$service->name}'.");
             }
-            
-            $range = \App\Models\WeightRange::where('status', 'Active')
+
+            $range = WeightRange::where('status', 'Active')
                 ->where('species_id', $pet->species_id)
                 ->where('min_weight', '<=', $petWeight)
                 ->where(function ($query) use ($petWeight) {
                     $query->where('max_weight', '>=', $petWeight)
-                          ->orWhereNull('max_weight');
+                        ->orWhereNull('max_weight');
                 })
                 ->first();
 
@@ -69,17 +70,18 @@ class PricingService
                     ->where('basis_type', 'size')
                     ->where('reference_id', $range->size_category_id)
                     ->first();
-                
+
                 if ($rule) {
                     return (float) $rule->price * $quantity;
                 }
             }
 
-            throw new \App\Exceptions\UserFacingException("No pricing rule configured for weight '{$petWeight}kg' (Species: {$pet->species_id}) for service '{$service->name}'.");
+            throw new UserFacingException("No pricing rule configured for weight '{$petWeight}kg' (Species: {$pet->species_id}) for service '{$service->name}'.");
         }
 
         // Final fallback: Use base_price or legacy price
         $finalPrice = ($service->base_price ?? $service->price ?? 0);
+
         return (float) $finalPrice * $quantity;
     }
 
@@ -93,7 +95,7 @@ class PricingService
         }
 
         $expectedPrice = $this->calculatePrice($service, $pet);
-        
+
         // Allow for minor floating point differences if any, or strict equality
         return abs($expectedPrice - $submittedUnitPrice) < 0.01;
     }

@@ -19,7 +19,7 @@ Broadcast::channel('notifications.{id}', function ($user, $id) {
 // Staff channels are per clinic (see App\Support\Channels). A super admin
 // may listen to any clinic.
 Broadcast::channel('admin.{clinicId}.{topic}', function ($user, $clinicId, $topic) {
-    if (!$user instanceof Admin || !in_array($topic, ['appointments', 'inventory', 'notifications', 'invoices'], true)) {
+    if (! $user instanceof Admin || ! in_array($topic, ['appointments', 'inventory', 'notifications', 'invoices'], true)) {
         return false;
     }
 

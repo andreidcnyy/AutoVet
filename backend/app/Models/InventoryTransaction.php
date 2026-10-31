@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use App\Traits\HasClinic;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryTransaction extends Model
 {
@@ -18,7 +17,7 @@ class InventoryTransaction extends Model
         'previous_stock',
         'new_stock',
         'remarks',
-        'created_by'
+        'created_by',
     ];
 
     public function inventory()

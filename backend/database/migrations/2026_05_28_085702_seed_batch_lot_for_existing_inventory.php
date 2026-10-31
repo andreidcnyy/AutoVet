@@ -7,13 +7,13 @@ return new class extends Migration
 {
     // Maps inventory_category name → [batch_number, lot_number]
     private array $map = [
-        'Vaccines'          => ['BATCH-VAC-2025',  'LOT-VAC-001'],
-        'Medications'       => ['BATCH-MED-2025',  'LOT-MED-001'],
-        'Consumables'       => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
-        'Equipment'         => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
-        'Lab Supplies'      => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
+        'Vaccines' => ['BATCH-VAC-2025',  'LOT-VAC-001'],
+        'Medications' => ['BATCH-MED-2025',  'LOT-MED-001'],
+        'Consumables' => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
+        'Equipment' => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
+        'Lab Supplies' => ['BATCH-SUPP-2025', 'LOT-SUPP-001'],
         'Grooming Supplies' => ['BATCH-GRM-2025',  'LOT-GRM-001'],
-        'Food & Supplements'=> ['BATCH-FOOD-2025', 'LOT-FOOD-001'],
+        'Food & Supplements' => ['BATCH-FOOD-2025', 'LOT-FOOD-001'],
     ];
 
     public function up(): void
@@ -24,7 +24,9 @@ return new class extends Migration
 
         foreach ($this->map as $categoryName => [$batch, $lot]) {
             $categoryId = $categories[$categoryName] ?? null;
-            if (!$categoryId) continue;
+            if (! $categoryId) {
+                continue;
+            }
 
             DB::table('inventories')
                 ->where('inventory_category_id', $categoryId)

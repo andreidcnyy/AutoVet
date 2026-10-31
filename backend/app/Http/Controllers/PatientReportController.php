@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pet;
 use App\Models\Owner;
+use App\Models\Pet;
 use App\Models\Species;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class PatientReportController extends Controller
 {
@@ -23,7 +23,7 @@ class PatientReportController extends Controller
             ->map(function ($item) {
                 return [
                     'name' => $item->species->name ?? 'Unknown',
-                    'value' => $item->total
+                    'value' => $item->total,
                 ];
             });
 
@@ -61,7 +61,7 @@ class PatientReportController extends Controller
             ->get();
 
         return response()->json([
-            'sex' => $sexDistribution
+            'sex' => $sexDistribution,
         ]);
     }
 }

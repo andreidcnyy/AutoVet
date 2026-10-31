@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\StoredFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 // The API has no web pages. The stock Laravel welcome page advertised the
 // framework and linked to routes that do not exist here.
@@ -17,7 +21,7 @@ Route::get('/', function () {
  * never passes those requests to the router.
  */
 Route::get('/media/{path}', function (string $path) {
-    $serve = function (\App\Models\StoredFile $file) {
+    $serve = function (StoredFile $file) {
         $contents = is_resource($file->contents) ? stream_get_contents($file->contents) : $file->contents;
 
         return response($contents, 200)
@@ -25,7 +29,7 @@ Route::get('/media/{path}', function (string $path) {
             ->header('Cache-Control', 'public, max-age=31536000, immutable');
     };
 
-    $file = \App\Models\StoredFile::where('path', $path)->first();
+    $file = StoredFile::where('path', $path)->first();
     if ($file) {
         return $serve($file);
     }
@@ -39,8 +43,8 @@ Route::get('/media/{path}', function (string $path) {
     if ($basename !== '') {
         // % and _ in the requested name are matched literally; as wildcards
         // they let anyone list every stored image ("/media/%25").
-        $file = \App\Models\StoredFile::where('path', $basename)
-            ->orWhere('path', 'like', '%/' . addcslashes($basename, '%_\\'))
+        $file = StoredFile::where('path', $basename)
+            ->orWhere('path', 'like', '%/'.addcslashes($basename, '%_\\'))
             ->first();
         if ($file) {
             return $serve($file);
@@ -52,7 +56,7 @@ Route::get('/media/{path}', function (string $path) {
     // (FILESYSTEM_PUBLIC=s3) — legacy files written before the move to
     // stored_files still live here, and the S3 disk cannot see them.
     $root = realpath(storage_path('app/public'));
-    $local = realpath(storage_path('app/public/' . $path));
+    $local = realpath(storage_path('app/public/'.$path));
     // realpath() resolves "..", so this rejects any traversal outside the root.
     if ($root && $local && str_starts_with($local, $root) && is_file($local)) {
         return response()->file($local, [
@@ -69,16 +73,16 @@ Route::get('/media/{path}', function (string $path) {
     // images would otherwise hold that many PHP workers at once — enough to
     // stall the whole app on a small instance.
     $downKey = 'media:public-disk-down';
-    if (!\Illuminate\Support\Facades\Cache::get($downKey)) {
+    if (! Cache::get($downKey)) {
         try {
-            $disk = \Illuminate\Support\Facades\Storage::disk('public');
+            $disk = Storage::disk('public');
             if ($disk->exists($path)) {
                 return $disk->response($path);
             }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Cache::put($downKey, true, now()->addMinutes(5));
-            \Illuminate\Support\Facades\Log::warning('[media] public disk unreachable, skipping it for 5 minutes', [
-                'path'  => $path,
+        } catch (Throwable $e) {
+            Cache::put($downKey, true, now()->addMinutes(5));
+            Log::warning('[media] public disk unreachable, skipping it for 5 minutes', [
+                'path' => $path,
                 'error' => $e->getMessage(),
             ]);
         }

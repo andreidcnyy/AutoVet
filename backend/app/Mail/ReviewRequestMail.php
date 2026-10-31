@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,23 +14,26 @@ class ReviewRequestMail extends Mailable
     use Queueable, SerializesModels;
 
     public $owner;
+
     public $invoice;
+
     public $clinicName;
+
     public $portalUrl;
 
     public function __construct($owner, $invoice)
     {
-        $this->owner      = $owner;
-        $this->invoice    = $invoice;
-        $settings         = \App\Models\Setting::all()->pluck('value', 'key');
+        $this->owner = $owner;
+        $this->invoice = $invoice;
+        $settings = Setting::all()->pluck('value', 'key');
         $this->clinicName = $settings['clinic_name'] ?? config('app.name');
-        $this->portalUrl  = config('app.portal_url');
+        $this->portalUrl = config('app.portal_url');
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'How was your visit? Share your feedback — ' . $this->clinicName,
+            subject: 'How was your visit? Share your feedback — '.$this->clinicName,
         );
     }
 

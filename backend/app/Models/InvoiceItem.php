@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class InvoiceItem extends Model
 {
-    use HasSyncFields, HasAuditTrail, HasClinic;
+    use HasAuditTrail, HasClinic, HasSyncFields;
 
     protected static function booted(): void
     {
         static::creating(function (InvoiceItem $item) {
-            if (!$item->clinic_id && $item->invoice_id) {
+            if (! $item->clinic_id && $item->invoice_id) {
                 $invoiceClinicId = Invoice::withoutGlobalScopes()
                     ->whereKey($item->invoice_id)
                     ->value('clinic_id');
@@ -44,7 +44,7 @@ class InvoiceItem extends Model
     ];
 
     protected $casts = [
-        'synced_at'                => 'datetime',
+        'synced_at' => 'datetime',
         'last_modified_locally_at' => 'datetime',
     ];
 

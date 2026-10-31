@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Inventory;
 use App\Models\InventoryUsageHistory;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 class ExportInventoryHistory extends Command
 {
     protected $signature = 'app:export-inventory-history {inventory_id} {--days=30 : Number of days of history to export}';
+
     protected $description = 'Exports a daily stock-depletion curve from verified sales usage history to CSV for AI forecasting.';
 
     public function handle(): int
@@ -19,8 +22,9 @@ class ExportInventoryHistory extends Command
         $days = (int) $this->option('days');
 
         $inventory = Inventory::find($inventoryId);
-        if (!$inventory) {
+        if (! $inventory) {
             $this->error("Inventory item with ID {$inventoryId} not found.");
+
             return Command::FAILURE;
         }
 
@@ -39,15 +43,15 @@ class ExportInventoryHistory extends Command
 
         // Aggregate total quantity used per day
         $dailyUsage = [];
-        
+
         // Generate a continuous span of dates to guarantee len(df) >= 3 in Python
-        $period = \Carbon\CarbonPeriod::create($startDate, $today);
+        $period = CarbonPeriod::create($startDate, $today);
         foreach ($period as $date) {
             $dailyUsage[$date->toDateString()] = 0;
         }
 
         foreach ($usageRows as $row) {
-            $date = $row->usage_date instanceof \Carbon\Carbon
+            $date = $row->usage_date instanceof Carbon
                 ? $row->usage_date->toDateString()
                 : (string) $row->usage_date;
 
