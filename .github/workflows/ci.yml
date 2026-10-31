@@ -62,6 +62,12 @@ jobs:
           done < <(find app routes config bootstrap database tests -name "*.php" -print0)
           exit $error
 
+      # Laravel Pint, default Laravel preset. Fails if any file is not
+      # formatted; run ./vendor/bin/pint locally to fix.
+      - name: Check code style
+        working-directory: backend
+        run: ./vendor/bin/pint --test
+
       - name: Generate an app key for the test run
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
@@ -92,6 +98,12 @@ jobs:
       - name: Audit production dependencies
         working-directory: frontend/portal
         run: npm audit --omit=dev --audit-level=high
+
+      # Errors fail the job; warnings (explicit any, hook dependencies) are
+      # reported but allowed for now. See eslint.config.js.
+      - name: Lint
+        working-directory: frontend/portal
+        run: npm run lint
 
       - name: Build
         working-directory: frontend/portal
