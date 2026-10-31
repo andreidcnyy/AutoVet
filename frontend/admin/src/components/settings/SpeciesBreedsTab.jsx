@@ -323,7 +323,7 @@ export default function SpeciesBreedsTab() {
               ) : (
                 <div
                   className="cursor-pointer flex-1 font-medium text-zinc-700 dark:text-zinc-200"
-                  onClick={() => { setSelectedSpecies(s); setBreedSearch(""); }}
+                  onClick={() => setSelectedSpecies(s)}
                 >
                   {s.name} <span className="text-xs text-zinc-400 ml-2">({s.breeds?.length || 0} breeds)</span>
                 </div>
