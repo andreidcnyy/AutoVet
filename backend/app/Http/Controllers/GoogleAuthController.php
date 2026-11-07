@@ -7,6 +7,7 @@ use App\Models\Clinic;
 use App\Models\Owner;
 use App\Models\PortalUser;
 use App\Support\AccountStatus;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -62,6 +63,7 @@ class GoogleAuthController extends Controller
             }
             // Lifetime comes from config('sanctum.expiration'), like every other sign-in.
             $token = $user->createToken('portal-google')->plainTextToken;
+            AuditLogger::record('logged_in', $user, null, ['device' => 'Google sign-in'], $user);
             $profileComplete = ! empty($user->phone) && ! empty($user->address)
                             && ! empty($user->province) && ! empty($user->city);
 

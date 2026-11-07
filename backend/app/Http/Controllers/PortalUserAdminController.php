@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Events\PortalUserStatusChanged;
-use App\Models\AuditLog;
 use App\Models\PortalUser;
+use App\Support\AuditLogger;
 use App\Support\ListQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PortalUserAdminController extends Controller
 {
@@ -75,20 +74,9 @@ class PortalUserAdminController extends Controller
 
     private function auditPortalAction(PortalUser $portalUser, string $action, string $oldStatus, string $newStatus): void
     {
-        try {
-            AuditLog::create([
-                'clinic_id' => $portalUser->clinic_id,
-                'user_id' => auth()->id(),
-                'action' => $action,
-                'model_type' => PortalUser::class,
-                'model_id' => $portalUser->id,
-                'old_values' => ['status' => $oldStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
-                'new_values' => ['status' => $newStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Portal audit log failed: '.$e->getMessage());
-        }
+        AuditLogger::record($action, $portalUser,
+            ['status' => $oldStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
+            ['status' => $newStatus, 'name' => $portalUser->name, 'email' => $portalUser->email],
+        );
     }
 }

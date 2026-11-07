@@ -9,6 +9,7 @@ use App\Models\Owner;
 use App\Models\PortalUser;
 use App\Notifications\VerifyRegistration;
 use App\Support\AccountStatus;
+use App\Support\AuditLogger;
 use App\Support\ClientIp;
 use App\Support\Turnstile;
 use Carbon\Carbon;
@@ -220,6 +221,9 @@ class AuthController extends Controller
         // message points those users at the Google button instead.
         if (! $user || empty($user->password) || ! Hash::check($request->password, $user->password)) {
             \Log::warning('Login failed', ['reason' => $user ? 'password' : 'unknown_email']);
+            if ($user) {
+                AuditLogger::failedLogin($user);
+            }
 
             return response()->json([
                 'error' => 'Invalid credentials. If you signed up with Google, use "Continue with Google".',
@@ -306,6 +310,8 @@ class AuthController extends Controller
             'token' => $token,
         ];
 
+        AuditLogger::record('logged_in', $user, null, ['device' => $deviceName], $user);
+
         \Log::info('User logged in successfully', [
             'user_id' => $user->id,
             'table' => $is_admin ? 'admins' : 'portal_users',
@@ -351,6 +357,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        AuditLogger::record('logged_out', $request->user(), null, null, $request->user());
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully']);
@@ -420,7 +427,8 @@ class AuthController extends Controller
             return response()->json(['error' => 'User not found.'], 404);
         }
 
-        $user->update(['password' => Hash::make($request->password)]);
+        // Signed out, but the reset link proves who it is: credit the change to them.
+        AuditLogger::as($user, fn () => $user->update(['password' => Hash::make($request->password)]));
         // Whoever held the old password may still hold a session made with it.
         $user->tokens()->delete();
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();

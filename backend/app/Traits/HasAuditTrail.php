@@ -2,65 +2,37 @@
 
 namespace App\Traits;
 
-use App\Models\Admin;
-use App\Models\AuditLog;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Request;
+use App\Support\AuditLogger;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Writes an audit row when the model is created, changed, removed, restored
+ * or permanently deleted. Updates record only the fields that changed, and an
+ * update that touched nothing but timestamps is not recorded at all.
+ */
 trait HasAuditTrail
 {
     public static function bootHasAuditTrail()
     {
         static::created(function ($model) {
-            $model->logAudit('created', null, $model->getAttributes());
+            AuditLogger::record('created', $model, null, $model->getAttributes());
         });
 
         static::updated(function ($model) {
-            $model->logAudit('updated', $model->getOriginal(), $model->getAttributes());
+            if ($diff = AuditLogger::diff($model)) {
+                AuditLogger::record('updated', $model, $diff[0], $diff[1]);
+            }
         });
 
         static::deleted(function ($model) {
-            $model->logAudit('deleted', $model->getOriginal(), null);
+            $soft = in_array(SoftDeletes::class, class_uses_recursive($model), true) && ! $model->isForceDeleting();
+            AuditLogger::record($soft ? 'archived' : 'deleted', $model, $model->getOriginal(), null);
         });
-    }
 
-    protected function logAudit($action, $old, $new)
-    {
-        try {
-            $user = Auth::user();
-            $userId = null;
-
-            // Only log user_id if the authenticated user is an Admin
-            // because audit_logs.user_id points to the admins table.
-            if ($user instanceof Admin) {
-                $userId = $user->id;
-            }
-
-            // Derive clinic_id: prefer the audited model's own clinic_id,
-            // fall back to the authenticated user's clinic_id. Skip the
-            // audit insert entirely if we can't determine one (audit_logs.clinic_id
-            // is NOT NULL, so a missing value would throw and we'd lose nothing
-            // observable by suppressing the row).
-            $clinicId = $this->clinic_id ?? ($user->clinic_id ?? null);
-            if ($clinicId === null) {
-                return;
-            }
-
-            AuditLog::create([
-                'clinic_id' => $clinicId,
-                'user_id' => $userId,
-                'action' => $action,
-                'model_type' => get_class($this),
-                'model_id' => $this->id,
-                'old_values' => $old,
-                'new_values' => $new,
-                'ip_address' => Request::ip(),
-                'user_agent' => Request::userAgent(),
-            ]);
-        } catch (\Exception $e) {
-            // Do not break the main transaction if audit logging fails
-            Log::error('Failed to log audit: '.$e->getMessage());
+        if (in_array(SoftDeletes::class, class_uses_recursive(static::class), true)) {
+            static::restored(function ($model) {
+                AuditLogger::record('restored', $model, null, ['deleted_at' => null]);
+            });
         }
     }
 }

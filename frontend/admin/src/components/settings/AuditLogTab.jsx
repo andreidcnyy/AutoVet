@@ -52,8 +52,23 @@ const MODEL_LABELS = {
   Inventory: "Inventory Item", InventoryItem: "Inventory Item",
   MedicalRecord: "Medical Record", Notification: "Notification",
   SystemAnnouncement: "Announcement", Setting: "System Setting",
-  Breed: "Breed", Species: "Species",
+  Breed: "Breed", Species: "Species", Admin: "Staff Account",
+  Owner: "Client Record", InvoiceItem: "Invoice Item", CmsContent: "Website Content",
 };
+
+// Plain words for every action the trail records.
+const ACTION_LABELS = {
+  created: "Created", updated: "Updated", deleted: "Deleted permanently",
+  archived: "Archived", restored: "Restored", logged_in: "Signed in",
+  logged_out: "Signed out", login_failed: "Failed sign-in",
+  impersonated: "Impersonated", suspended: "Suspended", reactivated: "Reactivated",
+};
+const friendlyAction = (a) => ACTION_LABELS[a] || capitalize(String(a || "").replace(/_/g, " "));
+
+const ACTOR_LABELS = { staff: "Staff", client: "Client", guest: "Not signed in", system: "System", impersonation: "Super admin" };
+
+// Who did it: the name saved with the entry, falling back to the linked account.
+const actorName = (log) => log.actor_name || log.user?.name || null;
 
 const friendlyModel = (type) => {
   if (!type) return "Record";
@@ -79,7 +94,8 @@ const formatValue = (val) => {
   return str;
 };
 
-const extractLabel = (values) => {
+const extractLabel = (values, log) => {
+  if (log?.label) return log.label;
   if (!values) return null;
   const raw = values.name || values.title || values.invoice_number || values.item_name || values.subject || values.email || null;
   if (raw) return raw;
@@ -88,11 +104,29 @@ const extractLabel = (values) => {
   return null;
 };
 
+// Fields that changed. Secrets arrive as "[hidden]" on both sides, so a
+// hidden field present in the entry counts as changed.
+const HIDDEN_VALUE = "[hidden]";
+const changedKeys = (log) =>
+  Object.keys(log.new_values || {}).filter((k) =>
+    log.new_values[k] === HIDDEN_VALUE
+      ? true
+      : !isHidden(k) && JSON.stringify(log.old_values?.[k]) !== JSON.stringify(log.new_values[k])
+  );
+
 // Plain-English one-line summary for the table row
 const buildSummary = (log) => {
   const model = friendlyModel(log.model_type);
-  const vals = log.action === "deleted" ? log.old_values : log.new_values;
-  const label = extractLabel(vals);
+  const vals = log.action === "deleted" || log.action === "archived" ? log.old_values : log.new_values;
+  const label = extractLabel(vals, log);
+  const who = label ? `"${label}"` : model;
+
+  if (log.action === "logged_in") return `${label || "Account"} signed in${log.new_values?.device ? ` (${log.new_values.device})` : ""}`;
+  if (log.action === "logged_out") return `${label || "Account"} signed out`;
+  if (log.action === "login_failed") return `Wrong password for ${label || "an account"}`;
+  if (log.action === "archived") return `Archived ${model}: ${who}`;
+  if (log.action === "restored") return `Restored ${model}: ${who}`;
+  if (log.action === "impersonated") return `Signed in as ${who} (impersonation)`;
 
   if (log.action === "created") {
     return label ? `Added a new ${model}: "${label}"` : `Added a new ${model}`;
@@ -101,9 +135,7 @@ const buildSummary = (log) => {
     return label ? `Removed ${model}: "${label}"` : `Removed a ${model}`;
   }
   if (log.action === "updated" && log.old_values && log.new_values) {
-    const changed = Object.keys(log.new_values).filter(
-      (k) => !isHidden(k) && JSON.stringify(log.old_values[k]) !== JSON.stringify(log.new_values[k])
-    );
+    const changed = changedKeys(log);
     if (changed.includes("status")) {
       const from = formatValue(log.old_values.status) ?? log.old_values.status;
       const to   = formatValue(log.new_values.status) ?? log.new_values.status;
@@ -122,18 +154,14 @@ const buildSummary = (log) => {
 // User-friendly detail modal — no raw field names or JSON shown
 function DetailModal({ log, onClose }) {
   const model = friendlyModel(log.model_type);
-  const label = extractLabel(log.action === "deleted" ? log.old_values : log.new_values);
+  const label = extractLabel(log.action === "deleted" || log.action === "archived" ? log.old_values : log.new_values, log);
   const title = label ? `"${label}"` : `${model}`;
 
   // For updated: only show fields that actually changed
-  const changedFields = log.action === "updated" && log.old_values && log.new_values
-    ? Object.keys(log.new_values).filter(
-        (k) => !isHidden(k) && JSON.stringify(log.old_values[k]) !== JSON.stringify(log.new_values[k])
-      )
-    : [];
+  const changedFields = log.action === "updated" && log.old_values && log.new_values ? changedKeys(log) : [];
 
   // For created / deleted: show visible fields from the snapshot
-  const snapshotValues = log.action === "deleted" ? log.old_values : log.new_values;
+  const snapshotValues = log.action === "deleted" || log.action === "archived" ? log.old_values : log.new_values;
   const snapshotFields = snapshotValues
     ? Object.keys(snapshotValues).filter((k) => !isHidden(k) && formatValue(snapshotValues[k]) !== null)
     : [];
@@ -142,7 +170,9 @@ function DetailModal({ log, onClose }) {
     created: { label: "New Record Added",  color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800" },
     updated: { label: "Record Updated",    color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" },
     deleted: { label: "Record Removed",    color: "text-rose-600 dark:text-rose-400",     bg: "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800" },
-  }[log.action] ?? { label: capitalize(log.action), color: "text-zinc-500", bg: "bg-zinc-50 border-zinc-100" };
+    archived: { label: "Record Archived",  color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800" },
+    restored: { label: "Record Restored",  color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800" },
+  }[log.action] ?? { label: friendlyAction(log.action), color: "text-zinc-500", bg: "bg-zinc-50 border-zinc-100 dark:bg-dark-surface dark:border-dark-border" };
 
   return createPortal(
     <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
@@ -156,16 +186,21 @@ function DetailModal({ log, onClose }) {
               {actionMeta.label}
             </p>
             <h3 className="text-base font-black text-zinc-800 dark:text-zinc-100 leading-tight">
-              {model} Â· {title}
+              {model} · {title}
             </h3>
             <p className="text-xs text-zinc-400">
               {new Date(log.created_at).toLocaleString("en-PH", {
                 month: "long", day: "numeric", year: "numeric",
                 hour: "2-digit", minute: "2-digit",
               })}
-              {log.user?.name && (
-                <> &nbsp;Â·&nbsp; <span className="font-semibold text-zinc-600 dark:text-zinc-300">by {log.user.name}</span></>
+              {actorName(log) && (
+                <> &nbsp;·&nbsp; <span className="font-semibold text-zinc-600 dark:text-zinc-300">by {actorName(log)}</span></>
               )}
+            </p>
+            <p className="text-[11px] text-zinc-400">
+              {ACTOR_LABELS[log.actor_type] || "Staff"}{log.actor_role ? ` · ${log.actor_role.replace(/_/g, " ")}` : ""}
+              {log.ip_address ? ` · IP ${log.ip_address}` : ""}
+              {log.model_id ? ` · Record #${log.model_id}` : ""}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-200 dark:hover:bg-dark-border transition-colors text-zinc-400">
@@ -184,8 +219,9 @@ function DetailModal({ log, onClose }) {
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">What changed</p>
                 {changedFields.map((key) => {
-                  const before = formatValue(log.old_values[key]) ?? "Not set";
-                  const after  = formatValue(log.new_values[key]) ?? "Not set";
+                  const secret = log.new_values[key] === HIDDEN_VALUE;
+                  const before = secret ? "Hidden" : formatValue(log.old_values[key]) ?? "Not set";
+                  const after  = secret ? "Changed (value hidden)" : formatValue(log.new_values[key]) ?? "Not set";
                   return (
                     <div key={key} className={clsx("rounded-xl border p-3 space-y-1.5", actionMeta.bg)}>
                       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
@@ -204,13 +240,13 @@ function DetailModal({ log, onClose }) {
           )}
 
           {/* CREATED / DELETED: show a summary of the record */}
-          {(log.action === "created" || log.action === "deleted") && (
+          {(log.action === "created" || log.action === "deleted" || log.action === "archived") && (
             snapshotFields.length === 0 ? (
               <p className="text-sm text-zinc-400 text-center py-8">No details recorded.</p>
             ) : (
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
-                  {log.action === "created" ? "Record details" : "Removed record details"}
+                  {log.action === "created" ? "Record details" : log.action === "archived" ? "Archived record details" : "Removed record details"}
                 </p>
                 <div className={clsx("rounded-xl border divide-y dark:divide-dark-border overflow-hidden", actionMeta.bg)}>
                   {snapshotFields.map((key) => {
@@ -251,12 +287,24 @@ function AuditLogTab() {
     per_page: 20,
   });
   const [filters, setFilters] = useState({
+    search: "",
     action_type: "",
+    actor_type: "",
     model_type: "",
     user_id: "",
     date_from: "",
     date_to: "",
+    request_id: "",
   });
+
+  // Typing in the search box waits a moment before asking the server.
+  const [searchInput, setSearchInput] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters((f) => (f.search === searchInput.trim() ? f : { ...f, search: searchInput.trim() }));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   // In the URL, so Back steps through pages instead of leaving Settings.
   const [page, setPage] = usePageParam("auditPage");
@@ -270,8 +318,7 @@ function AuditLogTab() {
     }).catch(() => {});
   }, []);
 
-  const isDefaultView = (page, f) =>
-    page === 1 && !f.action_type && !f.model_type && !f.user_id && !f.date_from && !f.date_to;
+  const isDefaultView = (page, f) => page === 1 && Object.values(f).every((v) => !v);
 
   const applyResponse = (data) => {
     if (!data) return;
@@ -355,6 +402,12 @@ function AuditLogTab() {
     created: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200",
     updated: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200",
     deleted: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200",
+    archived: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200",
+    restored: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 border-teal-200",
+    logged_in: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200",
+    logged_out: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200",
+    login_failed: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200",
+    impersonated: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400 border-violet-200",
   };
 
   const Pagination = ({ compact = false }) =>
@@ -462,11 +515,48 @@ function AuditLogTab() {
             className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
           >
             <option value="">All Actions</option>
-            <option value="created">Created</option>
-            <option value="updated">Updated</option>
-            <option value="deleted">Deleted</option>
+            {Object.entries(ACTION_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </div>
+        <div className="sm:col-span-3">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Search</label>
+          <div className="relative">
+            <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="search"
+              placeholder="Record or person name, e.g. Bella, INV-0012, Dr. Reyes"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Done by</label>
+          <select
+            value={filters.actor_type}
+            onChange={(e) => setFilters({ ...filters, actor_type: e.target.value })}
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
+          >
+            <option value="">Anyone</option>
+            {Object.entries(ACTOR_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        {filters.request_id && (
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setFilters({ ...filters, request_id: "" })}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+            >
+              Showing one action <FiX className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -509,20 +599,23 @@ function AuditLogTab() {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-100 whitespace-nowrap">
-                          {log.user?.name ?? <span className="text-zinc-400 font-normal italic">System</span>}
+                          {actorName(log) ?? <span className="text-zinc-400 font-normal italic">{ACTOR_LABELS[log.actor_type] || "System"}</span>}
+                          {actorName(log) && log.actor_type && log.actor_type !== "staff" && (
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">{ACTOR_LABELS[log.actor_type]}</p>
+                          )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={clsx(
                             "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold capitalize",
                             actionColors[log.action] ?? "bg-zinc-100 text-zinc-800 border-zinc-200"
                           )}>
-                            {log.action}
+                            {friendlyAction(log.action)}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {(() => {
-                            const vals = log.action === "deleted" ? log.old_values : log.new_values;
-                            const lbl = extractLabel(vals);
+                            const vals = log.action === "deleted" || log.action === "archived" ? log.old_values : log.new_values;
+                            const lbl = extractLabel(vals, log);
                             return (
                               <>
                                 <span className="font-semibold text-zinc-700 dark:text-zinc-200">{friendlyModel(log.model_type)}</span>
@@ -533,9 +626,18 @@ function AuditLogTab() {
                         </td>
                         <td className="px-4 py-3 max-w-xs">
                           <p className="text-zinc-600 dark:text-zinc-300 text-xs leading-relaxed line-clamp-2">{summary}</p>
+                          {log.request_id && !filters.request_id && (
+                            <button
+                              type="button"
+                              onClick={() => setFilters({ ...filters, request_id: log.request_id })}
+                              className="mt-0.5 text-[10px] font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              Everything in this action
+                            </button>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {hasData && (
+                          {(hasData || log.ip_address) && (
                             <button
                               onClick={() => setSelectedLog(log)}
                               className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-dark-border px-2.5 py-1 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-dark-surface transition-colors"

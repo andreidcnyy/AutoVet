@@ -71,6 +71,12 @@ return [
         'secret_key' => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    // Audit trail: days to keep entries (0 = forever). Older ones are
+    // removed a few hundred at a time as new entries are written.
+    'audit' => [
+        'retention_days' => (int) env('AUDIT_RETENTION_DAYS', 365),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

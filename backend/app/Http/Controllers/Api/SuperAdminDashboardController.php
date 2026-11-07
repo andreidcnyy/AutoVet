@@ -10,6 +10,7 @@ use App\Models\Clinic;
 use App\Models\StoredFile;
 use App\Models\SystemAnnouncement;
 use App\Support\AccountStatus;
+use App\Support\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -291,21 +292,10 @@ class SuperAdminDashboardController extends Controller
         // use of the power is written to the audit log.
         $token = $admin->createToken('impersonation-token', ['*'], now()->addHour())->plainTextToken;
 
-        try {
-            AuditLog::create([
-                'clinic_id' => $clinic->id,
-                'user_id' => auth()->id(),
-                'action' => 'impersonated',
-                'model_type' => Admin::class,
-                'model_id' => $admin->id,
-                'old_values' => null,
-                'new_values' => ['impersonated_admin' => $admin->email, 'expires_at' => now()->addHour()->toIso8601String()],
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Impersonation audit failed: '.$e->getMessage());
-        }
+        AuditLogger::record('impersonated', $admin, null, [
+            'impersonated_admin' => $admin->email,
+            'expires_at' => now()->addHour()->toIso8601String(),
+        ]);
 
         return response()->json([
             'message' => 'Impersonation started',
