@@ -14,6 +14,7 @@ use App\Models\Species;
 use App\Models\VetSchedule;
 use App\Services\Sms\LogSmsProvider;
 use App\Services\Sms\SmsProviderInterface;
+use App\Support\ClientIp;
 use App\Support\Tenant;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -86,21 +87,31 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Login and account recovery are limited per e-mail address, which
-        // still stops guessing at one account but does not depend on the
-        // client IP (shared behind the proxy, see above). The per-IP limit is
-        // a generous backstop against spraying many addresses.
+        // stops guessing at one account, plus a per-visitor backstop against
+        // spraying many addresses. ClientIp reads the visitor's address from
+        // the forwarded header; $request->ip() is the shared proxy address.
         RateLimiter::for('login', fn (Request $request) => [
-            Limit::perMinute(10)->by('login:'.Str::lower((string) $request->input('email')).'|'.$request->ip()),
-            Limit::perMinute(100)->by('login-ip:'.$request->ip()),
+            Limit::perMinute(10)->by('login:'.Str::lower((string) $request->input('email')).'|'.ClientIp::of($request)),
+            Limit::perMinute(100)->by('login-ip:'.ClientIp::of($request)),
         ]);
 
         // Google sign-in and e-mail verification links carry an unguessable
         // token instead of an address, so only the backstop applies.
-        RateLimiter::for('token-auth', fn (Request $request) => Limit::perMinute(60)->by('token-auth:'.$request->ip()));
+        RateLimiter::for('token-auth', fn (Request $request) => Limit::perMinute(60)->by('token-auth:'.ClientIp::of($request)));
 
         RateLimiter::for('account', fn (Request $request) => [
-            Limit::perMinute(5)->by('account:'.$request->path().'|'.Str::lower((string) $request->input('email')).'|'.$request->ip()),
-            Limit::perMinute(50)->by('account-ip:'.$request->ip()),
+            Limit::perMinute(5)->by('account:'.$request->path().'|'.Str::lower((string) $request->input('email')).'|'.ClientIp::of($request)),
+            Limit::perMinute(50)->by('account-ip:'.ClientIp::of($request)),
+        ]);
+
+        // Sign-up sends an e-mail to whatever address is typed in, so it is
+        // capped harder: five tries per address an hour (from anywhere, so
+        // one inbox cannot be flooded with verification mail) and a daily
+        // ceiling per visitor on top of the per-minute burst limit.
+        RateLimiter::for('register', fn (Request $request) => [
+            Limit::perMinute(5)->by('register:'.ClientIp::of($request)),
+            Limit::perHour(5)->by('register-email:'.Str::lower(trim((string) $request->input('email')))),
+            Limit::perDay(20)->by('register-day:'.ClientIp::of($request)),
         ]);
 
         Mail::extend('brevo', function (array $config = []) {

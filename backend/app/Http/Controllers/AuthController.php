@@ -9,6 +9,8 @@ use App\Models\Owner;
 use App\Models\PortalUser;
 use App\Notifications\VerifyRegistration;
 use App\Support\AccountStatus;
+use App\Support\ClientIp;
+use App\Support\Turnstile;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -45,6 +47,14 @@ class AuthController extends Controller
             ], [
                 'email.unique' => 'An account with this email already exists. If this is you, try logging in or resetting your password.',
             ]);
+
+            // Bot check, after validation so a typo does not use up the
+            // one-time Turnstile token. Off when no secret is configured.
+            if (! Turnstile::passes($request->input('turnstile_token'), ClientIp::of($request))) {
+                throw ValidationException::withMessages([
+                    'turnstile_token' => 'Please complete the security check and try again.',
+                ]);
+            }
 
             $token = Str::random(64);
             Cache::put('pending_reg_'.$token, [

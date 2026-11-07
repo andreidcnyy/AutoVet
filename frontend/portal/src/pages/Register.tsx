@@ -10,6 +10,7 @@ import { PH_LOCATION_DATA, City } from "../utils/phLocationData";
 import { PawPrint, PawTrail, CatSilhouette, DogSilhouette } from "./Landing";
 import logo from "../assets/logo.png";
 import { googleSignInEnabled } from '../config/googleSignIn';
+import Turnstile, { turnstileEnabled } from "../components/Turnstile";
 
 const PERKS = [
   { icon: <FiHeart />,  text: "Track your pet's health history"       },
@@ -39,6 +40,8 @@ export default function Register() {
   const [fieldErrors, setFieldErrors]               = useState<Record<string, string>>({});
   const [loading, setLoading]                       = useState(false);
   const [success, setSuccess]                       = useState(false);
+  const [turnstileToken, setTurnstileToken]         = useState("");
+  const [turnstileReset, setTurnstileReset]         = useState(0);
   const [googleLoading, setGoogleLoading]           = useState(false);
   const [pendingGoogle, setPendingGoogle]           = useState<{ accessToken: string; name: string; email: string } | null>(null);
   const navigate = useNavigate();
@@ -136,18 +139,25 @@ export default function Register() {
     else if (password !== passwordConfirmation) errs.passwordConfirmation = "Passwords do not match.";
     setFieldErrors(errs);
     if (Object.keys(errs).length > 0) { setError("Please fix the highlighted fields."); return; }
+    if (turnstileEnabled && !turnstileToken) { setError("Please complete the security check."); return; }
 
     setLoading(true); setError("");
     try {
       const res  = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ name, email, phone: normalizedPhone, address, city, province, zip, password, password_confirmation: passwordConfirmation }),
+        body: JSON.stringify({ name, email, phone: normalizedPhone, address, city, province, zip, password, password_confirmation: passwordConfirmation, turnstile_token: turnstileToken }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && !data.error) {
         setSuccess(true);
       } else {
+        // A token is good for one check only; get a new one for the retry.
+        setTurnstileReset((n) => n + 1);
+        if (res.status === 429) {
+          setError("Too many sign-up attempts. Please wait a while and try again.");
+          return;
+        }
         if (data.errors) {
           const first = Object.values(data.errors)[0] as string[];
           setFieldErrors(Object.fromEntries(
@@ -425,6 +435,8 @@ export default function Register() {
                 <FieldError msg={fieldErrors.passwordConfirmation} />
               </div>
             </div>
+
+            <Turnstile onToken={setTurnstileToken} resetKey={turnstileReset} />
 
             {error && (
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-sm font-bold text-rose-600 dark:bg-rose-900/10 dark:border-rose-900/20 dark:text-rose-400">

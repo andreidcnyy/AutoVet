@@ -60,7 +60,7 @@ Route::get('/reviews/public', [ReviewController::class, 'publicIndex'])->middlew
 
 Route::post('/auth/google', [GoogleAuthController::class, 'handle'])->middleware('throttle:token-auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login');
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:account');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:account');
 Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:account');
 Route::get('/register/verify', [AuthController::class, 'verifyRegistration'])->middleware('throttle:token-auth')->name('registration.verify');

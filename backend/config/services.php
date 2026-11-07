@@ -66,6 +66,11 @@ return [
         'secret' => env('CRON_SECRET'),
     ],
 
+    // Cloudflare Turnstile on portal sign-up. Empty secret = check switched off.
+    'turnstile' => [
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
