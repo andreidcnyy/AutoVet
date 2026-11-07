@@ -65,7 +65,22 @@ const ACTION_LABELS = {
 };
 const friendlyAction = (a) => ACTION_LABELS[a] || capitalize(String(a || "").replace(/_/g, " "));
 
-const ACTOR_LABELS = { staff: "Staff", client: "Client", guest: "Not signed in", system: "System", impersonation: "Super admin" };
+// Clinic accounts are told apart by role; actor_type "staff" only means
+// "a clinic account" and must not be shown as the Staff role.
+const ROLE_LABELS = {
+  clinic_admin: "Clinic Admin", veterinarian: "Veterinarian", staff: "Staff", super_admin: "Super Admin",
+};
+const ACTOR_LABELS = { client: "Client", impersonation: "Super Admin (impersonating)", guest: "Not signed in", system: "System" };
+const DONE_BY_OPTIONS = { ...ROLE_LABELS, ...ACTOR_LABELS };
+
+// The role or kind of whoever made the entry, e.g. "Clinic Admin" or "Client".
+const actorLabel = (log) => {
+  if (log.actor_type === "staff" || (!log.actor_type && log.user_id)) {
+    const role = log.actor_role || log.user?.role;
+    return ROLE_LABELS[role] || "Clinic account";
+  }
+  return ACTOR_LABELS[log.actor_type] || "System";
+};
 
 // Who did it: the name saved with the entry, falling back to the linked account.
 const actorName = (log) => log.actor_name || log.user?.name || null;
@@ -198,7 +213,7 @@ function DetailModal({ log, onClose }) {
               )}
             </p>
             <p className="text-[11px] text-zinc-400">
-              {ACTOR_LABELS[log.actor_type] || "Staff"}{log.actor_role ? ` · ${log.actor_role.replace(/_/g, " ")}` : ""}
+              {actorLabel(log)}
               {log.ip_address ? ` · IP ${log.ip_address}` : ""}
               {log.model_id ? ` · Record #${log.model_id}` : ""}
             </p>
@@ -541,7 +556,7 @@ function AuditLogTab() {
             className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-hidden dark:border-dark-border dark:bg-dark-card dark:text-zinc-200"
           >
             <option value="">Anyone</option>
-            {Object.entries(ACTOR_LABELS).map(([value, label]) => (
+            {Object.entries(DONE_BY_OPTIONS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
@@ -599,9 +614,9 @@ function AuditLogTab() {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-100 whitespace-nowrap">
-                          {actorName(log) ?? <span className="text-zinc-400 font-normal italic">{ACTOR_LABELS[log.actor_type] || "System"}</span>}
-                          {actorName(log) && log.actor_type && log.actor_type !== "staff" && (
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">{ACTOR_LABELS[log.actor_type]}</p>
+                          {actorName(log) ?? <span className="text-zinc-400 font-normal italic">{actorLabel(log)}</span>}
+                          {actorName(log) && (
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">{actorLabel(log)}</p>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">

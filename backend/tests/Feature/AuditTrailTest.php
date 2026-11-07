@@ -109,6 +109,20 @@ class AuditTrailTest extends TestCase
         $this->getJson('/api/audit-logs?model_type=Invoice')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_done_by_filter_matches_the_role_not_the_account_kind(): void
+    {
+        $admin = $this->admin();
+        $staff = Admin::factory()->create(['clinic_id' => 1, 'name' => 'Ana']);
+        AuditLogger::record('updated', $staff, ['status' => 'a'], ['status' => 'b'], $admin);
+        AuditLogger::record('updated', $admin, ['status' => 'a'], ['status' => 'b'], $staff);
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->getJson('/api/audit-logs?actor_type=clinic_admin')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.actor_name', 'Dr. Reyes');
+        $this->getJson('/api/audit-logs?actor_type=staff')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.actor_name', 'Ana');
+    }
+
     public function test_entries_past_retention_are_pruned(): void
     {
         $admin = $this->admin();

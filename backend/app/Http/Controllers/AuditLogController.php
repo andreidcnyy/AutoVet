@@ -40,9 +40,18 @@ class AuditLogController extends Controller
                 $query->where('user_id', $request->input('user_id'));
             }
 
-            // Who acted: staff, client, guest (sign-in attempts) or system.
+            // Who acted. A clinic account's role (clinic_admin, veterinarian,
+            // staff, super_admin) is matched on the role saved with the entry:
+            // actor_type 'staff' covers every clinic account, so filtering on
+            // it filed clinic admins under "Staff". The rest are kinds of
+            // actor: client, guest (sign-in attempts), system, impersonation.
             if ($request->filled('actor_type')) {
-                $query->where('actor_type', $request->input('actor_type'));
+                $who = (string) $request->input('actor_type');
+                if (in_array($who, Roles::all(), true) && $who !== Roles::OWNER->value) {
+                    $query->where('actor_type', 'staff')->where('actor_role', $who);
+                } else {
+                    $query->where('actor_type', $who);
+                }
             }
 
             if ($request->filled('user_name')) {
