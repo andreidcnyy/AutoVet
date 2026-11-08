@@ -7,6 +7,42 @@ import { useAuth } from "../context/AuthContext";
 import logo from "../assets/autovet-logo.png";
 import DarkModeToggle from "../components/ui/DarkModeToggle";
 
+/**
+ * The message for a failed sign-in, chosen by what actually went wrong.
+ * err.status is set by api.js for HTTP replies; it is absent when the request
+ * never got an answer (offline, server unreachable, timeout).
+ */
+function loginErrorMessage(err) {
+  const status = err?.status;
+
+  // The backend's 401 text mentions "Continue with Google", which this page
+  // does not have (it is shared with the portal), so it is not shown here.
+  if (status === 401) return "Incorrect email or password.";
+  // Account state (deactivated, unverified, blocked) and form validation:
+  // the backend's own message is the accurate one.
+  if (status === 403 || status === 422) {
+    return err.message || "You can't sign in with this account.";
+  }
+  if (status === 429) {
+    return "Too many sign-in attempts. Please wait a minute and try again.";
+  }
+  if (status === 502 || status === 503 || status === 504) {
+    return "The server is not responding right now. Please try again in a moment.";
+  }
+  if (status >= 500) {
+    return "Something went wrong on the server. Please try again.";
+  }
+  if (status) return err.message || "Sign-in failed. Please try again.";
+
+  if (err?.name === "TimeoutError") {
+    return "The server is taking too long to respond. It may be starting up, so please try again in a moment.";
+  }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return "You're offline. Check your internet connection and try again.";
+  }
+  return "Can't reach the server right now. Please try again in a moment.";
+}
+
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,7 +104,9 @@ function LoginPage() {
         setError(String(errorMsg));
       }
     } catch (err) {
-      setError("Network error. Please ensure the backend is running.");
+      // api.post throws for every non-2xx reply too, so a wrong password used
+      // to land here and show the same "network error" as a dead server.
+      setError(loginErrorMessage(err));
     } finally {
       setLoading(false);
     }
