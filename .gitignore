@@ -52,3 +52,8 @@ backend/public/test_minimal.php
 # Dataset artifacts
 backend/storage/datasets/*.bak
 backend/storage/datasets/*_out.txt
+
+# Build / tool caches
+.vite/
+*.tsbuildinfo
+.playwright-mcp/
