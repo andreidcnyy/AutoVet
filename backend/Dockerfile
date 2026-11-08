@@ -107,6 +107,11 @@ ENV PHP_CLI_SERVER_WORKERS=4
 # and .dockerignore keeps .env out of the image entirely. Render's variables
 # are real process environment variables, which env() still resolves. Verified
 # both ways — every value below is identical cached and uncached.
+#
+# A failed migration must not keep the site down: with `&&` one bad migration
+# meant serve never started and Render restarted the container into the same
+# failure forever. It is logged loudly instead and the server still starts,
+# so the error shows up in Render's logs while the app stays reachable.
 CMD php artisan config:cache \
-    && php artisan migrate --force \
+    && (php artisan migrate --force || echo "!!! MIGRATION FAILED - server starting anyway, check the error above !!!") \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}" --no-reload

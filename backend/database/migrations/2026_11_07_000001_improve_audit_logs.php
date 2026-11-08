@@ -37,9 +37,16 @@ return new class extends Migration
             }
         });
 
+        // Guarded like the columns above: TiDB DDL is not transactional, so a
+        // boot that dies halfway leaves the first index behind, and an
+        // unguarded re-run would fail on it at every restart.
         Schema::table('audit_logs', function (Blueprint $table) {
-            $table->index(['clinic_id', 'created_at'], 'audit_logs_clinic_created_idx');
-            $table->index('request_id', 'audit_logs_request_idx');
+            if (! Schema::hasIndex('audit_logs', 'audit_logs_clinic_created_idx')) {
+                $table->index(['clinic_id', 'created_at'], 'audit_logs_clinic_created_idx');
+            }
+            if (! Schema::hasIndex('audit_logs', 'audit_logs_request_idx')) {
+                $table->index('request_id', 'audit_logs_request_idx');
+            }
         });
 
         // Deleting a staff account used to delete its whole audit history

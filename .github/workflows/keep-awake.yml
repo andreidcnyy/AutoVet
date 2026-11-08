@@ -1,0 +1,24 @@
+# Backup keep-alive for the Render free instance, which sleeps after 15 min
+# idle and then takes ~60s to answer the first request. UptimeRobot is the
+# primary pinger (DEPLOY.md section 5); this covers the times it misses.
+name: keep-awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 https://autovet.onrender.com/up) || code=000
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "::warning::backend did not answer 200 after 3 tries"
