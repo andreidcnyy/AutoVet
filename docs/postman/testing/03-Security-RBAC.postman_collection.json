@@ -1,0 +1,590 @@
+{
+  "info": {
+    "name": "AutoVet - Security Test: Role-Based Access Control",
+    "description": "Each role can reach only what it is allowed to. Expected denials are the passing result.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Log in as client (pet owner)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('client_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{password}}\",\n  \"source\": \"portal\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Log in as staff",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('staff_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{staff_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Log in as veterinarian",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('vet_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{vet_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Log in as clinic admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('admin_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "No token: appointments are not readable",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Unauthenticated request is rejected (HTTP 401)\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/appointments"
+      }
+    },
+    {
+      "name": "Client: cannot change clinic settings",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Client is forbidden from admin settings (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clinic_name\": \"Changed by client\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Client: cannot list staff accounts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Client is forbidden from user management (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/users"
+      }
+    },
+    {
+      "name": "Client: cannot read the audit trail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Client is forbidden from audit logs (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/audit-logs"
+      }
+    },
+    {
+      "name": "Client: cannot book for someone else's pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Client is forbidden from another owner's pet (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/appointments",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{other_owner_pet_id}},\n  \"service_id\": 1,\n  \"date\": \"2026-12-01\",\n  \"time\": \"10:00\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Client: can open own portal overview",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Client reaches own portal data (HTTP 200)\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/portal/overview"
+      }
+    },
+    {
+      "name": "Vet: creates a medical record (allowed)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Veterinarian may create medical records (HTTP 201)\", () => pm.response.to.have.status(201));",
+              "pm.environment.set('rbac_record_id', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{vet_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{journey_pet_id}},\n  \"chief_complaint\": \"RBAC test record\",\n  \"diagnosis\": \"N/A\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Staff: can view the medical record",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Staff may read medical records (HTTP 200)\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staff_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records/{{rbac_record_id}}"
+      }
+    },
+    {
+      "name": "Staff: cannot delete the medical record",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Staff is forbidden from deleting medical records (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staff_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records/{{rbac_record_id}}"
+      }
+    },
+    {
+      "name": "Staff: cannot create a medical record",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Staff is forbidden from writing medical records (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staff_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{journey_pet_id}},\n  \"diagnosis\": \"Should be refused\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Staff: cannot change clinic settings",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Staff is forbidden from admin settings (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staff_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clinic_name\": \"Changed by staff\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Clinic admin: cannot open super-admin clinic list",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Clinic admin is forbidden from super-admin area (HTTP 403)\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/super-admin/clinics"
+      }
+    },
+    {
+      "name": "Record still exists after the refused delete",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Medical record was not deleted (HTTP 200)\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records/{{rbac_record_id}}"
+      }
+    }
+  ]
+}

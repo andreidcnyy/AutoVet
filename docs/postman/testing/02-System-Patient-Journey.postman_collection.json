@@ -1,0 +1,385 @@
+{
+  "info": {
+    "name": "AutoVet - System Test: Patient Journey",
+    "description": "Client books online -> admin approves -> veterinarian adds medical record -> invoice is generated -> inventory deducts automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Client logs in to the portal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('client_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{password}}\",\n  \"source\": \"portal\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2. Client books an appointment online",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A weekday 9+ days ahead and a random half-hour slot, so reruns do not collide.",
+              "const d = new Date(); d.setDate(d.getDate() + 9);",
+              "while ([0, 6].includes(d.getDay())) d.setDate(d.getDate() + 1);",
+              "pm.environment.set('booking_date', d.toISOString().slice(0, 10));",
+              "const h = 8 + Math.floor(Math.random() * 8), m = Math.random() < 0.5 ? '00' : '30';",
+              "pm.environment.set('booking_time', `${String(h).padStart(2, '0')}:${m}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const a = pm.response.json();",
+              "pm.test(\"Booking is accepted (HTTP 201)\", () => pm.response.to.have.status(201));",
+              "pm.test('Online booking starts as pending', () => {",
+              "  pm.expect(a.status).to.eql('pending');",
+              "  pm.expect(a.is_walk_in).to.eql(false);",
+              "});",
+              "pm.environment.set('appointment_id', a.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/appointments",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{journey_pet_id}},\n  \"service_id\": {{journey_service_id}},\n  \"date\": \"{{booking_date}}\",\n  \"time\": \"{{booking_time}}\",\n  \"notes\": \"Booked online - system test\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3. Clinic admin logs in",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('admin_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Admin approves the booking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Approval succeeds (HTTP 200)\", () => pm.response.to.have.status(200));",
+              "pm.test('Appointment is now approved', () => pm.expect(pm.response.json().status).to.eql('approved'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/appointments/{{appointment_id}}/approve",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "5. Veterinarian logs in",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('vet_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{vet_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Veterinarian adds the medical record",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const r = pm.response.json();",
+              "pm.test(\"Medical record is saved (HTTP 201)\", () => pm.response.to.have.status(201));",
+              "pm.test('Record is linked to the pet and the appointment', () => {",
+              "  pm.expect(r.pet_id).to.eql(Number(pm.environment.get('journey_pet_id')));",
+              "  pm.expect(r.appointment_id).to.eql(Number(pm.environment.get('appointment_id')));",
+              "});",
+              "pm.environment.set('medical_record_id', r.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{vet_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/medical-records",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{journey_pet_id}},\n  \"appointment_id\": {{appointment_id}},\n  \"chief_complaint\": \"Annual check-up and vaccination\",\n  \"findings\": \"Normal temperature, heart and lungs clear\",\n  \"diagnosis\": \"Healthy\",\n  \"treatment_plan\": \"Anti-rabies vaccine administered\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Read inventory stock before billing",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json(); const item = body.data || body;",
+              "pm.test(\"Inventory item is found (HTTP 200)\", () => pm.response.to.have.status(200));",
+              "pm.environment.set('stock_before', item.stock_level);",
+              "pm.environment.set('item_price', item.selling_price);",
+              "console.log(`Stock before billing: ${item.stock_level} x ${item.item_name}`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/inventory/{{journey_inventory_id}}"
+      }
+    },
+    {
+      "name": "8. System generates the invoice (finalized)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const qty = Number(pm.environment.get('journey_qty'));",
+              "const price = Number(pm.environment.get('item_price'));",
+              "const service = 400;",
+              "pm.environment.set('item_amount', (qty * price).toFixed(2));",
+              "pm.environment.set('invoice_total', (service + qty * price).toFixed(2));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const inv = pm.response.json();",
+              "pm.test(\"Invoice is created (HTTP 201)\", () => pm.response.to.have.status(201));",
+              "pm.test('Invoice is finalized with a number and the right total', () => {",
+              "  pm.expect(inv.status).to.eql('Finalized');",
+              "  pm.expect(inv.invoice_number).to.match(/^VB-/);",
+              "  pm.expect(Number(inv.total)).to.eql(Number(pm.environment.get('invoice_total')));",
+              "});",
+              "pm.test('Invoice is flagged as having deducted stock', () => pm.expect(inv.stock_deducted).to.eql(true));",
+              "console.log(`Invoice ${inv.invoice_number}: total ${inv.total}`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/invoices",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pet_id\": {{journey_pet_id}},\n  \"appointment_id\": {{appointment_id}},\n  \"status\": \"Finalized\",\n  \"subtotal\": {{invoice_total}},\n  \"discount_type\": \"fixed\",\n  \"discount_value\": 0,\n  \"tax_rate\": 12,\n  \"total\": {{invoice_total}},\n  \"amount_paid\": 0,\n  \"items\": [\n    { \"item_type\": \"service\", \"service_id\": {{journey_service_id}}, \"name\": \"General Consultation / Check-up\", \"qty\": 1, \"unit_price\": 400, \"amount\": 400 },\n    { \"item_type\": \"inventory\", \"inventory_id\": {{journey_inventory_id}}, \"name\": \"Anti-rabies vaccine\", \"qty\": {{journey_qty}}, \"unit_price\": {{item_price}}, \"amount\": {{item_amount}} }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "9. Inventory was deducted automatically",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json(); const item = body.data || body;",
+              "const before = Number(pm.environment.get('stock_before'));",
+              "const qty = Number(pm.environment.get('journey_qty'));",
+              "pm.test(\"Inventory item is found (HTTP 200)\", () => pm.response.to.have.status(200));",
+              "pm.test(`Stock went down by exactly ${qty}`, () => pm.expect(Number(item.stock_level)).to.eql(before - qty));",
+              "console.log(`Stock after billing: ${item.stock_level} (was ${before})`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/inventory/{{journey_inventory_id}}"
+      }
+    }
+  ]
+}

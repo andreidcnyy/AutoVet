@@ -1,0 +1,141 @@
+{
+  "info": {
+    "name": "AutoVet - Integration Test: AI Forecasting Module",
+    "description": "Laravel API -> MySQL usage history -> Python (scikit-learn) forecast -> JSON back to the dashboard.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Log in as clinic admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login succeeds (200) and returns a token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.token).to.be.a('string');",
+              "});",
+              "pm.environment.set('admin_token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Read the item's current stock from MySQL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json(); const item = body.data || body;",
+              "pm.test('Inventory record is returned (HTTP 200)', () => pm.response.to.have.status(200));",
+              "pm.environment.set('db_stock_level', item.stock_level);",
+              "pm.environment.set('db_min_stock_level', item.min_stock_level);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/inventory/{{forecast_inventory_id}}"
+      }
+    },
+    {
+      "name": "Run the AI stock-out forecast",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const f = pm.response.json();",
+              "pm.test('Forecast endpoint responds (HTTP 200) with JSON', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.response.to.be.json;",
+              "});",
+              "pm.test('Python model ran: scikit-learn LinearRegression', () => {",
+              "  pm.expect(f.prediction_status).to.eql('Success');",
+              "  pm.expect(f.ml_algorithm).to.eql('scikit-learn LinearRegression');",
+              "  pm.expect(f.regression_target).to.eql('cumulative_consumption_vs_day_index');",
+              "});",
+              "pm.test('Forecast used the stock stored in MySQL', () => {",
+              "  pm.expect(Number(f.current_stock)).to.eql(Number(pm.environment.get('db_stock_level')));",
+              "  pm.expect(Number(f.min_stock_level)).to.eql(Number(pm.environment.get('db_min_stock_level')));",
+              "});",
+              "pm.test('Learned a positive daily usage rate from the history', () => {",
+              "  pm.expect(f.regression_slope).to.be.above(0);",
+              "  pm.expect(f.average_daily_consumption).to.be.above(0);",
+              "});",
+              "pm.test('Model was validated on held-out data (80/20 split)', () => {",
+              "  pm.expect(f.validation_method).to.eql('80/20 holdout');",
+              "  pm.expect(f.trend_fit_score).to.be.within(0, 1);",
+              "  pm.expect(f.rmse).to.be.at.least(0);",
+              "  pm.expect(f.mae).to.be.at.least(0);",
+              "});",
+              "pm.test('Predicted stock-out date is a real future date', () => {",
+              "  pm.expect(new Date(f.predicted_stockout_date) > new Date()).to.be.true;",
+              "  pm.expect(f.days_until_stockout).to.be.above(0);",
+              "});",
+              "console.log(`Forecast for ${f.item_name}: ${f.average_daily_consumption}/day, stock-out ${f.predicted_stockout_date} (${f.days_until_stockout} days), R2=${f.trend_fit_score}, test R2=${f.test_r2}, RMSE=${f.rmse}, MAE=${f.mae}`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/inventory/{{forecast_inventory_id}}/forecast?history_days=365"
+      }
+    }
+  ]
+}

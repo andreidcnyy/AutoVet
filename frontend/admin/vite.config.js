@@ -10,6 +10,13 @@ export default defineConfig({
 
   plugins: [react()],
 
+  // Component and unit tests (npm test): Vitest + React Testing Library.
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+    globals: true,
+  },
+
   server: {
     port: 5173,
     proxy: {
