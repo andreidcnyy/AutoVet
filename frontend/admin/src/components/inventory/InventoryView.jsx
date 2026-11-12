@@ -282,11 +282,17 @@ function InventoryView() {
   };
 
   const handleEditProduct = (updatedProduct) => {
-    setInventoryRows((prev) => prev.map((item) =>
-      item.id === updatedProduct.id
-        ? { ...item, ...updatedProduct, latest_forecast: updatedProduct.latest_forecast ?? item.latest_forecast }
-        : item
-    ));
+    setInventoryRows((prev) => prev.map((item) => {
+      if (item.id === updatedProduct.id) {
+        return { ...item, ...updatedProduct, latest_forecast: updatedProduct.latest_forecast ?? item.latest_forecast };
+      }
+      // The backend applies a selling price change to every batch of the
+      // product, so mirror it on the sibling rows.
+      if (updatedProduct.code && item.code === updatedProduct.code && item.clinic_id === updatedProduct.clinic_id && updatedProduct.selling_price != null) {
+        return { ...item, selling_price: updatedProduct.selling_price };
+      }
+      return item;
+    }));
     setViewedProduct((prev) => prev?.id === updatedProduct.id
       ? { ...prev, ...updatedProduct, latest_forecast: updatedProduct.latest_forecast ?? prev?.latest_forecast }
       : prev

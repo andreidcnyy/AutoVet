@@ -159,8 +159,22 @@ class InventoryController extends Controller
 
         $oldStock = $inventory->stock_level;
         $newStock = $validatedData['stock_level'];
+        $oldSellingPrice = $inventory->selling_price;
 
         $inventory->update($validatedData);
+
+        // Selling price is per product, not per batch: apply it to every batch
+        // sharing this product's code so invoices bill the same price whichever
+        // batch is drawn. Buying price stays per batch (each delivery differs).
+        if (array_key_exists('selling_price', $validatedData)
+            && $validatedData['selling_price'] !== null
+            && (float) $oldSellingPrice !== (float) $validatedData['selling_price']
+            && ! empty($inventory->code)) {
+            Inventory::where('code', $inventory->code)
+                ->where('clinic_id', $inventory->clinic_id)
+                ->where('id', '!=', $inventory->id)
+                ->update(['selling_price' => $validatedData['selling_price']]);
+        }
 
         if ($oldStock != $newStock) {
             $qtyDiff = $newStock - $oldStock;
