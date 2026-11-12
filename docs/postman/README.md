@@ -35,7 +35,7 @@ They run against a local server on a **copy** of the database, never production:
 
 ```bash
 # from backend/: serve a QA copy of the DB on port 8010
-DB_DATABASE=autovet_qa AI_API_URL= MAIL_MAILER=log BROADCAST_CONNECTION=log php artisan serve --port 8010
+DB_DATABASE=autovet_qa AI_API_URL=null MAIL_MAILER=log BROADCAST_CONNECTION=log php artisan serve --port 8010 --no-reload
 # from docs/postman/testing/
 node build.js                      # regenerate the collections
 npx newman run 02-System-Patient-Journey.postman_collection.json -e AutoVet-QA.postman_environment.json
@@ -43,3 +43,4 @@ node load-test.js 30 30 3000       # BASE_URLS=... ACCOUNTS=... to spread across
 ```
 
 The QA accounts use the seeded test password (`password123`).
+Step-by-step PowerShell instructions: `docs/AutoVet-Testing-Guide.pdf`.

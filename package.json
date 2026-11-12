@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "newman": "^6.2.1",
     "pdf-parse": "^1.1.1"
   }
 }
