@@ -30,7 +30,6 @@ const receiveSchema = z.object({
   lot_number: z.string().max(100).optional().or(z.literal("")),
   expiration_date: z.string().optional().or(z.literal("")),
   price: z.union([z.coerce.number().min(0), z.literal("")]).optional(),
-  selling_price: z.union([z.coerce.number().min(0), z.literal("")]).optional(),
   supplier: z.string().max(255).optional().or(z.literal("")),
   remarks: z.string().max(255).optional().or(z.literal("")),
 });
@@ -56,7 +55,6 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
       lot_number: "",
       expiration_date: "",
       price: "",
-      selling_price: "",
       supplier: "",
       remarks: "",
     },
@@ -82,7 +80,6 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
         lot_number: "",
         expiration_date: "",
         price: "",
-        selling_price: "",
         supplier: product?.supplier || "",
         remarks: "",
       });
@@ -109,7 +106,7 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
     try {
       // Blank optional numerics must be omitted, not sent as "".
       const payload = { ...data };
-      ["price", "selling_price", "expiration_date", "lot_number", "supplier", "remarks"].forEach((k) => {
+      ["price", "expiration_date", "lot_number", "supplier", "remarks"].forEach((k) => {
         if (payload[k] === "" || payload[k] == null) delete payload[k];
       });
 
@@ -238,13 +235,6 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
                   <span className="ml-1 text-xs font-normal text-zinc-400">— blank keeps current</span>
                 </label>
                 <input type="number" step="0.01" min="0" {...register("price")} className={getInputClass(errors.price)} placeholder={product.price ?? "0.00"} />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Selling Price (₱)
-                  <span className="ml-1 text-xs font-normal text-zinc-400">— blank keeps current</span>
-                </label>
-                <input type="number" step="0.01" min="0" {...register("selling_price")} className={getInputClass(errors.selling_price)} placeholder={product.selling_price ?? "0.00"} />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Supplier</label>
