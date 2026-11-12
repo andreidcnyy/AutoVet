@@ -50,8 +50,10 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// A weekday 9+ days ahead and a random half-hour slot, so reruns do not collide.",
-              "const d = new Date(); d.setDate(d.getDate() + 9);",
+              "// A random weekday 9-365 days ahead and a random half-hour slot. The clinic",
+              "// allows at most 2 bookings per pet per day, so a fixed date would make the",
+              "// third run of the day fail (correctly) with 422.",
+              "const d = new Date(); d.setDate(d.getDate() + 9 + Math.floor(Math.random() * 357));",
               "while ([0, 6].includes(d.getDay())) d.setDate(d.getDate() + 1);",
               "pm.environment.set('booking_date', d.toISOString().slice(0, 10));",
               "const h = 8 + Math.floor(Math.random() * 8), m = Math.random() < 0.5 ? '00' : '30';",
