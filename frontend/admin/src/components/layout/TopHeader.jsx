@@ -55,7 +55,7 @@ function TopHeader({ title, user, onMenuToggle }) {
       setUser(data);
       localStorage.removeItem('super_admin_session');
       toast.success("Returned to Super Admin account.");
-      window.location.href = '/super-admin';
+      window.location.href = `${import.meta.env.BASE_URL}super-admin`;
     }
   };
 

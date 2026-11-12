@@ -134,7 +134,8 @@ async function navigationStrategy(req) {
     return fresh;
   } catch {
     const cache = await caches.open(SHELL_CACHE);
-    const cached = await cache.match(req) || await cache.match('/');
+    // The app's own root: "/" online, "/clinic/" in the clinic build.
+    const cached = await cache.match(req) || await cache.match(self.registration.scope);
     if (cached) return cached;
     return new Response(
       '<h1 style="font-family:system-ui;padding:40px">Offline</h1><p style="font-family:system-ui;padding:0 40px">App shell not yet cached. Reconnect once to install.</p>',

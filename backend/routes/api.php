@@ -42,6 +42,7 @@ use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VetScheduleController;
 use App\Http\Controllers\WalkInController;
+use App\Http\Controllers\SyncController;
 use App\Http\Controllers\WeightRangeController;
 use App\Models\Owner;
 use App\Services\SyncService;
@@ -75,6 +76,14 @@ Route::get('/status', function () {
 // warning period, before anything is blocked, and on the maintenance page
 // itself where the session may already be gone.
 Route::get('/maintenance-status', [MaintenanceController::class, 'status']);
+
+// Clinic <-> cloud sync. Not behind a login: the clinic computer proves itself
+// with a signature made from SYNC_SECRET instead. Answers 404 unless this server
+// has SYNC_ACCEPT=true.
+Route::prefix('sync')->middleware(['sync.signature', 'throttle:120,1'])->group(function () {
+    Route::post('/push', [SyncController::class, 'push']);
+    Route::get('/pull', [SyncController::class, 'pull']);
+});
 
 // Public system announcements (used by landing page — no auth required)
 Route::get('/public/system-announcements', [SystemAnnouncementController::class, 'active'])
@@ -256,11 +265,10 @@ Route::group(['middleware' => ['auth:sanctum', 'active', 'maintenance']], functi
     Route::put('/notifications/{id}', [ClientNotificationController::class, 'markAsRead']);
     Route::get('/notifications/warnings/unread', [ClientNotificationController::class, 'unreadWarnings']);
 
-    // Synchronization Trigger — admin only
-    Route::middleware('role:'.implode(',', Roles::adminRoles()))->post('/sync/trigger', function (SyncService $syncService) {
-        $syncService->pushToPortal();
-
-        return response()->json(['status' => 'triggered']);
+    // Clinic computer: run a sync now, and see where it stands — admin only
+    Route::middleware('role:'.implode(',', Roles::adminRoles()))->group(function () {
+        Route::post('/sync/trigger', fn (SyncService $syncService) => response()->json($syncService->run()));
+        Route::get('/sync/status', fn (SyncService $syncService) => response()->json($syncService->status()));
     });
 
     // -----------------------------------------------------------------------

@@ -34,5 +34,6 @@ __pycache__/
 # Built front ends, generated into the backend's public folder by
 # REBUILD-DEMO.bat for the offline demo. Build artefacts, not source.
 /public/clinic/
+/storage/clinic-app/
 /public/portal/
 /public/images/

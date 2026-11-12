@@ -58,9 +58,10 @@ trait HasSyncFields
     private static function logToOutbox($model, string $action): void
     {
         try {
-            $payload = $action === 'deleted'
-                ? ['id' => $model->getKey(), 'uuid' => $model->uuid]
-                : $model->toArray();
+            // Only a reference. SyncService sends the record's state as it is
+            // when the sync runs, so several quick edits go out as one, and
+            // what is sent is the database row, not the model's computed extras.
+            $payload = ['id' => $model->getKey(), 'uuid' => $model->uuid];
 
             SyncOutbox::create([
                 'entity_type' => class_basename($model),
@@ -98,11 +99,16 @@ trait HasSyncFields
 
     public function markAsSynced(): void
     {
-        $this->timestamps = false;
-        $this->update([
+        // Written past the model: an Eloquent update would fire "updated" and
+        // queue this record to be sent again, forever.
+        $now = now();
+        $this->getConnection()->table($this->getTable())
+            ->where($this->getKeyName(), $this->getKey())
+            ->update(['sync_status' => SyncStatus::SYNCED->value, 'synced_at' => $now]);
+
+        $this->setRawAttributes(array_merge($this->getAttributes(), [
             'sync_status' => SyncStatus::SYNCED->value,
-            'synced_at' => now(),
-        ]);
-        $this->timestamps = true;
+            'synced_at' => $now,
+        ]), true);
     }
 }

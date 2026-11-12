@@ -35,10 +35,17 @@ return [
         ],
     ],
 
+    // Clinic <-> cloud sync (see App\Services\SyncService).
+    //   Clinic computer: SYNC_IS_CLINIC=true, SYNC_PORTAL_URL=<cloud URL>
+    //   Cloud server:    SYNC_ACCEPT=true
+    //   Both:            the same SYNC_SECRET, and SYNC_CLINIC_ID = the clinic
+    //                    whose records are synced (its id in that database).
     'sync' => [
         'is_clinic' => env('SYNC_IS_CLINIC', false),
-        'portal_url' => env('SYNC_PORTAL_URL', 'http://localhost:8001'),
+        'accept' => env('SYNC_ACCEPT', false),
+        'portal_url' => env('SYNC_PORTAL_URL'),
         'secret' => env('SYNC_SECRET'),
+        'clinic_id' => (int) env('SYNC_CLINIC_ID', 1),
     ],
 
     'anthropic' => [

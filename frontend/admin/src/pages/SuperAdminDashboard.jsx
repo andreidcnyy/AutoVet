@@ -340,7 +340,7 @@ export default function SuperAdminDashboard() {
       const currentSession = localStorage.getItem('user');
       if (currentSession) localStorage.setItem('super_admin_session', currentSession);
       login({ ...res.admin, token: res.token, is_impersonating: true });
-      window.location.href = '/';
+      window.location.href = import.meta.env.BASE_URL;
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to start impersonation.");
     }

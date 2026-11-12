@@ -87,6 +87,25 @@ class SyncLiveDatabase extends Command
             return self::FAILURE;
         }
 
+        // This command mirrors live by numeric id and deletes rows live does
+        // not have. On a clinic computer that works offline (app:sync) that
+        // would overwrite and delete records made offline before they reach
+        // the cloud, because offline ids collide with live ids. app:sync is
+        // the right tool there, so refuse.
+        if (config('services.sync.is_clinic')) {
+            $this->error('This computer syncs both ways with the cloud (SYNC_IS_CLINIC=true). Use "php artisan app:sync" instead; db:sync-live would overwrite offline records.');
+
+            return self::FAILURE;
+        }
+
+        if (Schema::hasTable('sync_outbox')
+            && DB::table('sync_outbox')->whereIn('status', ['pending', 'failed'])->exists()
+            && DB::table('settings')->where('key', 'sync_pull_cursor')->exists()) {
+            $this->error('This database has changes waiting to be sent by app:sync. Run "php artisan app:sync" first; db:sync-live would overwrite them.');
+
+            return self::FAILURE;
+        }
+
         try {
             DB::connection('live')->getPdo();
         } catch (Throwable $e) {

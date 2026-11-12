@@ -20,7 +20,7 @@
           // updateViaCache 'none' stops the browser serving sw.js itself from the
           // HTTP cache, which is how two devices ended up running different
           // service worker versions against the same deployment.
-          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(function () {});
+          navigator.serviceWorker.register('%BASE_URL%sw.js', { updateViaCache: 'none' }).catch(function () {});
         });
 
         // Status pill

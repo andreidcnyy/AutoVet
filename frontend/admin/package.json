@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:clinic": "vite build --base=/clinic/ --outDir ../../backend/storage/clinic-app --emptyOutDir",
     "preview": "vite preview",
     "test": "vitest run"
   },

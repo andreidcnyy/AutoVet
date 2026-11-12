@@ -6,6 +6,7 @@ use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\VerifySyncSignature;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'maintenance' => CheckMaintenanceMode::class,
             'active' => EnsureAccountActive::class,
+            'sync.signature' => VerifySyncSignature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

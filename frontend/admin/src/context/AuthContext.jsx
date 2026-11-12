@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem("user");
     setAuthToken(null);
-    window.location.replace("/login");
+    window.location.replace(`${import.meta.env.BASE_URL}login`);
   };
 
   /**

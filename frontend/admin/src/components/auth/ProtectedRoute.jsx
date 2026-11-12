@@ -10,7 +10,7 @@ const ProtectedRoute = ({ allowedRoles, children }) => {
   useEffect(() => {
     const handlePageShow = (e) => {
       if (e.persisted && !localStorage.getItem("user")) {
-        window.location.replace("/login");
+        window.location.replace(`${import.meta.env.BASE_URL}login`);
       }
     };
     window.addEventListener("pageshow", handlePageShow);
