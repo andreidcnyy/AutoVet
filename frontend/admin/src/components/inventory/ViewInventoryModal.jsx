@@ -129,6 +129,11 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
 
   const handleSave = async () => {
     if (isSaving) return;
+    // A batch with an expiry date must say which lot it is (same rule as the backend).
+    if (formData.expiration_date && !String(formData.lot_number ?? "").trim()) {
+      toast.error("Lot number is required when the item has an expiration date.");
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await fetch(`/api/inventory/${formData.id}`, {
@@ -263,7 +268,10 @@ export default function ViewInventoryModal({ isOpen, onClose, product, onDeleteR
               ["Batch #", "batch_number"],
             ].map(([label, field]) => (
               <div key={field}>
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">{label}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+                  {label}
+                  {isEditing && field === "lot_number" && formData.expiration_date && <> <span className="text-rose-500">*</span></>}
+                </p>
                 {isEditing ? (
                   field === "inventory_category_id" ? (
                     <select

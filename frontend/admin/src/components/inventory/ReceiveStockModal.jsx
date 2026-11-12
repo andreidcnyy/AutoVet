@@ -60,8 +60,8 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
     },
   });
 
-  // Show the product's existing batches in the order FIFO will consume them,
-  // so it is obvious what this delivery is being added behind.
+  // Show the product's existing batches in the order they will be used (FEFO:
+  // soonest expiry first), so it is obvious where this delivery will fit in.
   useEffect(() => {
     if (!isOpen || !product?.id) return;
     setLoadingBatches(true);
@@ -96,7 +96,23 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
 
   if (!isOpen || !product) return null;
 
+  // A product that tracks expiry needs an expiry date and lot on every
+  // delivery (the backend enforces the same rule).
+  const tracksExpiry = Boolean(product.expiration_date) || batches.some((b) => b.expiration_date);
+
   const onSubmit = async (data) => {
+    if (tracksExpiry) {
+      let missing = false;
+      if (!data.lot_number?.trim()) {
+        setError("lot_number", { message: "Lot number is required for products that track expiry." });
+        missing = true;
+      }
+      if (!data.expiration_date) {
+        setError("expiration_date", { message: "Expiration date is required for products that track expiry." });
+        missing = true;
+      }
+      if (missing) return;
+    }
     // Same rule the backend enforces: one batch number per product.
     const wanted = normalizeBatch(data.batch_number);
     if (batches.some((b) => normalizeBatch(b.batch_number) === wanted)) {
@@ -222,12 +238,14 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
                 {errors.batch_number && <p className="mt-1 text-xs text-red-500">{errors.batch_number.message}</p>}
               </div>
               <div>
-                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #</label>
+                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #{tracksExpiry && <> <span className="text-rose-500">*</span></>}</label>
                 <input type="text" {...register("lot_number")} className={getInputClass(errors.lot_number)} placeholder="LOT-123" />
+                {errors.lot_number && <p className="mt-1 text-xs text-red-500">{errors.lot_number.message}</p>}
               </div>
               <div>
-                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date</label>
+                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date{tracksExpiry && <> <span className="text-rose-500">*</span></>}</label>
                 <input type="date" {...register("expiration_date")} className={getInputClass(errors.expiration_date)} />
+                {errors.expiration_date && <p className="mt-1 text-xs text-red-500">{errors.expiration_date.message}</p>}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">

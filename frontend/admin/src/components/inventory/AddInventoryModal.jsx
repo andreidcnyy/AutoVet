@@ -33,6 +33,16 @@ const inventorySchema = z.object({
   sku: z.string().max(255).optional(),
   sub_details: z.string().max(255).optional(),
   status: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Expiry tracking on: FEFO and recall tracing need both (the backend
+  // enforces the same rule).
+  if (!data.has_expiry) return;
+  if (!data.expiration_date) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["expiration_date"], message: "Expiration date is required when expiry tracking is on" });
+  }
+  if (!data.lot_number || !data.lot_number.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lot_number"], message: "Lot number is required when expiry tracking is on" });
+  }
 });
 
 export default function AddInventoryModal({ isOpen, onClose, onSave }) {
@@ -302,13 +312,15 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                   {watchHasExpiry && (
                     <div className="grid grid-cols-1 gap-4 pt-3 border-t border-zinc-200/60 dark:border-dark-border animate-in fade-in duration-200">
                       <div>
-                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date</label>
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Expiration Date <span className="text-rose-500">*</span></label>
                         <input type="date" {...register("expiration_date")} className={getInputClass(errors.expiration_date)} />
+                        {errors.expiration_date && <p className="mt-1 text-xs text-red-500">{errors.expiration_date.message}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot #</label>
+                          <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lot # <span className="text-rose-500">*</span></label>
                           <input type="text" {...register("lot_number")} className={getInputClass(errors.lot_number)} placeholder="LOT-123" />
+                          {errors.lot_number && <p className="mt-1 text-xs text-red-500">{errors.lot_number.message}</p>}
                         </div>
                         <div>
                           <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch #</label>

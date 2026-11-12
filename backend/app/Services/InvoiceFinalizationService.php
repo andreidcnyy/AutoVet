@@ -57,28 +57,35 @@ class InvoiceFinalizationService
                         continue;
                     }
 
-                    // FIFO Logic: Find all batches with the same item code
-                    // If no code, we fall back to just the original item
+                    // FEFO: every batch of this product (same code) that is in
+                    // stock and not expired, soonest expiry first. Expired stock
+                    // is never handed out. Without a code the product is a
+                    // single batch: the item itself.
                     $itemCode = $originalItem->code;
-                    $batches = [];
+                    $batches = collect();
 
                     if ($itemCode) {
                         $batches = Inventory::where('code', $itemCode)
                             ->where('stock_level', '>', 0)
-                            ->orderBy('id', 'asc') // FIFO by ID
+                            ->usable()
+                            ->consumptionOrder()
                             ->lockForUpdate()
                             ->get();
-                    }
-
-                    // If for some reason we found no batches with stock (even the original one)
-                    // we still want to proceed with shortage handling logic using the original item's info
-                    if (empty($batches) || $batches->count() === 0) {
+                    } elseif (! $originalItem->is_expired) {
                         $batches = collect([$originalItem]);
                     }
 
-                    // Check total available across all batches
+                    // Expired units still on the shelf, only to explain a shortage.
+                    $expiredQty = $itemCode
+                        ? (int) Inventory::where('code', $itemCode)->where('stock_level', '>', 0)
+                            ->whereNotNull('expiration_date')->where('expiration_date', '<', now()->toDateString())
+                            ->sum('stock_level')
+                        : ($originalItem->is_expired ? (int) $originalItem->stock_level : 0);
+
+                    // Check total usable across all batches
                     $totalAvailable = $batches->sum('stock_level');
                     $qtyToDeduct = $item->qty;
+                    $expiredNote = $expiredQty > 0 ? " ({$expiredQty} more expired and cannot be used)" : '';
 
                     // Stock shortage handling depends on item type.
                     if ($totalAvailable < $qtyToDeduct) {
@@ -96,7 +103,7 @@ class InvoiceFinalizationService
                             $this->createInternalNotification(
                                 'StockShortage',
                                 'Service Consumable Shortage',
-                                "Invoice #{$invoice->invoice_number} finalized but service consumable '{$originalItem->item_name}' could not be deducted (required {$qtyToDeduct}, available {$totalAvailable}). Reorder needed.",
+                                "Invoice #{$invoice->invoice_number} finalized but service consumable '{$originalItem->item_name}' could not be deducted (required {$qtyToDeduct}, available {$totalAvailable}{$expiredNote}). Reorder needed.",
                                 ['inventory_id' => $originalItem->id, 'invoice_id' => $invoice->id]
                             );
 
@@ -108,13 +115,15 @@ class InvoiceFinalizationService
                         }
 
                         if ($totalAvailable <= 0) {
-                            throw new UserFacingException("Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
+                            throw new UserFacingException($expiredQty > 0
+                                ? "Cannot bill retail item '{$originalItem->item_name}'. The only stock left ({$expiredQty}) has EXPIRED. Restock before finalizing."
+                                : "Cannot bill retail item '{$originalItem->item_name}'. Item is currently OUT OF STOCK.");
                         }
 
-                        throw new UserFacingException("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}. Remove or restock before finalizing.");
+                        throw new UserFacingException("Insufficient stock for retail item '{$originalItem->item_name}'. Required: {$qtyToDeduct}, Available: {$totalAvailable}{$expiredNote}. Remove or restock before finalizing.");
                     }
 
-                    // Perform FIFO Deduction
+                    // Deduct in FEFO order
                     foreach ($batches as $batchItem) {
                         if ($qtyToDeduct <= 0) {
                             break;
@@ -141,7 +150,7 @@ class InvoiceFinalizationService
                             'quantity' => -$deductFromThisBatch,
                             'previous_stock' => $oldStock,
                             'new_stock' => $batchItem->stock_level,
-                            'remarks' => "Deducted (FIFO) from Invoice #{$invoice->invoice_number} (".ucfirst($item->item_type).' item)',
+                            'remarks' => "Deducted (FEFO) from Invoice #{$invoice->invoice_number} (".ucfirst($item->item_type).' item)',
                             'created_by' => auth()->id() ?? (Admin::first()->id ?? null),
                         ]);
 
@@ -168,8 +177,8 @@ class InvoiceFinalizationService
                     }
 
                     // Judge low stock on what is left across every batch, not on
-                    // the batch that happened to be drained. Emptying the oldest
-                    // batch is normal FIFO behaviour and is not itself a shortage.
+                    // the batch that happened to be drained. Emptying the first
+                    // batch is normal FEFO behaviour and is not itself a shortage.
                     $remainingTotal = $batches->sum('stock_level');
                     if ($remainingTotal <= $originalItem->min_stock_level) {
                         event(new LowStockDetected($originalItem));

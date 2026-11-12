@@ -132,6 +132,35 @@ class Inventory extends Model
         return (int) now()->startOfDay()->diffInDays($this->expiration_date->startOfDay(), false);
     }
 
+    /**
+     * The order a product's batches are used in: FEFO, first expired first out.
+     *
+     *   1. batches that expire soonest (still in date) come first,
+     *   2. then batches with no expiry date, oldest received first,
+     *   3. expired batches last; they are never used (see scopeUsable).
+     *
+     * Deduction, the batch list and the inventory table all use this one
+     * order, so "consumed top to bottom" on screen is what really happens.
+     */
+    public function scopeConsumptionOrder($query)
+    {
+        $today = now()->toDateString();
+
+        return $query
+            ->orderByRaw('CASE WHEN expiration_date IS NOT NULL AND expiration_date < ? THEN 1 ELSE 0 END', [$today])
+            ->orderByRaw('CASE WHEN expiration_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('expiration_date')
+            ->orderBy('id');
+    }
+
+    /** Batches that may still be used: no expiry date, or expiring today or later. */
+    public function scopeUsable($query)
+    {
+        $today = now()->toDateString();
+
+        return $query->where(fn ($q) => $q->whereNull('expiration_date')->orWhere('expiration_date', '>=', $today));
+    }
+
     public function transactions()
     {
         return $this->hasMany(InventoryTransaction::class);

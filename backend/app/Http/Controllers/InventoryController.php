@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class InventoryController extends Controller
@@ -82,8 +83,11 @@ class InventoryController extends Controller
             'price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
-            'expiration_date' => 'nullable|date',
-            'lot_number' => 'nullable|string|max:100',
+            // "Requires Expiry Tracking" on: the expiry date and lot number are
+            // what FEFO and recall tracing run on, so both are required. A lot
+            // also comes with any expiry date.
+            'expiration_date' => [Rule::requiredIf($request->boolean('has_expiry')), 'nullable', 'date'],
+            'lot_number' => [Rule::requiredIf($request->boolean('has_expiry')), 'nullable', 'required_with:expiration_date', 'string', 'max:100'],
             'batch_number' => 'nullable|string|max:100',
         ]);
 
@@ -145,7 +149,8 @@ class InventoryController extends Controller
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
             'expiration_date' => 'nullable|date',
-            'lot_number' => 'nullable|string|max:100',
+            // A batch with an expiry date must say which lot it is.
+            'lot_number' => 'nullable|required_with:expiration_date|string|max:100',
             'batch_number' => 'nullable|string|max:100',
         ]);
 
@@ -229,16 +234,23 @@ class InventoryController extends Controller
      *
      * Unlike update(), which overwrites the stock level of the row it is given,
      * this creates a *new* row sharing the product's code. Rows sharing a code
-     * are the batches that InvoiceFinalizationService consumes oldest-first, so
-     * this is what puts real data behind the FIFO deduction.
+     * are the batches that InvoiceFinalizationService consumes soonest-expiry
+     * first, so this is what puts real data behind the FEFO deduction.
+     *
+     * A product that tracks expiry (any of its batches has an expiration date)
+     * must get both an expiration date and a lot number on every delivery, or
+     * FEFO and lot tracing would have a gap.
      */
     public function receiveStock(Request $request, Inventory $inventory)
     {
+        $tracksExpiry = $inventory->expiration_date !== null
+            || (! empty($inventory->code) && Inventory::where('code', $inventory->code)->whereNotNull('expiration_date')->exists());
+
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'batch_number' => 'required|string|max:100',
-            'lot_number' => 'nullable|string|max:100',
-            'expiration_date' => 'nullable|date',
+            'lot_number' => [Rule::requiredIf($tracksExpiry), 'nullable', 'string', 'max:100'],
+            'expiration_date' => [Rule::requiredIf($tracksExpiry), 'nullable', 'date'],
             'price' => 'nullable|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
             'supplier' => 'nullable|string|max:255',
@@ -342,8 +354,9 @@ class InventoryController extends Controller
     }
 
     /**
-     * List every batch sharing a product's code, oldest first — the exact order
-     * InvoiceFinalizationService will consume them in.
+     * List every batch sharing a product's code in FEFO order (soonest expiry
+     * first, expired last) — the exact order InvoiceFinalizationService will
+     * consume them in.
      */
     public function batches(Inventory $inventory)
     {
@@ -355,7 +368,7 @@ class InventoryController extends Controller
             $query->where('id', $inventory->id);
         }
 
-        $batches = $query->orderBy('id', 'asc')->get();
+        $batches = $query->consumptionOrder()->get();
 
         return response()->json([
             'code' => $inventory->code,

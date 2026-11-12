@@ -31,6 +31,7 @@ import { useApi, useQueryClient } from "../../hooks/useApi";
 import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../api";
 import { adminChannel } from "../../utils/echo";
+import { byConsumptionOrder } from "../../utils/fefo";
 
 // Expired is derived, never stored: the API sends is_expired computed against
 // the current date, and the date comparison is kept as a fallback for cached
@@ -341,7 +342,7 @@ function InventoryView() {
 
   // Receiving a delivery creates a NEW row sharing the product's code — those
   // sibling rows are the batches InvoiceFinalizationService consumes
-  // oldest-first, so the extra row is correct FIFO behaviour and the API must
+  // soonest-expiry first, so the extra row is correct FEFO behaviour and the API must
   // keep returning it. What was wrong was the screen: one product with three
   // deliveries read as three separate products, and its quantity looked split.
   // Group the rows back into products here, in the view only. Nothing about
@@ -356,10 +357,11 @@ function InventoryView() {
     }
 
     return Array.from(groups.entries()).map(([key, rows]) => {
-      // Ascending id is the order FIFO consumes, so the first row is both the
-      // original product and the next batch to be drawn down.
-      const batches = [...rows].sort((a, b) => a.id - b.id);
-      const primary = batches[0];
+      // The lowest id is the original product row: its details and edit
+      // button stand for the product. The batches are listed in FEFO order
+      // (soonest expiry first), the order an invoice deducts them in.
+      const primary = [...rows].sort((a, b) => a.id - b.id)[0];
+      const batches = [...rows].sort(byConsumptionOrder);
 
       const totalStock = batches.reduce((sum, b) => sum + Number(b.stock_level || 0), 0);
 
@@ -671,9 +673,9 @@ function InventoryView() {
                       </td>
                     </tr>
 
-                    {/* Batch breakdown. Listed oldest-first, which is the order
-                        FIFO draws them down, so the top row is what the next
-                        invoice will consume. */}
+                    {/* Batch breakdown in FEFO order: soonest expiry first,
+                        expired last, so the top row is what the next invoice
+                        will consume. */}
                     {isExpanded && batches.map((b, i) => {
                       const batchExpired = isRowExpired(b);
                       return (
