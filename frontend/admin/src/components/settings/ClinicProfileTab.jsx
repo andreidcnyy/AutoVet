@@ -186,7 +186,7 @@ export default function ClinicProfileTab() {
 
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Clinic Name *</label>
+            <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Clinic Name <span className="text-rose-500">*</span></label>
             <input
               {...register("clinic_name")}
               className={getInputClass(errors.clinic_name)}
@@ -194,7 +194,7 @@ export default function ClinicProfileTab() {
             {errors.clinic_name && <p className="mt-1 text-sm text-red-500">{errors.clinic_name.message}</p>}
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Primary Email *</label>
+            <label className="mb-1.5 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Primary Email <span className="text-rose-500">*</span></label>
             <input
               {...register("primary_email")}
               type="email"

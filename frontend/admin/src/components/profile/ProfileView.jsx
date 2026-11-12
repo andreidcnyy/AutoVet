@@ -192,7 +192,7 @@ function ProfileView({ user, setUser }) {
                     <div className="flex-1 space-y-4">
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             <div>
-                                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Full Name *</label>
+                                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Full Name <span className="text-rose-500">*</span></label>
                                 <input
                                     {...register("name")}
                                     className={clsx(
@@ -225,7 +225,7 @@ function ProfileView({ user, setUser }) {
                                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role.message}</p>}
                             </div>
                             <div className="lg:col-span-2">
-                                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Email Address *</label>
+                                <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Email Address <span className="text-rose-500">*</span></label>
                                 <input
                                     {...register("email")}
                                     type="email"
@@ -239,7 +239,7 @@ function ProfileView({ user, setUser }) {
                             </div>
                             {emailChanged && (
                                 <div className="lg:col-span-2">
-                                    <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Current Password *</label>
+                                    <label className="mb-1 block text-sm font-semibold text-zinc-600 dark:text-zinc-300">Current Password <span className="text-rose-500">*</span></label>
                                     <input
                                         type="password"
                                         value={currentPassword}

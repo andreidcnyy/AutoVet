@@ -331,7 +331,7 @@ export default function ServiceManagementTab() {
             <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Service Name *</label>
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Service Name <span className="text-rose-500">*</span></label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" />
               </div>
               <div>
@@ -358,7 +358,7 @@ export default function ServiceManagementTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) *</label>
+                  <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Base Price (₱) <span className="text-rose-500">*</span></label>
                   <input required min="0" step="0.01" type="number" value={formData.base_price || formData.price} onChange={e => setFormData({...formData, base_price: e.target.value, price: e.target.value})} className="w-full rounded-xl border border-zinc-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-hidden dark:bg-dark-surface dark:border-dark-border dark:text-white" />
                 </div>
               </div>

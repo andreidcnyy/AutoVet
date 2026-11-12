@@ -273,7 +273,7 @@ function PatientsPage() {
            }} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-all-2 gap-5">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Full Name *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Full Name <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                     <input name="name" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="e.g. Maria Clara" />
@@ -289,7 +289,7 @@ function PatientsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Contact Number *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Contact Number <span className="text-rose-500">*</span></label>
                   <div className="flex gap-2">
                     <div className="flex h-12 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
                       🇵🇭 +63
@@ -309,7 +309,7 @@ function PatientsPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Street Address *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Street Address <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                     <input name="address" required className="w-full h-12 rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm focus:bg-white focus:outline-hidden focus:border-emerald-400 dark:border-dark-border dark:bg-dark-surface dark:text-zinc-200 transition-all" placeholder="123 Street, Brgy..." />
@@ -317,7 +317,7 @@ function PatientsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Province *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">Province <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <select 
                       required 
@@ -334,7 +334,7 @@ function PatientsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">City / Municipality *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">City / Municipality <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <select 
                       required 

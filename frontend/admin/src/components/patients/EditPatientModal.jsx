@@ -479,12 +479,12 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                             </div>
                             <div className={clsx("grid grid-cols-1 sm:grid-cols-2 gap-4", !isClinicAdmin && "opacity-60 pointer-events-none")}>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Full Name *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Full Name <span className="text-rose-500">*</span></label>
                                     <input {...register("owner_name")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_name)} />
                                     {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone <span className="text-rose-500">*</span></label>
                                     <div className="flex gap-2">
                                         <div className="flex h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
                                             🇵🇭 +63
@@ -506,11 +506,11 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     <input type="email" {...register("owner_email")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_email)} />
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address <span className="text-rose-500">*</span></label>
                                     <input {...register("owner_address")} readOnly={!isClinicAdmin} className={getInputClass(errors.owner_address)} />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Province *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Province <span className="text-rose-500">*</span></label>
                                     <div className="relative">
                                         <select {...register("owner_province")} className={getSelectClass(errors.owner_province)}>
                                             <option value="">Select Province...</option>
@@ -521,7 +521,7 @@ function EditPatientModal({ isOpen, onClose, patient, onSaveSuccess }) {
                                     {errors.owner_province && <p className="mt-1 text-xs text-red-500">{errors.owner_province.message}</p>}
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">City *</label>
+                                    <label className="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">City <span className="text-rose-500">*</span></label>
                                     <div className="relative">
                                         <select {...register("owner_city")} disabled={!ownerProvince} className={getSelectClass(errors.owner_city)}>
                                             <option value="">Select City...</option>

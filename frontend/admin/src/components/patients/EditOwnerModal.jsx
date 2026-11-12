@@ -149,7 +149,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
                     <form id="edit-owner-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         {/* Name */}
                         <div>
-                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Full Name *</label>
+                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Full Name <span className="text-rose-500">*</span></label>
                             <div className="relative">
                                 <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                                 <input {...register("name")} className={clsx(getInputClass(errors.name), "pl-10")} placeholder="e.g. Maria Clara" />
@@ -160,7 +160,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Contact Number */}
                             <div>
-                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Contact Number *</label>
+                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Contact Number <span className="text-rose-500">*</span></label>
                                 <div className="flex gap-2">
                                     <div className="flex h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-bold text-zinc-500 dark:bg-zinc-800 dark:border-dark-border">
                                         🇵🇭 +63
@@ -189,7 +189,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
 
                         {/* Address */}
                         <div>
-                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Street Address *</label>
+                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Street Address <span className="text-rose-500">*</span></label>
                             <div className="relative">
                                 <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                                 <input {...register("address")} className={clsx(getInputClass(errors.address), "pl-10")} placeholder="123 Street, Brgy..." />
@@ -200,7 +200,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Province */}
                             <div>
-                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Province *</label>
+                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">Province <span className="text-rose-500">*</span></label>
                                 <div className="relative">
                                     <select {...register("province")} className={getSelectClass(errors.province)}>
                                         <option value="">Select Province...</option>
@@ -213,7 +213,7 @@ function EditOwnerModal({ isOpen, onClose, owner, onSaveSuccess }) {
 
                             {/* City */}
                             <div>
-                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">City *</label>
+                                <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-zinc-500">City <span className="text-rose-500">*</span></label>
                                 <div className="relative">
                                     <select {...register("city")} className={getSelectClass(errors.city)} disabled={!watchedProvince}>
                                         <option value="">Select City...</option>

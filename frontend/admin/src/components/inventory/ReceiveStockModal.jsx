@@ -212,12 +212,12 @@ export default function ReceiveStockModal({ isOpen, onClose, product, onReceived
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Quantity Received *</label>
+                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Quantity Received <span className="text-rose-500">*</span></label>
                 <input type="number" min="1" {...register("quantity")} className={getInputClass(errors.quantity)} />
                 {errors.quantity && <p className="mt-1 text-xs text-red-500">{errors.quantity.message}</p>}
               </div>
               <div>
-                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch # *</label>
+                <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Batch # <span className="text-rose-500">*</span></label>
                 <input type="text" {...register("batch_number")} className={getInputClass(errors.batch_number)} placeholder="BATCH-001" />
                 {errors.batch_number && <p className="mt-1 text-xs text-red-500">{errors.batch_number.message}</p>}
               </div>

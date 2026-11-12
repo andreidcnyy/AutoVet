@@ -286,16 +286,16 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                 {isNewOwner ? (
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <div className="lg:col-span-2">
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Full Name *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Full Name <span className="text-rose-500">*</span></label>
                       <input {...register("owner_name")} className={getInputClass(errors.owner_name)} />
                       {errors.owner_name && <p className="mt-1 text-xs text-red-500">{errors.owner_name.message}</p>}
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Real Email *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Real Email <span className="text-rose-500">*</span></label>
                       <input type="email" {...register("owner_email")} className={getInputClass(errors.owner_email)} />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Contact Number (11 Digits) *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Contact Number (11 Digits) <span className="text-rose-500">*</span></label>
                       <div className="flex gap-2">
                         <div className="flex h-12 items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-100 px-3 text-sm font-bold text-zinc-500 dark:bg-zinc-800">🇵🇭 +63</div>
                         <input {...register("owner_phone")} onChange={(e) => setValue("owner_phone", e.target.value.replace(/\D/g, "").slice(0, 11))} className={getInputClass(errors.owner_phone)} maxLength={11} />
@@ -303,12 +303,12 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                       {errors.owner_phone && <p className="mt-1 text-xs text-red-500">{errors.owner_phone.message}</p>}
                     </div>
                     <div className="lg:col-span-2">
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Street Address *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Street Address <span className="text-rose-500">*</span></label>
                       <input {...register("owner_address")} className={getInputClass(errors.owner_address)} />
                       {errors.owner_address && <p className="mt-1 text-xs text-red-500">{errors.owner_address.message}</p>}
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Province *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Province <span className="text-rose-500">*</span></label>
                       <div className="relative">
                         <select {...register("owner_province")} className={getSelectClass(errors.owner_province)}>
                           <option value="">Select...</option>
@@ -319,7 +319,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                       {errors.owner_province && <p className="mt-1 text-xs text-red-500">{errors.owner_province.message}</p>}
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">City *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">City <span className="text-rose-500">*</span></label>
                       <div className="relative">
                         <select {...register("owner_city")} className={getSelectClass(errors.owner_city)} disabled={!ownerProvince}>
                           <option value="">Select...</option>
@@ -375,7 +375,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
 
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Pet Name *</label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Pet Name <span className="text-rose-500">*</span></label>
                       <input {...register(`pets.${index}.name`)} className={getInputClass(errors.pets?.[index]?.name)} />
                       {errors.pets?.[index]?.name && <p className="mt-1 text-xs text-red-500">{errors.pets[index].name.message}</p>}
                     </div>
@@ -409,7 +409,7 @@ function AddPatientFormView({ onCancel, onSave, ownerId: initialOwnerId }) {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Weight *</label>
+                        <label className="mb-1.5 block text-xs font-black uppercase tracking-widest text-zinc-500">Weight <span className="text-rose-500">*</span></label>
                         <div className="flex gap-2">
                           <input type="number" step="any" {...register(`pets.${index}.weight`)} className={getInputClass(errors.pets?.[index]?.weight)} placeholder="0.0" />
                           <div className="relative">

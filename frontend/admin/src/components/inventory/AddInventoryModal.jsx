@@ -253,7 +253,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               <div className="grid grid-cols-1 gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Product Name *</label>
+                        <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Product Name <span className="text-rose-500">*</span></label>
                         <input type="text" {...register("item_name")} className={getInputClass(errors.item_name)} placeholder="e.g., Meloxicam" />
                         {errors.item_name && <p className="mt-1 text-xs text-red-500">{errors.item_name.message}</p>}
                     </div>
@@ -266,7 +266,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Category *</label>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Category <span className="text-rose-500">*</span></label>
                   <select {...register("inventory_category_id")} className={getInputClass(errors.inventory_category_id)}>
                     <option value="" disabled>Select category</option>
                     {categoryOptions.map((cat) => (
@@ -280,7 +280,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               <SectionHeading>B. Stock Management</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Initial Quantity *</label>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Initial Quantity <span className="text-rose-500">*</span></label>
                   <input type="number" min="0" {...register("stock_level")} className={getInputClass(errors.stock_level)} />
                   {errors.stock_level && <p className="mt-1 text-xs text-red-500">{errors.stock_level.message}</p>}
                 </div>
@@ -325,7 +325,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
               <SectionHeading>C. Financials & Profit Margin</SectionHeading>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Buying Price (₱) *</label>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Buying Price (₱) <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     value={costPriceDisplay}
@@ -351,7 +351,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Selling Price (₱) *</label>
+                  <label className="mb-1 block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Selling Price (₱) <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     value={sellingPriceDisplay}

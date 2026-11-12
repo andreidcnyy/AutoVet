@@ -278,7 +278,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="col-span-full">
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Pet Name *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Pet Name <span className="text-rose-500">*</span></label>
                   <input 
                     {...register("name")}
                     className={clsx("input-field font-bold text-lg", errors.name && "border-rose-500")}
@@ -288,7 +288,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Species *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Species <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <select 
                       {...register("species_id")}
@@ -332,7 +332,7 @@ export default function EditPetModal({ isOpen, onClose, petId, onSuccess }: Edit
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) *</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 ml-1">Weight (kg) <span className="text-rose-500">*</span></label>
                   <input type="number" step="any" {...register("weight")} className="input-field font-bold" placeholder="0.0" />
                 </div>
                 

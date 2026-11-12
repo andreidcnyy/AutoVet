@@ -262,7 +262,7 @@ export default function SuperAdminAnnouncements() {
 
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-1.5">Title *</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-1.5">Title <span className="text-rose-500">*</span></label>
                 <input
                   required
                   value={formData.title}

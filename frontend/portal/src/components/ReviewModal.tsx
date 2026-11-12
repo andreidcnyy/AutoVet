@@ -123,7 +123,7 @@ export default function ReviewModal({ invoice, onClose, onDismiss, onSubmitted }
 
             {/* Star rating */}
             <div className="px-7 pb-4 animate-in fade-in slide-in-from-bottom-1 duration-300 delay-75">
-              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-2">Rating *</p>
+              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-2">Rating <span className="text-rose-500">*</span></p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => {
                   const filled = star <= (hovered || rating);
