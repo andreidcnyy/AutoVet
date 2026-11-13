@@ -365,12 +365,12 @@ class AppointmentController extends Controller
             $validated['status'] = 'approved';
         }
 
-        // A slot with SLOT_CAPACITY approved visits takes no more bookings. The
-        // check and the insert share a lock so two people booking the last
-        // place at the same moment cannot both get in.
+        // A slot holding SLOT_CAPACITY bookings (pending or approved) takes no
+        // more. The check and the insert share a lock so two people booking the
+        // last place at the same moment cannot both get in.
         try {
             $appointment = Appointment::withSlotLock($validated['date'], $validated['time'], function () use ($validated) {
-                if (Appointment::slotIsFull($validated['date'], $validated['time'])) {
+                if (Appointment::slotIsFullForBooking($validated['date'], $validated['time'])) {
                     return null;
                 }
 
@@ -380,7 +380,7 @@ class AppointmentController extends Controller
             return response()->json(['message' => 'Many people are booking this time right now. Please try again.'], 409);
         }
         if (! $appointment) {
-            return response()->json(['message' => Appointment::slotFullMessage()], 422);
+            return response()->json(['message' => 'This time slot is already full ('.Appointment::SLOT_CAPACITY.' bookings). Please choose another time.'], 422);
         }
 
         // Sync additional services to pivot table

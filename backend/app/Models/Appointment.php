@@ -9,6 +9,7 @@ use App\Traits\HasSyncFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class Appointment extends Model
 {
@@ -69,6 +70,35 @@ class Appointment extends Model
     public static function slotIsFull(string $date, $time, ?int $exceptId = null): bool
     {
         return self::approvedCountAt($date, $time, $exceptId) >= self::SLOT_CAPACITY;
+    }
+
+    /** Statuses whose booking still holds its place in a time slot. */
+    public const SLOT_HOLDING_STATUSES = ['pending', 'approved', 'scheduled'];
+
+    /**
+     * Bookings still holding the given date and time: waiting for approval or
+     * approved. Declined, cancelled and completed ones have let their place go.
+     */
+    public static function activeCountAt(string $date, $time, ?int $exceptId = null): int
+    {
+        $slot = self::normaliseSlotTime($time);
+
+        return self::whereDate('date', $date)
+            ->whereIn(DB::raw('LOWER(status)'), self::SLOT_HOLDING_STATUSES)
+            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
+            ->pluck('time')
+            ->filter(fn ($t) => self::normaliseSlotTime($t) === $slot)
+            ->count();
+    }
+
+    /**
+     * Whether a new booking still fits. Counted on every booking that holds the
+     * slot, pending ones included: counting only approved ones let a slot
+     * collect any number of pending requests (three at 11:30 and still open).
+     */
+    public static function slotIsFullForBooking(string $date, $time): bool
+    {
+        return self::activeCountAt($date, $time) >= self::SLOT_CAPACITY;
     }
 
     /**

@@ -845,9 +845,12 @@ export default function BookAppointment() {
                               // The server only returns slot-holding visits for
                               // the whole day, with times already as HH:MM.
                               const atSlot = availability.filter((a: any) => (a.time || '').padStart(5, '0').substring(0, 5) === slot);
-                              // A slot is full once it holds SLOT_CAPACITY
-                              // approved visits (Appointment::SLOT_CAPACITY).
-                              const isFull = atSlot.filter((a: any) => (a.status || '').toLowerCase() === 'approved').length >= SLOT_CAPACITY;
+                              // A slot is full once it holds SLOT_CAPACITY bookings
+                              // that still stand, pending ones included
+                              // (Appointment::slotIsFullForBooking). Counting only
+                              // approved ones let a slot collect any number of
+                              // pending requests.
+                              const isFull = atSlot.length >= SLOT_CAPACITY;
                               // The chosen vet can only see one pet at a time.
                               const isTaken = !!selectedVetId && atSlot.some((a: any) => String(a.vet_id) === String(selectedVetId));
 
