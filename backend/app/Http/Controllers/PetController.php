@@ -10,6 +10,7 @@ use App\Support\ListQuery;
 use App\Traits\IdentifiesPortalOwner;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 
 class PetController extends Controller
 {
@@ -161,6 +162,24 @@ class PetController extends Controller
         return (int) $ownerId;
     }
 
+    /**
+     * Refuse a second pet with the same name for one owner (see
+     * Pet::sameNameForOwner). Answered as a validation error on "name", so the
+     * forms show it next to the field.
+     */
+    private function rejectDuplicateName(int $ownerId, string $name, ?int $ignorePetId, bool $isPortalClient): void
+    {
+        $existing = Pet::sameNameForOwner($ownerId, $name, $ignorePetId);
+
+        if ($existing) {
+            throw ValidationException::withMessages([
+                'name' => $isPortalClient
+                    ? "You already have a pet named \"{$existing->name}\". Choose a different name, or open that pet's profile to update it."
+                    : "This owner already has a pet named \"{$existing->name}\". Open that pet's record instead of adding it again.",
+            ]);
+        }
+    }
+
     public function store(Request $request)
     {
         if ($resolved = $this->resolvePortalOwnerIdOrFail()) {
@@ -194,6 +213,8 @@ class PetController extends Controller
             'treatment_plan' => 'nullable|string',
             'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
+
+        $this->rejectDuplicateName((int) $validated['owner_id'], $validated['name'], null, (bool) $resolved);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {
             $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));
@@ -294,6 +315,10 @@ class PetController extends Controller
             'treatment_plan' => 'nullable|string',
             'vet_id' => 'nullable|clinic_exists:admins,id',
         ]);
+
+        // Renaming (or moving) a pet onto a name its owner already uses would
+        // create the same duplicate as adding it twice.
+        $this->rejectDuplicateName((int) $validated['owner_id'], $validated['name'], $pet->id, (bool) $resolved);
 
         if ($request->filled('photo') && preg_match('/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/is', $request->photo, $m)) {
             $validated['photo'] = $this->uploadPetPhotoBytes(base64_decode(str_replace(' ', '+', $m[2])), strtolower($m[1]));

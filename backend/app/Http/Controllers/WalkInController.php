@@ -87,10 +87,10 @@ class WalkInController extends Controller
                     // Create pet under owner
                     $petData = $request->new_pet;
 
-                    // Duplicate pet name check under same owner
-                    $dupePet = Pet::where('owner_id', $owner->id)->where('name', $petData['name'])->first();
+                    // Same duplicate rule as everywhere else (Pet::sameNameForOwner).
+                    $dupePet = Pet::sameNameForOwner($owner->id, $petData['name']);
                     if ($dupePet) {
-                        throw new UserFacingException("A pet named '{$petData['name']}' already exists for this owner.");
+                        throw new UserFacingException("A pet named '{$dupePet->name}' already exists for this owner. Select it instead of adding it again.");
                     }
 
                     $pet = Pet::create([

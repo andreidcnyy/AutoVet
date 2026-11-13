@@ -91,6 +91,27 @@ class Pet extends Model
         // 'total_paid', 'total_due', 'last_visit', 'next_due' - removed to improve list performance
     ];
 
+    /**
+     * The owner's other active pet with this name, if there is one.
+     *
+     * One owner cannot have two pets with the same name: they would be
+     * indistinguishable in every pet picker, and in practice it is the same
+     * pet registered twice. Compared ignoring case and surrounding spaces, so
+     * "Buboy", "buboy " and "BUBOY" are one name. Archived pets don't count.
+     */
+    public static function sameNameForOwner(int $ownerId, ?string $name, ?int $ignorePetId = null): ?self
+    {
+        $normalized = mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $name)));
+        if ($normalized === '') {
+            return null;
+        }
+
+        return static::where('owner_id', $ownerId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [$normalized])
+            ->when($ignorePetId, fn ($q) => $q->where('id', '!=', $ignorePetId))
+            ->first();
+    }
+
     public function getTotalPaidAttribute()
     {
         // Use the loaded relationship if available to avoid N+1 queries

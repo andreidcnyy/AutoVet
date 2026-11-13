@@ -74,6 +74,18 @@ const patientSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address is required", path: ["owner_address"] });
     }
   }
+
+  // The same pet entered twice in this form. The server refuses a name the
+  // owner already has, but these are all sent at once, so check them here.
+  const seen = new Set();
+  (data.pets || []).forEach((pet, index) => {
+    const key = (pet.name || "").trim().replace(/\s+/g, " ").toLowerCase();
+    if (!key) return;
+    if (seen.has(key)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "This pet name is already used above", path: ["pets", index, "name"] });
+    }
+    seen.add(key);
+  });
 });
 
 const emptyPet = {
