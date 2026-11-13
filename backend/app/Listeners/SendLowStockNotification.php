@@ -4,13 +4,13 @@ namespace App\Listeners;
 
 use App\Enums\Roles;
 use App\Events\LowStockDetected;
+use App\Jobs\SendEmail;
 use App\Mail\InventoryExpiryAlertMail;
 use App\Models\Admin;
 use App\Models\Clinic;
 use App\Models\Notification;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class SendLowStockNotification
 {
@@ -100,7 +100,7 @@ HTML;
 
         foreach ($emails as $email) {
             try {
-                Mail::mailer('brevo')->to($email)->send(new InventoryExpiryAlertMail($subject, $html));
+                SendEmail::deliver('brevo', $email, new InventoryExpiryAlertMail($subject, $html));
             } catch (\Exception $e) {
                 Log::warning("[LowStock] Failed to email {$email}: ".$e->getMessage());
             }

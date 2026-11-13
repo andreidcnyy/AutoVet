@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\InvoiceUpdated;
 use App\Exceptions\UserFacingException;
+use App\Jobs\SendEmail;
 use App\Mail\ReviewRequestMail;
 use App\Models\Appointment;
 use App\Models\Inventory;
@@ -22,7 +23,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class InvoiceController extends Controller
@@ -376,8 +376,7 @@ class InvoiceController extends Controller
                         $this->clientNotificationService->sendInvoiceEmail($owner, $invoice);
                         // Send review request email if owner has a portal account
                         if ($owner->email && $owner->user_id) {
-                            Mail::mailer('invoice')->to($owner->email)
-                                ->send(new ReviewRequestMail($owner, $invoice));
+                            SendEmail::deliver('invoice', $owner->email, new ReviewRequestMail($owner, $invoice));
                         }
                     }
                 } catch (\Throwable $e) {

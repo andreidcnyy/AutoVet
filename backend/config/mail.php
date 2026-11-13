@@ -17,6 +17,13 @@ return [
     'default' => env('MAIL_MAILER', 'log'),
 
     /*
+    | Send emails through the "mail" queue (App\Jobs\SendEmail) instead of
+    | right after the response. Only turn on where a worker drains that queue:
+    | the Dockerfile starts one and sets this for production.
+    */
+    'async' => (bool) env('MAIL_ASYNC', false),
+
+    /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
     |--------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Roles;
+use App\Jobs\SendEmail;
 use App\Mail\PasswordResetMail;
 use App\Models\Admin;
 use App\Models\Owner;
@@ -17,7 +18,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -391,8 +391,8 @@ class AuthController extends Controller
         ]);
 
         try {
-            Mail::mailer('forgot_password')->to($request->email)->send(new PasswordResetMail($resetUrl));
-            \Log::info('Password reset email sent', ['user_id' => $user->id]);
+            SendEmail::deliver('forgot_password', $request->email, new PasswordResetMail($resetUrl));
+            \Log::info('Password reset email queued', ['user_id' => $user->id]);
         } catch (\Exception $e) {
             \Log::error('Failed to send password reset email: '.$e->getMessage());
         }

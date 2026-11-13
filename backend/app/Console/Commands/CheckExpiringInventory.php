@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendEmail;
 use App\Mail\InventoryExpiryAlertMail;
 use App\Models\Admin;
 use App\Models\Inventory;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class CheckExpiringInventory extends Command
 {
@@ -55,7 +55,7 @@ class CheckExpiringInventory extends Command
 
         foreach ($admins as $email) {
             try {
-                Mail::mailer('brevo')->to($email)->send(new InventoryExpiryAlertMail($subject, $html));
+                SendEmail::deliver('brevo', $email, new InventoryExpiryAlertMail($subject, $html));
             } catch (\Exception $e) {
                 $this->warn("Failed to email {$email}: ".$e->getMessage());
             }

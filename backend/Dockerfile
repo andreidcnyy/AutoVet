@@ -112,6 +112,13 @@ ENV PHP_CLI_SERVER_WORKERS=4
 # meant serve never started and Render restarted the container into the same
 # failure forever. It is logged loudly instead and the server still starts,
 # so the error shows up in Render's logs while the app stays reachable.
+#
+# Emails: requests put them on the "mail" queue (MAIL_ASYNC) and return at
+# once; the background loop below sends them, retrying a failed Brevo call.
+# It only reads the "mail" queue so it never picks up the heavy forecast jobs.
+# The loop restarts the worker if it exits (--max-time keeps it fresh).
+ENV MAIL_ASYNC=true
 CMD php artisan config:cache \
     && (php artisan migrate --force || echo "!!! MIGRATION FAILED - server starting anyway, check the error above !!!") \
+    && (while true; do php artisan queue:work database --queue=mail --sleep=2 --tries=3 --timeout=60 --max-time=3600 --memory=128; sleep 2; done &) \
     && php artisan serve --host 0.0.0.0 --port "${PORT:-8080}" --no-reload

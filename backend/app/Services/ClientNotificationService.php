@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\UserFacingException;
+use App\Jobs\SendEmail;
 use App\Mail\ClientNotificationMail;
 use App\Mail\InvoiceMail;
 use App\Models\Appointment;
@@ -84,7 +85,20 @@ class ClientNotificationService
 
                 \Log::info("Sending email via [{$mailer}] mailer to [{$owner->email}] for event [{$eventKey}] with title [{$title}]");
 
-                Mail::mailer($mailer)->to($owner->email)->send(new ClientNotificationMail($title ?? 'Notification', $message));
+                $mail = new ClientNotificationMail($title ?? 'Notification', $message);
+
+                // Automated emails (booking received, approved, declined...)
+                // go out after the response, so the client is not left
+                // waiting on Brevo; the job marks the record sent or failed.
+                // Staff-triggered sends stay immediate so the screen can say
+                // whether the email actually went.
+                if ($type === 'automated') {
+                    SendEmail::deliver($mailer, $owner->email, $mail, $notification->id);
+
+                    return $notification;
+                }
+
+                Mail::mailer($mailer)->to($owner->email)->send($mail);
             } elseif ($channel === 'sms') {
                 if (empty($owner->phone)) {
                     throw new UserFacingException('Owner has no phone number.');
@@ -114,21 +128,28 @@ class ClientNotificationService
 
     public function sendInvoiceEmail(Owner $owner, $invoice)
     {
+        if (empty($owner->email)) {
+            return null;
+        }
+
         $invoice->load(['items', 'pet.owner']);
 
-        Mail::mailer('invoice')->to($owner->email)->send(new InvoiceMail($invoice, null));
-
-        return ClientNotification::create([
+        $notification = ClientNotification::create([
             'owner_id' => $owner->id,
             'channel' => 'email',
             'type' => 'manual',
             'title' => 'Invoice Sent',
             'message' => "Invoice #{$invoice->invoice_number} sent to client via email.",
-            'status' => 'sent',
-            'sent_at' => now(),
+            'status' => 'pending',
             'related_type' => get_class($invoice),
             'related_id' => $invoice->id,
         ]);
+
+        // Building the PDF and calling Brevo used to happen inside the
+        // invoice's database transaction; it now runs after the response.
+        SendEmail::deliver('invoice', $owner->email, new InvoiceMail($invoice, null), $notification->id);
+
+        return $notification;
     }
 
     /**
@@ -159,20 +180,19 @@ class ClientNotificationService
             $subject = $this->interpolateVariables($template->subject ?? 'Medical Record Summary', [], $owner, $record);
             $body = $this->interpolateVariables($template->body, [], $owner, $record);
 
-            \Mail::mailer('brevo')->to($owner->email)->send(new ClientNotificationMail($subject, $body));
-
-            ClientNotification::create([
+            $notification = ClientNotification::create([
                 'clinic_id' => $owner->clinic_id,
                 'owner_id' => $owner->id,
                 'channel' => 'email',
                 'type' => 'automated',
                 'title' => $subject,
                 'message' => $body,
-                'status' => 'sent',
-                'sent_at' => now(),
+                'status' => 'pending',
                 'related_type' => get_class($record),
                 'related_id' => $record->id,
             ]);
+
+            SendEmail::deliver('brevo', $owner->email, new ClientNotificationMail($subject, $body), $notification->id);
         } catch (\Exception $e) {
             \Log::error('Medical record email notification failed: '.$e->getMessage());
         }
